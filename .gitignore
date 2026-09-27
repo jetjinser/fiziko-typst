@@ -1,1 +1,9 @@
 .direnv/
+
+# Typst and MetaPost build outputs.
+/main.pdf
+/main-gray.pdf
+/main-original.pdf
+/page-*.png
+/figure12-diagnostic.*
+/original/
