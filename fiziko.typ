@@ -476,10 +476,29 @@
   }
   inside
 }
-#let _shadowed(p, regions, center) = {
+#let _shadowed(p, regions, center, depth: 0,
+               light: (-0.353553, 0.382683, 0.853553), shadow-planes: ()) = {
   let local = _sub(p, center)
-  regions.any(poly => _inside-poly(local, poly))
+  let explicit = regions.any(poly => _inside-poly(local, poly))
+  let projected = shadow-planes.any(shadow => {
+    let dz = shadow.depth - depth
+    // A plane occludes a surface point only when it lies toward the light.
+    // Shadow polygon coordinates use world XY (y up); drawing points use
+    // screen XY (y down).
+    if calc.abs(light.at(2)) < 0.000001 or dz * light.at(2) <= 0 { false }
+    else {
+      let t = dz / light.at(2)
+      _inside-poly((local.at(0) + light.at(0) * t,
+                    -local.at(1) + light.at(1) * t), shadow.polygon)
+    }
+  })
+  explicit or projected
 }
+
+/// A planar occluder for automatic sphere-shadow projection. `polygon` uses
+/// sphere-local XY coordinates with y up; `depth` is positive toward the
+/// viewer. `light` uses the same x-right, y-up, z-toward-viewer axes.
+#let sphere-shadow-plane(polygon, depth) = (polygon: polygon, depth: depth)
 #let _stipple-loops(fr, ws, closed, step, dot-size, seed) = {
   let n = fr.len()
   if n < 2 or step <= 0 or dot-size <= 0 { return () }
@@ -578,7 +597,7 @@
 #let sphere(d, light: (-0.353553, 0.382683, 0.853553), rings: auto, samples: 300,
             max-w: _source-max-shading, gamma: 1.0,
             min-w: _source-min-stroke, period: _source-dash-length,
-            seed: 0, center: (0, 0), shadow-regions: (), fill: black) = {
+            seed: 0, center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
   let R = d / 2
   // fiziko chooses a power-of-two ring count so the radial gap stays near its
   // shading density (3 × the maximum hatch width).
@@ -604,7 +623,8 @@
       let ny = -(p.at(1) - center.at(1)) / R   // screen y is down
       let nz = z / R
       let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
-      if _shadowed(p, shadow-regions, center) { max-w }
+      if _shadowed(p, shadow-regions, center, depth: z, light: L,
+                   shadow-planes: shadow-planes) { max-w }
       else { max-w * calc.pow(1 - lam, gamma) }
     })
     loops += _ink-loops(fr, ws, true, min-w, period, seed: seed)
@@ -617,7 +637,7 @@
 #let sphere-stipple(d, light: (-0.353553, 0.382683, 0.853553),
                     dot-step: 0.18, dot-size: 0.4 * pt,
                     gamma: 1.0, seed: 0,
-                    center: (0, 0), shadow-regions: (), fill: black) = {
+                    center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
   let R = d / 2
   let limit = calc.max(0.0, R - dot-size / 2)
   let row-step = dot-step * calc.sqrt(3) / 2
@@ -642,7 +662,10 @@
       if radius2 > limit * limit / (R * R) { continue }
       let nz = calc.sqrt(calc.max(0.0, 1 - radius2))
       let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
-      let dark = if _shadowed(p, shadow-regions, center) { 1.0 } else { calc.pow(1 - lam, gamma) }
+      let depth = R * nz
+      let dark = if _shadowed(p, shadow-regions, center, depth: depth, light: L,
+                              shadow-planes: shadow-planes) { 1.0 }
+                 else { calc.pow(1 - lam, gamma) }
       if _rng(seed, key * key + 1, 3) < dark { loops.push(_dot-loop(p, dot-size)) }
     }
   }
@@ -957,6 +980,19 @@
     stroke-ink(src, w, offset: t => -(L.rfun)(t), closed: closed, per: per,
                min-w: min-w, period: period, seed: seed),
   )
+  // MetaPost closes open tube outlines across both ends. Connect the two
+  // offset boundaries here as well; closed centerlines have no end caps.
+  if not closed {
+    for (i, t) in ((0, 0.0), (L.frames.len() - 1, 1.0)) {
+      let frame = L.frames.at(i)
+      let rad = (L.rfun)(t)
+      if rad > 0.000001 {
+        let a = _add(frame.at(0), _mul(frame.at(1), rad))
+        let b = _add(frame.at(0), _mul(frame.at(1), -rad))
+        els.push(stroke-path((a, b), stroke: w * 1mm + black, closed: false, per: 0))
+      }
+    }
+  }
   if hatch == "l" {
     els += L.inner.map(it => stroke-ink(src, it.w, offset: it.offset,
       closed: closed, per: per, min-w: min-w, period: period, seed: seed))

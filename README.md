@@ -41,15 +41,15 @@ publishing.
 |---|---|
 | `offsetPath(p)(f)` | `offset-path(pts, f)` — curve at a distance `f(t)` along the normal |
 | `draw brush(p)(w)` | `stroke-ink(pts, w, offset: .., seed: 0)` — variable-width band; below the printable minimum (0.3 pt) the line becomes dashes carrying the same ink per unit length; the seed controls deterministic dash variation |
-| `sphere.c(d)` | `sphere(d, light: .., rings: auto, seed: 0, shadow-regions: ())` — concentric Lambert-shaded rings; optional sphere-local polygons darken projected shadow areas |
+| `sphere.c(d)` | `sphere(d, light: .., rings: auto, seed: 0, shadow-regions: (), shadow-planes: ())` — concentric Lambert-shaded rings; supports existing local masks and depth-projected planar occluders |
 | `sphereLat(d, lat)` | `sphere-latitude(d, latitude:, light: .., seed: 1)` — latitude projection, `orderFade`, sphere light model, and source-scale spacing; defaults to 180 drawing samples for better compile time, with `samples:` adjustable for larger figures |
-| `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r`; source-scale hatch spacing by default, longitudinal line widths respond to the tube surface normal and light direction; transverse hatching uses an ink-budget approximation |
+| `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r`; source-scale hatch spacing by default, longitudinal line widths respond to the tube surface normal and light direction, and open ends are joined; transverse hatching uses an ink-budget approximation |
 | `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s")`, `sphere-stipple(d, ...)`, `stroke-stipple(pts, w, ...)` — deterministic arc-length strokes and a jittered 2D Lambert-shaded sphere field, with independent dot size and spacing controls; see [source comparison](original/stipple-reference.pdf) |
 | `solidSurface`, `solid`, `gradientShade` | `solid-surface(path, ...)`, `solid(poly, style: "opaque"/"glass")`, `gradient-shade(poly, ...)` — raised bands and reusable scanline clipping inside polygons |
 | `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples; see [surface comparison](original/surface-reference.pdf) |
 | `woodBlock`, `woodenSurface` | `wood-block(...)`, `wooden-surface(path, ...)` — grained face with hatched sides, and grain clipped to an offset band; see [wood comparison](original/wood-reference.pdf) |
 | `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
-| `shadowsEnabled`, `shadowCut` | `shadow-regions:` on sphere primitives — caller-supplied sphere-local masks; automatic depth projection and shadow-path intersection remain unimplemented |
+| `shadowsEnabled`, `shadowCut` | `shadow-planes:` with `sphere-shadow-plane(polygon, depth)` on sphere primitives — project a planar occluder along the light direction onto each visible sphere sample; arbitrary 3D occluder construction and exact path splitting remain open |
 | `refractionAngle`, `reflectionAngle`, `refractionPath` | `trace-refraction` / `refraction-path` — intersects a closed polygon, applies Snell's law, and reflects on total internal reflection |
 | `pointOnGlobe`, `globe`, `drawLandMass` | `globe-project` / `globe` — orthographic graticule and caller-provided coast polylines, clipped at the horizon |
 | `isoLines`, `cLine` | Not implemented — general contour maps and contour-line rendering |
@@ -90,6 +90,7 @@ Build the specimen document (5-page A4):
 ```sh
 typst compile main.typ main.pdf
 typst compile main.typ 'page-{p}.png' --ppi 140
+typst compile shadow.typ shadow.pdf
 ```
 
 The optional `original/` directory contains local upstream MetaPost sources and
