@@ -24,3 +24,13 @@ the depth of each visible surface sample.
 The plane polygon uses sphere-local world XY coordinates with y up. Its depth
 is positive toward the viewer, in the same units as the sphere radius. The
 `light` vector uses x right, y up, and z toward the viewer.
+
+#figure(
+  canvas(100, 40,
+    sphere-latitude(28, latitude: -25, center: (25, 20))
+    + sphere-latitude(28, latitude: -25, center: (75, 20), shadow-planes: (
+      sphere-shadow-plane(((-4, -18), (-2, -18), (-2, 18), (-4, 18)), 12),
+    )),
+  ),
+  caption: [The same depth-projected occluder on a latitudinally hatched sphere],
+)

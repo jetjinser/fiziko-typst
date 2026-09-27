@@ -681,7 +681,7 @@
                      max-w: _source-max-shading, spacing: _source-spacing, samples: 180,
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
                      seed: 1, rng-offset: 0, with-rng: false, with-trace: false,
-                     center: (0, 0), fill: black) = {
+                     center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
   let R = d / 2
   let n = calc.max(2, calc.ceil(calc.pi * R / spacing))
   let slat = _sin(latitude)
@@ -733,6 +733,18 @@
         path-s.push(path-length)
       }
     }
+    let t-at(q) = t-start + (t-finish - t-start) * q
+    let shadowed-at(t) = {
+      let circle = _mp-circle-point(t)
+      let local = (
+        2 * rx * circle.at(0),
+        -(R * cp * clat + 2 * rx * circle.at(1) * slat),
+      )
+      let radial = _len(local)
+      _shadowed(_add(center, local), shadow-regions, center,
+        depth: calc.sqrt(calc.max(0.0, R * R - radial * radial)),
+        light: L, shadow-planes: shadow-planes)
+    }
     // offsetPathSubdivide cuts every original cubic into four. For partial
     // arcs, the first and last pieces are fractional cubic segments too.
     let boundaries = (t-start,)
@@ -752,11 +764,55 @@
       let b = boundaries.at(i + 1)
       for q in range(1, 5) { knot-ts.push(a + (b - a) * q / 4) }
     }
+    // Shadow edges are discontinuities in the width template. Insert knots
+    // at their crossings so interpolation cannot smear a whole hatch patch.
+    if shadow-regions.len() > 0 or shadow-planes.len() > 0 {
+      let shadow-cuts = ()
+      let scan-count = calc.min(64, samples)
+      for j in range(scan-count) {
+        let q0 = j / scan-count
+        let q1 = (j + 1) / scan-count
+        let t0 = t-at(q0)
+        let t1 = t-at(q1)
+        let side = shadowed-at(t0)
+        if side != shadowed-at(t1) {
+          let lo = q0
+          let hi = q1
+          for _ in range(20) {
+            let mid = (lo + hi) / 2
+            if shadowed-at(t-at(mid)) == side { lo = mid } else { hi = mid }
+          }
+          shadow-cuts.push(t-at((lo + hi) / 2))
+        }
+      }
+      if shadow-cuts.len() > 0 {
+        let expanded = ()
+        for i in range(knot-ts.len() - 1) {
+          let a = knot-ts.at(i)
+          let b = knot-ts.at(i + 1)
+          let qa = (a - t-start) / (t-finish - t-start)
+          let qb = (b - t-start) / (t-finish - t-start)
+          expanded.push(a)
+          for cut in shadow-cuts {
+            let qc = (cut - t-start) / (t-finish - t-start)
+            if qc > qa + 0.000000001 and qc < qb - 0.000000001 {
+              expanded.push(cut)
+            }
+          }
+        }
+        expanded.push(knot-ts.last())
+        knot-ts = expanded
+      }
+    }
     // offsetPathTemplate's x coordinate is arc length, so its piecewise
     // linear width function must be sampled against arc length as well.
     let knot-s = knot-ts.map(t => {
       let q = calc.clamp((t - t-start) / (t-finish - t-start) * samples, 0.0, samples)
-      if q >= samples { path-length } else {
+      if full and q >= samples - 1 {
+        let i = samples - 1
+        let f = q - i
+        path-s.at(i) + f * _dist(pts.at(i), pts.at(0))
+      } else if q >= samples { path-length } else {
         let i = int(calc.floor(q))
         let f = q - i
         let j = i + 1
@@ -778,7 +834,11 @@
       let yn = local-y / R
       let xfade = 1 - calc.pow(1 - xn, calc.abs(slat))
       let density = calc.sqrt(calc.max(0.0, 1 - calc.pow(yn, 2) - calc.pow(xfade, 2)))
-      max-w * _lat-density(density, k) * calc.pow(1 - lam, gamma)
+      let depth = calc.sqrt(calc.max(0.0, R * R - radius * radius))
+      let cast-shadow = _shadowed(_add(center, (local-x, local-y)),
+        shadow-regions, center, depth: depth, light: L, shadow-planes: shadow-planes)
+      let lightness = if cast-shadow { 1.0 } else { calc.pow(1 - lam, gamma) }
+      max-w * _lat-density(density, k) * lightness
     })
     let ws = pts.enumerate().map(((i, _)) => {
       let s = path-s.at(i)

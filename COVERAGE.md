@@ -24,7 +24,7 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `tube.t` | M7 | `tube(hatch: "t")` | Approximate: stroke spacing and taper rules differ. |
 | `tube.s` | S101 | `tube(hatch: "s")` | Approximate: dotted longitudinal placement and surface density differ; open end caps are now joined. |
 | `tube.e` | S102 | `tube(hatch: none)` | Approximate: outline width and boundary interpolation differ; open ends are now joined. |
-| Sphere cast-shadow regions | S102 | `sphere` / `sphere-stipple` `shadow-regions:` and `shadow-planes:` | Approximate: local masks remain supported; planar occluders now project along the light direction onto visible sphere samples. Arbitrary 3D occluders and exact path splitting remain open. |
+| Sphere cast-shadow regions | S102 | `sphere`, `sphere-stipple`, `sphere-latitude` `shadow-regions:` and `shadow-planes:` | Approximate: local masks remain supported; planar occluders now project along the light direction onto visible sphere samples. Arbitrary 3D occluders and exact path splitting remain open. |
 | `solidSurface`, `solid`, `gradientShade` | S103 | `solid-surface`, `solid`, `gradient-shade` | Approximate: scanline clipping is polygon-native; glass gaps and gradient widths differ from source. |
 | `flatSurface.hatches`, `.stipples` | S104 | `flat-surface(style: "hatch"/"stipples")` | Approximate: Lambert shade and a two-axis line/edge ink envelope control deterministic clipped strokes or stipples. |
 | `woodBlock`, `woodenThing`, `woodenSurface` | M9, S105 | `wood-block`, `wooden-thing`, `wooden-surface`, `wood` | Approximate: the same contour field now clips exactly to arbitrary simple polygons; its field and knot shapes remain simpler than the source. |
