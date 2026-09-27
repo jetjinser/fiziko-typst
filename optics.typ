@@ -17,3 +17,14 @@ smaller one makes it concave.
   ),
   caption: [Symmetric convex, symmetric concave, and plano-convex profiles],
 )
+
+#figure(
+  canvas(100, 52,
+    stroke-path(circle-pts(18, 96, center: (50, 27)), closed: true, per: 0)
+    + refraction-path(((8, 19), (32, 19)), circle-pts(18, 96, center: (50, 27)),
+        ior: 1.5, bounces: 3, max-length: 45)
+    + refraction-path(((47, 40), (50, 40)), circle-pts(18, 96, center: (50, 27)),
+        ior: 1.5, bounces: 4, max-length: 45),
+  ),
+  caption: [A refracted ray and a second ray undergoing total internal reflection],
+)
