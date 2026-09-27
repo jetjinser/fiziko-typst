@@ -47,7 +47,7 @@ publishing.
 | `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s")`, `sphere-stipple(d, ...)`, `stroke-stipple(pts, w, ...)` — deterministic arc-length strokes and a jittered 2D Lambert-shaded sphere field, with independent dot size and spacing controls; see [source comparison](original/stipple-reference.pdf) |
 | `solidSurface`, `solid`, `gradientShade` | `solid-surface(path, ...)`, `solid(poly, style: "opaque"/"glass")`, `gradient-shade(poly, ...)` — raised bands and reusable scanline clipping inside polygons |
 | `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples; see [surface comparison](original/surface-reference.pdf) |
-| `woodBlock`, `woodenSurface` | `wood-block(...)`, `wooden-surface(path, ...)` — grained face with hatched sides, and grain clipped to an offset band; see [wood comparison](original/wood-reference.pdf) |
+| `woodBlock`, `woodenThing`, `woodenSurface` | `wood-block(...)`, `wooden-thing(poly, ...)`, `wooden-surface(path, ...)` — grained block, arbitrary polygon clipping, and grain clipped to an offset band; see [wood example](wood.typ) |
 | `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
 | `shadowsEnabled`, `shadowCut` | `shadow-planes:` with `sphere-shadow-plane(polygon, depth)` on sphere primitives — project a planar occluder along the light direction onto each visible sphere sample; arbitrary 3D occluder construction and exact path splitting remain open |
 | `refractionAngle`, `reflectionAngle`, `refractionPath` | `trace-refraction` / `refraction-path` — intersects a closed polygon, applies Snell's law, and reflects on total internal reflection |
@@ -91,6 +91,7 @@ Build the specimen document (5-page A4):
 typst compile main.typ main.pdf
 typst compile main.typ 'page-{p}.png' --ppi 140
 typst compile shadow.typ shadow.pdf
+typst compile wood.typ wood.pdf
 ```
 
 The optional `original/` directory contains local upstream MetaPost sources and

@@ -1419,6 +1419,40 @@
   else { place(top + left, curve(fill: none, stroke: stroke, ..segs)) }
 }
 
+/// Wood-grain contours clipped to an arbitrary simple polygon. `eyes` use
+/// coordinates local to the polygon's bounding box.
+#let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
+                  stroke: 0.45pt + black) = {
+  if poly.len() < 3 { return none }
+  let xs = poly.map(p => p.at(0))
+  let ys = poly.map(p => p.at(1))
+  let x0 = calc.min(..xs)
+  let y0 = calc.min(..ys)
+  let w = calc.max(..xs) - x0
+  let h = calc.max(..ys) - y0
+  if w <= 0 or h <= 0 { return none }
+  let local-poly = poly.map(p => _sub(p, (x0, y0)))
+  let nx = calc.max(8, int(calc.ceil(w / cell)))
+  let ny = calc.max(8, int(calc.ceil(h / cell)))
+  let field = _wood-field(angle, spacing, eyes)
+  let contours = marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny)
+  let segments = ()
+  for contour in contours {
+    let clipped = _clip-polyline(contour, (local-poly,))
+    segments += clipped.map(seg => (
+      _add(seg.at(0), (x0, y0)), _add(seg.at(1), (x0, y0)),
+    ))
+  }
+  let eye-loops = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly)).map(e =>
+    _ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
+                 center: _add((e.at(0), e.at(1)), (x0, y0)))
+  )
+  let els = (_stroke-segments(segments, stroke),
+             stroke-path(poly, stroke: stroke, closed: true, per: 0))
+  if eye-loops.len() > 0 { els.push(place(top + left, _fill(eye-loops, black))) }
+  _join(els)
+}
+
 /// A plank of wood: iso-lines of the year-ring field, clipped to the
 /// rectangle (x, y, w, h), with a dark eye at each knot.
 ///   * `angle` — grain direction in degrees (0 = horizontal)
