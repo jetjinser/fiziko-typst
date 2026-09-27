@@ -90,6 +90,7 @@ Build the specimen document (5-page A4):
 ```sh
 typst compile main.typ main.pdf
 typst compile main.typ 'page-{p}.png' --ppi 140
+typst compile brush.typ brush.pdf
 typst compile shadow.typ shadow.pdf
 typst compile wood.typ wood.pdf
 typst compile optics.typ optics.pdf
