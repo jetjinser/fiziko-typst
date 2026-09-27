@@ -1085,16 +1085,30 @@
   let lam = calc.max(0.0, (normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)) / (nn * ln))
   let shade = calc.pow(1 - lam, 1.0)
   let segs = _scanline-segments(poly, angle, spacing)
+  let along = (_cos(angle), _sin(angle))
+  let along-projections = poly.map(p => _dot(p, along))
+  let total-width = calc.max(..along-projections) - calc.min(..along-projections)
   let items = ()
   for s in segs {
-    let edge-fade = calc.sin(180deg * s.at(2) / calc.max(1, s.at(3)))
-    let density = shade * (0.15 + 0.85 * edge-fade)
+    let row-fraction = s.at(2) / calc.max(1, s.at(3))
+    let line-length = _dist(s.at(0), s.at(1))
+    let relative-width(t, end-fade) = {
+      let envelope = (
+        calc.sin(180deg * t)
+        * (line-length / calc.max(total-width, 0.000001))
+        * calc.sin(180deg * row-fraction)
+      )
+      let source-factor = (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
+      calc.clamp(source-factor / (16 / 15), 0.0, 1.0)
+    }
+    let pts = range(25).map(i => _add(s.at(0),
+      _mul(_sub(s.at(1), s.at(0)), i / 24)))
     if style == "stipples" {
-      items.push(stroke-stipple((s.at(0), s.at(1)), dot-size * density,
+      items.push(stroke-stipple(pts, t => dot-size * relative-width(t, 5 / 6),
         closed: false, per: 0, dot-size: dot-size, step: dot-step,
         seed: seed + s.at(2)))
     } else {
-      items.push(stroke-ink((s.at(0), s.at(1)), _source-max-shading * density,
+      items.push(stroke-ink(pts, t => _source-max-shading * relative-width(t, 6 / 7),
         closed: false, per: 0, seed: seed + s.at(2)))
     }
   }
@@ -1619,10 +1633,11 @@
 /// Lens outline through the three anchors per side (mm):
 /// tips at (∓rim, ±ap/2), centre at (∓sag, 0).
 /// rim < sag ⇒ convex, rim > sag ⇒ concave.
-#let _lens-outline(ap, sag, rim, per: 8) = {
+#let _lens-outline(ap, sag, rim, per: 8, right-sag: none) = {
   let h = ap / 2
+  let rsag = if right-sag == none { sag } else { right-sag }
   let left = resample(((-rim, h), (-sag, 0), (-rim, -h)), per: per, closed: false)
-  let right = resample(((rim, h), (sag, 0), (rim, -h)), per: per, closed: false)
+  let right = resample(((rim, h), (rsag, 0), (rim, -h)), per: per, closed: false)
   if rim > 0 {
     left + ((-rim, -h),) + right.rev() + ((rim, h),)
   } else {
@@ -1632,8 +1647,9 @@
 
 /// Lens at `at`: outline plus optional dashed optical axis (half-length
 /// `axis`).
-#let lens(ap, sag, rim: 0.0, axis: 0, at: (0, 0), stroke: 0.5pt + black, per: 8) = {
-  let out = _lens-outline(ap, sag, rim, per: per).map(p => _add(p, at))
+#let lens(ap, sag, rim: 0.0, right-sag: none, axis: 0, at: (0, 0),
+          stroke: 0.5pt + black, per: 8) = {
+  let out = _lens-outline(ap, sag, rim, per: per, right-sag: right-sag).map(p => _add(p, at))
   let els = (stroke-path(out, stroke: stroke, closed: true, per: 0),)
   if axis > 0 {
     els.push(stroke-path(((_add(at, (-axis, 0))), _add(at, (axis, 0))),

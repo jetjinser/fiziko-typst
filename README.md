@@ -46,7 +46,7 @@ publishing.
 | `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r`; source-scale hatch spacing by default, longitudinal line widths respond to the tube surface normal and light direction, and open ends are joined; transverse hatching uses an ink-budget approximation |
 | `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s")`, `sphere-stipple(d, ...)`, `stroke-stipple(pts, w, ...)` — deterministic arc-length strokes and a jittered 2D Lambert-shaded sphere field, with independent dot size and spacing controls; see [source comparison](original/stipple-reference.pdf) |
 | `solidSurface`, `solid`, `gradientShade` | `solid-surface(path, ...)`, `solid(poly, style: "opaque"/"glass")`, `gradient-shade(poly, ...)` — raised bands and reusable scanline clipping inside polygons |
-| `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples; see [surface comparison](original/surface-reference.pdf) |
+| `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples with a two-axis ink envelope; see [surface comparison](original/surface-reference.pdf) |
 | `woodBlock`, `woodenThing`, `woodenSurface` | `wood-block(...)`, `wooden-thing(poly, ...)`, `wooden-surface(path, ...)` — grained block, arbitrary polygon clipping, and grain clipped to an offset band; see [wood example](wood.typ) |
 | `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
 | `shadowsEnabled`, `shadowCut` | `shadow-planes:` with `sphere-shadow-plane(polygon, depth)` on sphere primitives — project a planar occluder along the light direction onto each visible sphere sample; arbitrary 3D occluder construction and exact path splitting remain open |
@@ -58,7 +58,7 @@ publishing.
 | `whatever` equations / `lHopitalPulley` | `solve.typ`: `solve-linear` (Gauss–Jordan with pivoting), `line-intersect`, plus MetaPost's `++`/`+-+` as `pyth-add`/`pyth-sub`; `l-hopital-pulley(AB, l, m, at: ..)` draws the whole figure |
 | `woodenThing(..)` / year rings | `wood(x, y, w, h, angle:, spacing:, eyes:)` — rings as level sets via `contour.typ` (marching squares + exact edge-ID chain stitching); each eye adds a log "twig function" so rings wrap the knot; arbitrary woodenThing masks remain unimplemented |
 | `drawmidarrow` / `markAngle` | `vector(a, b, w:, head:)` (shaft + filled triangle head) and `mark-angle(a, o, b, r:, ticks:)` (short-sweep arc + radial ticks) |
-| `spring` / `lens` / `weight` | `spring(a, b, coils:, rad:)` — sine projection of a helix; `lens(ap, sag, rim:, axis:, at:)` — one three-anchor formula covers convex (`rim=0`) and concave (`rim>sag`); `weight(h, r:, at:)` and `weight-standing(h, r:, at:)` — hanging and standing tapered tubes |
+| `spring` / `lens` / `weight` | `spring(a, b, coils:, rad:)` — sine projection of a helix; `lens(ap, sag, rim:, right-sag:, axis:, at:)` — one three-anchor formula supports symmetric or asymmetric convex, concave, and plano profiles; `weight(h, r:, at:)` and `weight-standing(h, r:, at:)` — hanging and standing tapered tubes |
 | MetaPost figures | `canvas(w, h, ..children)` — compose elements with `+` |
 
 Coordinates are plain millimetre floats (y down); the whole figure is a pure
@@ -92,6 +92,7 @@ typst compile main.typ main.pdf
 typst compile main.typ 'page-{p}.png' --ppi 140
 typst compile shadow.typ shadow.pdf
 typst compile wood.typ wood.pdf
+typst compile optics.typ optics.pdf
 ```
 
 The optional `original/` directory contains local upstream MetaPost sources and

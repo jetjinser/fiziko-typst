@@ -26,11 +26,11 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `tube.e` | S102 | `tube(hatch: none)` | Approximate: outline width and boundary interpolation differ; open ends are now joined. |
 | Sphere cast-shadow regions | S102 | `sphere` / `sphere-stipple` `shadow-regions:` and `shadow-planes:` | Approximate: local masks remain supported; planar occluders now project along the light direction onto visible sphere samples. Arbitrary 3D occluders and exact path splitting remain open. |
 | `solidSurface`, `solid`, `gradientShade` | S103 | `solid-surface`, `solid`, `gradient-shade` | Approximate: scanline clipping is polygon-native; glass gaps and gradient widths differ from source. |
-| `flatSurface.hatches`, `.stipples` | S104 | `flat-surface(style: "hatch"/"stipples")` | Approximate: Lambert shade and boundary fade control deterministic clipped strokes or stipples. |
+| `flatSurface.hatches`, `.stipples` | S104 | `flat-surface(style: "hatch"/"stipples")` | Approximate: Lambert shade and a two-axis line/edge ink envelope control deterministic clipped strokes or stipples. |
 | `woodBlock`, `woodenThing`, `woodenSurface` | M9, S105 | `wood-block`, `wooden-thing`, `wooden-surface`, `wood` | Approximate: the same contour field now clips exactly to arbitrary simple polygons; its field and knot shapes remain simpler than the source. |
 | `spring` | M10 | `spring` | Approximate: coil shape and end joins differ. |
 | `weight.h`, `weight.s` | M10, S106 | `weight`, `weight-standing` | Approximate: continuous smooth-shouldered tube profiles replace the source's shaped auricle and end details. |
-| `lens` profiles | M10, S108 | `lens` | Approximate: asymmetric, concave and infinite-radius cases differ. |
+| `lens` profiles | M10, S108 | `lens(right-sag:)` | Approximate: asymmetric, concave and plano profiles are supported; curved faces use sampled spline arcs rather than exact circles. |
 | `pulley`, `pulleyWheel`, `wheel` | M8, S107 | `pulley`, `pulley-wheel`, `wheel` | Approximate: native rim, groove and spoke construction replaces source shading and masks. |
 | `shapeCenterOfMass` | S107 | `polygon-centroid`, `centroid-marker` | Approximate: standard area centroid for simple polygon vertices. |
 | `drawmidarrow`, `markAngle` | S108 | `vector`, `mark-angle` | Approximate: arrow and label placement differ. |
