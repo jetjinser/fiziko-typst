@@ -49,14 +49,14 @@ publishing.
 | `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples with a two-axis ink envelope; see [surface comparison](original/surface-reference.pdf) |
 | `woodBlock`, `woodenThing`, `woodenSurface` | `wood-block(...)`, `wooden-thing(poly, ...)`, `wooden-surface(path, ...)` — grained block, arbitrary polygon clipping, and grain clipped to an offset band; see [wood example](wood.typ) |
 | `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
-| `shadowsEnabled`, `shadowCut` | `shadow-planes:` with `sphere-shadow-plane(polygon, depth)` on sphere primitives — project a planar occluder along the light direction onto each visible sphere sample; arbitrary 3D occluder construction and exact path splitting remain open |
+| `shadowsEnabled`, `shadowCut` | `shadow-planes:` / `shadow-polygons:` with `sphere-shadow-plane(polygon, depth)` or `sphere-shadow-polygon(vertices)` — project a depth plane or any simple planar 3D polygon along the light direction onto visible sphere samples; curved/non-planar occluders and exact path splitting are unsupported |
 | `refractionAngle`, `reflectionAngle`, `refractionPath` | `trace-refraction` / `refraction-path` — intersects a closed polygon, applies Snell's law, and reflects on total internal reflection |
-| `pointOnGlobe`, `globe`, `drawLandMass` | `globe-project` / `globe` — orthographic graticule and caller-provided coast polylines, clipped at the horizon |
+| `pointOnGlobe`, `globe`, `drawLandMass` | `globe-project` / `globe` — orthographic graticule and caller-provided coast polylines, linearly interpolated and subdivided to 5° before horizon clipping; see [globe edge cases](globe.typ) |
 | `isoLines`, `cLine` | Not implemented — general contour maps and contour-line rendering |
-| `eye`, `knotFromStrands`, `initKnot`, `addStrandToKnot` | `eye` / `strand-knot` — configurable stylized eye with seeded lashes; crossing-aware open or self-crossing polylines |
+| `eye`, `knotFromStrands`, `initKnot`, `addStrandToKnot` | `eye` / `strand-knot` — configurable stylized eye with seeded lashes; crossing-aware open or self-crossing polylines; see [eye](eye.typ) and [strand crossing cases](knot.typ) |
 | `label`/`btex` | `tag($..$, pos, anchor: ..)` — labels are ordinary Typst content (real math) |
 | `whatever` equations / `lHopitalPulley` | `solve.typ`: `solve-linear` (Gauss–Jordan with pivoting), `line-intersect`, plus MetaPost's `++`/`+-+` as `pyth-add`/`pyth-sub`; `l-hopital-pulley(AB, l, m, at: ..)` draws the whole figure |
-| `woodenThing(..)` / year rings | `wood(x, y, w, h, angle:, spacing:, eyes:)` — rings as level sets via `contour.typ` (marching squares + exact edge-ID chain stitching); each eye adds a log "twig function" so rings wrap the knot; arbitrary woodenThing masks remain unimplemented |
+| `woodenThing(..)` / year rings | `wood(x, y, w, h, angle:, spacing:, eyes:)` — rings as level sets via `contour.typ` (marching squares + exact edge-ID chain stitching); each eye adds a log "twig function" so rings wrap the knot; arbitrary simple masks use `wooden-thing(poly, ...)` |
 | `drawmidarrow` / `markAngle` | `vector(a, b, w:, head:)` (shaft + filled triangle head) and `mark-angle(a, o, b, r:, ticks:)` (short-sweep arc + radial ticks) |
 | `spring` / `lens` / `weight` | `spring(a, b, coils:, rad:)` — sine projection of a helix; `lens(ap, sag, rim:, right-sag:, axis:, at:)` — one three-anchor formula supports symmetric or asymmetric convex, concave, and plano profiles; `weight(h, r:, at:)` and `weight-standing(h, r:, at:)` — hanging and standing tapered tubes |
 | MetaPost figures | `canvas(w, h, ..children)` — compose elements with `+` |
@@ -94,6 +94,11 @@ typst compile brush.typ brush.pdf
 typst compile shadow.typ shadow.pdf
 typst compile wood.typ wood.pdf
 typst compile optics.typ optics.pdf
+typst compile globe.typ globe.pdf
+typst compile knot.typ knot.pdf
+typst compile mechanics.typ mechanics.pdf
+typst compile telescope.typ telescope.pdf
+typst compile eye.typ eye.pdf
 ```
 
 The optional `original/` directory contains local upstream MetaPost sources and
@@ -210,13 +215,13 @@ Last recorded during the 2026-09 baseline pass:
 
 ## Roadmap
 
-The [capability inventory](COVERAGE.md) is the current work list. The core
-strokes, sphere/tube shading, stipples, surface fills, polygon-clipped wood and
-main mechanical variants are implemented. Planar shadow projection now works
-on each sphere hatch style. Remaining work centers on arbitrary 3D occluders,
-source edge cases and richer composites. The seeded source galleries remain
-visual references; MetaPost recursion and dash-call counts are diagnostic data
-rather than completion gates.
+The [capability inventory](COVERAGE.md) tracks coverage and remaining visual
+work. The core strokes, sphere/tube shading, stipples, surface fills,
+polygon-clipped wood and main mechanical variants are implemented. Sphere
+shadows accept XY depth planes and arbitrary-orientation planar 3D polygons.
+The seeded source galleries remain visual references; MetaPost recursion and
+dash-call counts are diagnostic data rather than completion gates. A license
+and attribution decision is still needed before publication.
 
 At Typst 0.15.1 in the local environment, reducing the latitude sphere's
 default drawing resolution from 360 to 180 samples cut the two-sphere

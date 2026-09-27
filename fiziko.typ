@@ -476,8 +476,36 @@
   }
   inside
 }
+#let _shadowed-by-polygon(point, vertices, light) = {
+  if vertices.len() < 3 { return false }
+  let a = vertices.at(0)
+  let b = vertices.at(1)
+  let c = vertices.at(2)
+  let ab = (b.at(0) - a.at(0), b.at(1) - a.at(1), b.at(2) - a.at(2))
+  let ac = (c.at(0) - a.at(0), c.at(1) - a.at(1), c.at(2) - a.at(2))
+  let normal = (ab.at(1) * ac.at(2) - ab.at(2) * ac.at(1),
+                ab.at(2) * ac.at(0) - ab.at(0) * ac.at(2),
+                ab.at(0) * ac.at(1) - ab.at(1) * ac.at(0))
+  let denom = normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)
+  if calc.abs(denom) < 1e-9 { return false }
+  let delta = (a.at(0) - point.at(0), a.at(1) - point.at(1), a.at(2) - point.at(2))
+  let t = (normal.at(0) * delta.at(0) + normal.at(1) * delta.at(1) + normal.at(2) * delta.at(2)) / denom
+  if t <= 0 { return false }
+  let hit = (point.at(0) + t * light.at(0),
+             point.at(1) + t * light.at(1),
+             point.at(2) + t * light.at(2))
+  // Dropping the normal's largest component gives a stable 2D projection.
+  let ax = calc.abs(normal.at(0))
+  let ay = calc.abs(normal.at(1))
+  let az = calc.abs(normal.at(2))
+  let drop = if ax >= ay and ax >= az { 0 } else if ay >= az { 1 } else { 2 }
+  let project(p) = if drop == 0 { (p.at(1), p.at(2)) }
+                   else if drop == 1 { (p.at(0), p.at(2)) }
+                   else { (p.at(0), p.at(1)) }
+  _inside-poly(project(hit), vertices.map(project))
+}
 #let _shadowed(p, regions, center, depth: 0,
-               light: (-0.353553, 0.382683, 0.853553), shadow-planes: ()) = {
+               light: (-0.353553, 0.382683, 0.853553), shadow-planes: (), shadow-polygons: ()) = {
   let local = _sub(p, center)
   let explicit = regions.any(poly => _inside-poly(local, poly))
   let projected = shadow-planes.any(shadow => {
@@ -492,13 +520,18 @@
                     -local.at(1) + light.at(1) * t), shadow.polygon)
     }
   })
-  explicit or projected
+  let spatial = shadow-polygons.any(shadow =>
+    _shadowed-by-polygon((local.at(0), -local.at(1), depth), shadow.vertices, light))
+  explicit or projected or spatial
 }
 
 /// A planar occluder for automatic sphere-shadow projection. `polygon` uses
 /// sphere-local XY coordinates with y up; `depth` is positive toward the
 /// viewer. `light` uses the same x-right, y-up, z-toward-viewer axes.
 #let sphere-shadow-plane(polygon, depth) = (polygon: polygon, depth: depth)
+/// A planar 3D occluder. Vertices are (x, y, z) in sphere-local coordinates;
+/// the polygon must be simple and planar. Its plane may have any orientation.
+#let sphere-shadow-polygon(vertices) = (vertices: vertices)
 #let _stipple-loops(fr, ws, closed, step, dot-size, seed) = {
   let n = fr.len()
   if n < 2 or step <= 0 or dot-size <= 0 { return () }
@@ -597,7 +630,7 @@
 #let sphere(d, light: (-0.353553, 0.382683, 0.853553), rings: auto, samples: 300,
             max-w: _source-max-shading, gamma: 1.0,
             min-w: _source-min-stroke, period: _source-dash-length,
-            seed: 0, center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
+            seed: 0, center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   let R = d / 2
   // fiziko chooses a power-of-two ring count so the radial gap stays near its
   // shading density (3 × the maximum hatch width).
@@ -624,7 +657,7 @@
       let nz = z / R
       let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
       if _shadowed(p, shadow-regions, center, depth: z, light: L,
-                   shadow-planes: shadow-planes) { max-w }
+                   shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { max-w }
       else { max-w * calc.pow(1 - lam, gamma) }
     })
     loops += _ink-loops(fr, ws, true, min-w, period, seed: seed)
@@ -637,7 +670,7 @@
 #let sphere-stipple(d, light: (-0.353553, 0.382683, 0.853553),
                     dot-step: 0.18, dot-size: 0.4 * pt,
                     gamma: 1.0, seed: 0,
-                    center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
+                    center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   let R = d / 2
   let limit = calc.max(0.0, R - dot-size / 2)
   let row-step = dot-step * calc.sqrt(3) / 2
@@ -664,7 +697,7 @@
       let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
       let depth = R * nz
       let dark = if _shadowed(p, shadow-regions, center, depth: depth, light: L,
-                              shadow-planes: shadow-planes) { 1.0 }
+                              shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { 1.0 }
                  else { calc.pow(1 - lam, gamma) }
       if _rng(seed, key * key + 1, 3) < dark { loops.push(_dot-loop(p, dot-size)) }
     }
@@ -681,7 +714,7 @@
                      max-w: _source-max-shading, spacing: _source-spacing, samples: 180,
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
                      seed: 1, rng-offset: 0, with-rng: false, with-trace: false,
-                     center: (0, 0), shadow-regions: (), shadow-planes: (), fill: black) = {
+                     center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   let R = d / 2
   let n = calc.max(2, calc.ceil(calc.pi * R / spacing))
   let slat = _sin(latitude)
@@ -743,7 +776,7 @@
       let radial = _len(local)
       _shadowed(_add(center, local), shadow-regions, center,
         depth: calc.sqrt(calc.max(0.0, R * R - radial * radial)),
-        light: L, shadow-planes: shadow-planes)
+        light: L, shadow-planes: shadow-planes, shadow-polygons: shadow-polygons)
     }
     // offsetPathSubdivide cuts every original cubic into four. For partial
     // arcs, the first and last pieces are fractional cubic segments too.
@@ -836,7 +869,8 @@
       let density = calc.sqrt(calc.max(0.0, 1 - calc.pow(yn, 2) - calc.pow(xfade, 2)))
       let depth = calc.sqrt(calc.max(0.0, R * R - radius * radius))
       let cast-shadow = _shadowed(_add(center, (local-x, local-y)),
-        shadow-regions, center, depth: depth, light: L, shadow-planes: shadow-planes)
+        shadow-regions, center, depth: depth, light: L, shadow-planes: shadow-planes,
+        shadow-polygons: shadow-polygons)
       let lightness = if cast-shadow { 1.0 } else { calc.pow(1 - lam, gamma) }
       max-w * _lat-density(density, k) * lightness
     })
@@ -1874,6 +1908,24 @@
    a.at(1) + (b.at(1) - a.at(1)) * t)
 }
 
+#let _globe-densify(coords, max-step: 5) = {
+  if coords.len() < 2 { return coords }
+  let dense = (coords.at(0),)
+  for i in range(1, coords.len()) {
+    let a = coords.at(i - 1)
+    let b = coords.at(i)
+    let steps = calc.max(1, int(calc.ceil(calc.max(
+      calc.abs(b.at(0) - a.at(0)), calc.abs(b.at(1) - a.at(1)),
+    ) / max-step)))
+    for j in range(1, steps + 1) {
+      let t = j / steps
+      dense.push((a.at(0) + (b.at(0) - a.at(0)) * t,
+                  a.at(1) + (b.at(1) - a.at(1)) * t))
+    }
+  }
+  dense
+}
+
 #let _globe-visible-paths(coords, rotation, radius, center) = {
   let paths = ()
   let run = ()
@@ -1908,7 +1960,8 @@
 
 /// Orthographic globe with visible latitude/longitude graticules and optional
 /// coast polylines. `lands` is a tuple of polylines, each containing (lon,lat)
-/// vertices; hidden portions are clipped at the horizon.
+/// vertices; segments are linearly interpolated and subdivided to at most 5°
+/// before hidden portions are clipped at the horizon.
 #let globe(d, rotation: (0, 0), lands: (), parallels: 30, meridians: 30,
           center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
   let radius = d / 2
@@ -1928,7 +1981,7 @@
     }
   }
   for land in lands {
-    lines += _globe-visible-paths(land, rotation, radius, center)
+    lines += _globe-visible-paths(_globe-densify(land), rotation, radius, center)
   }
   let elements = lines.map(path => stroke-path(path, stroke: stroke, per: 0))
   elements.push(stroke-path(circle-pts(radius, 180, center: center),
@@ -2080,8 +2133,10 @@
       let a = strands.at(i)
       let b = strands.at(j)
       for ai in range(a.len() - 1) {
+        if _dist(a.at(ai), a.at(ai + 1)) < 1e-9 { continue }
         let da = _sub(a.at(ai + 1), a.at(ai))
         for bi in range(b.len() - 1) {
+          if _dist(b.at(bi), b.at(bi + 1)) < 1e-9 { continue }
           let db = _sub(b.at(bi + 1), b.at(bi))
           let p = line-intersect(a.at(ai), da, b.at(bi), db)
           if p != none {
@@ -2118,8 +2173,10 @@
       let pair-count = 0
       let closed = path.at(0) == path.at(path.len() - 1)
       for ai in range(path.len() - 1) {
+        if _dist(path.at(ai), path.at(ai + 1)) < 1e-9 { continue }
         let da = _sub(path.at(ai + 1), path.at(ai))
         for bi in range(ai + 2, path.len() - 1) {
+          if _dist(path.at(bi), path.at(bi + 1)) < 1e-9 { continue }
           let adjacent-seam = closed and ai == 0 and bi == path.len() - 2
           let db = _sub(path.at(bi + 1), path.at(bi))
           let p = if adjacent-seam { none }

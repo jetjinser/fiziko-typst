@@ -20,3 +20,15 @@ outline segment. Concave polygons work as well as rectangles and raised bands.
   ),
   caption: [Concave wooden outline with one knot],
 )
+
+#figure(
+  canvas(54, 38,
+    wooden-thing(
+      ((5, 5), (49, 9), (38, 34), (12, 31)),
+      angle: 18,
+      spacing: 2.8,
+      cell: 0.7,
+    ),
+  ),
+  caption: [Convex wooden outline with rotated grain],
+)

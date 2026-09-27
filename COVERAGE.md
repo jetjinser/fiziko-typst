@@ -24,7 +24,7 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `tube.t` | M7 | `tube(hatch: "t")` | Approximate: stroke spacing and taper rules differ. |
 | `tube.s` | S101 | `tube(hatch: "s")` | Approximate: dotted longitudinal placement and surface density differ; open end caps are now joined. |
 | `tube.e` | S102 | `tube(hatch: none)` | Approximate: outline width and boundary interpolation differ; open ends are now joined. |
-| Sphere cast-shadow regions | S102 | `sphere`, `sphere-stipple`, `sphere-latitude` `shadow-regions:` and `shadow-planes:` | Approximate: local masks remain supported; planar occluders now project along the light direction onto visible sphere samples. Arbitrary 3D occluders and exact path splitting remain open. |
+| Sphere cast-shadow regions | S102 | `sphere`, `sphere-stipple`, `sphere-latitude` `shadow-regions:`, `shadow-planes:`, `shadow-polygons:` | Approximate: local masks, depth planes, and arbitrary-orientation simple planar 3D polygons project onto visible sphere samples. Curved or non-planar occluders and exact path splitting remain unsupported. |
 | `solidSurface`, `solid`, `gradientShade` | S103 | `solid-surface`, `solid`, `gradient-shade` | Approximate: scanline clipping is polygon-native; glass gaps and gradient widths differ from source. |
 | `flatSurface.hatches`, `.stipples` | S104 | `flat-surface(style: "hatch"/"stipples")` | Approximate: Lambert shade and a two-axis line/edge ink envelope control deterministic clipped strokes or stipples. |
 | `woodBlock`, `woodenThing`, `woodenSurface` | M9, S105 | `wood-block`, `wooden-thing`, `wooden-surface`, `wood` | Approximate: the same contour field now clips exactly to arbitrary simple polygons; its field and knot shapes remain simpler than the source. |
@@ -35,9 +35,9 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `shapeCenterOfMass` | S107 | `polygon-centroid`, `centroid-marker` | Approximate: standard area centroid for simple polygon vertices. |
 | `drawmidarrow`, `markAngle` | S108 | `vector`, `mark-angle` | Approximate: arrow and label placement differ. |
 | `refractionPath`, reflection | M11 | `refraction-path` | Approximate: sampled polygon boundaries. |
-| `globe`, landmass projection | M11 | `globe` | Partial: built-in coasts, source shading and horizon behavior missing. |
-| `eye` | M11 | `eye` | Approximate: anatomy, lashes and randomness differ. |
-| `knotFromStrands`, styles and layers | M11 | `strand-knot` | Partial: tube styles, crossing layers and shadows differ. |
+| `globe`, landmass projection | M11 | `globe` | Approximate: caller-supplied coasts are linearly densified to 5° and clipped at the horizon; built-in coast data and source shading remain out of scope. |
+| `eye` | M11 | `eye` | Approximate: configurable anatomy and deterministic lashes; shapes differ from the source. Aspect, gaze and rotation edge cases are shown in `eye.typ`. |
+| `knotFromStrands`, styles and layers | M11 | `strand-knot` | Approximate: open and self-crossing polylines support alternating crossings or explicit global layers, including paths with duplicate vertices; tube styles and shadows differ. |
 
 This accounts for the source's public graphical families. Internal helpers
 (`offsetPathTemplate`, `tubeGenerate`, `isoLines`, `cLine`, horizon search,
@@ -49,13 +49,27 @@ Those need separate reference plates after their component families work;
 they are not claimed complete by this inventory. M8, M5 and M10 already
 cover smaller pulley and physics compositions.
 
-## Next order
+## Progress on roadmap items 2–5
 
-1. Refine brush, sphere and tube details where visual differences matter; keep
-   the Typst-native algorithms when they perform better.
-2. Extend sphere shadows to arbitrary 3D occluders and improve tube, wood and
-   mechanical details where examples expose visible gaps.
-3. Match globe, eye, knots and optics, then add the manual's composites.
+2. **Shadows and wood:** `shadow.typ` compares manual masks, depth planes, and
+   tilted 3D polygons; the 3D polygon works on concentric, latitudinal, and
+   stippled spheres. `wood.typ` exercises convex and concave masks. Curved or
+   non-planar shadow casters remain unsupported by design.
+3. **Globe, eye, knots, and optics:** `globe.typ`, `eye.typ`, `knot.typ`, and
+   `optics.typ` cover horizon crossings, gaze and aspect extremes, duplicate
+   strand vertices and self-crossings, refraction, and total internal
+   reflection.
+4. **Mechanical details:** `mechanics.typ` shows spring, both weight forms,
+   asymmetric and concave lenses, pulley, and wheel in one focused plate.
+5. **Composite and project audit:** `telescope.typ` combines existing drawing
+   primitives into a telescope. Documentation and generated-file ignores are
+   updated; the optional upstream `original/` directory remains untracked.
+   A project license is still undeclared, so the repository is not yet ready
+   to publish until its maintainer chooses the license and attribution text.
 
 After each drawing-code change, compile the focused specimen and `main.typ`.
 Keep the pinned, seeded source plates fixed as a common comparison target.
+
+The remaining visual work is the source-plate comparison pass for brush,
+sphere, and tube details (roadmap item 1); matching MetaPost's internal
+recursion and call counts is still not a completion requirement.
