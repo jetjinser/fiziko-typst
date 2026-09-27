@@ -1617,29 +1617,28 @@
    ( (0.0, h - body-h), (0.0, h), r ))
 }
 
-/// A hanging weight at `at`: hatched neck tube over hatched body tube.
+/// A hanging weight at `at`: one smooth hatched body with a narrower neck.
 #let weight(h, r: 3, neck: 0.45, spacing: 1.4, w: 0.45 * pt,
             at: (0, 0), seed: 0) = {
-  let parts = _weight-parts(h, r, neck: neck)
-  _join(parts.map(seg => tube(
-    (_add(seg.at(0), at), _add(seg.at(1), at)),
-    seg.at(2), spacing: spacing, w: w, per: 6, seed: seed,
-  )))
+  let shoulder = 0.3
+  let radius(t) = if t < shoulder {
+    let u = calc.clamp(t / shoulder, 0.0, 1.0)
+    r * (neck + (1 - neck) * u * u * (3 - 2 * u))
+  } else { r }
+  tube((_add(at, (0, 0)), _add(at, (0, h))), radius,
+    spacing: spacing, w: w, per: 12, seed: seed)
 }
 
 /// A standing weight: broad body above a tapered lower neck, centred at `at`.
 #let weight-standing(h, r: 3, taper: 0.55, body-fraction: 0.68,
                      spacing: 1.4, w: 0.45 * pt,
                      at: (0, 0), seed: 0) = {
-  let radius(t) = if t <= body-fraction { r } else {
-    r * (1 - (1 - taper) * (t - body-fraction) / (1 - body-fraction))
+  let radius(t) = {
+    let u = calc.clamp((t - body-fraction) / (1 - body-fraction), 0.0, 1.0)
+    r * (1 - (1 - taper) * u * u * (3 - 2 * u))
   }
   let axis = (_add(at, (0, 0)), _add(at, (0, h)))
-  _join((
-    tube(axis, radius, hatch: "l", spacing: spacing, w: w, per: 8, seed: seed),
-    stroke-path((_add(at, (-r, 0)), _add(at, (r, 0))), per: 0),
-    stroke-path((_add(at, (-r * taper, h)), _add(at, (r * taper, h))), per: 0),
-  ))
+  tube(axis, radius, hatch: "l", spacing: spacing, w: w, per: 12, seed: seed)
 }
 
 // ---------------------------------------------------------------------------
