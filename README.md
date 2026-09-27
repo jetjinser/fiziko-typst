@@ -210,11 +210,12 @@ Last recorded during the 2026-09 baseline pass:
 ## Roadmap
 
 The [capability inventory](COVERAGE.md) is the current work list. The core
-strokes, sphere/tube shading, stipples, surface fills, wood surfaces and main
-mechanical variants are implemented. Remaining work centers on automatic
-shadow projection, exact source edge cases, and richer composites. The seeded
-source galleries remain visual references; MetaPost recursion and dash-call
-counts are diagnostic data rather than completion gates.
+strokes, sphere/tube shading, stipples, surface fills, polygon-clipped wood and
+main mechanical variants are implemented. Planar shadow projection now works
+on each sphere hatch style. Remaining work centers on arbitrary 3D occluders,
+source edge cases and richer composites. The seeded source galleries remain
+visual references; MetaPost recursion and dash-call counts are diagnostic data
+rather than completion gates.
 
 At Typst 0.15.1 in the local environment, reducing the latitude sphere's
 default drawing resolution from 360 to 180 samples cut the two-sphere
