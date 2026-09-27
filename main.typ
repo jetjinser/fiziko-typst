@@ -73,7 +73,7 @@
 #figure(
   canvas(
     110, 56,
-    tube(arc-pts(42, 205, 335, n: 60, center: (55, 68)), 6, spacing: 1.8, per: 0),
+    tube(arc-pts(42, 205, 335, n: 60, center: (55, 68)), 6, per: 0),
   ),
   caption: [
     A tube: two offset outlines plus longitudinal lines whose number follows the
@@ -89,7 +89,7 @@
       ((20 + 6.5 * i, 6), (16.5 + 6.5 * i, 1.5)),
       stroke: 0.4pt + black, per: 4,
     )))
-    + tube(((35, 6), (59.4, 51.9)), 1.0, spacing: 1.8, per: 8)
+    + tube(((35, 6), (59.4, 51.9)), 1.0, per: 8)
     + mark-angle((35, 20), (35, 6), (59.4, 51.9), r: 7.5)
     + sphere(26, light: (-0.45, 0.5, 0.75), center: (59.4, 51.9))
     + vector((59.4, 66.5), (59.4, 78), w: 0.5, head: 2.8)
@@ -112,8 +112,8 @@
     110, 62,
     tube(circle-pts(24, 96, center: (32, 31)),
          t => 3.5 + 1.8 * calc.sin(360 * 5 * t * 1deg),
-         closed: true, per: 2, spacing: 1.8)
-    + tube(((85, 10), (85, 52)), t => (1 - t) * 9, spacing: 1.8, per: 8),
+         closed: true, per: 2)
+    + tube(((85, 10), (85, 52)), t => (1 - t) * 9, per: 8),
   ),
   caption: [
     Tubes of varying radius: a closed ring whose radius oscillates (MetaPost
@@ -127,7 +127,7 @@
   canvas(
     110, 42,
     tube(((6, 32), (40, 14), (74, 32), (104, 16)), 5,
-         hatch: "t", spacing: 2.2, per: 24),
+         hatch: "t", per: 24),
   ),
   caption: [
     Transverse hatching (MetaPost fig. 9): spacing and thickness are coupled so

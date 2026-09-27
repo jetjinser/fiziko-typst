@@ -898,9 +898,18 @@
     let nz = calc.sqrt(calc.max(0.0, 1 - u * u))
     calc.pow(calc.clamp(1 - u * nv.at(0) * L.at(0) - u * nv.at(1) * L.at(1) - nz * L.at(2), 0.0, 1.0), gamma)
   }
-  let cov = if coverage == auto { if hatch == "t" or hatch == "s" { 0.4 } else { 0.15 } } else { coverage }
+  let cov = if coverage == auto {
+    if hatch == "t" { 0.2 } else if hatch == "s" { 0.4 } else { 0.6 }
+  } else { coverage }
 
-  let inner-n = calc.max(0, int(calc.round(2 * rmax / spacing)) - 1)
+  // The source doubles the line count until the interval falls below its
+  // shading density. A power-of-two division count gives similar balanced
+  // lanes while keeping one stable layout for a varying-radius tube.
+  let inner-n = if rmax > 0 and spacing > 0 {
+    let divisions = calc.max(1, int(calc.pow(2,
+      calc.ceil(calc.log(2 * rmax / spacing, base: 2)))))
+    divisions - 1
+  } else { 0 }
   let inner = range(1, inner-n + 1).map(k => {
     let u = -1.0 + 2.0 * k / (inner-n + 1)
     (
@@ -1668,7 +1677,7 @@
 }
 
 /// A hanging weight at `at`: one smooth hatched body with a narrower neck.
-#let weight(h, r: 3, neck: 0.45, spacing: 1.4, w: 0.45 * pt,
+#let weight(h, r: 3, neck: 0.45, spacing: _source-spacing, w: 0.45 * pt,
             at: (0, 0), seed: 0) = {
   let shoulder = 0.3
   let radius(t) = if t < shoulder {
@@ -1681,7 +1690,7 @@
 
 /// A standing weight: broad body above a tapered lower neck, centred at `at`.
 #let weight-standing(h, r: 3, taper: 0.55, body-fraction: 0.68,
-                     spacing: 1.4, w: 0.45 * pt,
+                     spacing: _source-spacing, w: 0.45 * pt,
                      at: (0, 0), seed: 0) = {
   let radius(t) = {
     let u = calc.clamp((t - body-fraction) / (1 - body-fraction), 0.0, 1.0)
