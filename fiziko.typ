@@ -1364,16 +1364,46 @@
   }
 }
 
-#let _clip-sampled-path(path, regions, cell) = {
+#let _clip-polyline(path, regions) = {
   let out = ()
+  let cross(a, b) = a.at(0) * b.at(1) - a.at(1) * b.at(0)
   for i in range(path.len() - 1) {
     let a = path.at(i)
     let b = path.at(i + 1)
-    let count = calc.max(1, int(calc.ceil(_dist(a, b) / cell)))
-    for j in range(count) {
-      let p = _add(a, _mul(_sub(b, a), j / count))
-      let q = _add(a, _mul(_sub(b, a), (j + 1) / count))
-      if regions.any(poly => _inside-poly(_mul(_add(p, q), 0.5), poly)) { out.push((p, q)) }
+    let direction = _sub(b, a)
+    let cuts = (0.0, 1.0)
+    for poly in regions {
+      for j in range(poly.len()) {
+        let c = poly.at(j)
+        let edge = _sub(poly.at(_mod(j + 1, poly.len())), c)
+        let denom = cross(direction, edge)
+        if calc.abs(denom) > 0.000000001 {
+          let delta = _sub(c, a)
+          let t = cross(delta, edge) / denom
+          let u = cross(delta, direction) / denom
+          if t > 0.000000001 and t < 0.999999999 and u >= -0.000000001 and u <= 1.000000001 {
+            cuts.push(t)
+          }
+        }
+      }
+    }
+    let sorted = cuts.sorted()
+    let unique = ()
+    for t in sorted {
+      if unique.len() == 0 or calc.abs(t - unique.last()) > 0.000000001 {
+        unique.push(t)
+      }
+    }
+    for j in range(unique.len() - 1) {
+      let t0 = unique.at(j)
+      let t1 = unique.at(j + 1)
+      if t1 - t0 > 0.000000001 {
+        let p = _add(a, _mul(direction, t0))
+        let q = _add(a, _mul(direction, t1))
+        if regions.any(poly => _inside-poly(_mul(_add(p, q), 0.5), poly)) {
+          out.push((p, q))
+        }
+      }
     }
   }
   out
@@ -1401,7 +1431,7 @@
   let f = _wood-field(angle, spacing, eyes)
   let loops = marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
-  let segments = loops.fold((), (acc, pl) => acc + _clip-sampled-path(pl, (rect,), cell))
+  let segments = loops.fold((), (acc, pl) => acc + _clip-polyline(pl, (rect,)))
   let els = (_stroke-segments(segments, stroke),)
   els += eyes.map(e => place(top + left, _fill(
     (_ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
@@ -1433,7 +1463,7 @@
   let contours = marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny)
   let segments = ()
   for contour in contours {
-    let clipped = _clip-sampled-path(contour, regions, cell)
+    let clipped = _clip-polyline(contour, regions)
     segments += clipped.map(seg => (_add(seg.at(0), (x0, y0)), _add(seg.at(1), (x0, y0))))
   }
   let outline = outer + inset.rev()
