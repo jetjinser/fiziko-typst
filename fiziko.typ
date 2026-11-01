@@ -2821,12 +2821,15 @@
   // also swaps wide, landscape blocks internally before drawing their field.
   let swapped = source-field and (
     calc.rem(calc.abs(angle), 180) == 90 or w > h)
+  // MetaPost rounds its woodBlock dimensions to woodBlockRes before it
+  // samples knots and the field; source fixtures use a 1 mm resolution.
+  let model-w = calc.round(if swapped { h } else { w })
+  let model-h = calc.round(if swapped { w } else { h })
   let wood-model = if source-field {
-    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h },
-      seed, rng-offset: rng-offset)
+    _woodblock-field(model-w, model-h, seed, rng-offset: rng-offset)
   } else { none }
   let field = if source-field {
-    if swapped { (x, y) => (wood-model.field)(h - y, x) } else { wood-model.field }
+    if swapped { (x, y) => (wood-model.field)(model-h - y, x) } else { wood-model.field }
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
   let contour-stream = if source-field {
@@ -2849,7 +2852,7 @@
   }
   let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
   let source-knots = if source-field {
-    if swapped { wood-model.knots.map(k => (k.at(1), h - k.at(0))) }
+    if swapped { wood-model.knots.map(k => (k.at(1), model-h - k.at(0))) }
     else { wood-model.knots }
   } else { () }
   let texture-stroke = if source-field {
@@ -2885,16 +2888,20 @@
 ///   * `angle` — grain direction in degrees (0 = horizontal)
 ///   * `spacing` — distance between rings (mm)
 ///   * `eyes` — ((x, y, size, amp), ...) in rectangle-local coordinates
+/// In `source-field` mode, `rng-offset` on `wooden-thing` or
+/// `wooden-surface` resumes the seeded MetaPost stream after earlier objects.
 #let wood(x, y, w, h, angle: 0, spacing: 2.6, eyes: (),
           stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1) = {
   let nx = calc.max(8, int(calc.round(w / cell)))
   let ny = calc.max(8, int(calc.round(h / cell)))
   let swapped = source-field and w > h
+  let model-w = calc.round(if swapped { h } else { w })
+  let model-h = calc.round(if swapped { w } else { h })
   let model = if source-field {
-    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h }, seed)
+    _woodblock-field(model-w, model-h, seed)
   } else { none }
   let f = if source-field {
-    if swapped { (x, y) => (model.field)(h - y, x) } else { model.field }
+    if swapped { (x, y) => (model.field)(model-h - y, x) } else { model.field }
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { model.rng-count } else { 0 }
   let contour-stream = if source-field {
@@ -2913,7 +2920,7 @@
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }
   let knot-segments = ()
   if source-field {
-    for knot in model.knots.map(k => if swapped { (k.at(1), h - k.at(0)) } else { k }) {
+    for knot in model.knots.map(k => if swapped { (k.at(1), model-h - k.at(0)) } else { k }) {
       let ring = _ellipse-pts(1.25, 1.25 / _sin(60), center: knot, n: 72)
       for i in range(ring.len()) {
         knot-segments.push((ring.at(i), ring.at(_mod(i + 1, ring.len()))))
@@ -2933,16 +2940,17 @@
 
 /// Wood-grain contours clipped to an offset band along an open path. `eyes`
 /// use coordinates local to the band's bounding box, as they do in `wood`.
+/// In `source-field` mode, `rng-offset` resumes an earlier seeded draw stream.
 #let wooden-surface(path, thickness: 2.5, angle: 0, spacing: 0.7,
                     eyes: (), cell: 1.0, stroke: 0.45pt + black,
-                    source-field: true, seed: 1) = {
+                    source-field: true, seed: 1, rng-offset: 0) = {
   let outer = resample(path, per: 12, closed: false)
   let inset = offset-path(path, thickness, closed: false)
   let outline = outer + inset.rev()
   if source-field {
     return wooden-thing(outline, angle: angle, spacing: spacing, eyes: eyes,
       cell: cell, stroke: stroke, source-field: true, seed: seed,
-      grain-stroke: 0.1pt)
+      grain-stroke: 0.1pt, rng-offset: rng-offset)
   }
   let quads = _band-quads(outer, inset, closed: false)
   let boundary = outer + inset

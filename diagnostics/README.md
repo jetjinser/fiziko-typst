@@ -47,11 +47,14 @@ The current 600 ppi M9 whole-plate RMSE is 0.22456 with 4.272% ink coverage
 surface RMSE 0.07996 (ink 0.623% vs 0.489%). The landscape transform follows
 the source's `woodBlock` construction, while the remaining source contour
 brushes and RNG continuity between the S105 plank and surface still differ.
-An instrumented S105 source run counted 536 global random calls before
-`woodenSurface` starts. Applying that count as a Typst surface-stream offset
-slightly worsened the 600 ppi full and surface RMSE, so the offset is not used;
-the count alone does not account for the differing calls made inside the
-source contour brushes.
+The instrumented S105 source reports a 52 × 8 mm rounded `woodBlock` extent
+and 536 global random calls before its first surface knot. The source's first
+internal candidate is (8.2726, 46.3121) mm; the Typst stream at offset 536
+produces (8.27285, 46.31245) mm. Rounding source-field extents to the source's
+1 mm grid and threading that offset lowers S105 600 ppi whole RMSE from
+0.10635 to 0.10553; block RMSE is 0.13244 and surface RMSE is 0.07909 (surface
+ink 0.599% vs 0.489% in the source). Source contour-brush rendering and its
+random call count still differ.
 
 `wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
 coordinates. To record candidate positions and per-knot random-call counts

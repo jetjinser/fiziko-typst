@@ -36,7 +36,9 @@ def main() -> None:
         raise ValueError(f"expected one wooden-surface angle hook, found {source.count(angle_anchor)}")
     angle_hook = angle_anchor + (
         '\n        message "WOODANGLE " & decimal(surfaceAngle) & " "'
-        ' & decimal(traceRngTotal);'
+        ' & decimal(traceRngTotal) & " "'
+        ' & decimal(xpart(urcorner(surfaceOutline))-xpart(llcorner(surfaceOutline))) & " "'
+        ' & decimal(ypart(urcorner(surfaceOutline))-ypart(llcorner(surfaceOutline)));'
     )
     source = source.replace(angle_anchor, angle_hook)
     source = source.replace("uniformdeviate(", "traceUniformdeviate(")
