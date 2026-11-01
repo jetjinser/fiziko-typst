@@ -33,13 +33,13 @@ included where a plate contains distinct drawing families.
 | Plate | RMSE | Dark coverage | Component findings |
 | --- | ---: | ---: | --- |
 | M8 pulley composites | 0.12971 | 1.734% → 2.333% | The pulley now has the partial rim/support silhouette and a white mask that hides the rope kink. Whole-plate RMSE improved slightly; left/right crop RMSE is 0.14281/0.11688 and both remain over-inked. Wheel/support clipping and label placement still differ. |
-| M9 wood panels | 0.22848 | 4.203% → 4.638% | At 600 ppi, reducing source-field contour width to 0.05 pt lowered all four crop RMSEs to 0.223–0.234; coverage is now close to source. |
+| M9 wood panels | 0.22800 | 4.203% → 4.550% | A continuous MetaPost stream now advances across panels; the field uses one source-sized random vertical offset per 1 mm column. Panel seeds no longer reset independently. Variable knot rejection and contour-level random draws remain approximate. |
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.13136 | 4.917% → 5.036% | Latest 600 ppi candidate: globe RMSE 0.18935, ink coverage 25.940% → 27.538%; knot RMSE 0.17419, 2.606% → 1.669%. Per-crossing source layer sequences are now explicit; curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.32813 | 10.630% → 9.727% | At 600 ppi stipple coverage matches (7.079% → 7.121%, RMSE 0.28549). Hatch now replays the MetaPost dash RNG stream, but remains under-dense (14.066% → 12.247%, RMSE 0.36467); overall RMSE remains above the earlier 0.29890 candidate. |
-| S105 wood block and surface | 0.10509 | 0.741% → 0.846% | Latest 600 ppi candidate: wooden-surface RMSE 0.07958, ink coverage 0.489% → 0.611% (previously 0.13138 and 0.489% → 1.754%). Block remains at RMSE 0.13129 and near-source coverage (1.077% → 1.166%). |
+| S105 wood block and surface | 0.10449 | 0.741% → 0.828% | Latest 600 ppi candidate: wooden-surface RMSE 0.07922, ink coverage 0.489% → 0.604% (previously 0.13138 and 0.489% → 1.754%). Block is at RMSE 0.13048 and near-source coverage (1.077% → 1.135%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |

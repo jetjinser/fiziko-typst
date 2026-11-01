@@ -95,7 +95,7 @@
       "title": "Wood-grain panels", "frame_mm": [110,66], "driver": "main.mp", "figure": 9,
       "shared": {"four_panels_mm": [[0,0,55,33,0],[55,0,55,33,90],[0,33,55,33,90],[55,33,55,33,0]], "source_grid_mm": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same four panel bounds and grain angles; nominal mode uses the source knot-warped field on a 1 mm grid and 0.05 pt contour strokes. At 600 ppi whole-plate RMSE is 0.22848 with 4.64% ink coverage vs 4.20% source; per-panel seeds still approximate the shared upstream random stream.",
+      "notes": "Same four panel bounds and grain angles; nominal mode uses the source knot-warped field on a 1 mm grid and 0.05 pt contour strokes. Panels now continue one MetaPost RNG stream and use one 1 mm column offset with source-sized amplitude. At 600 ppi whole-plate RMSE is 0.22800 with 4.55% ink coverage vs 4.20% source; variable knot rejection and contour-level random draws remain approximate.",
       "regions_mm": {"top_left": [0,0,55,33], "top_right": [55,0,55,33], "bottom_left": [0,33,55,33], "bottom_right": [55,33,55,33]}
     },
     "M10": {
@@ -137,7 +137,7 @@
       "title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105,
       "shared": {"wood_block_mm": [39,12], "source_grid_mm": 1, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "The plank and wooden surface now use the source knot-warped field at a 1 mm grid. At 600 ppi, surface RMSE is 0.07958 (prior 0.13138), with ink coverage 0.611% vs source 0.489%. Knot placement and contour widths remain approximate.",
+      "notes": "The plank and wooden surface use the source knot-warped field at a 1 mm grid. At 600 ppi, whole-plate RMSE is 0.10449; block RMSE is 0.13048 and surface RMSE is 0.07922 (prior 0.13138), with surface ink coverage 0.604% vs source 0.489%. Knot placement and contour widths remain approximate.",
       "regions_mm": {"block": [0,0,53,44], "surface": [55,0,65,44]}
     },
     "S106": {

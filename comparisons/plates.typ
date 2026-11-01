@@ -64,14 +64,15 @@
     (l-hopital-pulley(6, 2, 5.5, at: (8,6), seed: seed)
     + l-hopital-pulley(3, 2.5, 3, at: (58,6), seed: seed))
   } else if case == "M9" {
-    (wooden-thing(((0,0),(55,0),(55,33),(0,33)), angle: 0, cell: 1,
-      source-field: true, seed: seed)
-    + wooden-thing(((55,0),(110,0),(110,33),(55,33)), angle: 90, cell: 1,
-      source-field: true, seed: seed + 1)
-    + wooden-thing(((0,33),(55,33),(55,66),(0,66)), angle: 90, cell: 1,
-      source-field: true, seed: seed + 2)
-    + wooden-thing(((55,33),(110,33),(110,66),(55,66)), angle: 0, cell: 1,
-      source-field: true, seed: seed + 3))
+    let p1 = wooden-thing(((0,0),(55,0),(55,33),(0,33)), angle: 0,
+      cell: 1, source-field: true, seed: seed, rng-offset: 0, with-rng: true)
+    let p2 = wooden-thing(((55,0),(110,0),(110,33),(55,33)), angle: 90,
+      cell: 1, source-field: true, seed: seed, rng-offset: p1.at(1), with-rng: true)
+    let p3 = wooden-thing(((0,33),(55,33),(55,66),(0,66)), angle: 90,
+      cell: 1, source-field: true, seed: seed, rng-offset: p2.at(1), with-rng: true)
+    let p4 = wooden-thing(((55,33),(110,33),(110,66),(55,66)), angle: 0,
+      cell: 1, source-field: true, seed: seed, rng-offset: p3.at(1), with-rng: true)
+    combine((p1.at(0), p2.at(0), p3.at(0), p4.at(0)))
   } else if case == "M10" {
     (stroke-path(((8,6),(30,6)), stroke: 0.6pt + black, per: 0)
     + combine(range(5).map(i => stroke-path(((11+4.5*i,6),(9.5+4.5*i,3.5)),

@@ -2645,12 +2645,15 @@
 
 // Source `wField` used by woodBlock, expressed in physical millimetres.
 // The source samples at 0.2 mm detail steps over a 1 mm wood grid.
-#let _woodblock-field(w, h, seed) = {
+#let _woodblock-field(w, h, seed, rng-offset: 0) = {
   let detail = 0.2
   let knot-radius = 1.25
   let knot-angle = 60
   let rho = 1 / 24
-  let randoms = _metapost-rng-sequence(seed, 64)
+  let columns = int(calc.ceil(w)) + 1
+  let rng-count = 64 + columns
+  let randoms = (_metapost-rng-sequence(seed, rng-offset + rng-count))
+    .slice(rng-offset, rng-offset + rng-count)
   let knots = ()
   for candidate in range(32) {
     let x = -knot-radius / 2 + (w + knot-radius) * randoms.at(candidate * 2)
@@ -2663,6 +2666,7 @@
   let field = (px, py) => {
     let i = px / detail
     let j = py / detail
+    let column = int(calc.clamp(calc.round(px), 0, columns - 1))
     let result = 0.0
     for knot in knots {
       let dx = (px - knot.at(0)) / detail
@@ -2680,10 +2684,11 @@
     }
     result -= i * rho / 5
     result += calc.sin((calc.pi * i / w + 4 * calc.pi * j / h) * 1rad) / 32
-    // Source adds one random vertical displacement per sampled column.
-    (result + rho * _rng(seed, int(calc.round(i)), 7001)) / rho
+    // Source draws one uniform vertical displacement per 1 mm wood column,
+    // shared by every finer field sample in that column.
+    (result + rho / 8 * randoms.at(64 + column)) / rho
   }
-  (field: field, knots: knots)
+  (field: field, knots: knots, rng-count: rng-count)
 }
 
 #let _clip-polyline(path, regions) = {
@@ -2745,21 +2750,26 @@
 /// coordinates local to the polygon's bounding box.
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
                   stroke: 0.45pt + black, source-field: false, seed: 1,
-                  grain-stroke: none) = {
-  if poly.len() < 3 { return none }
+                  grain-stroke: none, rng-offset: 0, with-rng: false) = {
+  if poly.len() < 3 {
+    return if with-rng { (none, rng-offset) } else { none }
+  }
   let xs = poly.map(p => p.at(0))
   let ys = poly.map(p => p.at(1))
   let x0 = calc.min(..xs)
   let y0 = calc.min(..ys)
   let w = calc.max(..xs) - x0
   let h = calc.max(..ys) - y0
-  if w <= 0 or h <= 0 { return none }
+  if w <= 0 or h <= 0 {
+    return if with-rng { (none, rng-offset) } else { none }
+  }
   let local-poly = poly.map(p => _sub(p, (x0, y0)))
   let nx = calc.max(8, int(calc.ceil(w / cell)))
   let ny = calc.max(8, int(calc.ceil(h / cell)))
   let swapped = source-field and calc.rem(calc.abs(angle), 180) == 90
   let wood-model = if source-field {
-    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h }, seed)
+    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h },
+      seed, rng-offset: rng-offset)
   } else { none }
   let field = if source-field {
     if swapped { (x, y) => (wood-model.field)(y, w - x) } else { wood-model.field }
@@ -2797,7 +2807,10 @@
              stroke-path(poly, stroke: border-stroke, closed: true, per: 0))
   if eye-loops.len() > 0 { els.push(place(top + left, _fill(eye-loops, black))) }
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
-  _join(els)
+  let drawing = _join(els)
+  if with-rng {
+    (drawing, rng-offset + if source-field { wood-model.rng-count } else { 0 })
+  } else { drawing }
 }
 
 /// A plank of wood: iso-lines of the year-ring field, clipped to the
