@@ -142,17 +142,18 @@ jumps beyond one grid-cell diagonal). The same file has hard `assert`
 conditions, including globe centre/horizon visibility, strand-gap width,
 Snell's tangential invariant, and total internal reflection direction.
 
-Run the numerical checks, rebuild `main.pdf`, and compare the visual reference
-in one command:
+Enter `nix develop path:./nix`, then run the numerical checks, rebuild the
+specimen at `build/check/main.pdf`, and compare the visual references:
 
 ```sh
 ./check.sh
 ```
 
-The visual gate compares Figure 11's full A4 page at 130 ppi against
-`visual/figure-11-page-5.png`, rendered by Typst 0.15.1. Review intentional
-visual changes before updating that reference; other Typst versions fail with
-a version message instead of producing a misleading pixel mismatch.
+The visual gate checks ten independent core plates at 200 ppi and Figure 11's
+full A4 page at 130 ppi using Typst 0.15.1 and controlled fonts. It compares
+decoded pixels and retains actual, difference and comparison images under
+`build/visual/`. See [visual regression coverage and review instructions](visual/README.md)
+for running individual cases and explicitly updating reviewed references.
 
 ## Gotchas learned the hard way
 
