@@ -3449,7 +3449,8 @@
 /// one numeric global rank per strand or a per-strand sequence of ranks for
 /// successive crossings. `widths` may be one value for all strands or a tuple
 /// with one value per strand; values are stroke widths for `style: "stroke"`
-/// and tube radii for `style: "tube"`.
+/// and tube radii for `style: "tube"`. `gap` adds clearance beyond the visible
+/// width or diameter at an over-under crossing.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke") = {
@@ -3458,6 +3459,9 @@
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
+  let crossing-half-gap(width) = if style == "tube" {
+    width + gap / 2
+  } else { (width + gap) / 2 }
   // A strand may carry a sequence of source `intLayers` values, one for each
   // successive crossing interval. Scalar entries retain the simpler global
   // per-strand ordering accepted by the original Typst API.
@@ -3503,9 +3507,9 @@
               }
               let i-over = over-at(pair-count, i, j)
               if i-over {
-                events.at(j).push((sb, (widths.at(i) + gap) / 2))
+                events.at(j).push((sb, crossing-half-gap(widths.at(i))))
               } else {
-                events.at(i).push((sa, (widths.at(j) + gap) / 2))
+                events.at(i).push((sa, crossing-half-gap(widths.at(j))))
               }
               pair-count += 1
             }
@@ -3536,7 +3540,7 @@
               let sb = lengths.at(i).at(bi) + tb * _dist(path.at(bi), path.at(bi + 1))
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
-                let half-gap = (widths.at(i) + gap) / 2
+                let half-gap = crossing-half-gap(widths.at(i))
                 if over-at(pair-count, i, i) {
                   events.at(i).push((sb, half-gap))
                 } else {

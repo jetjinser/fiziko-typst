@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.12971 | 1.734% → 2.333% | The pulley now has the partial rim/support silhouette and a white mask that hides the rope kink. Whole-plate RMSE improved slightly; left/right crop RMSE is 0.14281/0.11688 and both remain over-inked. Wheel/support clipping and label placement still differ. |
 | M9 wood panels | 0.22730 | 4.203% → 4.504% | A continuous MetaPost stream advances across panels; the field uses one source-sized random vertical offset per 1 mm column. Knot candidates now use the source's rejection-until-ten rule and minimum spacing. Accepted-knot brush RNG consumption and contour-level random draws remain approximate. |
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
-| M11 globe, eye, knot, refraction | 0.12980 | 4.917% → 4.888% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly; knot RMSE improved from 0.17449 to 0.14408 and ink coverage from 1.700% to 2.324% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.12972 | 4.917% → 4.885% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly, and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.32805 | 10.630% → 9.748% | Rows now use the source's rounded count and fitted spacing; hatch replays the MetaPost dash RNG stream but remains under-dense (14.066% → 12.273%, RMSE 0.36479). Stipple ink is 7.079% → 7.138%. Whole-plate RMSE remains above the earlier 0.29890 candidate. |
@@ -97,9 +97,9 @@ strokes, while M10 contains mostly whitespace.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and gaps. Mapping the upstream strand parameter to
-   the same tube radius lowers whole-plate RMSE from 0.13594 to 0.12980 and
-   knot RMSE from 0.17449 to 0.14408; knot ink coverage moves from 1.700% to
-   2.324% (source 2.606%). The latitude mode still approximates the source's
+   the same tube radius and removing the M11 fixture's unsupported extra gap
+   lowers whole-plate RMSE to 0.12972 and knot RMSE to 0.14362; knot ink
+   coverage is 2.302% (source 2.606%). The latitude mode still approximates the source's
    two separately masked shading layers and random width law; curve-time
    crossing detection, source tube masks and strand interpolation also differ.
    Keep eye and refraction as independent component gates.
