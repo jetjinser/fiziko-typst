@@ -151,7 +151,7 @@
       "title": "Wheels and centroid", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 107,
       "shared": {"wheel_diameter_mm": 23, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same wheel sizes, plate polygon and centroid; pulley shading and spoke construction differ.",
+      "notes": "The second wheel now uses the upstream radial-hatch construction. At 600 ppi its crop RMSE fell from 0.25567 to 0.12807, with 6.03% ink coverage vs 7.10% source. Pulley-wheel shading remains approximate and over-inked; centroid geometry is shared.",
       "regions_mm": {"pulley_wheel": [4,3,37,38], "wheel": [42,3,38,38], "centroid": [80,3,38,38]}
     },
     "S108": {

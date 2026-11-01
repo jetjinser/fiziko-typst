@@ -40,7 +40,7 @@ included where a plate contains distinct drawing families.
 | S104 flat surfaces | 0.32819 | 10.630% → 9.745% | At 600 ppi stipple coverage now matches (7.079% → 7.121%, RMSE 0.28549). Hatch is still under-dense (14.066% → 12.284%, RMSE 0.36477); overall RMSE regressed from 0.29890 despite better density balance. |
 | S105 wood block and surface | 0.10509 | 0.741% → 0.846% | Latest 600 ppi candidate: wooden-surface RMSE 0.07958, ink coverage 0.489% → 0.611% (previously 0.13138 and 0.489% → 1.754%). Block remains at RMSE 0.13129 and near-source coverage (1.077% → 1.166%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
-| S107 wheels and centroid | 0.18217 | 3.260% → 2.575% | Pulley wheel is over-inked (3.949% → 5.796%); the open-spoke wheel is under-inked (7.319% → 2.739%); centroid crop RMSE 0.05441. |
+| S107 wheels and centroid | 0.14064 | 3.159% → 3.441% | New source-style wheel (600 ppi): RMSE fell from 0.25567 to 0.12807 and coverage is 6.034% vs 7.100%. Pulley wheel remains over-inked (RMSE 0.23299; 3.833% → 5.689%); centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
 
 These whole-plate RMSE values are useful for locating large residuals, not for
@@ -88,9 +88,11 @@ strokes, while M10 contains mostly whitespace.
    two separately masked shading layers and random width law; crossing gaps
    and strand path interpolation also differ. Tune those locally, keeping eye
    and refraction as independent component gates.
-5. **Tune the mechanical details from local crops.** After the cross-cutting
-   algorithms, work on M8 pulley/rope strokes and S107 rim, groove and spoke
-   shading. M10 and S102 are closer by full-plate measures and can remain
+5. **Tune the mechanical details from local crops.** S107 now exposes a
+   source-style radially hatched wheel; its crop RMSE fell from 0.25567 to
+   0.12807 and ink coverage is within about 15% of the source. The pulley wheel
+   still differs (RMSE 0.23299 and excess ink), and M8 pulley/rope strokes
+   remain open. M10 and S102 are closer by full-plate measures and can remain
    lower priority unless visual review finds a specific defect.
 
 At each step, keep a same-input nominal comparison, review the difference

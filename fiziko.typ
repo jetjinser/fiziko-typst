@@ -2411,8 +2411,40 @@
 }
 
 /// A wheel with a rim, hub, and evenly spaced spokes.
-#let wheel(d, center: (0, 0), spokes: 6, rim: 0.82, stroke: 0.55pt + black) = {
+#let wheel(d, center: (0, 0), spokes: 6, rim: 0.82,
+           stroke: 0.55pt + black, style: "spoked", seed: 0) = {
+  assert(style == "spoked" or style == "source",
+    message: "wheel style must be spoked or source")
   let R = d / 2
+  if style == "source" {
+    let inner-d = 2 / 8 * d
+    let outer-hatch-d = 7 / 8 * d - 2 * _source-spacing
+    let n = calc.max(1, int(calc.ceil((outer-hatch-d - inner-d) / (2 * _source-spacing))) + 1)
+    let rings = ()
+    for i in range(n) {
+      let diameter = inner-d + i * 2 * _source-spacing
+      if diameter > outer-hatch-d { continue }
+      let lat = calc.asin(diameter / (4 * d))
+      let pts = circle-pts(diameter / 2, 96, center: center)
+      rings.push(stroke-ink(pts, t => {
+        let theta = 360 * t + 180
+        let nx = calc.sin(lat) * _cos(theta)
+        let ny = calc.sin(lat) * _sin(theta)
+        let nz = calc.cos(lat)
+        let lightness = calc.max(0.0, 1 - (-0.353553 * nx + 0.382683 * ny + 0.853553 * nz))
+        _source-min-stroke * (2 / 3 + lightness)
+      }, closed: true, per: 0, min-w: _source-min-stroke,
+         period: _source-dash-length, seed: seed + i))
+    }
+    let rim-d = d - 6 * _source-min-stroke
+    _join((
+      place(top + left, _fill((circle-pts(d / 2, 120, center: center),), black)),
+      place(top + left, _fill((circle-pts(rim-d / 2, 120, center: center),), white)),
+      ..rings,
+      sphere(inner-d, center: center, seed: seed),
+      stroke-path(circle-pts(R, 120, center: center), stroke: _source-min-stroke * 1mm + black, closed: true, per: 0),
+    ))
+  } else {
   let inner-r = R * rim
   let items = (
     stroke-path(circle-pts(R, 96, center: center), stroke: stroke, closed: true, per: 0),
@@ -2426,6 +2458,7 @@
     items.push(stroke-path((a, b), stroke: stroke, closed: false, per: 0))
   }
   _join(items)
+  }
 }
 
 /// The full L'Hôpital pulley figure: beam, ropes, wheel, weight, labels.

@@ -126,7 +126,7 @@
   } else if case == "S107" {
     let plate = ((83,8),(113,11),(108,36),(87,31))
     (pulley-wheel(23, center: (22,22), seed: seed)
-    + wheel(23, center: (61,22), spokes: 6)
+    + wheel(23, center: (61,22), style: "source", seed: seed)
     + stroke-path(plate, stroke: 0.35pt + black, closed: true, per: 0)
     + stroke-path(circle-pts(0.75,24,center:polygon-centroid(plate)),
         stroke: 0.35pt + black, closed: true, per: 0))
