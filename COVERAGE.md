@@ -37,7 +37,7 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `flatSurface.hatches`, `.stipples` | S104 | `flat-surface(style: "hatch"/"stipples")` | Approximate: Lambert shade and a two-axis line/edge ink envelope control deterministic clipped strokes or stipples. |
 | `woodBlock`, `woodenThing`, `woodenSurface` | M9, S105 | `wood-block`, `wooden-thing`, `wooden-surface`, `wood` | Approximate: the same contour field now clips exactly to arbitrary simple polygons; its field and knot shapes remain simpler than the source. |
 | `spring` | M10 | `spring` | Approximate: coil shape and end joins differ. |
-| `weight.h`, `weight.s` | M10, S106 | `weight`, `weight-standing` | Approximate: continuous smooth-shouldered tube profiles replace the source's shaped auricle and end details. |
+| `weight.h`, `weight.s` | M10, S106 | `weight`, `weight-standing` | Approximate: source-proportional body radii and the standing base direction are mapped; continuous tube profiles still replace the source's shaped auricle and end details. |
 | `lens` profiles | M10, S108 | `lens(right-sag:)` | Approximate: asymmetric, concave and plano profiles are supported; curved faces use sampled spline arcs rather than exact circles. |
 | `pulley`, `pulleyWheel`, `wheel` | M8, S107 | `pulley`, `pulley-wheel`, `wheel` | Approximate: native rim, groove and spoke construction replaces source shading and masks. |
 | `shapeCenterOfMass` | S107 | `polygon-centroid`, `centroid-marker` | Approximate: standard area centroid for simple polygon vertices. |

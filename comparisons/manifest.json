@@ -102,7 +102,7 @@
       "title": "Mechanical and optical primitives", "frame_mm": [110,58], "driver": "main.mp", "figure": 10,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same layout and nominal primitive dimensions. Weight profile, spring construction, lens curves, arrowheads and labels use native algorithms.",
+      "notes": "The M10 hanging weight now uses the source radius 2/5(h−2 mm). At 600 ppi the full-plate RMSE is 0.08482 (previously 0.08506); its weight profile, spring construction, lens curves, arrowheads and labels still use native algorithms.",
       "regions_mm": {"spring_and_weight": [0,0,42,58], "lens_and_rays": [48,0,54,58]}
     },
     "M11": {
@@ -144,7 +144,7 @@
       "title": "Standing and hanging weights", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 106,
       "shared": {"weight_height_mm": 18, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same positions and nominal height; body profiles and hatch algorithms differ.",
+      "notes": "The standing weight rises from its base and uses the source radius 2/5h; the hanging weight uses source radius 2/5(h−2 mm). At 600 ppi full-plate RMSE is 0.09793 (previously 0.10910). Standing crop RMSE is 0.09949 with ink coverage 1.474% vs 1.594% source; hanging crop RMSE is 0.11711 with coverage 1.330% vs 1.131%. Source end caps and hatch profiles remain approximate.",
       "regions_mm": {"standing": [5,3,53,38], "hanging": [62,1,53,42]}
     },
     "S107": {

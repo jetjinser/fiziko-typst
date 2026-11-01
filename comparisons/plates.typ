@@ -78,7 +78,7 @@
     + combine(range(5).map(i => stroke-path(((11+4.5*i,6),(9.5+4.5*i,3.5)),
         stroke: 0.35pt + black, per: 0)))
     + spring((19,6),(19,30), coils: 7, rad: 1.2, lead: 3)
-    + weight(14, r: 3, at: (19,30), seed: seed)
+    + weight(14, r: 4.8, at: (19,30), seed: seed)
     + vector((19,45.5),(19,54), w: 0.07, head: 1.4, seed: seed)
     + tag([k],(25,17)) + tag([mg],(23.5,52))
     + lens(20, 2.087, rim: 1.6, at: (72,30))
@@ -124,8 +124,8 @@
     (wood(5,29,39,12, cell: 1, source-field: true, seed: seed)
     + wooden-surface(((60,18),(84,12),(112,18))))
   } else if case == "S106" {
-    (weight-standing(18, r: 3, at: (36,31), seed: seed)
-    + weight(18, r: 3, at: (84,13), seed: seed)
+    (weight-standing(18, r: 7.2, at: (36,31), seed: seed)
+    + weight(18, r: 6.4, at: (84,13), seed: seed)
     + stroke-path(((10,31),(62,31)), stroke: 0.35pt + black, per: 0)
     + stroke-path(((64,13),(112,13)), stroke: 0.35pt + black, per: 0))
   } else if case == "S107" {

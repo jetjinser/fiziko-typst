@@ -3096,7 +3096,7 @@
     spacing: spacing, w: w, per: 12, seed: seed)
 }
 
-/// A standing weight: broad body above a tapered lower neck, centred at `at`.
+/// A standing weight: broad body rises from its base at `at` to a tapered top.
 #let weight-standing(h, r: 3, taper: 0.55, body-fraction: 0.68,
                      spacing: _source-spacing, w: 0.45 * pt,
                      at: (0, 0), seed: 0) = {
@@ -3104,7 +3104,7 @@
     let u = calc.clamp((t - body-fraction) / (1 - body-fraction), 0.0, 1.0)
     r * (1 - (1 - taper) * u * u * (3 - 2 * u))
   }
-  let axis = (_add(at, (0, 0)), _add(at, (0, h)))
+  let axis = (_add(at, (0, 0)), _add(at, (0, -h)))
   tube(axis, radius, hatch: "l", spacing: spacing, w: w, per: 12, seed: seed)
 }
 

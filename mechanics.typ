@@ -12,7 +12,7 @@ and the available symmetric and asymmetric lens profiles.
   canvas(116, 50,
     spring((10, 8), (10, 40), coils: 7, rad: 2.2, lead: 3)
     + weight(20, r: 3.6, at: (28, 10))
-    + weight-standing(20, r: 3.6, taper: 0.4, at: (47, 10))
+    + weight-standing(20, r: 3.6, taper: 0.4, at: (47, 40))
     + lens(17, 2.2, rim: 3.5, at: (72, 25))
     + lens(17, 5, right-sag: 7, rim: 3.5, at: (89, 25))
     + pulley(14, center: (107, 14))
