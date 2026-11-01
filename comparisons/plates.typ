@@ -112,7 +112,9 @@
     + solid(((87,9),(105,9),(105,32),(87,32)), angle: -45, style: "glass")
     + gradient-shade(((108,9),(117,9),(117,32),(108,32)), angle: 90, seed: seed))
   } else if case == "S104" {
-    (flat-surface(((8,8),(56,13),(50,36),(5,31)), (0,0,-1), angle: 30,
+    // The source frame flips the vertical axis in P(); its +30° MetaPost
+    // rotation maps to -30° in Typst's page coordinates.
+    (flat-surface(((8,8),(56,13),(50,36),(5,31)), (0,0,-1), angle: -30,
       rng: "metapost", seed: seed)
     + stroke-path(((8,8),(56,13),(50,36),(5,31)), stroke: 0.35pt + black, closed: true, per: 0)
     + flat-surface(((65,8),(114,13),(108,36),(62,31)), (1,0,1), angle: -30,

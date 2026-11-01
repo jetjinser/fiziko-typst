@@ -38,7 +38,7 @@ included where a plate contains distinct drawing families.
 | M11 globe, eye, knot, refraction | 0.12972 | 4.917% → 4.885% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly, and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
-| S104 flat surfaces | 0.32805 | 10.630% → 9.748% | Rows now use the source's rounded count and fitted spacing; hatch replays the MetaPost dash RNG stream but remains under-dense (14.066% → 12.273%, RMSE 0.36479). Stipple ink is 7.079% → 7.138%. Whole-plate RMSE remains above the earlier 0.29890 candidate. |
+| S104 flat surfaces | 0.21054 | 10.630% → 10.287% | Mapping the source +30° hatch through the fixture's vertical-axis flip gives Typst angle −30°. Reversing the MetaPost RNG draw order to match its y-up scan gives hatch crop RMSE 0.09247 and ink coverage 14.066% → 13.333%. Stipple coverage is 7.079% → 7.138%. Hatch brush shape remains approximate. |
 | S105 wood block and surface | 0.10449 | 0.741% → 0.828% | Latest 600 ppi candidate: wooden-surface RMSE 0.07922, ink coverage 0.489% → 0.604% (previously 0.13138 and 0.489% → 1.754%). Block is at RMSE 0.13048 and near-source coverage (1.077% → 1.135%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
@@ -84,16 +84,15 @@ strokes, while M10 contains mostly whitespace.
    upstream stroke/row scales, the lightness envelope, three-track stipples,
    and the source's four-row glass dash cycle. At 600 ppi S103 whole-plate
    RMSE is 0.21682 (baseline 0.23772), with opaque, gradient and glass
-   coverages all close to source. S104 stipple ink coverage matches (7.12% vs
-   7.08%), but hatch remains under-dense (12.28% vs 14.07%) and S104
-   whole-plate RMSE is 0.32819 (baseline 0.29890). A 2.3× hatch-width trial
-   moved crop coverage to 13.90% (source 14.07%) but raised hatch RMSE from
-   0.36477 to 0.37022; removing the lightness lower clamp overfilled it to
-   20.19% and raised RMSE to 0.39024. Neither trial is retained. Quarter- and
-   half-spacing row-phase trials barely moved hatch RMSE (0.36477 → 0.36473 /
-   0.36475) and left coverage unchanged. The remaining difference likely needs
-   closer source brush subdivision and shared random-stream order, rather than
-   further phase or width tuning.
+   coverages all close to source. S104's fixture now maps its source +30° hatch
+   to −30° in Typst page coordinates because `P()` flips the vertical axis.
+   Reversing the opt-in MetaPost stream traversal also matches the source's
+   y-up row order. These changes lower S104 whole-plate RMSE from 0.32805 to
+   0.21054 and hatch crop RMSE from 0.36479 to 0.09247; hatch ink coverage is
+   13.33% versus 14.07% in the source, while stipple coverage remains close
+   (7.14% versus 7.08%). Prior S104 width and row-phase scans used the wrong
+   hatch orientation and are superseded. Remaining hatch differences are
+   concentrated in brush stroke shape and random details.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and gaps. Mapping the upstream strand parameter to

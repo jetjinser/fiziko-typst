@@ -2279,11 +2279,14 @@
     _metapost-rng-sequence(seed, rng-offset + calc.max(128, segs.len() * 128))
   } else { none }
   let cursor = rng-offset
+  // MetaPost scans its y-up bounding box from low to high. After a page's
+  // vertical axis is flipped, that is the reverse of Typst's scanline order.
+  let draw-segs = if rng == "metapost" and style == "hatch" { segs.rev() } else { segs }
   let along = (_cos(angle), _sin(angle))
   let along-projections = poly.map(p => _dot(p, along))
   let total-width = calc.max(..along-projections) - calc.min(..along-projections)
   let items = ()
-  for s in segs {
+  for s in draw-segs {
     // The source subdivides every non-empty hatch path after drawing it; the
     // subdivision count consumes one MetaPost uniform value, even though a
     // straight path's visible geometry is unchanged by the subdivision.

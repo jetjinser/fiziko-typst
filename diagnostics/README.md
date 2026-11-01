@@ -338,6 +338,37 @@ full-plate RMSE likewise rises from 0.18317 at 0.55 to 0.18383/0.18424.
 Keep 0.55 for the better pixelwise shape match; the source phase and local
 dot-size distribution remain different.
 
+### S104 flat-surface hatch row trace
+
+The supplemental S104 fixture maps the source's +30° MetaPost hatch to −30°
+in Typst page coordinates because its `P()` helper flips the vertical axis.
+The corrected trace has 142 drawable rows; the instrumented source emits 143
+row records including one zero-length edge row. Their physical row-length
+ranges match (0.68–39.69 mm). MetaPost scans those rows in y-up order, so
+`flat-surface(rng: "metapost")` traverses the Typst rows in reverse when
+assigning its shared random stream. At 600 ppi this lowers the hatch crop RMSE
+to 0.09247 (ink coverage 13.33% versus 14.07% in the source) and S104 full-
+plate RMSE to 0.21054. Brush leaf geometry and local random consumption still
+approximate MetaPost.
+
+The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
+pinned source without changing its lock-verified snapshot, use a copy inside
+the Nix devshell:
+
+```sh
+mkdir -p /tmp/s104-source-trace
+python3 diagnostics/instrument_flat_surface.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/s104-source-trace/fiziko.mp
+cp comparisons/reference/supplemental.mp /tmp/s104-source-trace/
+printf 'selected := 104; input supplemental.mp;\n' \
+  > /tmp/s104-source-trace/trace.mp
+(cd /tmp/s104-source-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'FSROW' /tmp/s104-source-trace/trace.log
+typst eval 'query(<s104-hatch-rows>).first().value' \
+  --in diagnostics/flat_surface_hatch_trace.typ --root .
+```
+
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model
 above. A separate test of per-dot independent phases was also worse than
