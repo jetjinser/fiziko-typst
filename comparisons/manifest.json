@@ -88,7 +88,7 @@
       "title": "L'Hôpital pulley composites", "frame_mm": [110,40], "driver": "main.mp", "figure": 8,
       "shared": {"figures": [[6,2,5.5,8,6],[3,2.5,3,58,6]], "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Uses the port's composed L'Hôpital pulley helper with source dimensions and placements. Grain, pulley shading and labels use native algorithms.",
+      "notes": "Uses the source 2.5 mm hatched beam band and 3× minimum rope width. At 600 ppi whole-plate RMSE fell from 0.16877 to 0.13182; beam, pulley silhouette and labels still use approximations.",
       "regions_mm": {"left": [0,0,53,40], "right": [54,0,56,40]}
     },
     "M9": {

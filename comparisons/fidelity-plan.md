@@ -31,7 +31,7 @@ included where a plate contains distinct drawing families.
 
 | Plate | RMSE | Dark coverage | Component findings |
 | --- | ---: | ---: | --- |
-| M8 pulley composites | 0.16877 | 1.778% → 3.276% | Left and right figures are both over-inked, with crop RMSE 0.18759 and 0.15045. |
+| M8 pulley composites | 0.13182 | 1.734% → 2.229% | After matching the 2.5 mm hatched beam band and 3× minimum source rope width, left crop RMSE is 0.14480 and right 0.11917; both remain mildly over-inked. |
 | M9 wood panels | 0.29579 | 4.349% → 7.570% | All four panel crops score about 0.291–0.300 RMSE; the port's smooth field does not reproduce the source's irregular knot-driven grain. |
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.13134 | 4.917% → 5.036% | Latest 600 ppi candidate: globe RMSE 0.18935, ink coverage 25.940% → 27.538%; knot RMSE 0.17410, 2.606% → 1.669%. Eye 0.23617 and refraction 0.08193 are unchanged. |
@@ -88,12 +88,14 @@ strokes, while M10 contains mostly whitespace.
    two separately masked shading layers and random width law; crossing gaps
    and strand path interpolation also differ. Tune those locally, keeping eye
    and refraction as independent component gates.
-5. **Tune the mechanical details from local crops.** S107 now exposes a
-   source-style radially hatched wheel; its crop RMSE fell from 0.25567 to
-   0.12807 and ink coverage is within about 15% of the source. The pulley wheel
-   still differs (RMSE 0.23299 and excess ink), and M8 pulley/rope strokes
-   remain open. M10 and S102 are closer by full-plate measures and can remain
-   lower priority unless visual review finds a specific defect.
+5. **Tune the mechanical details from local crops.** M8 now uses the source
+   2.5 mm hatched beam band and 3× minimum source rope width; whole-plate RMSE
+   fell from 0.16877 to 0.13182 and ink coverage moved from 3.23% to 2.23%
+   (source 1.73%). Pulley geometry and labels remain approximate. S107's
+   source-style wheel crop RMSE fell from 0.25567 to 0.12807, with coverage
+   within about 15% of source; the pulley wheel still differs (RMSE 0.23299 and
+   excess ink). M10 and S102 are closer and can remain lower priority unless
+   visual review finds a specific defect.
 
 At each step, keep a same-input nominal comparison, review the difference
 image, and record geometry, dark coverage and ink coverage together. Keep any

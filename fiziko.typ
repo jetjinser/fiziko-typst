@@ -2497,7 +2497,7 @@
 /// Wood-grain on the beam arrives with the grain milestone — for now the
 /// beam is hatched as in figure 5.
 #let l-hopital-pulley(AB, l, m, at: (0, 0), k: 6, d1: 2 / 3, d2: 1,
-                      rope-w: 0.6, seed: 0) = {
+                      rope-w: 3 * _source-min-stroke, seed: 0) = {
   let G = _pulley-geometry(AB, l, m, d1: d1)
   let to-mm(p) = _add(_mul(p, k), at)
   let A = to-mm(G.A)
@@ -2508,17 +2508,10 @@
   let y0 = at.at(1)
   let els = ()
 
-  // support beam (hatched; wood grain comes later)
+  // Shaded surface band above the ceiling line, as in the upstream figure.
   let bw = 4.0
-  els.push(stroke-ink(((A.at(0) - bw, y0), (B.at(0) + bw, y0)),
-                      0.9, closed: false, per: 6, seed: seed))
-  let span = (B.at(0) + bw) - (A.at(0) - bw)
-  let nh = calc.max(3, int(calc.round(span / 4.5)))
-  els += range(nh).map(i => {
-    let x = A.at(0) - bw + span * (i + 0.5) / nh
-    stroke-path(((x, y0), (x - 1.7, y0 - 2.6)),
-                stroke: 0.4pt + black, per: 2)
-  })
+  els.push(solid-surface(((A.at(0) - bw, y0), (B.at(0) + bw, y0)),
+    thickness: -2.5, angle: 45, spacing: 1.5 * _source-spacing))
 
   // ropes
   els.push(stroke-ink((A, D), rope-w, closed: false, per: 6, seed: seed))
