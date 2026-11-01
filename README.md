@@ -5,9 +5,9 @@ the ideas in [jemmybutton/fiziko](https://github.com/jemmybutton/fiziko), the
 MetaPost library written to automate ~800 black-and-white illustrations for a
 physics textbook. The visual reference is the pinned upstream source at
 [`54a63db`](https://github.com/jemmybutton/fiziko/tree/54a63dba8e6700a5e70d3508838edebcbf0f45fe),
-reproduced in [`main-original.pdf`](main-original.pdf).
-See the [capability inventory](COVERAGE.md) and
-[supplemental source gallery](original/coverage.pdf) for the other families.
+locked together with its renderers by Nix. See the
+[reproducible upstream comparisons](comparisons/README.md) and
+[capability inventory](COVERAGE.md).
 
 ## Project status
 
@@ -44,11 +44,11 @@ publishing.
 | `sphere.c(d)` | `sphere(d, light: .., rings: auto, samples: 128, seed: 0, shadow-regions: (), shadow-planes: (), shadow-polygons: ())` — concentric Lambert-shaded rings with residual-aware alternating widths, reproducible per-ring phase jitter, and a fine rim; supports local masks and projected occluders; ring sample count can be raised for unusually large output; see [sphere comparison](sphere.typ) |
 | `sphereLat(d, lat)` | `sphere-latitude(d, latitude:, light: .., seed: 1, shadow-planes: ())` — latitude projection, `orderFade`, sphere light model, source-scale spacing, and projected planar shadows; defaults to 180 drawing samples for better compile time, with `samples:` adjustable for larger figures |
 | `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r` by normalized arc length; longitudinal lines follow recursive power-of-two lane-count sections, with widths responding to the centerline tangent, radius slope, and light; transverse sections advance along both sampled offset boundaries, transfer the endpoint using one-third residual correction, orient each section from the selected boundary, and apply source-style line-order fading; widths follow cross-section lighting and open ends are joined. Offset geometry, exact cubic parameter transfer, path-angle shading, and randomized dash placement remain approximate; see [tube shading](tube.typ) |
-| `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s", dot-range: (0.9, 1.2), dot-density: 0.56)`, `sphere-stipple-rings(d, dot-range: (0.9, 1.2), density: 0.55, ...)`, `sphere-stipple(d, ...)`, `stroke-stipple-brush(pts, w, dot-range: (0.9, 1.2), density: 0.5, ...)`, `stroke-stipple(pts, w, ...)` — tube stipples use three offset dot tracks per longitudinal lane; open brush tracks restart by quantized local width, and closed brush tracks stay continuous; sphere rings use concentric tracks. Brush density 0.5 is calibrated against S101 and checked across 0.5×–2× samples; tube and sphere defaults remain calibrated to S101. Use the parameters to tune other scales and profiles. See the [S101 sample](stipple.typ) and [pinned source comparison](original/stipple-reference.pdf) |
+| `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s", dot-range: (0.9, 1.2), dot-density: 0.56)`, `sphere-stipple-rings(d, dot-range: (0.9, 1.2), density: 0.55, ...)`, `sphere-stipple(d, ...)`, `stroke-stipple-brush(pts, w, dot-range: (0.9, 1.2), density: 0.5, ...)`, `stroke-stipple(pts, w, ...)` — tube stipples use three offset dot tracks per longitudinal lane; open brush tracks restart by quantized local width, and closed brush tracks stay continuous; sphere rings use concentric tracks. Brush density 0.5 is calibrated against S101 and checked across 0.5×–2× samples; tube and sphere defaults remain calibrated to S101. Use the parameters to tune other scales and profiles. See the [S101 sample](stipple.typ) and [reproducible S101 comparison](comparisons/README.md) |
 | `solidSurface`, `solid`, `gradientShade` | `solid-surface(path, ...)`, `solid(poly, style: "opaque"/"glass")`, `gradient-shade(poly, ...)` — raised bands and reusable scanline clipping inside polygons |
-| `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples with a two-axis ink envelope; see [surface comparison](original/surface-reference.pdf) |
+| `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples with a two-axis ink envelope; see [source surface plates](comparisons/README.md) |
 | `woodBlock`, `woodenThing`, `woodenSurface` | `wood-block(...)`, `wooden-thing(poly, ...)`, `wooden-surface(path, ...)` — grained block, arbitrary polygon clipping, and grain clipped to an offset band; see [wood example](wood.typ) |
-| `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
+| `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [source mechanical plates](comparisons/README.md) |
 | `shadowsEnabled`, `shadowCut` | `shadow-planes:` / `shadow-polygons:` with `sphere-shadow-plane(polygon, depth)` (source front-pole depth convention) or `sphere-shadow-polygon(vertices)` (sphere-center XYZ) — project source-style depth planes or simple planar 3D polygons onto visible sphere samples; curved/non-planar occluders and exact path splitting are unsupported |
 | `refractionAngle`, `reflectionAngle`, `refractionPath` | `trace-refraction` / `refraction-path` — intersects a closed polygon, applies Snell's law, and reflects on total internal reflection |
 | `pointOnGlobe`, `globe`, `drawLandMass` | `globe-project` / `globe` — orthographic graticule and caller-provided coast polylines, linearly interpolated and subdivided to 5° before horizon clipping; see [globe edge cases](globe.typ) |
@@ -108,10 +108,20 @@ typst compile tube.typ tube.pdf
 typst compile sphere.typ sphere.pdf
 ```
 
-The optional `original/` directory contains local upstream MetaPost sources and
-comparison plates. It is intentionally not tracked by this repository, to avoid
-vendoring a second copy of the original project. If present locally, rebuild its
-comparison PDFs with `bash original/build.sh`.
+Build the source comparisons from a fresh checkout:
+
+```sh
+nix develop path:./nix
+./compare.sh                        # core pairs, nominal and calibrated modes
+./compare.sh --source-only          # all 19 historical source plates
+```
+
+Reports, PDFs, images, explicit parameters and provenance are generated under
+`build/comparisons/`. Both sides use the same Ghostscript rasterizer. The
+[comparison guide](comparisons/README.md) explains the modes, metrics and
+individual plate selection. The optional ignored `original/` directory and
+`main-original.typ` page wrapper are legacy local artifacts; the current
+workflow does not depend on them.
 
 ## Regression checks
 
@@ -224,12 +234,17 @@ Deliverables:
 
 ## Environment baseline
 
-Last recorded during the 2026-09 baseline pass:
+The comparison environment is pinned in `nix/flake.lock`, including upstream
+fiziko. The 2026-11 comparison pass uses:
 
 - Typst 0.15.1
-- Nix 2.34.8
-- qpdf, Poppler, and Ghostscript are supplied temporarily by `nix shell` in
-  `preflight.sh`; their exact versions are not yet pinned.
+- MetaPost 2.11 / pdfTeX 1.40.27 (TeX Live 2025)
+- Ghostscript 10.07.1
+- ImageMagick 7.1.2-31 and Python 3.14.7
+
+Every source comparison records its actual tool versions and source hashes.
+The separate print preflight still acquires qpdf/Poppler/Ghostscript through
+`preflight.sh`; it is not the comparison renderer.
 
 ## Roadmap
 

@@ -1,12 +1,19 @@
 # Upstream graphical capability inventory
 
-Reference (available locally in the optional, untracked `original/` directory):
-the unmodified `original/fiziko.mp` at upstream revision
+Reference: the unmodified `fiziko.mp` at upstream revision
 [`54a63db`](https://github.com/jemmybutton/fiziko/tree/54a63dba8e6700a5e70d3508838edebcbf0f45fe).
-`original/main-original.mp` supplies source figures **M1–M11**;
-`original/coverage.mp` supplies **S101–S108**. Run `bash original/build.sh`
-to rebuild the local [main gallery](main-original.pdf) and
-[supplemental gallery](original/coverage.pdf).
+It is fetched and hash-verified through the Nix lock file.
+`comparisons/reference/main.mp` supplies source figures **M1–M11**;
+`comparisons/reference/supplemental.mp` supplies **S101–S108**. Inside the
+project devshell, run `./compare.sh --source-only` to rebuild all 19 source
+plates, or `./compare.sh` for paired core comparisons. See the
+[comparison guide](comparisons/README.md).
+
+Paired measurements currently cover M1–M7, S101 and an isolated concentric
+sphere C1. The other source plates are reproducible references, not claimed
+same-parameter pairs. Numerical scores below are historical investigation
+results; new reports specify their renderers, ppi, crops, modes and thresholds
+and should be used for subsequent comparisons.
 
 **Approximate** means Typst can draw the subject, while its source algorithm
 or visible details still differ. **Missing** means no corresponding drawing

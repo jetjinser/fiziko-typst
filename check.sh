@@ -18,6 +18,8 @@ typst eval 'query(<verify>).map(it => it.value)' --in verify.typ > build/check/g
 printf 'Geometry assertions passed; metrics: build/check/geometry.json\n'
 printf '## Regression harness tests\n'
 python3 -m unittest discover -s visual -p 'test_*.py'
+printf '## Source comparison harness tests\n'
+python3 -m unittest discover -s comparisons -p 'test_*.py'
 printf '## Typst compile\n'
 typst compile main.typ build/check/main.pdf
 printf '## Visual snapshot\n'
