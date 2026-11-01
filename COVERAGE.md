@@ -171,8 +171,9 @@ cover smaller pulley and physics compositions.
 5. **Composite and project audit:** `telescope.typ` combines existing drawing
    primitives into a telescope. Documentation and generated-file ignores are
    updated; the optional upstream `original/` directory remains untracked.
-   A project license is still undeclared, so the repository is not yet ready
-   to publish until its maintainer chooses the license and attribution text.
+   The project now declares `GPL-3.0-or-later` and preserves upstream
+   attribution. Typst Universe publication remains deferred while the
+   maintainer reviews the package and decides what author metadata to publish.
 
 After each drawing-code change, compile the focused specimen and `main.typ`.
 Keep the pinned, seeded source plates fixed as a common comparison target.
