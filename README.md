@@ -58,7 +58,7 @@ upstream attribution and license notice in [LICENSE](LICENSE). See
 | `whatever` equations / `lHopitalPulley` | `solve.typ`: `solve-linear` (Gauss–Jordan with pivoting), `line-intersect`, plus MetaPost's `++`/`+-+` as `pyth-add`/`pyth-sub`; `l-hopital-pulley(AB, l, m, at: .., length-labels: false)` draws the source-style figure; optional `length-labels: true` adds `l`/`m` labels |
 | `woodenThing(..)` / year rings | `wood(x, y, w, h, angle:, spacing:, eyes:)` — rings as level sets via `contour.typ` (marching squares + exact edge-ID chain stitching); each eye adds a log "twig function" so rings wrap the knot; arbitrary simple masks use `wooden-thing(poly, ...)` |
 | `drawmidarrow` / `markAngle` | `vector(a, b, w:, head:)` (shaft + filled triangle head) and `mark-angle(a, o, b, r:, ticks:)` (short-sweep arc + radial ticks) |
-| `spring` / `lens` / `weight` | `spring(a, b, coils:, rad:)` — sine projection of a helix; `lens(ap, sag, rim:, right-sag:, axis:, at:)` — one three-anchor formula supports symmetric or asymmetric convex, concave, and plano profiles; `weight(h, r:, at:)` hangs downward from `at`, while `weight-standing(h, r:, at:)` rises upward from its base |
+| `spring` / `lens` / `weight` | `spring(a, b, coils:, rad:)` — sine projection of a helix; `lens(ap, sag, rim:, right-sag:, axis:, at:)` — one three-anchor formula supports symmetric or asymmetric convex, concave, and plano profiles; `weight(h, r:, at:)` hangs downward with a source-sized auricle outline, while `weight-standing(h, r:, at:)` rises upward from its base |
 | MetaPost figures | `canvas(w, h, ..children)` — compose elements with `+` |
 
 Coordinates are plain millimetre floats (y down); the whole figure is a pure
