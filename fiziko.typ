@@ -2615,7 +2615,8 @@
 /// Wood-grain contours clipped to an arbitrary simple polygon. `eyes` use
 /// coordinates local to the polygon's bounding box.
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
-                  stroke: 0.45pt + black, source-field: false, seed: 1) = {
+                  stroke: 0.45pt + black, source-field: false, seed: 1,
+                  grain-stroke: none) = {
   if poly.len() < 3 { return none }
   let xs = poly.map(p => p.at(0))
   let ys = poly.map(p => p.at(1))
@@ -2647,7 +2648,9 @@
     if swapped { wood-model.knots.map(k => (w - k.at(1), k.at(0))) }
     else { wood-model.knots }
   } else { () }
-  let texture-stroke = if source-field { 0.07pt + black } else { stroke }
+  let texture-stroke = if source-field {
+    if grain-stroke == none { 0.07pt + black } else { grain-stroke + black }
+  } else { stroke }
   let border-stroke = if source-field { 0.2pt + black } else { stroke }
   let eye-loops = explicit-eyes.map(e =>
     _ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
@@ -2706,9 +2709,16 @@
 /// Wood-grain contours clipped to an offset band along an open path. `eyes`
 /// use coordinates local to the band's bounding box, as they do in `wood`.
 #let wooden-surface(path, thickness: 2.5, angle: 0, spacing: 0.7,
-                    eyes: (), cell: 1.0, stroke: 0.45pt + black) = {
+                    eyes: (), cell: 1.0, stroke: 0.45pt + black,
+                    source-field: true, seed: 1) = {
   let outer = resample(path, per: 12, closed: false)
   let inset = offset-path(path, thickness, closed: false)
+  let outline = outer + inset.rev()
+  if source-field {
+    return wooden-thing(outline, angle: angle, spacing: spacing, eyes: eyes,
+      cell: cell, stroke: stroke, source-field: true, seed: seed,
+      grain-stroke: 0.1pt)
+  }
   let quads = _band-quads(outer, inset, closed: false)
   let boundary = outer + inset
   let xs = boundary.map(p => p.at(0))

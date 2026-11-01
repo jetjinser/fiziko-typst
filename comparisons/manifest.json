@@ -137,7 +137,7 @@
       "title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105,
       "shared": {"wood_block_mm": [39,12], "source_grid_mm": 1, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "The plank uses the source knot-warped field at the 1 mm grid; its knot stream and contour widths are approximate. The separate wooden surface retains the prior field.",
+      "notes": "The plank and wooden surface now use the source knot-warped field at a 1 mm grid. At 600 ppi, surface RMSE is 0.07958 (prior 0.13138), with ink coverage 0.611% vs source 0.489%. Knot placement and contour widths remain approximate.",
       "regions_mm": {"block": [0,0,53,44], "surface": [55,0,65,44]}
     },
     "S106": {

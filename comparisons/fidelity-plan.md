@@ -38,7 +38,7 @@ included where a plate contains distinct drawing families.
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.22142 | 3.240% → 3.635% | At 600 ppi opaque RMSE 0.33901 with near-equal coverage (8.738% → 8.699%); gradient RMSE 0.33668 and coverage 6.901% → 6.917%. Glass remains over-inked (3.638% → 5.683%; RMSE 0.26279). |
 | S104 flat surfaces | 0.32819 | 10.630% → 9.745% | At 600 ppi stipple coverage now matches (7.079% → 7.121%, RMSE 0.28549). Hatch is still under-dense (14.066% → 12.284%, RMSE 0.36477); overall RMSE regressed from 0.29890 despite better density balance. |
-| S105 wood block and surface | 0.13445 | 0.768% → 1.531% | Block crop is near source coverage (1.111% → 1.207%); wooden-surface crop is over-inked (0.511% → 1.841%). |
+| S105 wood block and surface | 0.10509 | 0.741% → 0.846% | Latest 600 ppi candidate: wooden-surface RMSE 0.07958, ink coverage 0.489% → 0.611% (previously 0.13138 and 0.489% → 1.754%). Block remains at RMSE 0.13129 and near-source coverage (1.077% → 1.166%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
 | S107 wheels and centroid | 0.18217 | 3.260% → 2.575% | Pulley wheel is over-inked (3.949% → 5.796%); the open-spoke wheel is under-inked (7.319% → 2.739%); centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
@@ -64,12 +64,12 @@ strokes, while M10 contains mostly whitespace.
    crop improved from 0.292–0.300 to 0.240–0.252. M9 ink coverage moved from
    7.17% to 5.57%, closer to the source's 4.20%. S105 block RMSE fell from
    0.14057 to 0.13129; coverage shifted from 1.14% to 1.17% (source 1.08%).
-   S105's separate wooden surface is unchanged and remains over-inked. Knot
-   placement is reproducible but currently uses per-panel seed offsets rather
-   than consuming the exact upstream global call stream; contour pen widths
-   are approximated, and the wood-knot outlines are not yet source brush loops.
-   Next, port the source's contour-width modulation and shared RNG cursor,
-   then tackle `woodenSurface` separately.
+   The S105 wooden surface now also uses the knot-warped field: its 600 ppi
+   crop RMSE fell from 0.13138 to 0.07958, and coverage moved from 1.754% to
+   0.611% (source 0.489%). Knot placement is reproducible but still uses
+   per-panel seed offsets rather than the exact upstream global call stream;
+   contour pen widths and knot loops remain approximate. The shared RNG cursor
+   and brush-shaped knot contours are the next wood-specific improvements.
 3. **Reconcile `flatSurface` and the S103 fill families.** The port now uses
    upstream stroke/row scales, the lightness envelope and three-track stipples.
    At 600 ppi S103 whole-plate RMSE improved from 0.23772 to 0.22142, and its
