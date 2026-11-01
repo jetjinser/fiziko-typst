@@ -2706,7 +2706,7 @@
     else { wood-model.knots }
   } else { () }
   let texture-stroke = if source-field {
-    if grain-stroke == none { 0.07pt + black } else { grain-stroke + black }
+    if grain-stroke == none { 0.05pt + black } else { grain-stroke + black }
   } else { stroke }
   let border-stroke = if source-field { 0.2pt + black } else { stroke }
   let eye-loops = explicit-eyes.map(e =>
