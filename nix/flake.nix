@@ -26,11 +26,17 @@
             packages = with pkgs; [
               typst
               tinymist
+              python3
+              imagemagick
             ];
             env = [
               {
                 name = "TYPST_FONT_PATHS";
                 prefix = lib.makeSearchPath "share/fonts" (with pkgs; [ liberation_ttf ]);
+              }
+              {
+                name = "FIZIKO_TEST_FONT_PATH";
+                value = lib.makeSearchPath "share/fonts" [ pkgs.dejavu_fonts ];
               }
             ];
           };

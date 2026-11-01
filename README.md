@@ -121,9 +121,9 @@ document using the commands above. Keep diagnostic sources in `diagnostics/`
 and write new diagnostic output to `/tmp` or `build/`. The PNG under `visual/`
 is a tracked regression fixture, not a disposable preview.
 
-During the 2026-11-02 cleanup, numerical assertions passed with Typst 0.15.1,
-but the Figure 11 visual snapshot differed from the checked-in reference.
-That difference still needs review; the reference has not been updated.
+The stale Figure 11 snapshot identified during cleanup was reviewed and
+updated: the differences come from document reflow, coast subdivision and
+the revised seeded lash pattern. See the [review and comparison images](visual/reviews/2026-11-02-page-5/README.md).
 
 Geometry is verified numerically (no eyeballing needed):
 
