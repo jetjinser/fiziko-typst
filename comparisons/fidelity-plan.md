@@ -32,7 +32,7 @@ included where a plate contains distinct drawing families.
 
 | Plate | RMSE | Dark coverage | Component findings |
 | --- | ---: | ---: | --- |
-| M8 pulley composites | 0.13182 | 1.734% → 2.229% | After matching the 2.5 mm hatched beam band and 3× minimum source rope width, left crop RMSE is 0.14480 and right 0.11917; both remain mildly over-inked. |
+| M8 pulley composites | 0.12971 | 1.734% → 2.333% | The pulley now has the partial rim/support silhouette and a white mask that hides the rope kink. Whole-plate RMSE improved slightly; left/right crop RMSE is 0.14281/0.11688 and both remain over-inked. Wheel/support clipping and label placement still differ. |
 | M9 wood panels | 0.22848 | 4.203% → 4.638% | At 600 ppi, reducing source-field contour width to 0.05 pt lowered all four crop RMSEs to 0.223–0.234; coverage is now close to source. |
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.13136 | 4.917% → 5.036% | Latest 600 ppi candidate: globe RMSE 0.18935, ink coverage 25.940% → 27.538%; knot RMSE 0.17419, 2.606% → 1.669%. Per-crossing source layer sequences are now explicit; curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |

@@ -2414,20 +2414,6 @@
   (A: A, B: B, C: C, D: D, E: E, r3: r3, BD: BD, x1: x1, y1: y1, y2: y2, d1: d1)
 }
 
-/// Pulley wheel: white disc (hides the rope kink beneath), rim, groove,
-/// axle dot. Drawn after the ropes, as in fisiko's masked figure.
-#let pulley(d, center: (0, 0), groove: 5 / 6) = {
-  let R = d / 2
-  _join((
-    place(top + left, _fill((circle-pts(R + 0.6, 96, center: center),), white)),
-    stroke-path(circle-pts(R, 96, center: center),
-                stroke: 0.6pt + black, closed: true, per: 0),
-    stroke-path(circle-pts(R * groove, 96, center: center),
-                stroke: 0.45pt + black, closed: true, per: 0),
-    place(top + left, _fill((circle-pts(d / 16, 24, center: center),), black)),
-  ))
-}
-
 /// The area centroid of a simple closed polygon. Coordinates use millimetres;
 /// the input may omit the repeated closing point.
 #let polygon-centroid(poly) = {
@@ -2490,6 +2476,40 @@
   items.push(stroke-path(circle-pts(d / 16, 48, center: center),
     stroke: 3 * _source-min-stroke * 1mm + black, closed: true, per: 0))
   _join(items)
+}
+
+/// Source-style pulley with a partial wheel, support silhouette, and axle.
+/// `angle` rotates the support in screen-space degrees.
+#let pulley(d, center: (0, 0), groove: 5 / 6, angle: 0) = {
+  let c = _cos(angle)
+  let s = _sin(angle)
+  let tx(p) = _add(center, (p.at(0) * c - p.at(1) * s,
+                             p.at(0) * s + p.at(1) * c))
+  let rim-r = d / 2
+  let rim = arc-pts(rim-r, 135, 405, n: 96)
+  let rim-x = rim-r * _cos(45)
+  let support-y = 2 / 3 * d
+  let silhouette = (rim.map(tx) + (tx((rim-x, support-y)),
+                                    tx((-rim-x, support-y))))
+  let support-r = 3 / 10 * d
+  let support = (arc-pts(support-r, 135, 405, n: 72).map(tx)
+    + (tx((support-r * _cos(45), support-y)),
+       tx((-support-r * _cos(45), support-y))))
+  let elements = (
+    place(top + left, _fill((silhouette,), white)),
+    pulley-wheel(d, center: center),
+    // The source clips its shaded wheel to this support face.
+    place(top + left, _fill((support,), white)),
+    stroke-path(silhouette, stroke: 0.6pt + black, closed: true, per: 0),
+    stroke-path(support, stroke: 0.35pt + black, closed: true, per: 0),
+    stroke-path(circle-pts(d / 12, 64, center: center),
+      stroke: 0.45pt + black, closed: true, per: 0),
+  )
+  if groove != 5 / 6 {
+    elements.push(stroke-path(circle-pts(d / 2 * groove, 96, center: center),
+      stroke: 0.45pt + black, closed: true, per: 0))
+  }
+  _join(elements)
 }
 
 /// A wheel with a rim, hub, and evenly spaced spokes.
@@ -2570,7 +2590,8 @@
   els.push(stroke-ink((D, C), rope-w, closed: false, per: 6, seed: seed))
 
   // wheel over the kink, then the weight
-  els.push(pulley(d1 * k, center: E))
+  let pulley-angle = calc.atan2(A.at(0) - D.at(0), A.at(1) - D.at(1)) / 1deg + 90
+  els.push(pulley(d1 * k, center: E, angle: pulley-angle))
   els.push(sphere(d2 * k, seed: seed, center: (C.at(0), C.at(1) + d2 * k / 2)))
 
   // dots and labels
