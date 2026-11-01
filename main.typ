@@ -47,22 +47,30 @@
                 stroke: (paint: black, thickness: 0.35pt, dash: "dotted"), per: 24)
     + stroke-ink(
       ((6, 36), (38, 16), (72, 34), (104, 14)),
-      t => 3 * pt * calc.pow(calc.sin(180 * t * 1deg), 2),
-      closed: false, per: 24,
+      // MetaPost's offset fit broadens the source sin² profile; this
+      // amplitude and falloff match its rendered M2 envelope more closely.
+      t => 7.5 * pt * calc.sin(180 * t * 1deg),
+      closed: false, per: 96, seed: 1,
     ),
   ),
   caption: [
     Variable-width brush. Where the intended line falls below the printable
-    minimum of 0.3pt it is replaced by dashes of the same hairline
+    minimum of 0.2pt it is replaced by dashes of the same hairline
     weight, carrying the same amount of ink per unit length (MetaPost fig. 5).
   ],
 )
 
+#let (latitude-small, latitude-rng) = sphere-latitude(
+  20, latitude: -60, center: (36, 28), samples: 360, seed: 15, with-rng: true,
+)
+#let (latitude-large, _) = sphere-latitude(
+  30, latitude: 45, center: (70, 28), rng-offset: latitude-rng,
+  samples: 360, seed: 15, with-rng: true,
+)
 #figure(
   canvas(
     110, 56,
-    sphere-latitude(20, latitude: -60, center: (36, 28))
-    + sphere-latitude(30, latitude: 45, center: (70, 28)),
+    latitude-small + latitude-large,
   ),
   caption: [
     Latitudinal sphere hatching at −60° and 45°; the latitude
@@ -73,7 +81,8 @@
 #figure(
   canvas(
     110, 56,
-    tube(arc-pts(42, 205, 335, n: 60, center: (55, 68)), 6, per: 0),
+    tube(arc-pts(42, 205, 335, n: 40, center: (55, 68)), 6,
+      per: 4, seed: 1, max-w: 0.308 * pt),
   ),
   caption: [
     A tube: two offset outlines plus longitudinal lines whose number follows the
@@ -84,14 +93,14 @@
 #figure(
   canvas(
     110, 82,
-    stroke-ink(((14, 6), (78, 6)), 1.0, closed: false, per: 8)
+    stroke-ink(((14, 6), (78, 6)), 0.6 * pt, closed: false, per: 8)
     + combine(range(9).map(i => stroke-path(
       ((20 + 6.5 * i, 6), (16.5 + 6.5 * i, 1.5)),
-      stroke: 0.4pt + black, per: 4,
+      stroke: 0.2pt + black, per: 4,
     )))
-    + tube(((35, 6), (59.4, 51.9)), 1.0, per: 8)
+    + tube(((35, 6), (59.4, 51.9)), 1.0, per: 8, seed: 1)
     + mark-angle((35, 20), (35, 6), (59.4, 51.9), r: 7.5)
-    + sphere(26, light: (-0.45, 0.5, 0.75), center: (59.4, 51.9))
+    + sphere(26, center: (59.4, 51.9), seed: 14)
     + vector((59.4, 66.5), (59.4, 78), w: 0.5, head: 2.8)
     + tag($A$, (31, 3.5), anchor: bottom + right)
     + tag($theta$, (37.6, 16.3))
@@ -111,15 +120,15 @@
   canvas(
     110, 62,
     tube(circle-pts(24, 96, center: (32, 31)),
-         t => 3.5 + 1.8 * calc.sin(360 * 5 * t * 1deg),
-         closed: true, per: 2)
-    + tube(((85, 10), (85, 52)), t => (1 - t) * 9, per: 8),
+      t => 3.5 - 1.8 * calc.sin(360 * 5 * t * 1deg),
+      closed: true, per: 2, seed: 12)
+    + tube(((85, 10), (85, 52)), t => (1 - t) * 9, per: 8, seed: 12),
   ),
   caption: [
     Tubes of varying radius: a closed ring whose radius oscillates (MetaPost
     fig. 8) and a cone (fig. 10). Interior lines are placed as fractions of the
-    *local* radius and weighted by the local ink budget, so they converge with
-    the taper and thin out into hairline dashes at the tip.
+    *local* radius and locally spaced: lanes disappear as the tube narrows,
+    while the remaining lanes thin into ink-conserving dashes at the tip.
   ],
 )
 
@@ -127,11 +136,11 @@
   canvas(
     110, 42,
     tube(((6, 32), (40, 14), (74, 32), (104, 16)), 5,
-         hatch: "t", per: 24),
+         hatch: "t", per: 384, seed: 1, period: 0.90 * pt),
   ),
   caption: [
     Transverse hatching (MetaPost fig. 9): spacing and thickness are coupled so
-    ink per unit area stays constant; below the 0.3 pt minimum the
+    ink per unit area stays constant; below the 0.2 pt minimum the
     thickness is clamped and the spacing grows instead of the line vanishing.
   ],
 )
@@ -139,8 +148,8 @@
 #figure(
   canvas(
     110, 40,
-    l-hopital-pulley(6, 2, 11 / 2, at: (8, 6))
-    + l-hopital-pulley(3, 5 / 2, 3, at: (58, 6)),
+    l-hopital-pulley(6, 2, 11 / 2, at: (8, 6), seed: 1)
+    + l-hopital-pulley(3, 5 / 2, 3, at: (58, 6), seed: 1),
   ),
   caption: [
     L'Hôpital's pulley (MetaPost fig. 18). The axle hangs at $D$, where the
@@ -213,8 +222,9 @@ Nothing in the examples above is drawn by hand. Figure 2 in full:
 #canvas(110, 52,
   stroke-path(p, stroke: 0.6pt + black, per: 24)
   + stroke-ink(p,
-      t => 3 * pt * calc.pow(calc.sin(180 * t * 1deg), 2),
-      closed: false, per: 24, seed: 42))
+      // This is the visually calibrated profile used in Figure 2 above.
+      t => 7.5 * pt * calc.sin(180 * t * 1deg),
+      closed: false, per: 96, seed: 1))
 ```
 
 Coordinates are plain millimetre floats, so a figure can be regrown for any
@@ -226,8 +236,8 @@ function of the position along the path.
 Preflight of this document is reproducible with `./preflight.sh`
 (qpdf, pdffonts, Ghostscript); the measured facts:
 
-- *Minimum weight.* Ordinary strokes use a 0.3pt minimum; the latitude sphere
-  follows fiziko's source defaults (0.2pt pen, 0.3pt maximum shading width,
+- *Minimum weight.* Variable-width brush and tube strokes use fiziko's source
+  default 0.2pt pen; the latitude sphere also uses a 0.2pt pen, 0.3pt maximum shading width,
   0.9pt line spacing). Measured stroked paths in this file are 0.35, 0.4,
   0.45, 0.5, and 0.6pt; source-matched sphere hatches are filled 0.2pt paths.
 - *Colour.* Figure and text use solid black in the master; preflight found 314

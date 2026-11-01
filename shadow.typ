@@ -25,11 +25,13 @@ plane along the light vector. The last sphere uses a tilted 3D polygon.
 )
 
 `sphere-shadow-plane` accepts a 2D polygon in sphere-local XY coordinates
-(y up) and its depth. `sphere-shadow-polygon` accepts coplanar 3D vertices in
-the same local coordinates. Its plane can have any orientation; the polygon
-must be simple with at least three non-collinear vertices. Both use positive z
-toward the viewer and the sphere's radius units. The `light` vector uses x
-right, y up, and z toward the viewer.
+(y up) and a depth in Fiziko's source convention: z = 0 at the sphere's
+frontmost pole, increasing toward the light. This reproduces MetaPost's
+`shadowDepth` projection. `sphere-shadow-polygon` accepts coplanar 3D vertices
+relative to the sphere center, with positive z toward the viewer. Its plane
+can have any orientation; the polygon must be simple with at least three
+non-collinear vertices. The `light` vector uses x right, y up, and z toward
+the viewer.
 
 #figure(
   canvas(140, 40,

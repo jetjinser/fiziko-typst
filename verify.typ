@@ -42,14 +42,9 @@
                         spacing: 2.2, coverage: 0.4, per: 8)
 #let tr0 = Ltr.trans.at(0)
 #let tr1 = Ltr.trans.at(1)
-#let tr-gap = tr1.pos - tr0.pos
-#let tr-ink = tr0.w / tr0.s
-#let tr-corner = tr0.loop.at(0)
-#let tr-corner-err = {
-  let want = calc.sqrt(calc.pow(tr0.w / 2, 2) + 36)
-  let got = calc.sqrt(calc.pow(tr-corner.at(0), 2) + calc.pow(tr-corner.at(1), 2))
-  calc.abs(got - want)
-}
+#let tr-gap = (tr1.t - tr0.t) * 60
+#let tr-profile-mid = (tr0.profile)(0.5)
+#let tr-cross-width = dist(tr0.pts.first(), tr0.pts.last())
 #let Lcl = _tube-layout(((0, 0), (60, 0)), 6, hatch: "t",
                         spacing: 0.05, coverage: 0.4, per: 8)
 
@@ -155,11 +150,10 @@
   cone_w0: cone-w0,
   cone_w1: cone-w1,
   tr_gap: tr-gap,
-  tr_ink: tr-ink,
+  tr_profile_mid: tr-profile-mid,
   tr_count: Ltr.trans.len(),
-  tr_corner_err: tr-corner-err,
-  clamp_w: Lcl.trans.at(0).w,
-  clamp_s: Lcl.trans.at(0).s,
+  tr_cross_width: tr-cross-width,
+  clamp_profile_mid: (Lcl.trans.at(0).profile)(0.5),
   slv_err: slv-err,
   slv_sing: slv-sing,
   par_none: par-none,
@@ -225,8 +219,8 @@
 #assert(calc.max(..bandradii) <= 36 + 0.25 * pt + 0.002)
 #assert(calc.abs(calc.max(..ys) - (50 + 1.5 * pt)) < 1e-8)
 #assert(cone-r0 == 10 and cone-r1 == 0 and cone-w1 == 0)
-#assert(calc.abs(tr-gap - 2.2) < 1e-9 and calc.abs(tr-ink - 0.4) < 1e-9)
-#assert(tr-corner-err < 1e-9 and Lcl.trans.at(0).w >= 0.3 * pt)
+#assert(calc.abs(tr-gap - 2.2) < 1e-9 and tr-profile-mid > 0)
+#assert(calc.abs(tr-cross-width - 12) < 1e-9 and Lcl.trans.len() > 0)
 #assert(slv-err < 1e-10 and slv-sing == 1 and par-none == 1)
 #assert(P1.ad < 1e-10 and P1.eq < 1e-10 and P1.tang-dc < 1e-10 and P1.tang-db < 1e-10)
 #assert(P2.ad < 1e-10 and P2.eq < 1e-10 and P2.tang-dc < 1e-10 and P2.tang-db < 1e-10)

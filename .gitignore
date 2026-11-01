@@ -1,4 +1,7 @@
 .direnv/
+/build/
+__pycache__/
+*.pyc
 
 # Typst and MetaPost build outputs.
 /main.pdf
@@ -13,6 +16,16 @@
 /mechanics.pdf
 /telescope.pdf
 /eye.pdf
+/tube.pdf
+/sphere.pdf
+/stipple.pdf
 /page-*.png
 /figure12-diagnostic.*
 /original/
+
+# Keep diagnostic sources, but ignore their local build outputs.
+/diagnostics/*.pdf
+/diagnostics/*.png
+/diagnostics/*.log
+/diagnostics/*.mpx
+/diagnostics/*.[0-9]*

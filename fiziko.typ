@@ -53,15 +53,18 @@
 #let _dot(a, b) = a.at(0) * b.at(0) + a.at(1) * b.at(1)
 #let _mod(a, b) = calc.rem(calc.rem(a, b) + b, b)
 #let _rng(seed, key, salt) = {
-  // Park–Miller-style integer mixing. All intermediate products stay below
-  // 2^53, so Typst's numeric representation gives stable results.
-  let m = 2147483647
-  let s0 = _mod(int(seed), m)
-  let s1 = _mod(s0 * 48271 + 1, m)
-  let s = _mod(s1 * 48271 + 1, m)
+  // A small keyed integer hash. The former affine LCG combine made keyed
+  // streams arithmetic progressions (and visibly repeated every few rings
+  // when keys advanced linearly). Squared modular rounds decorrelate adjacent
+  // lanes while keeping every product exactly representable by Typst numbers.
+  let m = 65521
+  let s = _mod(int(seed), m)
   let k = _mod(int(key), m)
-  let state = _mod(s + _mod(k * 104729, m) + salt * 13007, m)
-  _mod(state * 48271 + 1, m) / m
+  let z = _mod(int(salt), m)
+  let x = _mod((s + 17) * (s + 17) + 37 * (k + 31) * (k + 31)
+    + 101 * (z + 11) * (z + 11), m)
+  x = _mod((x + 1234) * (x + 1234) + 257 * s + 911 * k + 3571 * z, m)
+  x / m
 }
 
 // One of MetaPost's eight cubic segments in fullcircle, rotated by 90°.
@@ -104,7 +107,7 @@
 #let _val(x, t) = if type(x) == function { x(t) } else { x }
 
 // ---------------------------------------------------------------------------
-// sampling — Catmull-Rom through the given anchors
+// sampling — Hobby splines for open paths; Catmull–Rom for closed paths
 // ---------------------------------------------------------------------------
 #let _catmull(p0, p1, p2, p3, t) = {
   let t2 = t * t
@@ -118,8 +121,8 @@
   (f(p0.at(0), p1.at(0), p2.at(0), p3.at(0)), f(p0.at(1), p1.at(1), p2.at(1), p3.at(1)))
 }
 
-/// Resample a polyline into a dense, smooth point list.
-#let resample(pts, per: 12, closed: false) = {
+/// Catmull–Rom sampler retained for closed paths and explicit selection.
+#let _resample-catmull(pts, per: 12, closed: false) = {
   let segs = if closed { pts.len() } else { pts.len() - 1 }
   let out = ()
   for s in range(segs) {
@@ -135,6 +138,113 @@
   out
 }
 
+// Hobby's unit-tension automatic spline. Endpoints use unit curl; the open
+// tridiagonal mock-curvature system is solved in linear time.
+#let _hobby-controls(pts) = {
+  let n = pts.len()
+  if n < 3 { return none }
+  let m = n - 1
+  let chords = range(m).map(i => (
+    pts.at(i + 1).at(0) - pts.at(i).at(0),
+    pts.at(i).at(1) - pts.at(i + 1).at(1),
+  ))
+  let lengths = chords.map(v => _len(v))
+  if lengths.any(d => d <= 1e-10) { return none }
+
+  let turns = range(n).map(_ => 0.0)
+  for i in range(1, m) {
+    let a = chords.at(i - 1)
+    let b = chords.at(i)
+    let cross = a.at(0) * b.at(1) - a.at(1) * b.at(0)
+    let dot = a.at(0) * b.at(0) + a.at(1) * b.at(1)
+    turns.at(i) = calc.atan2(dot, cross) / 1rad
+  }
+
+  let lower = ()
+  let diagonal = ()
+  let upper = ()
+  let rhs = ()
+  for k in range(n) {
+    if k == 0 {
+      lower.push(0.0)
+      diagonal.push(1.0)
+      upper.push(1.0)
+      rhs.push(-turns.at(1))
+    } else if k == m {
+      lower.push(1.0)
+      diagonal.push(1.0)
+      upper.push(0.0)
+      rhs.push(0.0)
+    } else {
+      let ratio = lengths.at(k) / lengths.at(k - 1)
+      lower.push(ratio)
+      diagonal.push(2 * ratio + 2)
+      upper.push(1.0)
+      rhs.push(-2 * ratio * turns.at(k) - turns.at(k + 1))
+    }
+  }
+  for i in range(1, n) {
+    let factor = lower.at(i) / diagonal.at(i - 1)
+    diagonal.at(i) -= factor * upper.at(i - 1)
+    rhs.at(i) -= factor * rhs.at(i - 1)
+  }
+  let theta = range(n).map(_ => 0.0)
+  theta.at(m) = rhs.at(m) / diagonal.at(m)
+  for offset in range(m) {
+    let i = m - 1 - offset
+    theta.at(i) = (rhs.at(i) - upper.at(i) * theta.at(i + 1)) / diagonal.at(i)
+  }
+
+  let velocity(st, ct, sf, cf) = calc.min(4.0,
+    (2 + calc.sqrt(2) * (st - sf / 16) * (sf - st / 16) * (ct - cf)) /
+    (1.5 * (2 + (calc.sqrt(5) - 1) * ct + (3 - calc.sqrt(5)) * cf)))
+  let rotate(v, a) = (
+    v.at(0) * calc.cos(a) - v.at(1) * calc.sin(a),
+    v.at(0) * calc.sin(a) + v.at(1) * calc.cos(a),
+  )
+  range(m).map(i => {
+    let phi = -turns.at(i + 1) - theta.at(i + 1)
+    let a = theta.at(i)
+    let v = chords.at(i)
+    let start = (pts.at(i).at(0), -pts.at(i).at(1))
+    let end = (pts.at(i + 1).at(0), -pts.at(i + 1).at(1))
+    let r = velocity(calc.sin(a), calc.cos(a), calc.sin(phi), calc.cos(phi))
+    let s = velocity(calc.sin(phi), calc.cos(phi), calc.sin(a), calc.cos(a))
+    let c1 = _add(start, _mul(rotate(v, a), r))
+    let c2 = _sub(end, _mul(rotate(v, -phi), s))
+    (pts.at(i), (c1.at(0), -c1.at(1)), (c2.at(0), -c2.at(1)), pts.at(i + 1))
+  })
+}
+
+#let _hobby-resample(pts, per: 12) = {
+  let cubics = _hobby-controls(pts)
+  if cubics == none { return none }
+  let out = ()
+  for seg in cubics {
+    let point(t) = {
+      let u = 1 - t
+      _add(
+        _add(_mul(seg.at(0), u * u * u), _mul(seg.at(1), 3 * u * u * t)),
+        _add(_mul(seg.at(2), 3 * u * t * t), _mul(seg.at(3), t * t * t)),
+      )
+    }
+    for k in range(per) { out.push(point(k / per)) }
+  }
+  out.push(pts.last())
+  out
+}
+
+/// Resample a polyline. Open paths default to MetaPost-style Hobby splines;
+/// closed paths use periodic Catmull–Rom. Set `spline: "catmull"` to retain
+/// Catmull–Rom on an open path, or `spline: "hobby"` to request Hobby there.
+#let resample(pts, per: 12, closed: false, spline: "auto") = {
+  if not closed and (spline == "auto" or spline == "hobby") {
+    let result = _hobby-resample(pts, per: per)
+    if result != none { return result }
+  }
+  _resample-catmull(pts, per: per, closed: closed)
+}
+
 /// Tangent/normal frames along a dense point list.
 #let _frame(pts, closed) = {
   pts.enumerate().map(((i, p)) => {
@@ -146,6 +256,23 @@
 
 #let _prepare(pts, per, closed) = if per > 0 { resample(pts, per: per, closed: closed) } else { pts }
 
+// Normalized cumulative path lengths at each sampled point. The final closing
+// segment contributes to total length but has no duplicate point at t = 1.
+#let _path-fractions(pts, closed) = {
+  let n = pts.len()
+  if n == 0 { return () }
+  let count = if closed { n } else { n - 1 }
+  let lengths = (0.0,)
+  for i in range(count) {
+    lengths.push(lengths.last() + _dist(pts.at(i), pts.at(_mod(i + 1, n))))
+  }
+  let total = lengths.last()
+  range(n).map(i => if total > 0 { lengths.at(i) / total }
+                    else if closed { i / n }
+                    else if n > 1 { i / (n - 1) }
+                    else { 0.0 })
+}
+
 // ---------------------------------------------------------------------------
 // ink machinery — variable-width bands, ink-conserving dashes
 // ---------------------------------------------------------------------------
@@ -154,7 +281,8 @@
 /// Widths below `minw` are replaced by dashes of width `minw` whose coverage
 /// (dash length / period) equals w / minw, keeping ink per unit length.
 #let _ink-loops(fr, ws, closed, minw, minlen, seed: 0, dash-extra: 0, dash-cap: 0,
-                with-rng: false, with-stats: false) = {
+                with-rng: false, with-stats: false,
+                param-times: none, param-end: none, trace-nodes: false) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -162,6 +290,7 @@
   let rng-cursor = 0
   let thin-leaf-count = 0
   let outer-leaf-count = 0
+  let nodes = ()
   let adj = range(n).map(i => {
     let j = if closed { _mod(i + 1, n) } else { calc.clamp(i + 1, 0, n - 1) }
     _dist(fr.at(i).at(0), fr.at(j).at(0))
@@ -188,7 +317,45 @@
     let j = if closed { _mod(base + 1, n) } else { calc.clamp(base + 1, 0, n - 1) }
     ws.at(i) * (1 - t) + ws.at(j) * t
   }
-  let split-path(path, target) = {
+  // Optional source-template time. Some callers retain the width template's
+  // original knots, whose path parameter is not uniform in physical length.
+  let param-at(s) = if param-times == none { s } else {
+    let base = calc.floor(s)
+    let t = s - base
+    if closed and base >= n - 1 {
+      let end = if param-end == none { param-times.last() } else { param-end }
+      param-times.last() + (s - (n - 1)) * (end - param-times.last())
+    } else {
+      let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
+      let j = if closed { _mod(base + 1, n) } else { calc.clamp(base + 1, 0, n - 1) }
+      param-times.at(i) * (1 - t) + param-times.at(j) * t
+    }
+  }
+  let source-cut-valid(path, cut, margin) = {
+    let start = param-at(path.first())
+    let end = param-at(path.last())
+    let at = param-at(cut)
+    let first-end = calc.min(calc.floor(start) + 1, end)
+    let head = if at >= first-end - 0.000000001 { true }
+      else { (at - start) / (first-end - start) > margin }
+    let last-start = if calc.abs(end - calc.round(end)) < 0.000000001 { end - 1 }
+      else { calc.floor(end) }
+    let last-start = calc.max(start, last-start)
+    let tail = if at <= last-start + 0.000000001 { true }
+      else { (end - at) / (end - last-start) > margin }
+    head and tail
+  }
+  let source-path-time(path, cut) = {
+    let start = param-at(path.first())
+    let at = param-at(cut)
+    let first-end = calc.min(calc.floor(start) + 1, param-at(path.last()))
+    if at < first-end - 0.000000001 {
+      (at - start) / (first-end - start)
+    } else {
+      1 + calc.max(0, calc.floor(at) - first-end) + at - calc.floor(at)
+    }
+  }
+  let split-path(path, target, margin: 0.01) = {
     let total = 0.0
     for q in range(path.len() - 1) {
       total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
@@ -216,12 +383,14 @@
       let f = crossing.at(1)
       let at = crossing.at(2)
       let cut = path.at(q) + (path.at(q + 1) - path.at(q)) * f
-      if at <= 0.01 or total - at <= 0.01 { none } else {
+      let valid = if param-times == none { at > margin and total - at > margin }
+        else { source-cut-valid(path, cut, margin) }
+      if not valid { none } else {
         let left = path.slice(0, q + 1) + (cut,)
         let right = (cut,) + path.slice(q + 1)
         let llen = range(left.len() - 1).map(i => _dist(frame-index(left.at(i)).at(0), frame-index(left.at(i + 1)).at(0))).sum()
         let rlen = range(right.len() - 1).map(i => _dist(frame-index(right.at(i)).at(0), frame-index(right.at(i + 1)).at(0))).sum()
-        (left, right, llen, rlen, at, total)
+        (left, right, llen, rlen, at, total, valid, source-path-time(path, cut))
       }
     }
   }
@@ -322,15 +491,16 @@
         frames.push(frame-at(b))
         let fwd = ()
         let bwd = ()
-        let cap = if dash-cap == 1 { minw / 2 } else { 0.0 }
         for (idx, e) in frames.enumerate() {
-          let tangent = (e.at(1).at(1), -e.at(1).at(0))
-          let along = if idx == 0 { -cap } else if idx == frames.len() - 1 { cap } else { 0.0 }
-          let p = _add(e.at(0), _mul(tangent, along))
-          fwd.push(_add(p, _mul(e.at(1), minw / 2)))
-          bwd.push(_sub(p, _mul(e.at(1), minw / 2)))
+          fwd.push(_add(e.at(0), _mul(e.at(1), minw / 2)))
+          bwd.push(_sub(e.at(0), _mul(e.at(1), minw / 2)))
         }
-        fwd + bwd.rev()
+        let body = fwd + bwd.rev()
+        if dash-cap == 1 {
+          (body,
+           (center: frames.first().at(0), diameter: minw, reverse: true),
+           (center: frames.last().at(0), diameter: minw, reverse: true))
+        } else { (body,) }
       }
     }
 
@@ -338,13 +508,13 @@
       for k in range(int(count) + 1) {
         let center = k * period
         let lp = draw-dash(calc.max(0.0, center - dash / 2), calc.min(total, center + dash / 2))
-        if lp != none { out.push(lp) }
+        if lp != none { out += lp }
       }
     } else {
       for k in range(int(count)) {
         let start = gap / 2 + k * period
         let lp = draw-dash(start, calc.min(total, start + dash))
-        if lp != none { out.push(lp) }
+        if lp != none { out += lp }
       }
     }
     (out, 2)
@@ -355,6 +525,7 @@
   let refine-thin(pos) = {
     let pending = ((pos, 0),)
     let leaves = ()
+    let thin-nodes = ()
     while pending.len() > 0 {
       let node = pending.pop()
       let path = node.at(0)
@@ -378,14 +549,24 @@
       let split = if candidate != none and (candidate.at(2) > minlen or candidate.at(3) > minlen) {
         (candidate.at(0), candidate.at(1))
       } else { none }
-      if hi - lo >= step and depth < 15 and split != none {
+      let recurse = hi - lo >= step and depth < 15 and split != none
+      if trace-nodes {
+        thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
+          target: target, length: total, has-cut: candidate != none,
+          cut-distance: if candidate == none { none } else { candidate.at(4) },
+          cut-param: if candidate == none { none } else { candidate.at(7) },
+          left-length: if candidate == none { 0.0 } else { candidate.at(2) },
+          right-length: if candidate == none { 0.0 } else { candidate.at(3) },
+          recurse: recurse))
+      }
+      if recurse {
         pending.push((split.at(1), depth + 1))
         pending.push((split.at(0), depth + 1))
       } else if hi > dash-floor {
         leaves.push((path, calc.min(minw, target)))
       }
     }
-    leaves
+    (leaves, thin-nodes)
   }
 
   // Reproduce brushGenerate's outer recursion: split the whole path at each
@@ -408,8 +589,20 @@
         total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
       }
     }
-    let crossing = split-path(path, minw)
-    if hi > minw and lo < minw and depth < 10 and total > minlen and crossing != none {
+    // brushGenerate accepts any strictly interior cut; thinBrushGenerate
+    // below has its separate 0.01 path-parameter endpoint guard.
+    let crossing = split-path(path, minw, margin: 0.0)
+    let recurse = hi > minw and lo < minw and depth < 10 and total > minlen and crossing != none
+    if trace-nodes {
+      nodes.push((stage: "outer", depth: depth, width-min: lo, width-max: hi,
+        target: minw, length: total, has-cut: crossing != none,
+        cut-distance: if crossing == none { none } else { crossing.at(4) },
+        cut-param: if crossing == none { none } else { crossing.at(7) },
+        left-length: if crossing == none { 0.0 } else { crossing.at(2) },
+        right-length: if crossing == none { 0.0 } else { crossing.at(3) },
+        recurse: recurse))
+    }
+    if recurse {
       pending.push((crossing.at(1), depth + 1))
       pending.push((crossing.at(0), depth + 1))
     } else if lo > 0.99 * minw {
@@ -424,7 +617,9 @@
     if leaf.at(1) == 2 {
       loops.push(band(path))
     } else {
-      for thin-leaf in refine-thin(path) {
+      let thin-result = refine-thin(path)
+      nodes += thin-result.at(1)
+      for thin-leaf in thin-result.at(0) {
         thin-leaf-count += 1
         if thin-leaf.at(1) >= minw {
           loops.push(band(thin-leaf.at(0), fixed: minw))
@@ -437,17 +632,35 @@
     }
   }
   if with-stats {
-    (loops, rng-cursor, (outer: outer-leaf-count, thin: thin-leaf-count, dashes: rng-cursor / 2))
+    (loops, rng-cursor, (outer: outer-leaf-count, thin: thin-leaf-count,
+      dashes: rng-cursor / 2, nodes: nodes))
   } else if with-rng { (loops, rng-cursor) } else { loops }
 }
 
 #let _fill(loops, paint) = {
   let segs = ()
   for lp in loops {
-    if lp == none or lp.len() < 3 { continue }
-    segs.push(curve.move(_mm(lp.at(0))))
-    for p in lp.slice(1) { segs.push(curve.line(_mm(p))) }
-    segs.push(curve.line(_mm(lp.at(0))))
+    if lp == none { continue }
+    if type(lp) == dictionary {
+      // MetaPost stipples use round pens. Four cubic arcs preserve that shape
+      // while keeping each dot compact in the PDF.
+      let c = lp.at("center")
+      let r = lp.at("diameter") / 2
+      let h = 0.5522847498 * r
+      let orientation = if lp.at("reverse", default: false) { -1 } else { 1 }
+      let q(dx, dy) = _mm((c.at(0) + dx, c.at(1) + orientation * dy))
+      segs.push(curve.move(q(r, 0)))
+      segs.push(curve.cubic(q(r, h), q(h, r), q(0, r)))
+      segs.push(curve.cubic(q(-h, r), q(-r, h), q(-r, 0)))
+      segs.push(curve.cubic(q(-r, -h), q(-h, -r), q(0, -r)))
+      segs.push(curve.cubic(q(h, -r), q(r, -h), q(r, 0)))
+      segs.push(curve.close())
+    } else {
+      if lp.len() < 3 { continue }
+      segs.push(curve.move(_mm(lp.at(0))))
+      for p in lp.slice(1) { segs.push(curve.line(_mm(p))) }
+      segs.push(curve.line(_mm(lp.at(0))))
+    }
   }
   if segs.len() == 0 { none } else { curve(fill: paint, stroke: none, ..segs) }
 }
@@ -455,11 +668,82 @@
 // Sample a path by arc length so stipple density does not depend on its
 // polygon resolution. `w / dot-size` controls the chance of placing a dot.
 #let _dot-loop(p, diameter) = {
-  let r = diameter / 2
-  range(6).map(q => {
-    let angle = (q * 60 + 30) * 1deg
-    _add(p, (r * calc.cos(angle), r * calc.sin(angle)))
+  (center: p, diameter: diameter)
+}
+#let _clip-dot-to-circle(dot, center, radius) = {
+  let p = dot.at("center")
+  let dot-radius = dot.at("diameter") / 2
+  let radial = _unit(_sub(p, center))
+  let distance = _dist(p, center)
+  if distance + dot-radius <= radius { return dot }
+  if distance - dot-radius >= radius or distance <= 1e-9 { return none }
+
+  // Clip only the few boundary dots against the local tangent to the sphere.
+  // At stipple scale the tangent error is negligible, and this retains the
+  // partial round marks that source clipping leaves at the silhouette.
+  let sides = 24
+  let circle = range(sides).map(i => {
+    let a = 360 * i / sides
+    _add(p, (dot-radius * _cos(a), dot-radius * _sin(a)))
   })
+  let signed(q) = radius - _dot(_sub(q, center), radial)
+  let out = ()
+  let prev = circle.last()
+  let prev-side = signed(prev)
+  for curr in circle {
+    let curr-side = signed(curr)
+    if (prev-side >= 0) != (curr-side >= 0) {
+      let t = prev-side / (prev-side - curr-side)
+      out.push(_add(prev, _mul(_sub(curr, prev), t)))
+    }
+    if curr-side >= 0 { out.push(curr) }
+    prev = curr
+    prev-side = curr-side
+  }
+  if out.len() >= 3 { out } else { none }
+}
+#let _clip-dot-to-planes(dot, planes) = {
+  if planes.len() == 0 { return dot }
+  let center = dot.at("center")
+  let radius = dot.at("diameter") / 2
+  let fully-outside = planes.any(plane => {
+    let signed = _dot(_sub(center, plane.at(0)), plane.at(1))
+    signed - radius * _len(plane.at(1)) >= 0
+  })
+  if fully-outside { return none }
+  let crosses-edge = planes.any(plane => {
+    let signed = _dot(_sub(center, plane.at(0)), plane.at(1))
+    signed + radius * _len(plane.at(1)) > 0
+  })
+  if not crosses-edge { return dot }
+  let sides = 24
+  let circle = range(sides).map(i => {
+    let a = 360 * i / sides
+    _add(center, (radius * _cos(a), radius * _sin(a)))
+  })
+  let clip-plane(poly, plane) = {
+    if poly.len() == 0 { return () }
+    let origin = plane.at(0)
+    let outward = plane.at(1)
+    let signed(p) = _dot(_sub(p, origin), outward)
+    let clipped = ()
+    let prev = poly.last()
+    let prev-side = signed(prev)
+    for curr in poly {
+      let curr-side = signed(curr)
+      if (prev-side <= 0) != (curr-side <= 0) {
+        let t = prev-side / (prev-side - curr-side)
+        clipped.push(_add(prev, _mul(_sub(curr, prev), t)))
+      }
+      if curr-side <= 0 { clipped.push(curr) }
+      prev = curr
+      prev-side = curr-side
+    }
+    clipped
+  }
+  let poly = planes.fold(circle, (poly, plane) => clip-plane(poly, plane))
+  if poly.len() < 3 { return none }
+  poly
 }
 #let _inside-poly(p, poly) = {
   if poly.len() < 3 { return false }
@@ -504,18 +788,22 @@
                    else { (p.at(0), p.at(1)) }
   _inside-poly(project(hit), vertices.map(project))
 }
-#let _shadowed(p, regions, center, depth: 0,
+#let _shadowed(p, regions, center, depth: 0, plane-depth: none,
                light: (-0.353553, 0.382683, 0.853553), shadow-planes: (), shadow-polygons: ()) = {
   let local = _sub(p, center)
   let explicit = regions.any(poly => _inside-poly(local, poly))
+  // MetaPost's shadowDepth uses the sphere's frontmost pole as z = 0, while
+  // the 3D polygon API below uses the sphere center as its origin.
+  let plane-z = if plane-depth == none { depth } else { plane-depth }
   let projected = shadow-planes.any(shadow => {
-    let dz = shadow.depth - depth
-    // A plane occludes a surface point only when it lies toward the light.
+    let dz = shadow.depth - plane-z
+    // Match Fiziko's XY shadow-path projection: offsets scale by the
+    // light's z component. A plane occludes only points behind it.
     // Shadow polygon coordinates use world XY (y up); drawing points use
     // screen XY (y down).
     if calc.abs(light.at(2)) < 0.000001 or dz * light.at(2) <= 0 { false }
     else {
-      let t = dz / light.at(2)
+      let t = dz * light.at(2)
       _inside-poly((local.at(0) + light.at(0) * t,
                     -local.at(1) + light.at(1) * t), shadow.polygon)
     }
@@ -525,14 +813,18 @@
   explicit or projected or spatial
 }
 
-/// A planar occluder for automatic sphere-shadow projection. `polygon` uses
-/// sphere-local XY coordinates with y up; `depth` is positive toward the
-/// viewer. `light` uses the same x-right, y-up, z-toward-viewer axes.
+/// A source-style planar occluder. `polygon` uses sphere-local XY coordinates
+/// with y up; `depth` is measured from the frontmost sphere pole and increases
+/// toward the light, matching MetaPost's `shadowDepth` projection.
 #let sphere-shadow-plane(polygon, depth) = (polygon: polygon, depth: depth)
 /// A planar 3D occluder. Vertices are (x, y, z) in sphere-local coordinates;
 /// the polygon must be simple and planar. Its plane may have any orientation.
 #let sphere-shadow-polygon(vertices) = (vertices: vertices)
-#let _stipple-loops(fr, ws, closed, step, dot-size, seed) = {
+#let _stipple-loops(fr, ws, closed, step, dot-size, seed,
+                    normal-jitter: 0.45, ink-space: false,
+                    independent-spacing: false,
+                    density: 1.0,
+                    clip-dot: none, path-fractions: none) = {
   let n = fr.len()
   if n < 2 or step <= 0 or dot-size <= 0 { return () }
   let count = if closed { n } else { n - 1 }
@@ -541,6 +833,60 @@
     cum.push(cum.last() + _dist(fr.at(i).at(0), fr.at(calc.rem(i + 1, n)).at(0)))
   }
   let total = cum.last()
+  if ink-space {
+    // `thinBrushGenerate.stipples` sets dot count from integrated ink. For
+    // constant width this is floor(width × length / dot-size²), with one
+    // Bernoulli dot when the expected count is below one.
+    let mass-cum = (0.0,)
+    let total-mass = 0.0
+    for i in range(count) {
+      let j = calc.rem(i + 1, n)
+      let length = cum.at(i + 1) - cum.at(i)
+      let mass = density * length * (ws.at(i) + ws.at(j)) / (2 * dot-size * step)
+      total-mass += calc.max(0.0, mass)
+      mass-cum.push(total-mass)
+    }
+    let full-slots = int(calc.floor(total-mass))
+    let tail-dot = full-slots == 0 and _rng(seed, 1, 9) < total-mass
+    let slots = full-slots + if tail-dot { 1 } else { 0 }
+    if slots <= 0 { return () }
+    let loops = ()
+    let seg = 0
+    let offset-a = _rng(seed, 1, 1)
+    let offset-b = if full-slots >= 3 { _rng(seed, 1, 2) } else { offset-a }
+    for k in range(slots) {
+      let mass-pos = if full-slots == 0 {
+        _rng(seed, 1, 1) * total-mass
+      } else if full-slots < 3 {
+        // With one or two dots, stipplesBrushPattern randomizes only the
+        // first offset; each following dot lands on the next full d0 step.
+        (if k == 0 { offset-a } else { float(k) }) * total-mass / full-slots
+      } else {
+        // Brush dash patterns reuse two random offsets. Surface lanes restart
+        // their pattern at width-driven splits, so independently keyed offsets
+        // avoid long coherent rows without building recursive path fragments.
+        let offset = if independent-spacing { _rng(seed, k, 17) }
+                     else if calc.rem(k, 2) == 1 { offset-b } else { offset-a }
+        (k + offset) * total-mass / full-slots
+      }
+      while seg + 1 < count and mass-cum.at(seg + 1) < mass-pos { seg += 1 }
+      let segment-mass = mass-cum.at(seg + 1) - mass-cum.at(seg)
+      if segment-mass <= 0 { continue }
+      let t = calc.clamp((mass-pos - mass-cum.at(seg)) / segment-mass, 0.0, 1.0)
+      let j = calc.rem(seg + 1, n)
+      let a = fr.at(seg).at(0)
+      let b = fr.at(j).at(0)
+      let p = _add(_mul(a, 1 - t), _mul(b, t))
+      let normal = _normal(_sub(b, a))
+      let offset = (2 * _rng(seed, k, 3) - 1) * dot-size * normal-jitter
+      let dot = _dot-loop(_add(p, _mul(normal, offset)), dot-size)
+      let path-t = if path-fractions == none { (seg + t) / count }
+                   else { path-fractions.at(seg) * (1 - t) + path-fractions.at(j) * t }
+      let clipped = if clip-dot == none { dot } else { clip-dot(dot, path-t) }
+      if clipped != none { loops.push(clipped) }
+    }
+    return loops
+  }
   let slots = int(calc.floor(total / step))
   let loops = ()
   let seg = 0
@@ -558,8 +904,12 @@
     let b = fr.at(j).at(0)
     let normal = _normal(_sub(b, a))
     let p = _add(_add(_mul(a, 1 - t), _mul(b, t)),
-      _mul(normal, (2 * _rng(seed, key, 3) - 1) * dot-size * 0.45))
-    loops.push(_dot-loop(p, dot-size))
+      _mul(normal, (2 * _rng(seed, key, 3) - 1) * dot-size * normal-jitter))
+    let dot = _dot-loop(p, dot-size)
+    let path-t = if path-fractions == none { (seg + t) / count }
+                 else { path-fractions.at(seg) * (1 - t) + path-fractions.at(j) * t }
+    let clipped = if clip-dot == none { dot } else { clip-dot(dot, path-t) }
+    if clipped != none { loops.push(clipped) }
   }
   loops
 }
@@ -568,15 +918,17 @@
 // public primitives
 // ---------------------------------------------------------------------------
 
-/// Offset curve: points at distance f(t) along the normal, t in [0, 1]
-/// running along the path (cf. MetaPost's offsetPath(p)(f)).
+/// Offset curve: points at distance f(t) along the left-hand normal in
+/// mathematical (y-up) coordinates, where t is normalized arc length.
+/// This matches MetaPost's offsetPath orientation in the screen-space API.
 #let offset-path(pts, f, closed: true, per: 12, shift: (0, 0)) = {
   let src = pts.map(p => _add(p, shift))
   let fr = _frame(_prepare(src, per, closed), closed)
   let n = fr.len()
+  let ts = _path-fractions(fr.map(e => e.at(0)), closed)
   fr.enumerate().map(((i, e)) => {
-    let t = if closed { i / n } else { i / (n - 1) }
-    _add(e.at(0), _mul(e.at(1), _val(f, t)))
+    let t = ts.at(i)
+    _add(e.at(0), _mul(e.at(1), -_val(f, t)))
   })
 }
 
@@ -590,44 +942,231 @@
 }
 
 /// Variable-width stroke ("brush"): band of width w(t) about the curve,
-/// optionally displaced by offset(t). Ink-conserving below `min-w`;
+/// optionally displaced by offset(t); both functions use normalized arc
+/// length. Ink-conserving below `min-w`;
 /// `seed` controls deterministic dash-length variation and phase (default 0).
 #let stroke-ink(pts, w, offset: 0, closed: true, per: 12,
-                min-w: min-width, period: dash-min-length, seed: 0,
+                min-w: _source-min-stroke, period: _source-dash-length, seed: 0,
                 shift: (0, 0), fill: black) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
+  let ts = _path-fractions(fr0.map(e => e.at(0)), closed)
   let fr = fr0.enumerate().map(((i, e)) => {
-    let t = if closed { i / n } else { i / (n - 1) }
+    let t = ts.at(i)
     (_add(e.at(0), _mul(e.at(1), _val(offset, t))), e.at(1))
   })
   let ws = range(n).map(i => {
-    let t = if closed { i / n } else { i / (n - 1) }
-    _val(w, t)
+    _val(w, ts.at(i))
   })
-  place(top + left, _fill(_ink-loops(fr, ws, closed, min-w, period, seed: seed), fill))
+  place(top + left,
+    _fill(_ink-loops(fr, ws, closed, min-w, period,
+      seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1), fill))
 }
 
 /// Deterministic stippled stroke. `w(t)` is the local density in mm;
-/// `dot-size` and `step` control individual dots and spacing independently.
+/// `dot-size` and `step` control individual dots and spacing independently;
+/// `density` scales the ink-based dot count.
 #let stroke-stipple(pts, w, offset: 0, closed: true, per: 12,
                     dot-size: _source-max-shading, step: 2.5 * _source-max-shading,
-                    seed: 0, shift: (0, 0), fill: black) = {
+                    seed: 0, normal-jitter: 0.45, ink-space: false,
+                    independent-spacing: false,
+                    density: 1.0,
+                    shift: (0, 0), fill: black, _clip-dot: none) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
+  let ts = _path-fractions(fr0.map(e => e.at(0)), closed)
   let fr = fr0.enumerate().map(((i, e)) => {
-    let t = if closed { i / n } else { i / (n - 1) }
+    let t = ts.at(i)
     (_add(e.at(0), _mul(e.at(1), _val(offset, t))), e.at(1))
   })
-  let ws = range(n).map(i => _val(w, if closed { i / n } else { i / (n - 1) }))
-  place(top + left, _fill(_stipple-loops(fr, ws, closed, step, dot-size, seed), fill))
+  let ws = range(n).map(i => _val(w, ts.at(i)))
+  place(top + left, _fill(_stipple-loops(fr, ws, closed, step, dot-size, seed,
+    normal-jitter: normal-jitter, ink-space: ink-space,
+    independent-spacing: independent-spacing, density: density,
+    clip-dot: _clip-dot,
+    path-fractions: ts), fill))
+}
+
+// Open stipple-brush paths use the source's quantized, width-driven recursion.
+#let _brush-leaf-stipple(pts, w, offset, per, dot-size, track-spacing,
+                         dot-range, density, seed, shift, fill) = {
+  let src = pts.map(p => _add(p, shift))
+  let base = _frame(_prepare(src, per, false), false)
+  let n = base.len()
+  if n < 2 { return none }
+  let ts = _path-fractions(base.map(e => e.at(0)), false)
+  let fr = base.enumerate().map(((i, e)) =>
+    (_add(e.at(0), _mul(e.at(1), _val(offset, ts.at(i)))), e.at(1)))
+  let ws = ts.map(t => _val(w, t))
+  let cum = (0.0,)
+  for i in range(n - 1) {
+    cum.push(cum.last() + _dist(fr.at(i).at(0), fr.at(i + 1).at(0)))
+  }
+  let total = cum.last()
+  if total <= 0 { return none }
+  let find-seg(s) = {
+    let lo = 0
+    let hi = n - 1
+    while hi - lo > 1 {
+      let mid = int(calc.floor((lo + hi) / 2))
+      if cum.at(mid) <= s { lo = mid } else { hi = mid }
+    }
+    lo
+  }
+  let frame-at(s) = {
+    let seg = find-seg(s)
+    let span = cum.at(seg + 1) - cum.at(seg)
+    let f = if span > 0 { calc.clamp((s - cum.at(seg)) / span, 0.0, 1.0) } else { 0.0 }
+    let a = fr.at(seg)
+    let b = fr.at(seg + 1)
+    (_add(a.at(0), _mul(_sub(b.at(0), a.at(0)), f)),
+     _unit(_add(a.at(1), _mul(_sub(b.at(1), a.at(1)), f))))
+  }
+  let width-at(s) = {
+    let seg = find-seg(s)
+    let span = cum.at(seg + 1) - cum.at(seg)
+    let f = if span > 0 { calc.clamp((s - cum.at(seg)) / span, 0.0, 1.0) } else { 0.0 }
+    ws.at(seg) * (1 - f) + ws.at(seg + 1) * f
+  }
+
+  let min-leaf = dot-size / 20
+  let width-step = (_source-min-stroke - _source-min-stroke / 3) / 16
+  let tolerance = 0.01 * pt
+  let min-leaf-length = dot-size / 2
+  // A stack preserves the source's depth-first, left-before-right leaf order.
+  let pending = ((0.0, total, 0),)
+  let leaves = ()
+  while pending.len() > 0 {
+    let node = pending.last()
+    pending = pending.slice(0, pending.len() - 1)
+    let s0 = node.at(0)
+    let s1 = node.at(1)
+    let depth = node.at(2)
+    let seg0 = find-seg(s0)
+    let seg1 = find-seg(s1)
+    let lo = calc.min(width-at(s0), width-at(s1))
+    let hi = calc.max(width-at(s0), width-at(s1))
+    for i in range(seg0 + 1, seg1 + 1) {
+      lo = calc.min(lo, ws.at(i))
+      hi = calc.max(hi, ws.at(i))
+    }
+    let target = if lo > min-leaf - tolerance {
+      min-leaf + calc.floor(calc.max(0.0, ((hi + lo) / 2 - min-leaf) / width-step)) * width-step
+    } else { min-leaf }
+    let crossings = ()
+    for i in range(seg0, seg1 + 1) {
+      let a = calc.max(s0, cum.at(i))
+      let b = calc.min(s1, cum.at(i + 1))
+      if b <= a { continue }
+      let span = cum.at(i + 1) - cum.at(i)
+      let fa = (a - cum.at(i)) / span
+      let fb = (b - cum.at(i)) / span
+      let wa = ws.at(i) * (1 - fa) + ws.at(i + 1) * fa
+      let wb = ws.at(i) * (1 - fb) + ws.at(i + 1) * fb
+      if wa != wb and (wa - target) * (wb - target) <= 0 {
+        let cut = a + (target - wa) / (wb - wa) * (b - a)
+        let fraction = (cut - s0) / (s1 - s0)
+        if fraction > 0.005 and fraction < 0.995 { crossings.push(cut) }
+      }
+    }
+    let cut = if crossings.len() > 0 { crossings.first() } else { none }
+    let split = cut != none and hi - lo >= width-step and depth < 15 and ((cut - s0) > min-leaf-length or (s1 - cut) > min-leaf-length)
+    if split {
+      pending.push((cut, s1, depth + 1))
+      pending.push((s0, cut, depth + 1))
+    } else {
+      leaves.push((s0, s1, target))
+    }
+  }
+
+  let loops = ()
+  let tiny = 0.001 * dot-size
+  for (idx, leaf) in leaves.enumerate() {
+    let s0 = leaf.at(0)
+    let s1 = leaf.at(1)
+    let len = s1 - s0
+    if len <= min-leaf-length { continue }
+    let qwidth = leaf.at(2)
+    if qwidth / 3 < min-leaf { continue }
+    for lane in range(3) {
+      let side = lane - 1
+      let key = (idx + 1) * 104729 + lane * 13007
+      let size = dot-size * (dot-range.at(0) + (dot-range.at(1) - dot-range.at(0)) * _rng(seed, key, 11))
+      let expected = density * (qwidth / 3) * len / (size * size)
+      let whole = int(calc.floor(expected))
+      let dots = ()
+      if whole > 0 {
+        let spacing = len / whole
+        let first = _rng(seed, key, 1) * spacing
+        if whole >= 3 {
+          let second = _rng(seed, key, 2) * spacing
+          let j = 0
+          while first + 2 * j * spacing < len {
+            let d = first + 2 * j * spacing
+            if d < len - tiny { dots.push(d) }
+            let e = spacing + second + 2 * j * spacing
+            if e < len - tiny { dots.push(e) }
+            j += 1
+          }
+        } else {
+          let j = 0
+          while first + j * spacing < len - tiny {
+            dots.push(first + j * spacing)
+            j += 1
+          }
+        }
+      } else if _rng(seed, key, 3) < expected {
+        dots.push(_rng(seed, key, 4) * calc.max(0.0, len - tiny))
+      }
+      for d in dots {
+        let f = frame-at(s0 + d)
+        let center = _add(f.at(0), _mul(f.at(1), side * track-spacing / 3))
+        loops.push(_dot-loop(center, size))
+      }
+    }
+  }
+  _fill(loops, fill)
+}
+
+/// Three-track stippled brush. `w(t)` is the total ink-width profile; it is
+/// split across three tracks as in `thinBrush.stipples`. Open paths use
+/// quantized, width-driven pattern restarts; closed paths keep a continuous
+/// ring distribution. `density` adjusts the expected dots per local pattern.
+#let stroke-stipple-brush(pts, w, offset: 0, closed: false, per: 12,
+                          dot-size: _source-max-shading,
+                          track-spacing: 1.5 * _source-max-shading,
+                          dot-range: (0.9, 1.2),
+                          density: 0.5,
+                          seed: 0, shift: (0, 0), fill: black) = {
+  if not closed {
+    _brush-leaf-stipple(pts, w, offset, per, dot-size, track-spacing,
+      dot-range, density, seed, shift, fill)
+  } else {
+    let marks = ()
+    for lane in range(3) {
+      let side = lane - 1
+      let key = lane * 104729
+      let size-scale = dot-range.at(0) + (dot-range.at(1) - dot-range.at(0)) * _rng(seed, key, 11)
+      let lane-dot-size = dot-size * size-scale
+      marks.push(stroke-stipple(pts,
+        t => {
+          let lane-width = _val(w, t) / 3
+          if lane-width >= dot-size / 20 { lane-width } else { 0.0 }
+        },
+        offset: t => _val(offset, t) + side * track-spacing / 3,
+        closed: true, per: per, dot-size: lane-dot-size, step: lane-dot-size,
+        seed: seed + lane * 104729, normal-jitter: 0, ink-space: true,
+        density: density, shift: shift, fill: fill))
+    }
+    _join(marks)
+  }
 }
 
 /// Sphere as concentric rings whose thickness follows a Lambert light model.
 /// `light` is a 3D direction (x right, y up, z towards the viewer).
-#let sphere(d, light: (-0.353553, 0.382683, 0.853553), rings: auto, samples: 300,
+#let sphere(d, light: (-0.353553, 0.382683, 0.853553), rings: auto, samples: 128,
             max-w: _source-max-shading, gamma: 1.0,
             min-w: _source-min-stroke, period: _source-dash-length,
             seed: 0, center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
@@ -642,27 +1181,85 @@
   )
   let L = (light.at(0) / ln, light.at(1) / ln, light.at(2) / ln)
   let loops = ()
+  // Independent seeded phases keep ring placement stable when path sampling
+  // changes; MetaPost instead interleaves phases with global dash randomness.
+  let rng-cursor = 0
   for k in range(1, ring-count + 1) {
+    // `sphere.c` thins every other ring to account for the residual between
+    // the chosen power-of-two ring count and the requested diameter. Its
+    // residual is a MetaPost bp scalar, so convert the mm value before using
+    // it as a multiplier in Typst's mm coordinates.
+    let ring-max = if calc.rem(k, 2) == 1 {
+      max-w * calc.abs(d - (3 * max-w * ring-count)) / (ring-count * _mp-unit)
+    } else { max-w }
+    // The source puts the last ring on the silhouette and clips its centered
+    // brush band to the disk. Recenter the retained inner half-band here so
+    // it meets the same circular boundary without polygon boolean clipping.
     let r = R * k / ring-count
+    // `sphere.c` rotates each ring by a small random angle before drawing it.
+    let phase-key = k * k * 7919 + k * 104729
+    // Angles below use plain degrees, so convert MetaPost's 0..π/4 phase.
+    // MetaPost's `rotated (1/4 pi)` uses degree-valued angles, so this is
+    // only about 0.785°, not 45°.
+    let phase = (calc.pi / 4) * _rng(seed, phase-key, 1)
     let pts = range(samples).map(j => {
-      let a = 360 * j / samples
+      let a = 360 * j / samples + phase
       _add(center, (r * _cos(a), r * _sin(a)))
     })
-    let fr = _frame(pts, true)
-    let ws = fr.enumerate().map(((i, e)) => {
-      let p = e.at(0)
+    let base-fr = _frame(pts, true)
+    // MetaPost's offsetPathTemplate samples width at the eight fullcircle
+    // segment knots, then joins those values linearly. Preserve dense ring
+    // geometry while using that same coarse width template.
+    let knot-lightness = range(8).map(i => {
+      let a = phase + 45 * i
+      let p = _add(center, (r * _cos(a), r * _sin(a)))
       let z = calc.sqrt(calc.max(0.0, R * R - r * r))
       let nx = (p.at(0) - center.at(0)) / R
       let ny = -(p.at(1) - center.at(1)) / R   // screen y is down
       let nz = z / R
-      let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
-      if _shadowed(p, shadow-regions, center, depth: z, light: L,
-                   shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { max-w }
-      else { max-w * calc.pow(1 - lam, gamma) }
+      let lam = calc.clamp(
+        nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
+      if _shadowed(p, shadow-regions, center, depth: z, plane-depth: z - R, light: L,
+                   shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { 1.0 }
+      else { calc.pow(1 - lam, gamma) }
     })
-    loops += _ink-loops(fr, ws, true, min-w, period, seed: seed)
+    let widths = range(samples).map(j => {
+      let u = 8 * j / samples
+      let i = int(calc.floor(u))
+      let f = u - i
+      let next = _mod(i + 1, 8)
+      let p = base-fr.at(j).at(0)
+      let z = calc.sqrt(calc.max(0.0, R * R - r * r))
+      let is-shadowed = _shadowed(p, shadow-regions, center, depth: z, plane-depth: z - R, light: L,
+        shadow-planes: shadow-planes, shadow-polygons: shadow-polygons)
+      let lightness = knot-lightness.at(i) * (1 - f) + knot-lightness.at(next) * f
+      if is-shadowed { ring-max } else { ring-max * lightness }
+    })
+    let fr = if k == ring-count {
+      let inner-points = base-fr.enumerate().map(((i, e)) => {
+        let radial = _unit(_sub(e.at(0), center))
+        _sub(e.at(0), _mul(radial, widths.at(i) / 4))
+      })
+      _frame(inner-points, true)
+    } else { base-fr }
+    let ws = if k == ring-count { widths.map(w => w / 2) } else { widths }
+    let (ring-loops, consumed) = _ink-loops(
+      fr, ws, true, min-w, period, seed: seed + rng-cursor,
+      dash-extra: 0.01 * _mp-unit,
+      dash-cap: 1, with-rng: true,
+    )
+    loops += ring-loops
+    rng-cursor += consumed
   }
-  place(top + left, _fill(loops, fill))
+  let shading = _fill(loops, fill)
+  let rim-pts = range(samples).map(j => {
+    let a = 360 * j / samples
+    _add(center, (R * _cos(a), R * _sin(a)))
+  })
+  let rim = stroke-path(rim-pts,
+    stroke: min-w * 1mm + fill, closed: true, per: 0)
+  // MetaPost draws the outline first, then clips the ring shading over it.
+  _join((rim, place(top + left, shading)))
 }
 
 /// Stippled sphere with a jittered two-dimensional point field and Lambert
@@ -694,15 +1291,87 @@
       let radius2 = nx * nx + ny * ny
       if radius2 > limit * limit / (R * R) { continue }
       let nz = calc.sqrt(calc.max(0.0, 1 - radius2))
-      let lam = calc.max(0.0, nx * L.at(0) + ny * L.at(1) + nz * L.at(2))
+      let lam = calc.clamp(
+        nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
       let depth = R * nz
-      let dark = if _shadowed(p, shadow-regions, center, depth: depth, light: L,
+      let dark = if _shadowed(p, shadow-regions, center, depth: depth, plane-depth: depth - R, light: L,
                               shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { 1.0 }
                  else { calc.pow(1 - lam, gamma) }
       if _rng(seed, key * key + 1, 3) < dark { loops.push(_dot-loop(p, dot-size)) }
     }
   }
   place(top + left, _fill(loops, fill))
+}
+
+/// Stippled sphere drawn as dots along concentric rings, like `sphere.s`.
+/// `density` scales dot count to account for the source's segmented dash
+/// patterns; the default is calibrated against its S101 specimen.
+/// The ordinary `sphere-stipple` remains a jittered two-dimensional field.
+#let sphere-stipple-rings(d, light: (-0.353553, 0.382683, 0.853553),
+                          samples: 128, dot-size: 1.5 * _source-min-stroke,
+                          dot-range: (0.9, 1.2), gamma: 1.0, seed: 0, center: (0, 0),
+                          density: 0.55,
+                          shadow-regions: (), shadow-planes: (), shadow-polygons: (),
+                          fill: black) = {
+  let R = d / 2
+  // sphere.s uses a denser radial pitch than sphere.c: its stipple shading
+  // density is three half-dot steps (1.5 × stippleSize), not 3 × max-w.
+  let spacing = 1.5 * dot-size
+  let ring-count = calc.max(1, int(calc.pow(2,
+    calc.ceil(calc.log(R / spacing, base: 2)))))
+  let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
+  let L = (light.at(0) / ln, light.at(1) / ln, light.at(2) / ln)
+  let loops = ()
+  for k in range(1, ring-count + 1) {
+    let ring-max = if calc.rem(k, 2) == 1 {
+      (_source-max-shading * calc.abs(d - (spacing * ring-count))) / (ring-count * _mp-unit)
+    } else { _source-max-shading }
+    let phase-key = k * k * 7919 + k * 104729
+    // MetaPost's `rotated (1/4 pi)` receives degree-valued angles, so the
+    // source phase spans only about 0.785 degrees rather than 45 degrees.
+    let phase = (calc.pi / 4) * _rng(seed, phase-key, 1)
+    let radius = R * k / ring-count
+    // sphere.s places three dotted lanes across the width represented by each
+    // concentric contour; outer lanes are omitted when their dots leave the
+    // visible disk rather than drawing outside its silhouette.
+    for lane in range(3) {
+      let size-key = k * 7919 + lane * 104729
+      let size-scale = dot-range.at(0) + (dot-range.at(1) - dot-range.at(0)) * _rng(seed, size-key, 11)
+      let lane-dot-size = dot-size * size-scale
+      let lane-radius = radius + (lane - 1) * d / (3 * ring-count)
+      if lane-radius <= 0 { continue }
+      let pts = range(samples).map(j => {
+        let a = 360 * j / samples + phase
+        _add(center, (lane-radius * _cos(a), lane-radius * _sin(a)))
+      })
+      let fr = _frame(pts, true)
+      let ws = fr.map(e => {
+        let p = e.at(0)
+        let nx = (p.at(0) - center.at(0)) / R
+        let ny = -(p.at(1) - center.at(1)) / R
+        let nz = calc.sqrt(calc.max(0.0, 1 - nx * nx - ny * ny))
+        let lam = calc.clamp(nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
+        let depth = R * nz
+        let dark = if _shadowed(p, shadow-regions, center, depth: depth, plane-depth: depth - R, light: L,
+                                shadow-planes: shadow-planes, shadow-polygons: shadow-polygons) { 1.0 }
+                   else { calc.pow(1 - lam, gamma) }
+        let lane-width = ring-max * dark / 3
+        // thinBrushGenerate.stipples omits lanes below 1/20 of the dot pen.
+        if lane-width >= dot-size / 20 { lane-width } else { 0.0 }
+      })
+      let dots = _stipple-loops(fr, ws, true, lane-dot-size, lane-dot-size,
+        seed + size-key, normal-jitter: 0, ink-space: true,
+        independent-spacing: true, density: density)
+      loops += dots.map(dot => _clip-dot-to-circle(dot, center, R))
+    }
+  }
+  let rim-pts = range(samples).map(j => {
+    let a = 360 * j / samples
+    _add(center, (R * _cos(a), R * _sin(a)))
+  })
+  let rim = stroke-path(rim-pts, stroke: _source-min-stroke * 1mm + fill,
+    closed: true, per: 0)
+  _join((place(top + left, _fill(loops, fill)), rim))
 }
 
 /// Sphere shaded with the original fiziko-style latitudinal strokes.
@@ -714,6 +1383,7 @@
                      max-w: _source-max-shading, spacing: _source-spacing, samples: 180,
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
                      seed: 1, rng-offset: 0, with-rng: false, with-trace: false,
+                     trace-latitude: none,
                      center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   let R = d / 2
   let n = calc.max(2, calc.ceil(calc.pi * R / spacing))
@@ -774,8 +1444,9 @@
         -(R * cp * clat + 2 * rx * circle.at(1) * slat),
       )
       let radial = _len(local)
+      let depth = calc.sqrt(calc.max(0.0, R * R - radial * radial))
       _shadowed(_add(center, local), shadow-regions, center,
-        depth: calc.sqrt(calc.max(0.0, R * R - radial * radial)),
+        depth: depth, plane-depth: depth - R,
         light: L, shadow-planes: shadow-planes, shadow-polygons: shadow-polygons)
     }
     // offsetPathSubdivide cuts every original cubic into four. For partial
@@ -869,7 +1540,7 @@
       let density = calc.sqrt(calc.max(0.0, 1 - calc.pow(yn, 2) - calc.pow(xfade, 2)))
       let depth = calc.sqrt(calc.max(0.0, R * R - radius * radius))
       let cast-shadow = _shadowed(_add(center, (local-x, local-y)),
-        shadow-regions, center, depth: depth, light: L, shadow-planes: shadow-planes,
+        shadow-regions, center, depth: depth, plane-depth: depth - R, light: L, shadow-planes: shadow-planes,
         shadow-polygons: shadow-polygons)
       let lightness = if cast-shadow { 1.0 } else { calc.pow(1 - lam, gamma) }
       max-w * _lat-density(density, k) * lightness
@@ -885,12 +1556,21 @@
     // extrema and threshold crossings can occur between drawing samples.
     let fr = ()
     let widths = ()
+    let param-times = ()
+    let param-time(s) = {
+      let j = range(knot-s.len() - 1).find(j =>
+        knot-s.at(j) <= s and s <= knot-s.at(j + 1))
+      let j = if j == none { knot-s.len() - 2 } else { j }
+      let span = knot-s.at(j + 1) - knot-s.at(j)
+      j + if span > 0 { (s - knot-s.at(j)) / span } else { 0.0 }
+    }
     let knot = 1
     for i in range(count) {
       fr.push(base-fr.at(i))
       widths.push(ws.at(i))
+      let start-s = path-s.at(i)
+      param-times.push(param-time(start-s))
       if i + 1 < path-s.len() {
-        let start-s = path-s.at(i)
         let end-s = path-s.at(i + 1)
         while knot < knot-s.len() - 1 and knot-s.at(knot) <= end-s + 0.000000001 {
           let at-s = knot-s.at(knot)
@@ -905,16 +1585,20 @@
               _mul(base-fr.at(next).at(1), f)))
             fr.push((point, normal))
             widths.push(knot-ws.at(knot))
+            param-times.push(float(knot))
           }
           knot += 1
         }
       }
     }
     let ink = _ink-loops(
-      fr, widths, full, min-w, period, seed: seed + rng-offset,
+      fr, widths, full, min-w, period, seed: seed + rng-cursor,
       dash-extra: 0.01 * _mp-unit,
       dash-cap: 1,
       with-rng: true, with-stats: with-trace,
+      param-times: param-times,
+      param-end: float(knot-ts.len() - 1),
+      trace-nodes: trace-latitude == k,
     )
     if with-trace {
       trace.push((latitude: k, path-length: path-length,
@@ -922,7 +1606,7 @@
         knot-s: knot-s, knot-w: knot-ws,
         brush-nodes: fr.len(),
         outer-leaves: ink.at(2).outer, thin-leaves: ink.at(2).thin,
-        dash-calls: ink.at(2).dashes))
+        dash-calls: ink.at(2).dashes, nodes: ink.at(2).nodes))
     }
     out += ink.at(0)
     rng-cursor += ink.at(1)
@@ -954,93 +1638,301 @@
   let v1 = fr.at(i + 1).at(1)
   let p = (p0.at(0) + (p1.at(0) - p0.at(0)) * f, p0.at(1) + (p1.at(1) - p0.at(1)) * f)
   let v = _unit((v0.at(0) + (v1.at(0) - v0.at(0)) * f, v0.at(1) + (v1.at(1) - v0.at(1)) * f))
-  (p, v, (i + f) / (n - 1))
+  (p, v, s / cum.last(), i)
 }
 
 /// Tube geometry as plain data (so verify.typ can assert on it):
 ///   * `sides-offset`: the outline sits at ± this radius, per t
-///   * `inner`: longitudinal lines — position = fraction `u` of the *local*
-///     radius, width = local ink budget (coverage × local spacing)
-///   * `trans`: transverse lines at arc-length positions, thickness clamped
-///     to the printable minimum (spacing grows to keep ink per area)
+///   * `inner`: longitudinal lanes on a maximum power-of-two grid; explicit
+///     sections preserve each local lane count and residual-width parity
+///   * `trans`: transverse cross-section strokes at arc-length positions,
+///     with surface-lit width profiles and source-scale spacing
 #let _tube-layout(pts, radius, hatch: "l", spacing: 3 * _source-max-shading, coverage: auto,
-                  closed: false, per: 12, w: 0.5 * pt, min-w: min-width,
+                  closed: false, per: 12, w: 0.5 * pt, min-w: _source-min-stroke,
                   max-w: _source-max-shading,
                   light: (-0.353553, 0.382683, 0.853553), gamma: 1.0,
                   shift: (0, 0)) = {
   let src = pts.map(p => _add(p, shift))
   let fr = _frame(_prepare(src, per, closed), closed)
   let n = fr.len()
+  let ts = _path-fractions(fr.map(e => e.at(0)), closed)
+  let total-length = 0.0
+  for i in range(if closed { n } else { n - 1 }) {
+    total-length += _dist(fr.at(i).at(0), fr.at(_mod(i + 1, n)).at(0))
+  }
   let rfun(t) = calc.max(0.0, _val(radius, t))
-  let t-of(i) = if closed { i / n } else { i / (n - 1) }
+  let t-of(i) = ts.at(i)
   let rs = range(n).map(i => rfun(t-of(i)))
   let rmax = calc.max(..rs)
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
   let L = (light.at(0) / ln, light.at(1) / ln, light.at(2) / ln)
   let normal-at(t) = {
-    let x = if closed { t * n } else { t * (n - 1) }
-    let i = calc.min(n - 1, int(calc.floor(x)))
+    let i = if closed and t >= ts.last() { n - 1 } else {
+      let found = range(n - 1).find(k => ts.at(k + 1) >= t)
+      if found == none { calc.max(0, n - 2) } else { found }
+    }
     let j = if closed { _mod(i + 1, n) } else { calc.min(n - 1, i + 1) }
-    let f = x - i
+    let lo = ts.at(i)
+    let hi = if closed and i == n - 1 { 1.0 } else { ts.at(j) }
+    let f = if hi > lo { calc.clamp((t - lo) / (hi - lo), 0.0, 1.0) } else { 0.0 }
     _unit((
       fr.at(i).at(1).at(0) * (1 - f) + fr.at(j).at(1).at(0) * f,
       fr.at(i).at(1).at(1) * (1 - f) + fr.at(j).at(1).at(1) * f,
     ))
   }
+  let center-at(t) = {
+    let i = if closed and t >= ts.last() { n - 1 } else {
+      let found = range(n - 1).find(k => ts.at(k + 1) >= t)
+      if found == none { calc.max(0, n - 2) } else { found }
+    }
+    let j = if closed { _mod(i + 1, n) } else { calc.min(n - 1, i + 1) }
+    let lo = ts.at(i)
+    let hi = if closed and i == n - 1 { 1.0 } else { ts.at(j) }
+    let f = if hi > lo { calc.clamp((t - lo) / (hi - lo), 0.0, 1.0) } else { 0.0 }
+    _add(fr.at(i).at(0), _mul(_sub(fr.at(j).at(0), fr.at(i).at(0)), f))
+  }
+  let radius-slope(t) = {
+    let eps = 0.0001
+    let lo = if closed and t < eps { 1 + t - eps }
+             else if closed { t - eps }
+             else { calc.max(0.0, t - eps) }
+    let hi = if closed and t > 1 - eps { t + eps - 1 }
+             else if closed { t + eps }
+             else { calc.min(1.0, t + eps) }
+    let dt = if closed and (t < eps or t > 1 - eps) { 2 * eps } else { hi - lo }
+    if total-length > 0 and dt > 0 {
+      ((rfun(hi) - rfun(lo)) / dt) / total-length
+    } else { 0.0 }
+  }
   let shade(u, t) = {
     let nv = normal-at(t)
-    let nz = calc.sqrt(calc.max(0.0, 1 - u * u))
-    calc.pow(calc.clamp(1 - u * nv.at(0) * L.at(0) - u * nv.at(1) * L.at(1) - nz * L.at(2), 0.0, 1.0), gamma)
+    let radial-z = calc.sqrt(calc.max(0.0, 1 - u * u))
+    // The upstream layout stores the full diameter in `tubeWidth`, then
+    // halves that path before reading its direction for the surface normal.
+    // Its axial correction therefore uses the radius slope dr/ds.
+    let slope = radius-slope(t)
+    let tangent = (nv.at(1), nv.at(0))
+    let norm = calc.max(1e-9, calc.sqrt(1 + slope * slope))
+    // Convert the 2D frame to world coordinates (y-up), then account for the
+    // axial component from a changing radius. Like tubeAnglesToNormalVector,
+    // the cross-section normal rotates with the centerline tangent without
+    // adding a separate bend-dependent axial correction.
+    let nx = (u * nv.at(0) - slope * tangent.at(0)) / norm
+    let ny = (-u * nv.at(1) - slope * tangent.at(1)) / norm
+    let nz = radial-z / norm
+    let lam = calc.clamp(nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
+    calc.pow(1 - lam, gamma)
   }
   let cov = if coverage == auto {
-    if hatch == "t" { 0.2 } else if hatch == "s" { 0.4 } else { 0.6 }
+    if hatch == "t" { 1 / 3 } else if hatch == "s" { 0.4 } else { 0.6 }
   } else { coverage }
 
-  // The source doubles the line count until the interval falls below its
-  // shading density. A power-of-two division count gives similar balanced
-  // lanes while keeping one stable layout for a varying-radius tube.
-  let inner-n = if rmax > 0 and spacing > 0 {
+  // Use a maximum power-of-two lattice to share lane identities between
+  // sections; each piece below retains its source-local lane index and width.
+  let divisions = if rmax > 0 and spacing > 0 {
     let divisions = calc.max(1, int(calc.pow(2,
       calc.ceil(calc.log(2 * rmax / spacing, base: 2)))))
-    divisions - 1
-  } else { 0 }
-  let inner = range(1, inner-n + 1).map(k => {
-    let u = -1.0 + 2.0 * k / (inner-n + 1)
+    divisions
+  } else { 1 }
+  let local-divisions(t) = {
+    let r = rfun(t)
+    if r > 0 and spacing > 0 {
+      calc.max(1, int(calc.pow(2,
+        calc.ceil(calc.log(2 * r / spacing, base: 2)))))
+    } else { 1 }
+  }
+  // tubeGenerate recursively cuts at every diameter threshold where its
+  // power-of-two lane count changes. Keep those cuts explicit so the lane
+  // width/parity change is not blended across an ordinary sampling interval.
+  let division-cuts = (0.0,)
+  let scan-count = calc.max(128, n * 4)
+  let previous-divisions = local-divisions(0.0)
+  let sampled-divisions = ts.map(local-divisions) + (local-divisions(1.0),)
+  let stable-divisions = sampled-divisions.all(d => d == sampled-divisions.first())
+  if not stable-divisions {
+    for step-index in range(1, scan-count + 1) {
+      let lo-scan = (step-index - 1) / scan-count
+      let hi-scan = step-index / scan-count
+      let next-divisions = local-divisions(hi-scan)
+      if next-divisions != previous-divisions {
+        let lo = lo-scan
+        let hi = hi-scan
+        for _ in range(24) {
+          let mid = (lo + hi) / 2
+          if local-divisions(mid) == previous-divisions { lo = mid }
+          else { hi = mid }
+        }
+        division-cuts.push((lo + hi) / 2)
+      }
+      previous-divisions = next-divisions
+    }
+  }
+  division-cuts.push(1.0)
+  let division-sections = range(division-cuts.len() - 1).map(i => {
+    let from = division-cuts.at(i)
+    let to = division-cuts.at(i + 1)
+    (from: from, to: to, divisions: local-divisions((from + to) / 2))
+  })
+  let lane-pitch(t) = 2 * rfun(t) / local-divisions(t)
+  let inner-n = divisions - 1
+  let inner = range(1, divisions).map(k => {
+    // `tubeGenerate` interpolates from the q2 boundary toward q3 while lane
+    // indices increase. In screen-space coordinates that runs from +r to -r.
+    let u = 1.0 - 2.0 * k / divisions
+    let active(t) = {
+      let d = local-divisions(t)
+      let stride = calc.max(1, int(divisions / d))
+      _mod(k, stride) == 0
+    }
+    let width(t) = {
+      let r = rfun(t)
+      let d = local-divisions(t)
+      let stride = calc.max(1, int(divisions / d))
+      let local-lane = int(k / stride)
+      let ink = if coverage == auto {
+        // tubeGenerate gives every second lane the residual left between
+        // the local tube diameter and the power-of-two hatch intervals.
+        if _mod(local-lane, 2) == 1 {
+          max-w * calc.abs(2 * r / d - spacing / 2) / _mp-unit
+        } else { max-w }
+      } else { cov * 2 * r / d }
+      calc.min(max-w, calc.max(0.0, ink)) * shade(u, t)
+    }
+    let pieces = ()
+    if hatch == "l" {
+      for (section-index, section) in division-sections.enumerate() {
+        let d = section.divisions
+        let stride = calc.max(1, int(divisions / d))
+        if _mod(k, stride) == 0 {
+          let lane = int(k / stride)
+          let lane-u = 1.0 - 2.0 * lane / d
+          let knot-ts = (section.from,)
+          for t in ts {
+            if t > section.from + 1e-8 and t < section.to - 1e-8 {
+              knot-ts.push(t)
+            }
+          }
+          if closed and division-sections.len() == 1 {
+            knot-ts = ts
+          } else { knot-ts.push(section.to) }
+          let lane-pts = knot-ts.map(t =>
+            _add(center-at(t), _mul(normal-at(t), lane-u * rfun(t)))
+          )
+          let lane-frames = _frame(lane-pts, closed and division-sections.len() == 1)
+          let lane-widths = knot-ts.map(t => {
+            let r = rfun(t)
+            let ink = if coverage == auto {
+              if _mod(lane, 2) == 1 {
+                max-w * calc.abs(2 * r / d - spacing / 2) / _mp-unit
+              } else { max-w }
+            } else { cov * 2 * r / d }
+            calc.min(max-w, calc.max(0.0, ink)) * shade(lane-u, t)
+          })
+          pieces.push((frames: lane-frames, widths: lane-widths,
+            closed: closed and division-sections.len() == 1,
+            seed-offset: k * 7919 + section-index * 104729))
+        }
+      }
+    }
     (
       u: u,
       offset: t => u * rfun(t),
-      w: t => calc.min(max-w, calc.max(0.0, cov * 2 * rfun(t) / (inner-n + 1))) * shade(u, t),
+      w: t => if active(t) { width(t) } else { 0.0 },
+      pieces: pieces,
     )
   })
 
   let trans = ()
   if hatch == "t" and n > 1 and not closed {
-    let cum = (0.0,)
-    let acc = 0.0
-    for i in range(n - 1) {
-      acc += _dist(fr.at(i).at(0), fr.at(i + 1).at(0))
-      cum.push(acc)
+    let plus = range(n).map(i => _add(fr.at(i).at(0), _mul(fr.at(i).at(1), rfun(ts.at(i)))))
+    let minus = range(n).map(i => _sub(fr.at(i).at(0), _mul(fr.at(i).at(1), rfun(ts.at(i)))))
+    let arc-table(path) = {
+      let out = (0.0,)
+      for i in range(path.len() - 1) {
+        out.push(out.last() + _dist(path.at(i), path.at(i + 1)))
+      }
+      out
     }
-    let len = acc
+    let plus-cum = arc-table(plus)
+    let minus-cum = arc-table(minus)
+    let arc-at(path, cum, t) = {
+      let i = range(n - 1).find(k => ts.at(k + 1) >= t)
+      let i = if i == none { n - 2 } else { i }
+      let span = ts.at(i + 1) - ts.at(i)
+      let f = if span > 0 { calc.clamp((t - ts.at(i)) / span, 0.0, 1.0) } else { 0.0 }
+      cum.at(i) + f * (cum.at(i + 1) - cum.at(i))
+    }
+    let time-at(path, cum, s) = {
+      let s = calc.clamp(s, 0.0, cum.last())
+      let i = range(n - 1).find(k => cum.at(k + 1) >= s)
+      let i = if i == none { n - 2 } else { i }
+      let length = cum.at(i + 1) - cum.at(i)
+      let f = if length > 0 { calc.clamp((s - cum.at(i)) / length, 0.0, 1.0) } else { 0.0 }
+      ts.at(i) + f * (ts.at(i + 1) - ts.at(i))
+    }
+    let point-at(path, t) = {
+      let i = range(n - 1).find(k => ts.at(k + 1) >= t)
+      let i = if i == none { n - 2 } else { i }
+      let span = ts.at(i + 1) - ts.at(i)
+      let f = if span > 0 { calc.clamp((t - ts.at(i)) / span, 0.0, 1.0) } else { 0.0 }
+      _add(path.at(i), _mul(_sub(path.at(i + 1), path.at(i)), f))
+    }
+    // Source spacing is expressed on the radius profile as a function of
+    // centerline arc length, so slope correction remains independent of the
+    // centerline's direction on the page.
     let wt = calc.max(cov * spacing, min-w)
-    let s = wt / cov
-    let K = 5
-    let j = 0
-    while j * s <= len + 1e-9 {
-      let pos = calc.min(j * s, len)
-      let (p, nv, t) = _frame-at(fr, cum, pos)
-      let r = rfun(t)
-      let tv = (nv.at(1), -nv.at(0))
-      let fwd = range(2 * K + 1).map(jj => {
-        let u = -1.0 + 2.0 * jj / (2 * K)
-        _add(_add(p, _mul(nv, u * r)), _mul(tv, wt / 2))
-      })
-      let bwd = range(2 * K + 1).map(jj => {
-        let u = -1.0 + 2.0 * jj / (2 * K)
-        _add(_add(p, _mul(nv, u * r)), _mul(tv, -wt / 2))
-      })
-      trans.push((t: t, w: wt, s: s, pos: pos, loop: fwd + bwd.rev()))
-      j += 1
+    let target = wt / cov
+    let pos = 0.0
+    // tubeGenerateAlt increments its global line index before orderFade.
+    let line-order = 1
+    while pos < 1 - 1e-9 {
+      let slope = radius-slope(pos)
+      let scorr = 1 / calc.sqrt(1 + slope * slope)
+      let step = target / scorr
+      let plus-start = arc-at(plus, plus-cum, pos)
+      let minus-start = arc-at(minus, minus-cum, pos)
+      let plus-target = time-at(plus, plus-cum, plus-start + step)
+      let minus-target = time-at(minus, minus-cum, minus-start + step)
+      // Compare both offset boundaries at the first candidate time, as the
+      // source macro does, then choose the paired boundary for this interval.
+      let plus-first = arc-at(plus, plus-cum, plus-target) - plus-start
+      let minus-at-plus = arc-at(minus, minus-cum, plus-target) - minus-start
+      let forward = plus-first < minus-at-plus
+      let chosen = if forward { plus } else { minus }
+      let chosen-cum = if forward { plus-cum } else { minus-cum }
+      let chosen-start = if forward { plus-start } else { minus-start }
+      let other = if forward { minus } else { plus }
+      let other-cum = if forward { minus-cum } else { plus-cum }
+      let candidate = if forward { plus-target } else { minus-target }
+      let other-start = if forward { minus-start } else { plus-start }
+      let other-length = arc-at(other, other-cum, candidate) - other-start
+      let divisions = calc.max(1, int(calc.round(other-length / step)))
+      let correction = (other-length - divisions * step) / divisions
+      // The source measures the residual on the opposite boundary, then
+      // maps the corrected endpoint back onto the candidate's boundary.
+      let finish-distance = arc-at(chosen, chosen-cum, candidate) - correction / 3
+      let finish = time-at(chosen, chosen-cum, finish-distance)
+      let section-length = calc.max(0.0, arc-at(other, other-cum, finish) - other-start)
+      let count = calc.max(1, int(calc.round(section-length / step)))
+      let spacing-ratio = section-length / (count * step)
+      for section in range(count) {
+        let t = time-at(other, other-cum, other-start + section * section-length / count)
+        let a = point-at(if forward { plus } else { minus }, t)
+        let b = point-at(if forward { minus } else { plus }, t)
+        // MetaPost subdivides each cross-section into four pieces before it
+        // samples offsetPathTemplate, so its width profile has five knots.
+        // Use those same quarter points instead of smoothing between them.
+        let cross = range(5).map(k => _add(a, _mul(_sub(b, a), k / 4)))
+        let fade-at(f) = {
+          let v = 1 / count + (spacing-ratio - 1 / count) * f
+          _lat-density(v, line-order)
+        }
+        let radial-at(f) = if forward { 1 - 2 * f } else { -1 + 2 * f }
+        trans.push((t: t, pts: cross,
+          profile: f => calc.min(max-w, wt) * fade-at(f) * shade(radial-at(f), t)))
+        line-order += 1
+      }
+      pos = calc.max(pos + 1e-7, calc.min(1.0, finish))
     }
   }
 
@@ -1048,9 +1940,12 @@
     frames: fr,
     rfun: rfun,
     rmax: rmax,
+    path-length: total-length,
     cov: cov,
     inner-n: inner-n,
     inner: inner,
+    division-sections: division-sections,
+    lane-pitch: lane-pitch,
     trans: trans,
     w: w,
   )
@@ -1058,24 +1953,31 @@
 
 /// Tube: two offset outlines plus hatching.
 /// `seed` controls any thin-brush dashes used by the outlines and hatches.
-///   * `radius` — a number or a function of t (t runs 0..1 along the path);
+///   * `radius` — a number or a function of t (normalized arc length 0..1);
 ///     varying radius gives cones, waisted tubes, fisiko's fig. 8 ring, …
-///   * `hatch: "l"` — longitudinal lines; count follows the widest section,
-///     positions follow the local radius, widths follow the local ink budget
-///   * `hatch: "t"` — transverse lines at constant ink per unit area; when
-///     the desired thickness falls below `min-w` the spacing grows instead
-///   * `hatch: "s"` — stippled longitudinal paths
+///   * `hatch: "l"` — longitudinal lines follow the local power-of-two lane
+///     count, with paths cut where the diameter crosses a spacing threshold
+///   * `hatch: "t"` — transverse cross-section strokes whose width follows
+///     surface lighting; very thin regions become ink-conserving dashes
+///   * `hatch: "s"` — seeded, slightly varied round dots on source-scale
+///     longitudinal lanes; local ink width controls dot density and
+///     `dot-density` adjusts the source-segment compensation
 ///   * `hatch: none` — outline only
 #let tube(pts, radius, hatch: "l", spacing: 3 * _source-max-shading, coverage: auto, closed: false,
-          w: 0.5 * pt, per: 12, min-w: min-width, period: dash-min-length,
+          w: _source-min-stroke, per: 12, min-w: _source-min-stroke, period: _source-dash-length,
           max-w: _source-max-shading, light: (-0.353553, 0.382683, 0.853553),
           gamma: 1.0, seed: 0, shift: (0, 0),
-          dot-size: 0.4 * pt, dot-step: 0.18) = {
-  let hatch-spacing = if hatch == "s" { calc.min(spacing, 3 * dot-size) } else { spacing }
+          dot-size: _source-max-shading, dot-step: _source-max-shading,
+          dot-range: (0.9, 1.2), dot-density: 0.56) = {
+  let hatch-spacing = if hatch == "s" { calc.min(spacing, 1.5 * dot-size) } else { spacing }
   let L = _tube-layout(pts, radius, hatch: hatch, spacing: hatch-spacing,
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
                        gamma: gamma, shift: shift)
+  let center-cum = (0.0,)
+  for i in range(L.frames.len() - 1) {
+    center-cum.push(center-cum.last() + _dist(L.frames.at(i).at(0), L.frames.at(i + 1).at(0)))
+  }
   let src = pts.map(p => _add(p, shift))
   let els = (
     stroke-ink(src, w, offset: L.rfun, closed: closed, per: per,
@@ -1097,16 +1999,70 @@
     }
   }
   if hatch == "l" {
-    els += L.inner.map(it => stroke-ink(src, it.w, offset: it.offset,
-      closed: closed, per: per, min-w: min-w, period: period, seed: seed))
+    for it in L.inner {
+      for piece in it.pieces {
+        let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
+          min-w, period, seed: seed + piece.seed-offset,
+          dash-extra: 0.01 * _mp-unit,
+          dash-cap: 1)
+        els.push(place(top + left, _fill(loops, black)))
+      }
+    }
   } else if hatch == "s" {
-    els += L.inner.enumerate().map(((i, it)) => stroke-stipple(src,
-      t => dot-size * calc.clamp((it.w)(t) / max-w, 0.0, 1.0),
-      offset: it.offset, closed: closed, per: per,
-      dot-size: dot-size, step: dot-step, seed: seed + i * 7919))
+    for (i, it) in L.inner.enumerate() {
+      // thinBrushGenerate.stipples draws three tracks around each tube lane,
+      // splitting its ink width evenly and offsetting tracks by one third of
+      // twice the local lane pitch. Dots stay on their tracks (no normal jitter).
+      for lane in range(3) {
+        let side = lane - 1
+        let track-offset(t) = (it.offset)(t) + side * 2 * (L.lane-pitch)(t) / 3
+        let key = i * 7919 + lane * 104729
+        let size-scale = dot-range.at(0) + (dot-range.at(1) - dot-range.at(0)) * _rng(seed, key, 11)
+        let lane-dot-size = dot-size * size-scale
+        let clip-lane-dot(dot, t) = {
+          if closed { return dot }
+          let (p, n, _, _) = _frame-at(L.frames, center-cum, t * L.path-length)
+          let lane-offset = track-offset(t)
+          let side = if lane-offset < 0 { -1.0 } else { 1.0 }
+          let side-origin = _add(p, _mul(n, side * (L.rfun)(t)))
+          let planes = ((side-origin, _mul(n, side)),)
+
+          // The source clips the entire stipple image to the tube silhouette.
+          // The local side plane trims dots at the curved sides. End-cap
+          // planes only apply within one dot radius of their endpoint; using
+          // their infinite half-planes along a bent tube incorrectly removes
+          // dots wherever the centerline later crosses those planes.
+          let start = L.frames.first()
+          let start-tangent = (start.at(1).at(1), -start.at(1).at(0))
+          let start-origin = _add(start.at(0), _mul(start.at(1), track-offset(0)))
+          let end = L.frames.last()
+          let end-tangent = (end.at(1).at(1), -end.at(1).at(0))
+          let end-origin = _add(end.at(0), _mul(end.at(1), track-offset(1)))
+          if t * L.path-length <= dot.at("diameter") / 2 {
+            planes.push((start-origin, _mul(start-tangent, -1)))
+          }
+          if (1 - t) * L.path-length <= dot.at("diameter") / 2 {
+            planes.push((end-origin, end-tangent))
+          }
+          _clip-dot-to-planes(dot, planes)
+        }
+        let in-closed-tube(t) = {
+          not closed or calc.abs(track-offset(t)) + lane-dot-size / 2 <= (L.rfun)(t)
+        }
+        els.push(stroke-stipple(src,
+          t => if in-closed-tube(t) and (it.w)(t) / 3 >= dot-size / 20 { (it.w)(t) / 3 } else { 0.0 },
+          offset: track-offset,
+          closed: closed, per: per,
+          dot-size: lane-dot-size, step: dot-step * size-scale, seed: seed + key,
+          normal-jitter: 0, ink-space: true, independent-spacing: false,
+          density: dot-density,
+          _clip-dot: if closed { none } else { clip-lane-dot }))
+      }
+    }
   }
   if L.trans.len() > 0 {
-    els.push(place(top + left, _fill(L.trans.map(tr => tr.loop), black)))
+    els += L.trans.map(tr => stroke-ink(tr.pts, tr.profile, closed: false, per: 0,
+      min-w: min-w, period: period, seed: seed))
   }
   _join(els)
 }
@@ -1230,7 +2186,7 @@
 /// Raised edge along an open centerline: shade the offset band and outline it.
 #let solid-surface(path, thickness: 2.5, angle: 45, spacing: 0.65) = {
   let outer = resample(path, per: 12, closed: false)
-  let inset = offset-path(path, -thickness, closed: false)
+  let inset = offset-path(path, thickness, closed: false)
   let quads = _band-quads(outer, inset, closed: false)
   let outline = outer + inset.rev()
   _join((
@@ -1598,7 +2554,7 @@
 #let wooden-surface(path, thickness: 2.5, angle: 0, spacing: 0.7,
                     eyes: (), cell: 1.0, stroke: 0.45pt + black) = {
   let outer = resample(path, per: 12, closed: false)
-  let inset = offset-path(path, -thickness, closed: false)
+  let inset = offset-path(path, thickness, closed: false)
   let quads = _band-quads(outer, inset, closed: false)
   let boundary = outer + inset
   let xs = boundary.map(p => p.at(0))

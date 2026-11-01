@@ -39,17 +39,17 @@ publishing.
 
 | fiziko / MetaPost | fiziko.typ capability |
 |---|---|
-| `offsetPath(p)(f)` | `offset-path(pts, f)` — curve at a distance `f(t)` along the normal |
-| `draw brush(p)(w)` | `stroke-ink(pts, w, offset: .., seed: 0)` — variable-width band; below the printable minimum (0.3 pt) the line becomes dashes carrying the same ink per unit length; the seed controls deterministic dash variation |
-| `sphere.c(d)` | `sphere(d, light: .., rings: auto, seed: 0, shadow-regions: (), shadow-planes: ())` — concentric Lambert-shaded rings; supports existing local masks and depth-projected planar occluders |
+| `offsetPath(p)(f)` | `offset-path(pts, f)` — curve at a distance `f(t)` along the source-oriented normal, with `t` as normalized arc length |
+| `draw brush(p)(w)` | `stroke-ink(pts, w, offset: .., seed: 0)` — variable-width band with width and offset functions evaluated by normalized arc length; by default it follows fiziko's 0.2 pt pen and 1.2 pt dash period, replacing thinner sections with ink-conserving dashes; the seed controls deterministic dash variation. Typst keeps the requested perpendicular width, while MetaPost's offset-curve fit can overshoot it on variable-width paths. |
+| `sphere.c(d)` | `sphere(d, light: .., rings: auto, samples: 128, seed: 0, shadow-regions: (), shadow-planes: (), shadow-polygons: ())` — concentric Lambert-shaded rings with residual-aware alternating widths, reproducible per-ring phase jitter, and a fine rim; supports local masks and projected occluders; ring sample count can be raised for unusually large output; see [sphere comparison](sphere.typ) |
 | `sphereLat(d, lat)` | `sphere-latitude(d, latitude:, light: .., seed: 1, shadow-planes: ())` — latitude projection, `orderFade`, sphere light model, source-scale spacing, and projected planar shadows; defaults to 180 drawing samples for better compile time, with `samples:` adjustable for larger figures |
-| `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r`; source-scale hatch spacing by default, longitudinal line widths respond to the tube surface normal and light direction, and open ends are joined; transverse hatching uses an ink-budget approximation |
-| `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s")`, `sphere-stipple(d, ...)`, `stroke-stipple(pts, w, ...)` — deterministic arc-length strokes and a jittered 2D Lambert-shaded sphere field, with independent dot size and spacing controls; see [source comparison](original/stipple-reference.pdf) |
+| `tube.l(p)(r)` / `tube.t` | `tube(pts, radius, hatch: "l"/"t", seed: 0, ...)` — `radius` is a number or `t => r` by normalized arc length; longitudinal lines follow recursive power-of-two lane-count sections, with widths responding to the centerline tangent, radius slope, and light; transverse sections advance along both sampled offset boundaries, transfer the endpoint using one-third residual correction, orient each section from the selected boundary, and apply source-style line-order fading; widths follow cross-section lighting and open ends are joined. Offset geometry, exact cubic parameter transfer, path-angle shading, and randomized dash placement remain approximate; see [tube shading](tube.typ) |
+| `tube.s`, `sphere.s`, `thinBrush.stipples` | `tube(pts, radius, hatch: "s", dot-range: (0.9, 1.2), dot-density: 0.56)`, `sphere-stipple-rings(d, dot-range: (0.9, 1.2), density: 0.55, ...)`, `sphere-stipple(d, ...)`, `stroke-stipple-brush(pts, w, dot-range: (0.9, 1.2), density: 0.5, ...)`, `stroke-stipple(pts, w, ...)` — tube stipples use three offset dot tracks per longitudinal lane; open brush tracks restart by quantized local width, and closed brush tracks stay continuous; sphere rings use concentric tracks. Brush density 0.5 is calibrated against S101 and checked across 0.5×–2× samples; tube and sphere defaults remain calibrated to S101. Use the parameters to tune other scales and profiles. See the [S101 sample](stipple.typ) and [pinned source comparison](original/stipple-reference.pdf) |
 | `solidSurface`, `solid`, `gradientShade` | `solid-surface(path, ...)`, `solid(poly, style: "opaque"/"glass")`, `gradient-shade(poly, ...)` — raised bands and reusable scanline clipping inside polygons |
 | `flatSurface.hatches`, `.stipples` | `flat-surface(poly, normal, style: "hatch"/"stipples", ...)` — light-shaded clipped strokes or stipples with a two-axis ink envelope; see [surface comparison](original/surface-reference.pdf) |
 | `woodBlock`, `woodenThing`, `woodenSurface` | `wood-block(...)`, `wooden-thing(poly, ...)`, `wooden-surface(path, ...)` — grained block, arbitrary polygon clipping, and grain clipped to an offset band; see [wood example](wood.typ) |
 | `pulleyWheel`, `wheel`, `shapeCenterOfMass` | `pulley-wheel(d)`, `wheel(d, spokes:)`, `polygon-centroid(poly)`, `centroid-marker(poly)` — shaded pulley, spoked wheel and simple-polygon area centroid; see [mechanical comparison](original/mechanical-reference.pdf) |
-| `shadowsEnabled`, `shadowCut` | `shadow-planes:` / `shadow-polygons:` with `sphere-shadow-plane(polygon, depth)` or `sphere-shadow-polygon(vertices)` — project a depth plane or any simple planar 3D polygon along the light direction onto visible sphere samples; curved/non-planar occluders and exact path splitting are unsupported |
+| `shadowsEnabled`, `shadowCut` | `shadow-planes:` / `shadow-polygons:` with `sphere-shadow-plane(polygon, depth)` (source front-pole depth convention) or `sphere-shadow-polygon(vertices)` (sphere-center XYZ) — project source-style depth planes or simple planar 3D polygons onto visible sphere samples; curved/non-planar occluders and exact path splitting are unsupported |
 | `refractionAngle`, `reflectionAngle`, `refractionPath` | `trace-refraction` / `refraction-path` — intersects a closed polygon, applies Snell's law, and reflects on total internal reflection |
 | `pointOnGlobe`, `globe`, `drawLandMass` | `globe-project` / `globe` — orthographic graticule and caller-provided coast polylines, linearly interpolated and subdivided to 5° before horizon clipping; see [globe edge cases](globe.typ) |
 | `isoLines`, `cLine` | Not implemented — general contour maps and contour-line rendering |
@@ -64,12 +64,16 @@ publishing.
 Coordinates are plain millimetre floats (y down); the whole figure is a pure
 function of its numbers and explicit seeds. Seeds default to `0`, so builds
 remain repeatable unless a caller opts into another pattern.
+Open paths use a linear-time, unit-tension Hobby spline with unit endpoint
+curl, matching MetaPost's automatic `..` controls. Closed paths retain periodic
+Catmull–Rom interpolation; `resample(..., spline: "catmull")` selects it for an
+open path as well.
 
-Pass an integer `seed:` to `stroke-ink`, `sphere`, `sphere-latitude`, `tube`,
-`eye`, or `strand-knot` to vary thin marks and lash details. The seed is mixed
-with each path's starting position, so the same geometry and seed repeat the
-same dash lengths and phase; another seed changes them without global random
-state.
+Pass an integer `seed:` to `stroke-ink`, `stroke-stipple-brush`,
+`stroke-stipple`, `sphere`, `sphere-stipple`, `sphere-stipple-rings`,
+`sphere-latitude`, `tube`, `eye`, or `strand-knot` to vary thin marks and lash
+details. The same geometry and seed repeat the same dashes and dot placement;
+another seed changes them without global random state.
 
 ## Usage
 
@@ -91,6 +95,7 @@ Build the specimen document (5-page A4):
 typst compile main.typ main.pdf
 typst compile main.typ 'page-{p}.png' --ppi 140
 typst compile brush.typ brush.pdf
+typst compile stipple.typ stipple.pdf
 typst compile shadow.typ shadow.pdf
 typst compile wood.typ wood.pdf
 typst compile optics.typ optics.pdf
@@ -99,6 +104,8 @@ typst compile knot.typ knot.pdf
 typst compile mechanics.typ mechanics.pdf
 typst compile telescope.typ telescope.pdf
 typst compile eye.typ eye.pdf
+typst compile tube.typ tube.pdf
+typst compile sphere.typ sphere.pdf
 ```
 
 The optional `original/` directory contains local upstream MetaPost sources and
@@ -107,6 +114,16 @@ vendoring a second copy of the original project. If present locally, rebuild its
 comparison PDFs with `bash original/build.sh`.
 
 ## Regression checks
+
+Generated PDFs and page previews are local build outputs. Older root-level
+outputs have been archived under ignored `build/legacy/`; rebuild the desired
+document using the commands above. Keep diagnostic sources in `diagnostics/`
+and write new diagnostic output to `/tmp` or `build/`. The PNG under `visual/`
+is a tracked regression fixture, not a disposable preview.
+
+During the 2026-11-02 cleanup, numerical assertions passed with Typst 0.15.1,
+but the Figure 11 visual snapshot differed from the checked-in reference.
+That difference still needs review; the reference has not been updated.
 
 Geometry is verified numerically (no eyeballing needed):
 
@@ -160,8 +177,8 @@ a version message instead of producing a misleading pixel mismatch.
 
 ## Print notes (from the specimen)
 
-- Ordinary strokes use a 0.3 pt printable minimum and draw in solid black. The
-  source-matched latitude sphere deliberately uses fiziko's 0.2 pt pen,
+- `stroke-ink` and tube outlines use fiziko's 0.2 pt pen by default. Explicit
+  `stroke-path` widths remain caller-controlled. The source-matched latitude sphere uses fiziko's 0.2 pt pen,
   0.3 pt maximum shading width, and 0.9 pt line spacing; its hatches are
   filled vector geometry and remain single-K.
 - Typst embeds font subsets; labels are New Computer Modern.
