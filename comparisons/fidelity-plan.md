@@ -32,7 +32,7 @@ included where a plate contains distinct drawing families.
 
 | Plate | RMSE | Ink coverage | Component findings |
 | --- | ---: | ---: | --- |
-| M8 pulley composites | 0.12971 | 1.734% → 2.333% | The pulley now has the partial rim/support silhouette and a white mask that hides the rope kink. Whole-plate RMSE improved slightly; left/right crop RMSE is 0.14281/0.11688 and both remain over-inked. Wheel/support clipping and label placement still differ. |
+| M8 pulley composites | 0.12579 | 1.734% → 2.212% | The pulley uses its wheel's existing thin outer rim and a thinpen support outline; the redundant 0.6 pt silhouette stroke is removed. Whole-plate RMSE improves; left/right crop RMSE is 0.13914/0.11258, with both crops still over-inked. Wheel/support clipping and label placement still differ. |
 | M9 wood panels | 0.22730 | 4.203% → 4.504% | A continuous MetaPost stream advances across panels; the field uses one source-sized random vertical offset per 1 mm column. Knot candidates now use the source's rejection-until-ten rule and minimum spacing. Accepted-knot brush RNG consumption and contour-level random draws remain approximate. |
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.12972 | 4.917% → 4.885% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly, and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
@@ -103,10 +103,11 @@ strokes, while M10 contains mostly whitespace.
    two separately masked shading layers and random width law; curve-time
    crossing detection, source tube masks and strand interpolation also differ.
    Keep eye and refraction as independent component gates.
-5. **Tune the mechanical details from local crops.** M8 now uses the source
-   2.5 mm hatched beam band and 3× minimum source rope width; whole-plate RMSE
-   fell from 0.16877 to 0.13182 and ink coverage moved from 3.23% to 2.23%
-   (source 1.73%). Pulley geometry and labels remain approximate. S107's
+5. **Tune the mechanical details from local crops.** M8 uses the source
+   2.5 mm hatched beam band, 3× minimum source rope width and thinpen pulley
+   support line. Removing the duplicated rim stroke lowered whole-plate RMSE
+   from 0.12971 to 0.12579 and ink coverage from 2.333% to 2.212% (source
+   1.734%). Pulley clipping and labels remain approximate. S107's
    pulley-wheel crop RMSE is 0.09105 with near-equal ink coverage; the source-
    style wheel crop RMSE fell from 0.25567 to 0.12807, with coverage within
    about 15% of source. M10 and S102 are closer and can remain lower priority unless

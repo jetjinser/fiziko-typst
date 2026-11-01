@@ -88,7 +88,7 @@
       "title": "L'Hôpital pulley composites", "frame_mm": [110,40], "driver": "main.mp", "figure": 8,
       "shared": {"figures": [[6,2,5.5,8,6],[3,2.5,3,58,6]], "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Uses the source 2.5 mm hatched beam band, 3× minimum rope width, and now draws the partial pulley rim/support silhouette over a white rope-occluding mask. At 600 ppi whole-plate RMSE is 0.12971 (previous 0.13182), while ink coverage is high (1.734% vs 2.333%); source wheel/support clipping and label placement remain approximate.",
+      "notes": "Uses the source 2.5 mm hatched beam band and 3× minimum rope width. PulleyWheel supplies the thin outer rim; the support is now outlined with source thinpen width, without a duplicate thick silhouette stroke. At 600 ppi whole-plate RMSE is 0.12579 (previous 0.12971), with ink coverage 1.734% vs 2.212%; source wheel/support clipping and label placement remain approximate.",
       "regions_mm": {"left": [0,0,53,40], "right": [54,0,56,40]}
     },
     "M9": {

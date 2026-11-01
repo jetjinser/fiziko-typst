@@ -2516,8 +2516,10 @@
     pulley-wheel(d, center: center),
     // The source clips its shaded wheel to this support face.
     place(top + left, _fill((support,), white)),
-    stroke-path(silhouette, stroke: 0.6pt + black, closed: true, per: 0),
-    stroke-path(support, stroke: 0.35pt + black, closed: true, per: 0),
+    // pulleyWheel already draws the full thinpen rim; pulleyOutline is only
+    // used to occlude the ropes, while the support itself uses thinpen too.
+    stroke-path(support, stroke: _source-min-stroke * 1mm + black,
+      closed: true, per: 0),
     stroke-path(circle-pts(d / 12, 64, center: center),
       stroke: 0.45pt + black, closed: true, per: 0),
   )
