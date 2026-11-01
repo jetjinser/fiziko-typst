@@ -1441,7 +1441,7 @@
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
                      seed: 1, rng: "keyed", rng-offset: 0,
                      with-rng: false, with-trace: false,
-                     trace-latitude: none,
+                     trace-latitude: none, outline: true,
                      center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
@@ -1677,13 +1677,15 @@
     rng-cursor += ink.at(1)
   }
   // Keep the silhouette independent of the latitude hatching.
-  let rim = range(samples).map(j => {
-    let a = 360 * j / samples
-    _add(center, (R * _cos(a), R * _sin(a)))
-  })
-  let rfr = _frame(rim, true)
-  let rws = range(rfr.len()).map(_ => min-w)
-  out += _ink-loops(rfr, rws, true, min-w, period, seed: seed)
+  if outline {
+    let rim = range(samples).map(j => {
+      let a = 360 * j / samples
+      _add(center, (R * _cos(a), R * _sin(a)))
+    })
+    let rfr = _frame(rim, true)
+    let rws = range(rfr.len()).map(_ => min-w)
+    out += _ink-loops(rfr, rws, true, min-w, period, seed: seed)
+  }
   let drawing = place(top + left, _fill(out, fill))
   if with-trace { (drawing, rng-cursor, trace) }
   else if with-rng { (drawing, rng-cursor) } else { drawing }
@@ -2033,7 +2035,7 @@
           max-w: _source-max-shading, light: (-0.353553, 0.382683, 0.853553),
           gamma: 1.0, seed: 0, shift: (0, 0),
           dot-size: _source-max-shading, dot-step: _source-max-shading,
-          dot-range: (0.9, 1.2), dot-density: 0.56) = {
+          dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true) = {
   let hatch-spacing = if hatch == "s" { calc.min(spacing, 1.5 * dot-size) } else { spacing }
   let L = _tube-layout(pts, radius, hatch: hatch, spacing: hatch-spacing,
                        coverage: coverage, closed: closed, per: per,
@@ -2052,7 +2054,7 @@
   )
   // MetaPost closes open tube outlines across both ends. Connect the two
   // offset boundaries here as well; closed centerlines have no end caps.
-  if not closed {
+  if not closed and end-caps {
     for (i, t) in ((0, 0.0), (L.frames.len() - 1, 1.0)) {
       let frame = L.frames.at(i)
       let rad = (L.rfun)(t)
@@ -3071,17 +3073,21 @@
 /// vertices; segments are linearly interpolated and subdivided to at most 5°
 /// before hidden portions are clipped at the horizon.
 #let globe(d, rotation: (0, 0), lands: (), parallels: 30, meridians: 30,
+          shading: "graticule", shading-spacing: _source-spacing,
+          shading-width: _source-max-shading, shading-gamma: 0.0,
           center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
   let radius = d / 2
+  assert(shading == "graticule" or shading == "latitude",
+    message: "globe shading must be graticule or latitude")
   let lines = ()
-  if parallels > 0 {
+  if shading == "graticule" and parallels > 0 {
     for k in range(calc.max(0, int(calc.ceil(180 / parallels)) - 1)) {
       let lat = -90 + (k + 1) * parallels
       let geo = range(73).map(i => (-180 + i * 5, lat))
       lines += _globe-visible-paths(geo, rotation, radius, center)
     }
   }
-  if meridians > 0 {
+  if shading == "graticule" and meridians > 0 {
     for k in range(int(calc.ceil(360 / meridians))) {
       let lon = k * meridians
       let geo = range(37).map(i => (lon, -90 + i * 5))
@@ -3092,9 +3098,16 @@
     lines += _globe-visible-paths(_globe-densify(land), rotation, radius, center)
   }
   let elements = lines.map(path => stroke-path(path, stroke: stroke, per: 0))
-  elements.push(stroke-path(circle-pts(radius, 180, center: center),
-                            stroke: outline, closed: true, per: 0))
-  _join(elements)
+  if shading == "latitude" {
+    let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
+      spacing: shading-spacing, max-w: shading-width, gamma: shading-gamma,
+      center: center, outline: true)
+    _join((latitude-lines, ..elements))
+  } else {
+    elements.push(stroke-path(circle-pts(radius, 180, center: center),
+                              stroke: outline, closed: true, per: 0))
+    _join(elements)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -3230,7 +3243,10 @@
 /// to keep a fixed global ordering. `widths` may be one width for all strands
 /// or a tuple with one width per strand.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
-                 self-crossings: true, seed: 0, stroke: black) = {
+                 self-crossings: true, seed: 0, stroke: black,
+                 style: "stroke") = {
+  assert(style == "stroke" or style == "tube",
+    message: "strand-knot style must be stroke or tube")
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
@@ -3314,8 +3330,14 @@
   let drawings = ()
   for i in range(n) {
     let fragments = _strand-fragments(strands.at(i), lengths.at(i), events.at(i))
-    drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
-      per: 0, fill: stroke, seed: seed))
+    if style == "tube" {
+      drawings += fragments.map(part => tube(part, widths.at(i) / 2,
+        hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
+        end-caps: false))
+    } else {
+      drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
+        per: 0, fill: stroke, seed: seed))
+    }
   }
   _join(drawings)
 }

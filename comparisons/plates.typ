@@ -91,9 +91,12 @@
       22 + 6 * calc.sin(720 * i / 96 * 1deg)))
     let wb = range(97).map(i => (86 + 32 * i / 96,
       22 - 6 * calc.sin(720 * i / 96 * 1deg)))
-    (globe(30, rotation: (0,0), lands: upstream-landmasses, center: (19,22))
+    (globe(30, rotation: (0,0), lands: upstream-landmasses,
+      shading: "latitude",
+      center: (19,22))
     + eye(at: (62,22), size: (18,10), look: (0,0), lashes: 7, seed: seed)
-    + strand-knot((wa,wb), widths: (0.8,0.8), gap: 0.4, seed: seed)
+    + strand-knot((wa,wb), widths: (0.8,0.8), gap: 0.4,
+      seed: seed, style: "tube")
     + stroke-path(circle-pts(10,128,center:(136,22)), stroke: 0.35pt + black, closed: true, per: 0)
     + refraction-path(((122,17),(128,17)), circle-pts(10,128,center:(136,22)), ior: 1.5))
   } else if case == "S102" {
