@@ -4,6 +4,32 @@ This directory keeps reproducible investigation sources and two historical
 Figure 12 CSV snapshots. Generated PDFs, images, logs, and instrumented
 upstream copies belong in `/tmp` or `build/`, not in version control.
 
+## Stage 2 seeded MetaPost random stream
+
+The pinned devshell provides MetaPost 2.11. The comparison pipeline uses its
+default `scaled` number system: the stream is initialized from the seed after
+16.16 conversion, then advances the 55-value subtractive recurrence described
+in the [MetaPost engine source](https://github.com/TeX-Live/texlive-source/blob/trunk/texk/web2c/mplibdir/mp.w)
+and [scaled arithmetic implementation](https://github.com/TeX-Live/texlive-source/blob/trunk/texk/web2c/mplibdir/mpmath.w).
+Double mode uses a different generator and is not the compatibility target.
+
+`metapost-rng-vectors.mp` is the MetaPost oracle; `metapost-rng-vectors.typ`
+asserts the first 16 values for `randomseed := 1` against the Typst port. Check
+them in the repository's devshell:
+
+```sh
+nix develop path:./nix --command mpost -interaction=nonstopmode diagnostics/metapost-rng-vectors.mp
+nix develop path:./nix --command typst compile --root . diagnostics/metapost-rng-vectors.typ /tmp/metapost-rng-vectors.pdf
+```
+
+`sphere-latitude(..., rng: "metapost")` is the first draw-order pilot. M3's
+nominal whole-plate RMSE at 600 ppi improved from 0.07233 to 0.07143; dark
+coverage shifted from 0.01% above the source to 0.69% below it. The Typst
+render time rose from 40.3 s to 47.6 s for that plate. The option remains
+explicit while other drawing families still use keyed randomness and their
+MetaPost call order has not been ported. See the paired artifacts under
+`build/source-parity-rng/` and the [fidelity plan](../comparisons/fidelity-plan.md).
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and

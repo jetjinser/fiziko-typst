@@ -32,7 +32,7 @@
       "shared": {"diameters_mm": [20,30], "latitudes_degrees": [-60,45], "centers_mm": [[36,28],[70,28]], "source_seed": 1},
       "nominal": {"seed": 1, "samples": 360},
       "calibrated": {"seed": 15, "samples": 360},
-      "notes": "Both Typst spheres share a cursor, but Typst's keyed random stream does not reproduce MetaPost's RNG. Calibrated mode selects a plate-specific seed."
+      "notes": "Nominal mode replays MetaPost's scaled random stream for sphere-latitude brush dashes. Calibrated mode uses seed 15 and remains a visual-only comparison."
     },
     "M4": {
       "title": "Longitudinal arc tube",

@@ -51,11 +51,13 @@ strokes, while M10 contains mostly whitespace.
 ## Recommended implementation order
 
 1. **Reproduce MetaPost's seeded random stream and draw-call order.** The
-   source consumes one global stream; the port uses independently keyed
-   streams. Add a standalone sequence fixture first, then exercise it on one
-   brush, one stipple family and wood before making it the rendering default.
-   This can improve several plates at once and prevents plate-specific seed
-   searches from standing in for algorithm parity.
+   default scaled stream now has a fixed-seed oracle and an opt-in pilot for
+   `sphere-latitude`. The M3 nominal RMSE fell from 0.07233 to 0.07143, while
+   dark coverage moved from 0.01% above the source to 0.69% below it; rendering
+   took 47.6 s versus 40.3 s. The improvement is real but modest, so the
+   library default remains keyed. Continue by threading the stream through a
+   brush, one stipple family and wood, checking their source call order before
+   considering broader defaults.
 2. **Bring the wood field closer to `woodBlock`.** M9 has the largest broad
    mismatch after S104. Port its knot placement, field perturbation and
    isoline spacing as separable pieces, then check all four M9 crops and S105's

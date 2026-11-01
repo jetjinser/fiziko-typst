@@ -25,9 +25,11 @@
       closed: false, per: i("per"), seed: seed))
   } else if case == "M3" {
     let (small, cursor) = sphere-latitude(20, latitude: -60, center: (36,28),
+      rng: "metapost",
       samples: i("samples"), seed: seed, with-rng: true)
     let (large, _) = sphere-latitude(30, latitude: 45, center: (70,28),
-      samples: i("samples"), seed: seed, rng-offset: cursor, with-rng: true)
+      rng: "metapost", samples: i("samples"), seed: seed,
+      rng-offset: cursor, with-rng: true)
     small + large
   } else if case == "M4" {
     tube(arc-pts(42,205,335,n: 40,center: (55,68)), 6,

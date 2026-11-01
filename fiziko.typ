@@ -67,6 +67,50 @@
   x / m
 }
 
+// MetaPost's default scaled arithmetic uses a 55-value subtractive stream.
+// `randomseed := n` is converted to 16.16 before the stream is initialized.
+#let _metapost-rng-sequence(seed, count) = {
+  assert(seed != 0, message: "MetaPost seed zero is time-dependent")
+  let modulus = 268435456
+  let j = int(calc.abs(seed) * 65536)
+  while j >= modulus { j = int(calc.floor(j / 2)) }
+  let k = 1
+  let init = ()
+  for _ in range(55) {
+    let next-k = j - k
+    j = k
+    k = if next-k < 0 { next-k + modulus } else { next-k }
+    init.push(j)
+  }
+  // (i * 21) mod 55 permutes all slots; 21 is its own inverse.
+  let values = range(55).map(slot => init.at(_mod(slot * 21, 55)))
+  let refill(values) = {
+    let first = range(55).map(i => {
+      if i <= 23 { _mod(values.at(i) - values.at(i + 31), modulus) }
+      else { values.at(i) }
+    })
+    let second = first.slice(0, 24)
+    for i in range(24, 55) {
+      // The source updates this range in place, so indices 24–30 can be
+      // consumed again later in the same refill.
+      second.push(_mod(first.at(i) - second.at(i - 24), modulus))
+    }
+    second
+  }
+  for _ in range(3) { values = refill(values) }
+  let out = ()
+  let cursor = 54
+  for _ in range(count) {
+    if cursor == 0 {
+      values = refill(values)
+      cursor = 54
+    } else { cursor -= 1 }
+    // `uniformdeviate 1` goes through a 16.16 scaled result.
+    out.push(calc.round(values.at(cursor) / modulus * 65536) / 65536)
+  }
+  out
+}
+
 // One of MetaPost's eight cubic segments in fullcircle, rotated by 90°.
 #let _mp-circle-point(t) = {
   let segment = int(_mod(calc.floor(t), 8))
@@ -281,6 +325,7 @@
 /// Widths below `minw` are replaced by dashes of width `minw` whose coverage
 /// (dash length / period) equals w / minw, keeping ink per unit length.
 #let _ink-loops(fr, ws, closed, minw, minlen, seed: 0, dash-extra: 0, dash-cap: 0,
+                random-stream: none, rng-offset: 0,
                 with-rng: false, with-stats: false,
                 param-times: none, param-end: none, trace-nodes: false) = {
   let n = fr.len()
@@ -446,8 +491,16 @@
     // scaled by the width coverage raised to 5/2.
     let p0 = frame-index(pos.at(0)).at(0)
     let key = int(calc.round(p0.at(0) * 10000)) * 1009 + int(calc.round(p0.at(1) * 10000))
-    let jitter = _rng(seed, key, 1)
-    let dash0 = minlen * (1 + calc.pow(c, 2.5)) * (1 + 0.5 * jitter) / 2
+    let jitter = if random-stream == none { _rng(seed, key, 1) }
+      else { random-stream.at(rng-offset + rng-cursor) }
+    let base-dash = minlen * (1 + calc.pow(c, 2.5)) / 2
+    let dash0 = if random-stream == none {
+      base-dash * (1 + 0.5 * jitter)
+    } else {
+      // MetaPost scales `uniformdeviate(d1)` in 16.16 bp units before adding
+      // half of it to d1; preserve that rounding at the same unit boundary.
+      base-dash + 0.5 * calc.round(base-dash / _mp-unit * jitter * 65536) / 65536 * _mp-unit
+    }
     let gap0 = (minw - qw) * dash0 / qw
     let count = calc.max(1, calc.round(total / (dash0 + gap0)))
     let period = total / count
@@ -455,7 +508,8 @@
     let gap = period - dash
     // Seeded, stable half-period choice. The same seed preserves this pattern;
     // a different seed changes it without introducing mutable global state.
-    let centered-on = _rng(seed, key, 2) < 0.5
+    let centered-on = if random-stream == none { _rng(seed, key, 2) < 0.5 }
+      else { random-stream.at(rng-offset + rng-cursor + 1) > 0.5 }
 
     // Locate the first segment boundary at (or strictly after) an arc length.
     let boundary(s, strict: false) = {
@@ -1381,12 +1435,16 @@
 /// determines how many parallels are used for this diameter. The default
 /// drawing resolution retains width-template knots while avoiding excessive
 /// intermediate points; increase `samples` for unusually large output.
+/// `rng: "metapost"` replays the default scaled MetaPost stream for brush dashes.
 #let sphere-latitude(d, latitude: -60, light: (-0.353553, 0.382683, 0.853553),
                      max-w: _source-max-shading, spacing: _source-spacing, samples: 180,
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
-                     seed: 1, rng-offset: 0, with-rng: false, with-trace: false,
+                     seed: 1, rng: "keyed", rng-offset: 0,
+                     with-rng: false, with-trace: false,
                      trace-latitude: none,
                      center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
+  assert(rng == "keyed" or rng == "metapost",
+    message: "rng must be \"keyed\" or \"metapost\"")
   let R = d / 2
   let n = calc.max(2, calc.ceil(calc.pi * R / spacing))
   let slat = _sin(latitude)
@@ -1397,6 +1455,9 @@
   )
   let L = (light.at(0) / ln, light.at(1) / ln, light.at(2) / ln)
   let rng-cursor = rng-offset
+  let random-stream = if rng == "metapost" {
+    _metapost-rng-sequence(seed, rng-offset + 4 * n * samples)
+  } else { none }
   let out = ()
   let trace = ()
   // MetaPost stores pi/n in 16.16 fixed point before multiplying by k.
@@ -1594,7 +1655,9 @@
       }
     }
     let ink = _ink-loops(
-      fr, widths, full, min-w, period, seed: seed + rng-cursor,
+      fr, widths, full, min-w, period,
+      seed: if rng == "metapost" { seed } else { seed + rng-cursor },
+      random-stream: random-stream, rng-offset: rng-cursor,
       dash-extra: 0.01 * _mp-unit,
       dash-cap: 1,
       with-rng: true, with-stats: with-trace,
