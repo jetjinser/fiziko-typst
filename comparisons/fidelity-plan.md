@@ -33,13 +33,13 @@ included where a plate contains distinct drawing families.
 | Plate | RMSE | Ink coverage | Component findings |
 | --- | ---: | ---: | --- |
 | M8 pulley composites | 0.12579 | 1.734% → 2.212% | The pulley uses its wheel's existing thin outer rim and a thinpen support outline; the redundant 0.6 pt silhouette stroke is removed. Whole-plate RMSE improves; left/right crop RMSE is 0.13914/0.11258, with both crops still over-inked. Wheel/support clipping and label placement still differ. |
-| M9 wood panels | 0.22688 | 4.203% → 4.464% | A continuous MetaPost stream advances across panels; the field uses one source-sized random vertical offset per 1 mm column. Knot candidates follow source-style rejection until ten candidates fail minimum spacing; contour levels now receive source-sized random offsets. Accepted-knot and contour-brush RNG calls remain approximate. |
+| M9 wood panels | 0.22456 | 4.203% → 4.272% | Landscape panels now use the source's internal axis swap. The first panel's first accepted knot matches its traced source coordinate; each accepted knot advances the 28 brush random draws observed in MetaPost. Contour-brush RNG calls still shift later panel streams. |
 | M10 mechanics and optics | 0.08482 | 0.645% → 0.840% | The hanging weight now uses the source radius 2/5(h−2 mm); spring/weight crop RMSE is 0.11720 and lens/rays 0.06302. End shape and hatch remain approximate. |
 | M11 globe, eye, knot, refraction | 0.12972 | 4.917% → 4.885% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly, and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.21054 | 10.630% → 10.287% | Mapping the source +30° hatch through the fixture's vertical-axis flip gives Typst angle −30°. Reversing the MetaPost RNG draw order to match its y-up scan gives hatch crop RMSE 0.09247 and ink coverage 14.066% → 13.333%. Stipple coverage is 7.079% → 7.138%. Hatch brush shape remains approximate. |
-| S105 wood block and surface | 0.10449 | 0.741% → 0.828% | Latest 600 ppi candidate: wooden-surface RMSE 0.07922, ink coverage 0.489% → 0.604% (previously 0.13138 and 0.489% → 1.754%). Block is at RMSE 0.13048 and near-source coverage (1.077% → 1.135%). |
+| S105 wood block and surface | 0.10635 | 0.741% → 0.882% | Landscape-axis mapping follows the source's `woodBlock` transform. Current 600 ppi block RMSE is 0.13330; surface RMSE is 0.07996 with ink 0.489% → 0.623%. Source contour-brush rendering and random-stream continuity from the block into the surface remain open. |
 | S106 weights | 0.09793 | 1.091% → 1.134% | The standing weight now rises from its base and uses radius 2/5h; the hanging weight uses 2/5(h−2 mm). Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%; hanging crop RMSE is 0.11711 with ink 1.131% → 1.330%. Source auricle and end details remain open. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
@@ -59,27 +59,19 @@ strokes, while M10 contains mostly whitespace.
    library default remains keyed. Continue by threading the stream through a
    brush, one stipple family and wood, checking their source call order before
    considering broader defaults.
-2. **Bring the wood field closer to `woodBlock`.** The first port now uses the
-   source's knot-warped scalar field, 1 mm sample grid, and rotated panel axes.
-   At 600 ppi M9 whole-plate RMSE is now 0.22848; reducing source-field
-   contour width from 0.07 pt to 0.05 pt improved every panel (crop RMSE
-   0.223–0.234) and moved ink coverage from 5.57% to 4.64% (source 4.20%).
-   S105 block RMSE fell from
-   0.14057 to 0.13129; coverage shifted from 1.14% to 1.17% (source 1.08%).
-   The S105 wooden surface now also uses the knot-warped field: its 600 ppi
-   crop RMSE fell from 0.13138 to 0.07958, and coverage moved from 1.754% to
-   0.611% (source 0.489%). Knot placement is reproducible and panels share
-   one stream, but accepted-knot brush calls do not yet advance the exact
-   upstream global stream; contour pen widths and knot loops remain
-   approximate. Dynamic knot rejection follows the source's ten-rejection
-   stopping rule; per-contour level offsets use the source's 1/8-spacing random
-   range. Together these move M9 whole-plate RMSE from 0.22800 to 0.22688 and
-   ink coverage from 4.550% to 4.464%. Replaying accepted-knot brush RNG
-   consumption with the current approximate brush renderer regressed M9 RMSE
-   to 0.22780 and was removed. Accepted-knot and contour-brush RNG call counts
-   and brush-shaped knot contours remain open. S105 now scores whole-plate
-   RMSE 0.10445, block 0.13036 and surface 0.07927 (surface ink 0.604% vs
-   0.489% source).
+2. **Bring the wood field closer to `woodBlock`.** The field uses the source's
+   knot-warped scalar field, 1 mm sample grid, per-column offset, and
+   per-contour level jitter. Landscape blocks now reproduce the source's
+   internal axis swap, and a trace of the pinned source shows that each
+   accepted knot consumes 28 random draws in its nested brush rings. The first
+   M9 panel's first accepted knot now matches source coordinates to under
+   0.1 mm; M9 whole-plate RMSE improves from 0.22688 to 0.22456, with ink
+   coverage 4.272% versus 4.203%. Contour-brush random calls still leave later
+   panel streams approximate. The S105 block/surface layout also gets the
+   source landscape transform; its current whole-plate RMSE is 0.10635,
+   block 0.13330 and surface 0.07996, with surface ink 0.623% versus 0.489%.
+   Its source contour-brush rendering and stream continuity from plank to
+   surface still need work.
 3. **Reconcile `flatSurface` and the S103 fill families.** The port now uses
    upstream stroke/row scales, the lightness envelope, three-track stipples,
    and the source's four-row glass dash cycle. At 600 ppi S103 whole-plate

@@ -35,18 +35,38 @@ MetaPost call order has not been ported. See the paired artifacts under
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`
 sample the upstream knot-warped `wField` at the source's 1 mm grid and 0.2 mm
 detail scale. The field includes the source's elliptic knot distance, radial
-well, far-field decay and low-frequency perturbation. M9 uses the panel angle
-to rotate the field axes and adds thin knot rings. The compatibility stream
-provides deterministic knot candidates, but M9 currently offsets the seed per
-panel instead of threading the exact global draw cursor; contour width
-modulation and the source's brush-generated knot loops are also approximated.
-S105's plank uses this field. Its separate wooden side surface still uses the
-older model.
+well, far-field decay, per-column offset and low-frequency perturbation.
+Landscape blocks use the source's internal axis swap. A pinned-source trace
+shows that each accepted knot's five brush rings consume 28 random values;
+the Typst stream now advances by that amount. In M9, the first accepted knot
+matches its source position within 0.1 mm. Contour-brush calls still shift
+later panel streams, and contour line shapes remain approximate.
 
-The 600 ppi paired run is retained under `build/wood-source/`. Against the
-previous baseline, M9 RMSE fell 0.29579 → 0.24594 and its four panel crops all
-improved; S105 block RMSE fell 0.14057 → 0.13129. See the comparison report
-and `comparisons/fidelity-plan.md` for coverage figures and remaining work.
+The current 600 ppi M9 whole-plate RMSE is 0.22456 with 4.272% ink coverage
+(source 4.203%). S105 is 0.10635 overall; block RMSE is 0.13330 and wooden-
+surface RMSE 0.07996 (ink 0.623% vs 0.489%). The landscape transform follows
+the source's `woodBlock` construction, while the remaining source contour
+brushes and RNG continuity between the S105 plank and surface still differ.
+
+`wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
+coordinates. To record candidate positions and per-knot random-call counts
+from the pinned MetaPost source, run inside the Nix devshell:
+
+```sh
+mkdir -p /tmp/m9-source-trace
+python3 diagnostics/instrument_wood_knots.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m9-source-trace/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m9-source-trace/main.mp
+printf 'selected := 9; input main.mp;\n' > /tmp/m9-source-trace/trace.mp
+(cd /tmp/m9-source-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'WKCAND' /tmp/m9-source-trace/trace.log
+typst eval 'query(<m9-wood-knot-trace>).first().value' \
+  --in diagnostics/wood_knot_trace.typ --root .
+```
+
+`WKCAND` coordinates are MetaPost units; divide by `72/25.4` to convert them
+to millimetres. The final field reports output-space coordinates in millimetres.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.

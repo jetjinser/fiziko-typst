@@ -2672,14 +2672,14 @@
   let knot-angle = 60
   let rho = 1 / 24
   let columns = int(calc.ceil(w)) + 1
-  let candidate-cap = 256
+  let max-knots = calc.max(1, int(calc.ceil(w * h / (2 * 20))))
+  let candidate-cap = calc.max(256, (max-knots + 10) * 30)
   let stream = _metapost-rng-sequence(seed,
     rng-offset + candidate-cap + columns + 2048)
   let randoms = stream.slice(rng-offset, rng-offset + candidate-cap + columns)
   let knots = ()
   let cursor = 0
   let rejected = 0
-  let max-knots = calc.max(1, int(calc.ceil(w * h / (2 * 20))))
   // woodBlock keeps sampling candidates until ten are rejected by the
   // minimum-distance rule; accepted candidates do not consume that counter.
   while rejected < 10 and knots.len() < max-knots and cursor + 1 < candidate-cap {
@@ -2687,6 +2687,10 @@
     let y = -knot-radius / 2 + (h + knot-radius) * randoms.at(cursor + 1)
     if knots.all(k => _dist(k, (x, y)) >= 20) {
       knots.push((x, y))
+      // Each accepted source knot draws five nested brush rings. The pinned
+      // MetaPost brush consumes 28 random values for those rings before the
+      // next candidate is sampled.
+      cursor += 28
     } else { rejected += 1 }
     cursor += 2
   }
@@ -2794,13 +2798,16 @@
   let local-poly = poly.map(p => _sub(p, (x0, y0)))
   let nx = calc.max(8, int(calc.ceil(w / cell)))
   let ny = calc.max(8, int(calc.ceil(h / cell)))
-  let swapped = source-field and calc.rem(calc.abs(angle), 180) == 90
+  // woodenThing rotates its local outline for a 90° grain angle. woodBlock
+  // also swaps wide, landscape blocks internally before drawing their field.
+  let swapped = source-field and (
+    calc.rem(calc.abs(angle), 180) == 90 or w > h)
   let wood-model = if source-field {
     _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h },
       seed, rng-offset: rng-offset)
   } else { none }
   let field = if source-field {
-    if swapped { (x, y) => (wood-model.field)(y, w - x) } else { wood-model.field }
+    if swapped { (x, y) => (wood-model.field)(h - y, x) } else { wood-model.field }
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
   let contour-stream = if source-field {
@@ -2823,7 +2830,7 @@
   }
   let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
   let source-knots = if source-field {
-    if swapped { wood-model.knots.map(k => (w - k.at(1), k.at(0))) }
+    if swapped { wood-model.knots.map(k => (k.at(1), h - k.at(0))) }
     else { wood-model.knots }
   } else { () }
   let texture-stroke = if source-field {
@@ -2863,8 +2870,13 @@
           stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1) = {
   let nx = calc.max(8, int(calc.round(w / cell)))
   let ny = calc.max(8, int(calc.round(h / cell)))
-  let model = if source-field { _woodblock-field(w, h, seed) } else { none }
-  let f = if source-field { model.field } else { _wood-field(angle, spacing, eyes) }
+  let swapped = source-field and w > h
+  let model = if source-field {
+    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h }, seed)
+  } else { none }
+  let f = if source-field {
+    if swapped { (x, y) => (model.field)(h - y, x) } else { model.field }
+  } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { model.rng-count } else { 0 }
   let contour-stream = if source-field {
     _metapost-rng-sequence(seed, contour-offset + 4096)
@@ -2882,7 +2894,7 @@
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }
   let knot-segments = ()
   if source-field {
-    for knot in model.knots {
+    for knot in model.knots.map(k => if swapped { (k.at(1), h - k.at(0)) } else { k }) {
       let ring = _ellipse-pts(1.25, 1.25 / _sin(60), center: knot, n: 72)
       for i in range(ring.len()) {
         knot-segments.push((ring.at(i), ring.at(_mod(i + 1, ring.len()))))
