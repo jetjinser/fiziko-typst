@@ -58,10 +58,18 @@ strokes, while M10 contains mostly whitespace.
    library default remains keyed. Continue by threading the stream through a
    brush, one stipple family and wood, checking their source call order before
    considering broader defaults.
-2. **Bring the wood field closer to `woodBlock`.** M9 has the largest broad
-   mismatch after S104. Port its knot placement, field perturbation and
-   isoline spacing as separable pieces, then check all four M9 crops and S105's
-   block/surface crops. Preserve a deterministic option for repeatable builds.
+2. **Bring the wood field closer to `woodBlock`.** The first port now uses the
+   source's knot-warped scalar field, 1 mm sample grid, and rotated panel axes.
+   At 600 ppi M9 whole-plate RMSE fell from 0.29579 to 0.24594; each panel
+   crop improved from 0.292–0.300 to 0.240–0.252. M9 ink coverage moved from
+   7.17% to 5.57%, closer to the source's 4.20%. S105 block RMSE fell from
+   0.14057 to 0.13129; coverage shifted from 1.14% to 1.17% (source 1.08%).
+   S105's separate wooden surface is unchanged and remains over-inked. Knot
+   placement is reproducible but currently uses per-panel seed offsets rather
+   than consuming the exact upstream global call stream; contour pen widths
+   are approximated, and the wood-knot outlines are not yet source brush loops.
+   Next, port the source's contour-width modulation and shared RNG cursor,
+   then tackle `woodenSurface` separately.
 3. **Reconcile `flatSurface` and the S103 fill families.** S104 currently
    renders only 28% of source ink overall. Match the source lighting envelope,
    row/edge behavior and stipple allocation separately for hatches and dots;

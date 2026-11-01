@@ -95,7 +95,7 @@
       "title": "Wood-grain panels", "frame_mm": [110,66], "driver": "main.mp", "figure": 9,
       "shared": {"four_panels_mm": [[0,0,55,33,0],[55,0,55,33,90],[0,33,55,33,90],[55,33,55,33,0]], "source_grid_mm": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same four panel bounds and grain angles; contour field, knots and source wood sampling differ.",
+      "notes": "Same four panel bounds and grain angles; nominal mode uses the source knot-warped field and 1 mm sampling grid, with deterministic per-panel knot seeds and approximate contour widths.",
       "regions_mm": {"top_left": [0,0,55,33], "top_right": [55,0,55,33], "bottom_left": [0,33,55,33], "bottom_right": [55,33,55,33]}
     },
     "M10": {
@@ -137,7 +137,7 @@
       "title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105,
       "shared": {"wood_block_mm": [39,12], "source_grid_mm": 1, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same block size, surface path and coarse source grid; contour field and surface shading differ.",
+      "notes": "The plank uses the source knot-warped field at the 1 mm grid; its knot stream and contour widths are approximate. The separate wooden surface retains the prior field.",
       "regions_mm": {"block": [0,0,53,44], "surface": [55,0,65,44]}
     },
     "S106": {

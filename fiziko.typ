@@ -2502,6 +2502,49 @@
   }
 }
 
+// Source `wField` used by woodBlock, expressed in physical millimetres.
+// The source samples at 0.2 mm detail steps over a 1 mm wood grid.
+#let _woodblock-field(w, h, seed) = {
+  let detail = 0.2
+  let knot-radius = 1.25
+  let knot-angle = 60
+  let rho = 1 / 24
+  let randoms = _metapost-rng-sequence(seed, 64)
+  let knots = ()
+  for candidate in range(32) {
+    let x = -knot-radius / 2 + (w + knot-radius) * randoms.at(candidate * 2)
+    let y = -knot-radius / 2 + (h + knot-radius) * randoms.at(candidate * 2 + 1)
+    if knots.len() < 8 and knots.all(k => _dist(k, (x, y)) >= 20) {
+      knots.push((x, y))
+    }
+  }
+  let bd = knot-radius / 2 * detail
+  let field = (px, py) => {
+    let i = px / detail
+    let j = py / detail
+    let result = 0.0
+    for knot in knots {
+      let dx = (px - knot.at(0)) / detail
+      let dy = (py - knot.at(1)) / detail
+      let r = calc.sqrt(dx * dx + dy * dy * calc.pow(_sin(knot-angle), 2))
+      let a = calc.atan2(dx, -dy)
+      if r >= 2 * bd and 0.5 * r - bd < 8 {
+        let q = 0.5 * r - bd
+        let wave = (calc.sqrt(calc.max(0.0, q)) / calc.pow(3.0, q)) * (_sin(knot-angle) * 0.5 * calc.sin(-a) + 1) * (1 / 3 + 2 / 3 * calc.abs(calc.cos(a)))
+        result += wave * wave
+      } else if r < 2 * bd {
+        result -= 10 * calc.sqrt(calc.max(0.0, 1 - calc.pow(r / (2 * bd), 4)))
+      }
+      result += calc.cos(2 * calc.pi / 30 * r * 1rad) / 64
+    }
+    result -= i * rho / 5
+    result += calc.sin((calc.pi * i / w + 4 * calc.pi * j / h) * 1rad) / 32
+    // Source adds one random vertical displacement per sampled column.
+    (result + rho * _rng(seed, int(calc.round(i)), 7001)) / rho
+  }
+  (field: field, knots: knots)
+}
+
 #let _clip-polyline(path, regions) = {
   let out = ()
   let cross(a, b) = a.at(0) * b.at(1) - a.at(1) * b.at(0)
@@ -2560,7 +2603,7 @@
 /// Wood-grain contours clipped to an arbitrary simple polygon. `eyes` use
 /// coordinates local to the polygon's bounding box.
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
-                  stroke: 0.45pt + black) = {
+                  stroke: 0.45pt + black, source-field: false, seed: 1) = {
   if poly.len() < 3 { return none }
   let xs = poly.map(p => p.at(0))
   let ys = poly.map(p => p.at(1))
@@ -2572,7 +2615,13 @@
   let local-poly = poly.map(p => _sub(p, (x0, y0)))
   let nx = calc.max(8, int(calc.ceil(w / cell)))
   let ny = calc.max(8, int(calc.ceil(h / cell)))
-  let field = _wood-field(angle, spacing, eyes)
+  let swapped = source-field and calc.rem(calc.abs(angle), 180) == 90
+  let wood-model = if source-field {
+    _woodblock-field(if swapped { h } else { w }, if swapped { w } else { h }, seed)
+  } else { none }
+  let field = if source-field {
+    if swapped { (x, y) => (wood-model.field)(y, w - x) } else { wood-model.field }
+  } else { _wood-field(angle, spacing, eyes) }
   let contours = marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny)
   let segments = ()
   for contour in contours {
@@ -2581,13 +2630,29 @@
       _add(seg.at(0), (x0, y0)), _add(seg.at(1), (x0, y0)),
     ))
   }
-  let eye-loops = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly)).map(e =>
+  let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
+  let source-knots = if source-field {
+    if swapped { wood-model.knots.map(k => (w - k.at(1), k.at(0))) }
+    else { wood-model.knots }
+  } else { () }
+  let texture-stroke = if source-field { 0.07pt + black } else { stroke }
+  let border-stroke = if source-field { 0.2pt + black } else { stroke }
+  let eye-loops = explicit-eyes.map(e =>
     _ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
                  center: _add((e.at(0), e.at(1)), (x0, y0)))
   )
-  let els = (_stroke-segments(segments, stroke),
-             stroke-path(poly, stroke: stroke, closed: true, per: 0))
+  let knot-loops = source-knots.map(k => _ellipse-pts(1.25, 1.25 / _sin(60),
+    center: _add(k, (x0, y0)), n: 72))
+  let knot-segments = ()
+  for loop in knot-loops {
+    for i in range(loop.len()) {
+      knot-segments.push((loop.at(i), loop.at(_mod(i + 1, loop.len()))))
+    }
+  }
+  let els = (_stroke-segments(segments, texture-stroke),
+             stroke-path(poly, stroke: border-stroke, closed: true, per: 0))
   if eye-loops.len() > 0 { els.push(place(top + left, _fill(eye-loops, black))) }
+  if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
   _join(els)
 }
 
@@ -2597,14 +2662,26 @@
 ///   * `spacing` — distance between rings (mm)
 ///   * `eyes` — ((x, y, size, amp), ...) in rectangle-local coordinates
 #let wood(x, y, w, h, angle: 0, spacing: 2.6, eyes: (),
-          stroke: 0.45pt + black, cell: 1.5) = {
+          stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1) = {
   let nx = calc.max(8, int(calc.round(w / cell)))
   let ny = calc.max(8, int(calc.round(h / cell)))
-  let f = _wood-field(angle, spacing, eyes)
+  let model = if source-field { _woodblock-field(w, h, seed) } else { none }
+  let f = if source-field { model.field } else { _wood-field(angle, spacing, eyes) }
   let loops = marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
   let segments = loops.fold((), (acc, pl) => acc + _clip-polyline(pl, (rect,)))
-  let els = (_stroke-segments(segments, stroke),)
+  let texture-stroke = if source-field { 0.1pt + black } else { stroke }
+  let knot-segments = ()
+  if source-field {
+    for knot in model.knots {
+      let ring = _ellipse-pts(1.25, 1.25 / _sin(60), center: knot, n: 72)
+      for i in range(ring.len()) {
+        knot-segments.push((ring.at(i), ring.at(_mod(i + 1, ring.len()))))
+      }
+    }
+  }
+  let els = (_stroke-segments(segments, texture-stroke),)
+  if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
   els += eyes.map(e => place(top + left, _fill(
     (_ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
                   center: (e.at(0), e.at(1))),),

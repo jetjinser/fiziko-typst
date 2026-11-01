@@ -30,6 +30,24 @@ explicit while other drawing families still use keyed randomness and their
 MetaPost call order has not been ported. See the paired artifacts under
 `build/source-parity-rng/` and the [fidelity plan](../comparisons/fidelity-plan.md).
 
+## WoodBlock source-field pilot
+
+`wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`
+sample the upstream knot-warped `wField` at the source's 1 mm grid and 0.2 mm
+detail scale. The field includes the source's elliptic knot distance, radial
+well, far-field decay and low-frequency perturbation. M9 uses the panel angle
+to rotate the field axes and adds thin knot rings. The compatibility stream
+provides deterministic knot candidates, but M9 currently offsets the seed per
+panel instead of threading the exact global draw cursor; contour width
+modulation and the source's brush-generated knot loops are also approximated.
+S105's plank uses this field. Its separate wooden side surface still uses the
+older model.
+
+The 600 ppi paired run is retained under `build/wood-source/`. Against the
+previous baseline, M9 RMSE fell 0.29579 → 0.24594 and its four panel crops all
+improved; S105 block RMSE fell 0.14057 → 0.13129. See the comparison report
+and `comparisons/fidelity-plan.md` for coverage figures and remaining work.
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and
