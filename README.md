@@ -30,9 +30,10 @@ coastlines are caller-supplied polylines; the upstream data bundle is not
 embedded. Knot crossings use sampled polylines, alternate by pair by default,
 and can use a fixed strand ordering; polygonal boundaries approximate smooth
 optical surfaces.
-The current source tree has no project license declaration yet. The pinned
-upstream source includes GPL version 3 terms. This port's project license and
-attribution must be confirmed before publication; see [release readiness](RELEASING.md).
+This package is licensed under GNU GPL version 3 or later. It ports the
+upstream Fiziko library by Sergey Slyusarev, Copyright 2023; retain the
+upstream attribution and license notice in [LICENSE](LICENSE). See
+[release readiness](RELEASING.md) for package publication status.
 
 ### Capability map
 

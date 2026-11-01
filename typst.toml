@@ -3,6 +3,7 @@ name = "fiziko"
 version = "0.1.0"
 entrypoint = "fiziko.typ"
 description = "Draw deterministic vector illustrations for physics texts."
+license = "GPL-3.0-or-later"
 exclude = [
   "/.direnv/",
   "/.github/",

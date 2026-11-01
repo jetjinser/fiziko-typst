@@ -1,8 +1,8 @@
 # Release readiness
 
-The automated release checks and local Typst package scaffold are ready. A
-public release is not ready until the maintainer confirms the licensing and
-authorship metadata below.
+The automated release checks, local Typst package scaffold, and project
+license are ready. A Typst Universe submission still needs maintainer author
+metadata.
 
 ## Completed release preparation
 
@@ -26,28 +26,21 @@ Run the same release gate locally:
 nix develop path:./nix --command ./check.sh
 ```
 
-## Maintainer decisions still required
+## Maintainer information still required
 
-### Project license and attribution
+### Typst package authors
 
-The pinned upstream source includes the text of GNU GPL version 3. This
-repository ports that library, so the project license expression and required
-upstream notices must be confirmed before adding a `LICENSE` file or publishing
-the Typst package. The current manifest deliberately omits `license` and
-`authors`; it supports local package testing but is incomplete for Typst
-Universe submission. The package registry requires both fields and a valid
-SPDX license expression ([manifest requirements](https://github.com/typst/packages/blob/main/docs/manifest.md)).
+The package uses SPDX `GPL-3.0-or-later`, matching the upstream source header,
+which permits GPL version 3 or any later version. The full license is in
+`LICENSE`. The upstream attribution is Sergey Slyusarev, Copyright 2023; it is
+also recorded in the README. The package registry requires an `authors` field
+in addition to a valid SPDX license expression
+([manifest requirements](https://github.com/typst/packages/blob/main/docs/manifest.md)).
 
-The maintainer should confirm:
-
-- The project's SPDX license expression and whether all contributed code may
-  be distributed under it.
-- The author display names and any public contact/handles to publish.
-- The upstream attribution text to preserve with that license.
-
-The comparison workflow retains the exact upstream license text with each
-run's provenance snapshot. It is not yet copied as this project's `LICENSE`
-because that would imply an unconfirmed project licensing decision.
+Before submitting to Typst Universe, add the current package maintainer(s)' own
+display names and any public contact/handles they want listed. The upstream
+author is credited in the README as the original Fiziko author, not presented
+as the author of this Typst port.
 
 ### PDF/X output
 
