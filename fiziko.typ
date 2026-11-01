@@ -2177,6 +2177,23 @@
 
 /// Parallel clipped strokes inside a polygon. `style: "glass"` leaves
 /// periodic gaps to suggest a transparent material.
+#let _dash-segment(a, b, on, off, phase: 0) = {
+  let direction = _sub(b, a)
+  let length = _len(direction)
+  if on <= 0 or length <= phase { return () }
+  let pieces = ()
+  let count = int(calc.ceil((length - phase) / (on + off))) + 1
+  for i in range(count) {
+    let start = phase + i * (on + off)
+    let finish = calc.min(length, start + on)
+    if finish > start {
+      pieces.push((_add(a, _mul(direction, start / length)),
+                   _add(a, _mul(direction, finish / length))))
+    }
+  }
+  pieces
+}
+
 #let solid(poly, angle: 45, style: "opaque", spacing: none,
            stroke: _source-min-stroke * 1mm + black) = {
   let line-spacing = if spacing == none { 4.5 * _source-max-shading } else { spacing }
@@ -2184,8 +2201,22 @@
   let items = ()
   for s in segs {
     let row = s.at(2)
-    if style == "glass" and calc.rem(row, 3) == 1 { continue }
-    items.push(stroke-path((s.at(0), s.at(1)), stroke: stroke, closed: false, per: 0))
+    if style == "glass" {
+      let density = _source-max-shading * 3
+      let family = calc.rem(row, 4)
+      if family == 2 { continue }
+      let variation = 0.0
+      let (on, off, phase) = if family == 0 {
+        ((8 - variation) * density, (4 + variation) * density, 0.0)
+      } else {
+        (6 * density, 5 * density, density)
+      }
+      for dash in _dash-segment(s.at(0), s.at(1), on, off, phase: phase) {
+        items.push(stroke-path(dash, stroke: stroke, closed: false, per: 0))
+      }
+    } else {
+      items.push(stroke-path((s.at(0), s.at(1)), stroke: stroke, closed: false, per: 0))
+    }
   }
   _join(items)
 }

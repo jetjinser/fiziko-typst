@@ -36,7 +36,7 @@ included where a plate contains distinct drawing families.
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.13134 | 4.917% → 5.036% | Latest 600 ppi candidate: globe RMSE 0.18935, ink coverage 25.940% → 27.538%; knot RMSE 0.17410, 2.606% → 1.669%. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
-| S103 surface fills | 0.22142 | 3.240% → 3.635% | At 600 ppi opaque RMSE 0.33901 with near-equal coverage (8.738% → 8.699%); gradient RMSE 0.33668 and coverage 6.901% → 6.917%. Glass remains over-inked (3.638% → 5.683%; RMSE 0.26279). |
+| S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.32819 | 10.630% → 9.745% | At 600 ppi stipple coverage now matches (7.079% → 7.121%, RMSE 0.28549). Hatch is still under-dense (14.066% → 12.284%, RMSE 0.36477); overall RMSE regressed from 0.29890 despite better density balance. |
 | S105 wood block and surface | 0.10509 | 0.741% → 0.846% | Latest 600 ppi candidate: wooden-surface RMSE 0.07958, ink coverage 0.489% → 0.611% (previously 0.13138 and 0.489% → 1.754%). Block remains at RMSE 0.13129 and near-source coverage (1.077% → 1.166%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
@@ -71,14 +71,14 @@ strokes, while M10 contains mostly whitespace.
    contour pen widths and knot loops remain approximate. The shared RNG cursor
    and brush-shaped knot contours are the next wood-specific improvements.
 3. **Reconcile `flatSurface` and the S103 fill families.** The port now uses
-   upstream stroke/row scales, the lightness envelope and three-track stipples.
-   At 600 ppi S103 whole-plate RMSE improved from 0.23772 to 0.22142, and its
-   opaque and gradient ink coverages now closely match. S104 stipple ink
-   coverage moved from 1.19% to 7.12% (source 7.08%), but the hatch remains
-   under-dense and S104 whole-plate RMSE rose from 0.29890 to 0.32819. Glass
-   remains over-inked. Further work should compare row placement and edge
-   clipping, then isolate glass width and hatch allocation rather than changing
-   global fill density.
+   upstream stroke/row scales, the lightness envelope, three-track stipples,
+   and the source's four-row glass dash cycle. At 600 ppi S103 whole-plate
+   RMSE is 0.21682 (baseline 0.23772), with opaque, gradient and glass
+   coverages all close to source. S104 stipple ink coverage matches (7.12% vs
+   7.08%), but hatch remains under-dense (12.28% vs 14.07%) and S104
+   whole-plate RMSE is 0.32819 (baseline 0.29890). Further work should inspect
+   row placement and edge clipping in S104; width-only tuning matched coverage
+   but raised crop RMSE, so keep source-derived width parameters.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    now offers a latitude-hatching mode, and `strand-knot` can draw longitudinal
    tube segments with over/under gaps. The M11 600 ppi trial reduced whole-plate

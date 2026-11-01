@@ -123,7 +123,7 @@
       "title": "Solid and glass surface fills", "frame_mm": [120,45], "driver": "supplemental.mp", "figure": 103,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same source paths, polygons, hatch angles and styles. Defaults now follow upstream stroke and row scales. At 600 ppi whole-plate RMSE is 0.22142 (was 0.23772); opaque and gradient ink coverage closely match, while glass remains over-inked (5.68% vs 3.64%).",
+      "notes": "Same source paths, polygons, hatch angles and styles. Defaults follow upstream stroke and row scales, and glass uses the upstream four-row dash cycle. At 600 ppi whole-plate RMSE is 0.21682 (baseline 0.23772); glass RMSE fell to 0.23791 and coverage is 3.87% vs 3.64% source.",
       "regions_mm": {"solid_surface": [0,4,58,36], "opaque": [60,4,25,38], "glass": [85,4,23,38], "gradient": [107,4,13,38]}
     },
     "S104": {
