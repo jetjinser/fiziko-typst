@@ -4,8 +4,9 @@
 
 The paired report covers the pinned upstream revision
 `54a63dba8e6700a5e70d3508838edebcbf0f45fe`: historical plates M1–M11 and
-S101–S108, plus isolated sphere C1. The latest full report is generated at
-`build/source-parity/index.html` with:
+S101–S108, plus isolated sphere C1. The latest full 600 ppi report is
+`build/fidelity-round-2/index.html` (20/20 successful) and can be regenerated
+with:
 
 ```sh
 nix develop path:./nix --command ./compare.sh --mode nominal --ppi 600 --output build/source-parity
@@ -77,9 +78,12 @@ strokes, while M10 contains mostly whitespace.
    RMSE is 0.21682 (baseline 0.23772), with opaque, gradient and glass
    coverages all close to source. S104 stipple ink coverage matches (7.12% vs
    7.08%), but hatch remains under-dense (12.28% vs 14.07%) and S104
-   whole-plate RMSE is 0.32819 (baseline 0.29890). Further work should inspect
-   row placement and edge clipping in S104; width-only tuning matched coverage
-   but raised crop RMSE, so keep source-derived width parameters.
+   whole-plate RMSE is 0.32819 (baseline 0.29890). A 2.3× hatch-width trial
+   moved crop coverage to 13.90% (source 14.07%) but raised hatch RMSE from
+   0.36477 to 0.37022; removing the lightness lower clamp overfilled it to
+   20.19% and raised RMSE to 0.39024. Neither trial is retained. Further work
+   should inspect row phase, path subdivision and shared random-stream order
+   in S104 rather than widening lines.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    now offers a latitude-hatching mode, and `strand-knot` can draw longitudinal
    tube segments with over/under gaps. The M11 600 ppi trial reduced whole-plate
