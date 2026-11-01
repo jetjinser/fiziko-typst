@@ -81,9 +81,11 @@ strokes, while M10 contains mostly whitespace.
    whole-plate RMSE is 0.32819 (baseline 0.29890). A 2.3× hatch-width trial
    moved crop coverage to 13.90% (source 14.07%) but raised hatch RMSE from
    0.36477 to 0.37022; removing the lightness lower clamp overfilled it to
-   20.19% and raised RMSE to 0.39024. Neither trial is retained. Further work
-   should inspect row phase, path subdivision and shared random-stream order
-   in S104 rather than widening lines.
+   20.19% and raised RMSE to 0.39024. Neither trial is retained. Quarter- and
+   half-spacing row-phase trials barely moved hatch RMSE (0.36477 → 0.36473 /
+   0.36475) and left coverage unchanged. The remaining difference likely needs
+   closer source brush subdivision and shared random-stream order, rather than
+   further phase or width tuning.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    now offers a latitude-hatching mode, and `strand-knot` can draw longitudinal
    tube segments with over/under gaps. The M11 600 ppi trial reduced whole-plate
