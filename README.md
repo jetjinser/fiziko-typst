@@ -30,10 +30,9 @@ coastlines are caller-supplied polylines; the upstream data bundle is not
 embedded. Knot crossings use sampled polylines, alternate by pair by default,
 and can use a fixed strand ordering; polygonal boundaries approximate smooth
 optical surfaces.
-The current source tree has no project license declaration yet; the
-upstream [fiziko repository uses GPL-3.0](https://github.com/jemmybutton/fiziko/blob/master/LICENSE.md),
-so the project license and attribution need an explicit decision before
-publishing.
+The current source tree has no project license declaration yet. The pinned
+upstream source includes GPL version 3 terms. This port's project license and
+attribution must be confirmed before publication; see [release readiness](RELEASING.md).
 
 ### Capability map
 
@@ -193,14 +192,15 @@ for running individual cases and explicitly updating reviewed references.
   0.3 pt maximum shading width, and 0.9 pt line spacing; its hatches are
   filled vector geometry and remain single-K.
 - Typst embeds font subsets; labels are New Computer Modern.
-- Typst does not emit PDF/X yet (typst/typst#6012) — post-process with
-  Ghostscript for delivery.
+- Typst does not natively emit PDF/X ([upstream feature request](https://github.com/typst/typst/issues/6012)). A Ghostscript
+  conversion also needs a print profile selected for the intended workflow and
+  a PDF/X-capable conformance check before it can be labelled PDF/X.
 
 ## Prepress preflight
 
-`./preflight.sh [file.pdf]` runs the print-readiness checks (Nix supplies
-poppler/qpdf/ghostscript on the fly). These measurements are from the current
-five-page `main.pdf` after Figure 11:
+`nix develop path:./nix --command ./preflight.sh [file.pdf]` runs structural
+and render checks using the versions pinned by `flake.lock`. These
+measurements are from the current five-page `build/check/main.pdf`:
 
 | check | tool | result |
 |---|---|---|
@@ -208,29 +208,28 @@ five-page `main.pdf` after Figure 11:
 | render | `gs -dPDFSTOPONERROR` | no errors, 5 pages |
 | page | `pdfinfo` | A4 exact (595.28 × 841.89 pt), PDF 1.7, tagged, unencrypted, no JS |
 | fonts | `pdffonts` | 5/5 embedded, subset + Unicode (NewCM roman/italic/bold, NewCM Math, DejaVu Sans Mono) |
-| colour | qdf scan | 314 black-gray `scn` ops; 44 non-gray `scn` values and two `k` operators are from code highlighting; no `rg`, `RG`, or `K` operators |
-| transparency | qdf scan | 0 × (`/SMask`, `/ca`, `/BlendMode`, `/Group`) |
+| colour | qdf scan | `scn` includes black/gray drawing and colored code highlighting, plus two `k` operators; no `rg`, `RG`, or `K` operators |
+| transparency | qdf scan | 0 × (`/SMask`, `/ca`, `/CA`, `/BlendMode`, `/Group`) |
 | images / annotations | qdf scan | 0 / 0 — fully vector |
-| stroked paths | qdf `w` ops | min **0.35 pt** (0.35 / 0.4 / 0.45 / 0.5 / 0.6); latitude hatches are fills, not `w` operators |
+| stroked paths | qdf `w` ops | min **0.199 pt**; 0.2 pt source strokes are intentional; minimums required for print depend on the recipient |
 | latitude hatch widths | source-matched fill geometry | min **0.2 pt**, with below-pen widths represented by fitted dashes |
-| OutputIntent | qdf scan | absent → not PDF/X (Typst typst#6012) |
+| OutputIntent | qdf scan | absent; the document is not certified as PDF/X |
 
-Deliverables:
+Generated files and release scope:
 
-- `main.pdf` — master (screen and colour print).
-- `page-{p}.png` — 140 ppi page previews, regenerated with `typst compile`.
-- `main-gray.pdf` — single-K candidate from the earlier four-page specimen;
-  regenerate it from the current master before delivery. Ghostscript
-  `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray`;
-  re-checked: all colour ops are valid DeviceGray in [0, 1], fonts stay
-  embedded, renders clean. Caveat: GS rewrites coordinates in 0.1 pt units
-  under a page-level scale, so raw `w` numbers in *its* qdf appear ×10 —
-  verify widths against the scale matrix, not by grepping numbers alone.
-- PDF/X-1a needs three things together: Ghostscript's `pdfx_def.ps`, a CMYK
-  ICC (a FOGRA39L profile exists in the nix store via `colorprofiles`), and
-  veraPDF to certify. They were not all available here; an incomplete attempt
-  was produced and **deleted** — never deliver an uncertified file labelled
-  PDF/X.
+- `build/check/main.pdf` is the generated five-page specimen used for review
+  and CI. It is not tracked or included in the source package.
+- The source release is the Typst package plus its README and license. Example
+  PDFs, page PNGs, comparison reports, and diagnostic renders stay as generated
+  review artifacts under `build/` and are not release files.
+- No grayscale or PDF/X variant is currently part of the release. The
+  grayscale candidate referenced in older notes was made from an earlier
+  specimen and is obsolete.
+- veraPDF validates PDF/A and PDF/UA profiles; it does not validate PDF/X. The
+  locked nixpkgs has no FOGRA print-profile package selected for this project,
+  and no PDF/X validator is configured. PDF/X therefore remains unverified;
+  do not label a Ghostscript output as conforming based only on an OutputIntent
+  or a successful render.
 
 ## Environment baseline
 
@@ -241,10 +240,12 @@ fiziko. The 2026-11 comparison pass uses:
 - MetaPost 2.11 / pdfTeX 1.40.27 (TeX Live 2025)
 - Ghostscript 10.07.1
 - ImageMagick 7.1.2-31 and Python 3.14.7
+- qpdf 12.3.2, Poppler 26.06.0 and Ghostscript 10.07.1 for print preflight
+- actionlint 1.7.12 and ShellCheck 0.11.0 for repository scripts
 
 Every source comparison records its actual tool versions and source hashes.
-The separate print preflight still acquires qpdf/Poppler/Ghostscript through
-`preflight.sh`; it is not the comparison renderer.
+Print preflight now uses the same locked devshell and records the versions of
+qpdf, Poppler, and Ghostscript in its output.
 
 ## Roadmap
 
@@ -263,14 +264,16 @@ from 64.9 to 44.6 seconds. The width-template knots remain explicit, and
 `samples:` can be raised for unusually large output. These timings depend on
 the machine and document; they are measurements, not fixed targets.
 
-`check.sh` covers existing numerical invariants and one rendered Typst page;
-it is not a complete source-fidelity gate. Resolve licensing, pin build tools,
-add CI/package metadata and close print/PDF/X checks before publishing.
+`check.sh` runs numeric and visual regressions, comparison-tool unit tests,
+shell/workflow lint, a local package import smoke build, the five-page compile,
+and the structural PDF preflight. Source fidelity remains a descriptive
+comparison rather than a pass/fail threshold.
 
-## Release follow-up
+## Release readiness
 
-- Pin or record Typst, qpdf, Poppler, and Ghostscript versions so preflight
-  results can be reproduced.
-- Decide which generated PDFs belong in the release and document the exact
-  commands that regenerate them.
-- Keep PDF/X marked as unverified until a conversion passes veraPDF.
+The pinned toolchain, CI gate, local Typst package manifest, package smoke
+build, generated-file policy, and reproducible PDF preflight are in place.
+Publication is still gated on maintainer confirmation of the project license,
+author list, and attribution text. PDF/X is deliberately outside the release
+scope until a target print profile and a validator that supports PDF/X are
+chosen. See [RELEASING.md](RELEASING.md) for the remaining decisions.

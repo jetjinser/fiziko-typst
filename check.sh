@@ -20,7 +20,14 @@ printf '## Regression harness tests\n'
 python3 -m unittest discover -s visual -p 'test_*.py'
 printf '## Source comparison harness tests\n'
 python3 -m unittest discover -s comparisons -p 'test_*.py'
+printf '## Static checks\n'
+actionlint .github/workflows/*.yml
+shellcheck check.sh compare.sh preflight.sh package-check.sh visual-regression.sh
+printf '## Local Typst package smoke build\n'
+./package-check.sh
 printf '## Typst compile\n'
 typst compile main.typ build/check/main.pdf
+printf '## PDF preflight\n'
+./preflight.sh build/check/main.pdf
 printf '## Visual snapshot\n'
 ./visual-regression.sh

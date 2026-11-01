@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
 # Preflight for main.pdf — print-readiness checks.
-# Needs nix (pulls poppler-utils, qpdf and ghostscript from the binary cache).
+# Run inside `nix develop path:./nix`; all checker versions come from flake.lock.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 F=${1:-main.pdf}
 
-nix shell nixpkgs#poppler-utils nixpkgs#qpdf nixpkgs#ghostscript -c bash -eu -c '
-F="$1"
+for tool in qpdf pdfinfo pdffonts gs; do
+  if ! command -v "$tool" >/dev/null; then
+    printf 'Missing %s; run through nix develop path:./nix\n' "$tool" >&2
+    exit 2
+  fi
+done
+
+Q=$(mktemp --suffix=.pdf)
+trap 'rm -f "$Q"' EXIT
+
+echo "## pinned tool versions"
+qpdf --version
+pdfinfo -v 2>&1 | head -n 1
+gs --version
+
 echo "## structure (qpdf --check)"
 qpdf --check "$F" 2>&1 | sed -n "1,5p"
 
@@ -31,7 +44,7 @@ echo "## scn colours"
 grep -aoE "[0-9. ]+ scn" "$Q" | sort | uniq -c | sort -rn | head -8
 
 echo "## transparency (want 0 each)"
-for p in /SMask /BlendMode /Group; do
+for p in /SMask /ca /CA /BlendMode /Group; do
   printf "%-12s %s\n" "$p" "$(grep -ac -- "$p" "$Q" || true)"
 done
 
@@ -39,11 +52,11 @@ echo "## images / annotations (want 0 / 0)"
 printf "images=%s annots=%s\n" \
   "$(grep -ac "Subtype */Image" "$Q" || true)" "$(grep -ac "/Annot" "$Q" || true)"
 
-echo "## stroked line widths in pt (want min >= 0.3)"
+echo "## stroked line widths in pt (report only; source strokes may be 0.2 pt)"
 grep -aoE "[0-9.]+ w" "$Q" | tr -d " w" | sort -n | uniq -c
 
-echo "## output intent (absent => not PDF/X)"
+echo "## output intent (presence alone does not certify PDF/X)"
 grep -ac "/OutputIntent" "$Q" || true
 
-rm -f "$Q"
-' _ "$F"
+echo "## PDF/X status"
+echo "Not certified: this repository has no selected print output profile or PDF/X validator."

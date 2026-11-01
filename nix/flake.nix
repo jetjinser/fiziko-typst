@@ -34,6 +34,10 @@
               imagemagick
               texliveSmall
               ghostscript
+              qpdf
+              poppler-utils
+              actionlint
+              shellcheck
             ];
             env = [
               {

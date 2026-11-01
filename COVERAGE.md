@@ -177,6 +177,9 @@ cover smaller pulley and physics compositions.
 After each drawing-code change, compile the focused specimen and `main.typ`.
 Keep the pinned, seeded source plates fixed as a common comparison target.
 
-The remaining visual work is the source-plate comparison pass for brush,
-sphere, and tube details (roadmap item 1); matching MetaPost's internal
-recursion and call counts is still not a completion requirement.
+The Stage 4 source-plate pass now measures brush, sphere, tube stipple and
+transverse dash behavior across multiple scales or seeds. The remaining
+differences are documented as source-pattern phase and density tradeoffs;
+matching MetaPost's internal recursion and call counts is still not a
+completion requirement. See `diagnostics/README.md` for the bounded audit and
+reproduction commands.

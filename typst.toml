@@ -1,0 +1,31 @@
+[package]
+name = "fiziko"
+version = "0.1.0"
+entrypoint = "fiziko.typ"
+description = "Draw deterministic vector illustrations for physics texts."
+exclude = [
+  "/.direnv/",
+  "/.github/",
+  "/build/",
+  "/comparisons/",
+  "/diagnostics/",
+  "/nix/",
+  "/original/",
+  "/visual/",
+  "/brush.typ",
+  "/eye.typ",
+  "/globe.typ",
+  "/knot.typ",
+  "/main.typ",
+  "/main-original.typ",
+  "/mechanics.typ",
+  "/optics.typ",
+  "/shadow.typ",
+  "/sphere.typ",
+  "/stipple.typ",
+  "/telescope.typ",
+  "/tube.typ",
+  "/wood.typ",
+  "/verify.typ",
+  "/checks/",
+]
