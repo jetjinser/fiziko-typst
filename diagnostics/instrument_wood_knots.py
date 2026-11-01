@@ -41,15 +41,38 @@ def main() -> None:
         ' & decimal(ypart(urcorner(surfaceOutline))-ypart(llcorner(surfaceOutline)));'
     )
     source = source.replace(angle_anchor, angle_hook)
+    block_anchor = (
+        "thingWoodBlock := woodBlock(xpart(urcorner(shiftedThing)), "
+        "ypart(urcorner(shiftedThing)));"
+    )
+    if source.count(block_anchor) != 1:
+        raise ValueError(f"expected one woodenThing block hook, found {source.count(block_anchor)}")
+    block_hook = block_anchor + (
+        '\n    message "WDBLOCKEND " & decimal(traceWoodCount) & " "'
+        ' & decimal(traceRngBatches) & " " & decimal(traceRngCalls);'
+        '\n    traceWoodCount := traceWoodCount + 1;'
+    )
+    source = source.replace(block_anchor, block_hook)
     source = source.replace("uniformdeviate(", "traceUniformdeviate(")
     source += """
 numeric traceRngCount;
 numeric traceRngTotal;
+numeric traceRngCalls;
+numeric traceRngBatches;
+numeric traceWoodCount;
 traceRngCount := 0;
 traceRngTotal := 0;
+traceRngCalls := 0;
+traceRngBatches := 0;
+traceWoodCount := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngCount := traceRngCount + 1;
     traceRngTotal := traceRngTotal + 1/100;
+    traceRngCalls := traceRngCalls + 1;
+    if traceRngCalls >= 1000:
+        traceRngCalls := 0;
+        traceRngBatches := traceRngBatches + 1;
+    fi;
     uniformdeviate(x)
 enddef;
 """

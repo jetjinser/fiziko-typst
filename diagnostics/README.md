@@ -39,14 +39,14 @@ well, far-field decay, per-column offset and low-frequency perturbation.
 Landscape blocks use the source's internal axis swap. A pinned-source trace
 shows that each accepted knot's five brush rings consume 28 random values;
 the Typst stream now advances by that amount. In M9, the first accepted knot
-matches its source position within 0.1 mm. Contour-brush calls still shift
-later panel streams, and contour line shapes remain approximate.
+matches its source position within 0.1 mm. Exact source panel-end call counts
+are 1456, 2823, 4120 and 5416, so Typst now starts the four panels at offsets
+0, 1456, 2823 and 4120. M9's 600 ppi whole-plate RMSE falls from 0.22456 to
+0.22412, with 4.224% ink coverage (source 4.203%). Source contour-brush shapes
+remain approximate.
 
-The current 600 ppi M9 whole-plate RMSE is 0.22456 with 4.272% ink coverage
-(source 4.203%). S105 is 0.10635 overall; block RMSE is 0.13330 and wooden-
-surface RMSE 0.07996 (ink 0.623% vs 0.489%). The landscape transform follows
-the source's `woodBlock` construction, while the remaining source contour
-brushes and RNG continuity between the S105 plank and surface still differ.
+S105's landscape transform and stream continuity now follow the pinned source
+trace; the contour-brush rendering and per-brush call count remain different.
 The instrumented S105 source reports a 52 × 8 mm rounded `woodBlock` extent
 and 536 global random calls before its first surface knot. The source's first
 internal candidate is (8.2726, 46.3121) mm; the Typst stream at offset 536
