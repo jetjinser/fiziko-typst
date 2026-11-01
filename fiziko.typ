@@ -2667,16 +2667,23 @@
   let knot-angle = 60
   let rho = 1 / 24
   let columns = int(calc.ceil(w)) + 1
-  let rng-count = 64 + columns
-  let randoms = (_metapost-rng-sequence(seed, rng-offset + rng-count))
-    .slice(rng-offset, rng-offset + rng-count)
+  let candidate-cap = 256
+  let stream = _metapost-rng-sequence(seed,
+    rng-offset + candidate-cap + columns + 2048)
+  let randoms = stream.slice(rng-offset, rng-offset + candidate-cap + columns)
   let knots = ()
-  for candidate in range(32) {
-    let x = -knot-radius / 2 + (w + knot-radius) * randoms.at(candidate * 2)
-    let y = -knot-radius / 2 + (h + knot-radius) * randoms.at(candidate * 2 + 1)
-    if knots.len() < 8 and knots.all(k => _dist(k, (x, y)) >= 20) {
+  let cursor = 0
+  let rejected = 0
+  let max-knots = calc.max(1, int(calc.ceil(w * h / (2 * 20))))
+  // woodBlock keeps sampling candidates until ten are rejected by the
+  // minimum-distance rule; accepted candidates do not consume that counter.
+  while rejected < 10 and knots.len() < max-knots and cursor + 1 < candidate-cap {
+    let x = -knot-radius / 2 + (w + knot-radius) * randoms.at(cursor)
+    let y = -knot-radius / 2 + (h + knot-radius) * randoms.at(cursor + 1)
+    if knots.all(k => _dist(k, (x, y)) >= 20) {
       knots.push((x, y))
-    }
+    } else { rejected += 1 }
+    cursor += 2
   }
   let bd = knot-radius / 2 * detail
   let field = (px, py) => {
@@ -2702,9 +2709,9 @@
     result += calc.sin((calc.pi * i / w + 4 * calc.pi * j / h) * 1rad) / 32
     // Source draws one uniform vertical displacement per 1 mm wood column,
     // shared by every finer field sample in that column.
-    (result + rho / 8 * randoms.at(64 + column)) / rho
+    (result + rho / 8 * randoms.at(cursor + column)) / rho
   }
-  (field: field, knots: knots, rng-count: rng-count)
+  (field: field, knots: knots, rng-count: cursor + columns)
 }
 
 #let _clip-polyline(path, regions) = {
