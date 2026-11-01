@@ -130,7 +130,7 @@
       "title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same panel vertices, lighting normals, hatch angles and source styles. Stipple ink coverage now matches at 600 ppi (7.12% vs 7.08%); hatch remains under-dense (12.28% vs 14.07%), and whole-plate RMSE is 0.32819 (baseline 0.29890). Placement and edge behavior still differ.",
+      "notes": "Same panel vertices, lighting normals, hatch angles and source styles. The hatch uses the MetaPost scaled random stream for brush dashes; this barely changes the crop RMSE (0.36467 vs 0.36477), with ink coverage still low (12.25% vs 14.07%). Stipple coverage remains close (7.12% vs 7.08%); whole-plate RMSE is 0.32813 (baseline 0.29890). Row placement and edge behavior still differ.",
       "regions_mm": {"hatch_panel": [0,0,61,44], "stipple_panel": [61,0,59,44]}
     },
     "S105": {

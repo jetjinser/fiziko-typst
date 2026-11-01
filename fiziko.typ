@@ -1001,7 +1001,8 @@
 /// `seed` controls deterministic dash-length variation and phase (default 0).
 #let stroke-ink(pts, w, offset: 0, closed: true, per: 12,
                 min-w: _source-min-stroke, period: _source-dash-length, seed: 0,
-                shift: (0, 0), fill: black) = {
+                shift: (0, 0), fill: black,
+                _random-stream: none, _rng-offset: 0, _with-rng: false) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1013,9 +1014,13 @@
   let ws = range(n).map(i => {
     _val(w, ts.at(i))
   })
-  place(top + left,
-    _fill(_ink-loops(fr, ws, closed, min-w, period,
-      seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1), fill))
+  let ink = _ink-loops(fr, ws, closed, min-w, period,
+    seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+    random-stream: _random-stream, rng-offset: _rng-offset,
+    with-rng: _with-rng)
+  let drawing = place(top + left,
+    _fill(if _with-rng { ink.at(0) } else { ink }, fill))
+  if _with-rng { (drawing, ink.at(1)) } else { drawing }
 }
 
 /// Deterministic stippled stroke. `w(t)` is the local density in mm;
@@ -2240,7 +2245,8 @@
 /// A shaded plane, with either parallel hatches or deterministic stipples.
 #let flat-surface(poly, normal, angle: 30, style: "hatch", spacing: none,
                   dot-size: 1.5 * _source-min-stroke, dot-step: 0.75 * _source-min-stroke, seed: 0,
-                  light: (-0.353553, 0.382683, 0.853553)) = {
+                  light: (-0.353553, 0.382683, 0.853553),
+                  rng: "keyed", rng-offset: 0, with-rng: false) = {
   let nn = calc.sqrt(normal.at(0) * normal.at(0) + normal.at(1) * normal.at(1) + normal.at(2) * normal.at(2))
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
   let lam = calc.max(0.0, (normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)) / (nn * ln))
@@ -2249,11 +2255,23 @@
     if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
   } else { spacing }
   let segs = _scanline-segments(poly, angle, line-spacing)
+  assert(rng == "keyed" or rng == "metapost",
+    message: "rng must be \"keyed\" or \"metapost\"")
+  assert(rng == "keyed" or style != "stipples",
+    message: "MetaPost stream mode is currently supported for hatch style only")
+  let stream = if rng == "metapost" {
+    _metapost-rng-sequence(seed, rng-offset + calc.max(128, segs.len() * 128))
+  } else { none }
+  let cursor = rng-offset
   let along = (_cos(angle), _sin(angle))
   let along-projections = poly.map(p => _dot(p, along))
   let total-width = calc.max(..along-projections) - calc.min(..along-projections)
   let items = ()
   for s in segs {
+    // The source subdivides every non-empty hatch path after drawing it; the
+    // subdivision count consumes one MetaPost uniform value, even though a
+    // straight path's visible geometry is unchanged by the subdivision.
+    if rng == "metapost" and style != "stipples" { cursor += 1 }
     let row-fraction = s.at(2) / calc.max(1, s.at(3))
     let line-length = _dist(s.at(0), s.at(1))
     let width(t, end-fade, scale) = {
@@ -2274,12 +2292,22 @@
         density: 0.72 * (0.75 * _source-min-stroke / dot-step),
         seed: seed + s.at(2)))
     } else {
-      items.push(stroke-ink(pts, t => width(t, 6 / 7, 2),
-        closed: false, per: 0, min-w: _source-min-stroke,
-        period: _source-dash-length, seed: seed + s.at(2)))
+      if rng == "metapost" {
+        let drawn = stroke-ink(pts, t => width(t, 6 / 7, 2),
+          closed: false, per: 0, min-w: _source-min-stroke,
+          period: _source-dash-length, seed: seed + s.at(2),
+          _random-stream: stream, _rng-offset: cursor, _with-rng: true)
+        items.push(drawn.at(0))
+        cursor += drawn.at(1)
+      } else {
+        items.push(stroke-ink(pts, t => width(t, 6 / 7, 2),
+          closed: false, per: 0, min-w: _source-min-stroke,
+          period: _source-dash-length, seed: seed + s.at(2)))
+      }
     }
   }
-  _join(items)
+  let drawing = _join(items)
+  if with-rng { (drawing, cursor) } else { drawing }
 }
 
 #let _band-quads(outer, inner, closed: true) = {
