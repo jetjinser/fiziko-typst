@@ -11,6 +11,8 @@ upstream copies belong in `/tmp` or `build/`, not in version control.
 - `s101_*`, `brush_scale_probe.*`, `instrument_brush.py`,
   `compare_brush_trace.py`, and `summarize_stipple_trace.py`: stipple and
   brush comparisons, including scale probes.
+- `stipple_density_scan.py`, `stipple_surface_scan.py`, and
+  `transverse_dash_scan.py`: the 600 ppi multi-scale/seed audit for stage 4.
 
 For routine source/Typst comparisons, use the
 [reproducible comparison workflow](../comparisons/README.md). The commands
@@ -204,6 +206,64 @@ combined coverage and error balance, not RMSE alone. Dot phase still differs
 because Typst uses a keyed stream instead of MetaPost's global random stream.
 The sampled geometry remains close to the source: maximum leaf endpoint error
 is 0.00009 mm and maximum leaf arc-length error is 0.000014 mm.
+
+### Stage 4 multi-scale and seed audit
+
+The three scan scripts below use the locked Nix devshell, the pinned upstream
+source, the same Ghostscript raster flags, and decoded grayscale metrics. They
+retain PDFs, PNGs, and `results.json` under `build/`:
+
+```sh
+nix develop path:./nix --command python3 diagnostics/stipple_density_scan.py --ppi 600
+nix develop path:./nix --command python3 diagnostics/stipple_surface_scan.py --ppi 600
+nix develop path:./nix --command python3 diagnostics/transverse_dash_scan.py --ppi 600
+```
+
+Brush density was sampled at 0.5×, 1× and 2× with four native seeds. Sphere
+ring density was sampled at 0.5×, 1× and 1.5× with three seeds; tube stipple
+used the same scales and seeds. The table reports ROI-mean RMSE and ink
+coverage relative to MetaPost. Each cell is `RMSE / ink ratio`:
+
+| Family and density | 0.5× | 1× | 1.5× or 2× |
+| --- | ---: | ---: | ---: |
+| Brush 0.50 | 0.07236 / 0.682 | 0.04963 / 0.777 | 0.03593 / 0.709 (2×) |
+| Brush 0.65 | 0.07368 / 0.848 | 0.05201 / 0.972 | 0.03707 / 0.917 (2×) |
+| Sphere 0.55 | 0.31288 / 0.675 | 0.33618 / 0.693 | 0.31340 / 0.716 |
+| Sphere 0.65 | 0.31584 / 0.766 | 0.34109 / 0.797 | 0.31884 / 0.829 |
+| Tube 0.56 | 0.18118 / 0.730 | 0.19129 / 0.751 | 0.17267 / 0.735 |
+| Tube 0.66 | 0.18456 / 0.801 | 0.19461 / 0.846 | 0.17699 / 0.831 |
+
+Higher density consistently closes the ink-coverage gap but raises pixel RMSE
+for all three families, across scales and seeds. The phase and per-leaf dot
+placement differences remain large enough that changing density alone is not
+a demonstrated visual-fidelity improvement. Keep the current density defaults
+until an algorithmic change improves both measures or is justified by reviewed
+images. This also confirms the old density tuning is not scale invariant.
+
+The transverse tube period scan compared four periods over four keyed seeds.
+The 0.9 pt period averages RMSE 0.154460, dark-coverage ratio 1.002 and ink
+ratio 1.004. The 0.75 pt setting averages 0.154829 / 1.006 / 1.008; 1.05 pt
+averages 0.154811 / 0.995 / 0.998; and 1.2 pt averages 0.154810 / 0.985 /
+0.987. The 0.9 pt adjustment remains the best balanced choice and is stable
+across these seeds, though the RMSE differences are small.
+
+A prototype that routed each sphere ring through the recursive leaf model
+reduced S101 sphere-crop RMSE from 0.336538 to 0.335145 at the default density,
+but lowered its ink-coverage ratio from 0.689 to 0.643. Supplying the already
+sampled circle directly kept the full S101 Typst render near 12 seconds; an
+earlier version redundantly resampled every circle segment and took over two
+minutes for one plate. Neither version met the combined fidelity/performance
+criterion, so the library change was discarded. The retained candidate report
+is `build/stage4-sphere-candidate-v2/index.html`.
+
+**Stage 4 exit:** the brush, sphere, tube stipple and transverse dash families
+have been checked across multiple scales or seeds on the pinned 600 ppi
+pipeline. The only consistent density adjustment trades lower RMSE for more
+source-like ink coverage; no density-only change improves both. The reviewed
+dash period is robust. The recursive sphere candidate did not improve the
+combined fidelity measures enough to justify retaining it. Keep the current
+renderer and proceed with the remaining independent differences rather than
+encoding a per-plate or per-seed fit.
 
 The same trace now covers all three S101 stipple objects. Sphere rings produce
 1,930 drawable leaves, 5,790 local pattern calls, and 6,942 reconstructed
