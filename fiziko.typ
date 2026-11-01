@@ -3097,13 +3097,19 @@
 }
 
 /// A hanging weight at `at`: one smooth hatched body with a narrower neck.
-#let weight(h, r: 3, neck: 0.45, spacing: _source-spacing, w: 0.45 * pt,
+#let weight(h, r: 3, neck: 0.25, spacing: _source-spacing, w: 0.45 * pt,
             at: (0, 0), seed: 0) = {
-  let shoulder = 0.3
-  let radius(t) = if t < shoulder {
-    let u = calc.clamp(t / shoulder, 0.0, 1.0)
-    r * (neck + (1 - neck) * u * u * (3 - 2 * u))
-  } else { r }
+  let neck-end = calc.min(2, h / 3) / h
+  let shoulder-end = calc.min(1, (calc.min(2, h / 3) + calc.min(3, h - calc.min(2, h / 3))) / h)
+  let radius(t) = if t < neck-end {
+    r * neck
+  } else if t < shoulder-end {
+    let u = calc.clamp((t - neck-end) / calc.max(0.000001, shoulder-end - neck-end), 0.0, 1.0)
+    r * (neck + (7 / 8 - neck) * calc.sqrt(calc.max(0.0, 1 - calc.pow(1 - u, 2))))
+  } else if shoulder-end < 1 {
+    let u = calc.clamp((t - shoulder-end) / (1 - shoulder-end), 0.0, 1.0)
+    r * (7 / 8 + u / 8)
+  } else { r * 7 / 8 }
   tube((_add(at, (0, 0)), _add(at, (0, h))), radius,
     spacing: spacing, w: w, per: 12, seed: seed)
 }

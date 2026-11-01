@@ -34,13 +34,13 @@ included where a plate contains distinct drawing families.
 | --- | ---: | ---: | --- |
 | M8 pulley composites | 0.12579 | 1.734% → 2.212% | The pulley uses its wheel's existing thin outer rim and a thinpen support outline; the redundant 0.6 pt silhouette stroke is removed. Whole-plate RMSE improves; left/right crop RMSE is 0.13914/0.11258, with both crops still over-inked. Wheel/support clipping and label placement still differ. |
 | M9 wood panels | 0.22456 | 4.203% → 4.272% | Landscape panels now use the source's internal axis swap. The first panel's first accepted knot matches its traced source coordinate; each accepted knot advances the 28 brush random draws observed in MetaPost. Contour-brush RNG calls still shift later panel streams. |
-| M10 mechanics and optics | 0.08482 | 0.645% → 0.840% | The hanging weight now uses the source radius 2/5(h−2 mm); spring/weight crop RMSE is 0.11720 and lens/rays 0.06302. End shape and hatch remain approximate. |
+| M10 mechanics and optics | 0.07670 | 0.645% → 0.821% | Source hanging-weight radius, 1/4 neck, shoulder expansion and body taper reduce spring/weight crop RMSE to 0.10150; lens/rays remain 0.06302. Auricle and hatch remain approximate. |
 | M11 globe, eye, knot, refraction | 0.12972 | 4.917% → 4.885% | Latest 600 ppi candidate: globe uses separate land/ocean masks, RMSE 0.20950, ink coverage 25.940% → 25.819% (the earlier unmasked candidate scored 0.18935). Knot tube radius now matches the source parameter directly, and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Curve-time detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.21054 | 10.630% → 10.287% | Mapping the source +30° hatch through the fixture's vertical-axis flip gives Typst angle −30°. Reversing the MetaPost RNG draw order to match its y-up scan gives hatch crop RMSE 0.09247 and ink coverage 14.066% → 13.333%. Stipple coverage is 7.079% → 7.138%. Hatch brush shape remains approximate. |
 | S105 wood block and surface | 0.10635 | 0.741% → 0.882% | Landscape-axis mapping follows the source's `woodBlock` transform. Current 600 ppi block RMSE is 0.13330; surface RMSE is 0.07996 with ink 0.489% → 0.623%. Source contour-brush rendering and random-stream continuity from the block into the surface remain open. |
-| S106 weights | 0.09793 | 1.091% → 1.134% | The standing weight now rises from its base and uses radius 2/5h; the hanging weight uses 2/5(h−2 mm). Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%; hanging crop RMSE is 0.11711 with ink 1.131% → 1.330%. Source auricle and end details remain open. |
+| S106 weights | 0.07788 | 1.091% → 1.120% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile reduces crop RMSE from 0.11711 to 0.07319; ink is 1.131% → 1.296%. Source auricle and hatch details remain open. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
 
@@ -96,11 +96,12 @@ strokes, while M10 contains mostly whitespace.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
-   body radii; its whole-plate RMSE falls from 0.10910 to 0.09793 and the
-   standing crop from 0.12803 to 0.09949. The hanging-weight crop remains
-   over-inked because the auricle and source end profile are still simplified.
-   M10 uses the source-derived hanging-weight radius, with a smaller whole-
-   plate change (RMSE 0.08506 to 0.08482). M8 uses the source
+   body radii; its whole-plate RMSE falls from 0.10910 to 0.07788, standing
+   crop from 0.12803 to 0.09949, and hanging crop from 0.11711 to 0.07319.
+   Hanging coverage remains high because its auricle and hatch profile are
+   still simplified.
+   M10 uses the source-derived hanging-weight radius and profile; its whole-
+   plate RMSE falls from 0.08506 to 0.07670. M8 uses the source
    2.5 mm hatched beam band, 3× minimum source rope width and thinpen pulley
    support line. Removing the duplicated rim stroke lowered whole-plate RMSE
    from 0.12971 to 0.12579 and ink coverage from 2.333% to 2.212% (source
