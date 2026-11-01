@@ -2799,7 +2799,18 @@
   let field = if source-field {
     if swapped { (x, y) => (wood-model.field)(y, w - x) } else { wood-model.field }
   } else { _wood-field(angle, spacing, eyes) }
-  let contours = marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny)
+  let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
+  let contour-stream = if source-field {
+    _metapost-rng-sequence(seed, contour-offset + 4096)
+  } else { none }
+  let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
+  let contour-result = if source-field {
+    marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny,
+      level-jitter: level-jitter, with-count: true)
+  } else {
+    (marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
+  }
+  let contours = contour-result.at(0)
   let segments = ()
   for contour in contours {
     let clipped = _clip-polyline(contour, (local-poly,))
@@ -2834,7 +2845,9 @@
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
   let drawing = _join(els)
   if with-rng {
-    (drawing, rng-offset + if source-field { wood-model.rng-count } else { 0 })
+    (drawing, rng-offset + if source-field {
+      wood-model.rng-count + contour-result.at(1)
+    } else { 0 })
   } else { drawing }
 }
 
@@ -2849,7 +2862,18 @@
   let ny = calc.max(8, int(calc.round(h / cell)))
   let model = if source-field { _woodblock-field(w, h, seed) } else { none }
   let f = if source-field { model.field } else { _wood-field(angle, spacing, eyes) }
-  let loops = marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny)
+  let contour-offset = if source-field { model.rng-count } else { 0 }
+  let contour-stream = if source-field {
+    _metapost-rng-sequence(seed, contour-offset + 4096)
+  } else { none }
+  let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
+  let contour-result = if source-field {
+    marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny,
+      level-jitter: level-jitter, with-count: true)
+  } else {
+    (marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
+  }
+  let loops = contour-result.at(0)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
   let segments = loops.fold((), (acc, pl) => acc + _clip-polyline(pl, (rect,)))
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }

@@ -6,8 +6,11 @@
 // with integer keys — no floating-point endpoint matching.
 
 /// Iso-lines of `f` over the rectangle (x0, y0, w, h) at multiples of `step`.
-/// Returns an array of polylines, each an array of (x, y) float points.
-#let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24) = {
+/// `level-jitter(index, level)` can offset each successive threshold, and
+/// `with-count` also returns the number of thresholds visited. The result is
+/// an array of polylines, each an array of (x, y) float points.
+#let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24,
+                      level-jitter: none, with-count: false) = {
   let dx = w / nx
   let dy = h / ny
   let V = range(ny + 1).map(j => range(nx + 1).map(i => f(x0 + i * dx, y0 + j * dy)))
@@ -30,9 +33,11 @@
   )
 
   let polylines = ()
-  if l1 >= l0 {
-    for li in range(l1 - l0 + 1) {
-      let L = (l0 + li) * step
+  let level-count = calc.max(0, l1 - l0 + 1)
+  if level-count > 0 {
+    for li in range(level-count) {
+      let level = l0 + li
+      let L = level * step + if level-jitter == none { 0.0 } else { level-jitter(li, level) }
       let segs = ()   // (edgeA, pointA, edgeB, pointB)
 
       for j in range(ny) {
@@ -150,5 +155,5 @@
       }
     }
   }
-  polylines
+  if with-count { (polylines, level-count) } else { polylines }
 }
