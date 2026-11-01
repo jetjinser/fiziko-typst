@@ -2152,17 +2152,22 @@
 
 // Intersect evenly spaced scanlines with a closed polygon. Each line returns
 // one or more inside intervals, including concave polygons and disjoint cuts.
-#let _scanline-segments(poly, angle, spacing) = {
+#let _scanline-segments(poly, angle, spacing, fit: false) = {
   if poly.len() < 3 or spacing <= 0 { return () }
   let d = (_cos(angle), _sin(angle))
   let n = (-d.at(1), d.at(0))
   let projections = poly.map(p => _dot(p, n))
   let lo = calc.min(..projections)
   let hi = calc.max(..projections)
-  let count = calc.max(1, int(calc.ceil((hi - lo) / spacing)))
+  // flatSurface fits its step to the rotated bounds using round(height / d);
+  // other polygon hatching APIs keep a fixed user-specified spacing.
+  let count = calc.max(1, int(if fit {
+    calc.round((hi - lo) / spacing)
+  } else { calc.ceil((hi - lo) / spacing) }))
+  let row-step = if fit { (hi - lo) / count } else { spacing }
   let segments = ()
   for row in range(count + 1) {
-    let offset = lo + row * spacing
+    let offset = lo + row * row-step
     let hits = ()
     for i in range(poly.len()) {
       let a = poly.at(i)
@@ -2265,7 +2270,7 @@
   let line-spacing = if spacing == none {
     if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
   } else { spacing }
-  let segs = _scanline-segments(poly, angle, line-spacing)
+  let segs = _scanline-segments(poly, angle, line-spacing, fit: true)
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
   assert(rng == "keyed" or style != "stipples",
