@@ -1141,8 +1141,10 @@
                           density: 0.5,
                           seed: 0, shift: (0, 0), fill: black) = {
   if not closed {
-    _brush-leaf-stipple(pts, w, offset, per, dot-size, track-spacing,
-      dot-range, density, seed, shift, fill)
+    // Like every canvas primitive, keep the raw fill out of document flow.
+    // Otherwise a second open brush starts below the first brush's bounds.
+    place(top + left, _brush-leaf-stipple(pts, w, offset, per, dot-size, track-spacing,
+      dot-range, density, seed, shift, fill))
   } else {
     let marks = ()
     for lane in range(3) {

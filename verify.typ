@@ -128,7 +128,7 @@
 #let lc-xs = lc.map(p => p.at(0))
 #let wps = _weight-parts(14, 3)
 
-#metadata((
+#let metrics = (
   arc_step_min: calc.min(..steps),
   arc_step_max: calc.max(..steps),
   arc_expect: 42 * 130deg / 1deg * calc.pi / 180 / 60,
@@ -209,7 +209,8 @@
   refraction_trace_points: refracted-ray.len(),
   refraction_snell_err: snell-error,
   refraction_tir_reflects_down: tir-direction.at(1) < 0,
-)) <verify>
+)
+#metadata(metrics) <verify>
 
 // Hard failures make this file usable as a real regression gate.
 #assert(calc.abs(calc.min(..steps) - 42 * 130deg / 1deg * calc.pi / 180 / 60) < 0.001)
@@ -232,3 +233,32 @@
 #assert(strand-pieces.len() == 2 and calc.abs((strand-pieces.at(1).at(0).at(0) - strand-pieces.at(0).at(strand-pieces.at(0).len() - 1).at(0)) - 2) < 1e-12)
 #assert(refracted-ray.len() == 5 and snell-error < 1e-8)
 #assert(tir-direction.at(1) < 0)
+
+// Physics primitives: these used to be reported without failing the check.
+#assert(metrics.head_tip_err < 1e-10, message: "Arrow tip moved off its endpoint")
+#assert(metrics.head_base_err < 1e-10, message: "Arrowhead base width changed")
+#assert(metrics.head_axis_err < 1e-10, message: "Arrowhead is off axis")
+#assert(metrics.arc_r_err < 1e-10, message: "Angle mark left its circle")
+#assert(metrics.arc_on_ray1 < 1e-10 and metrics.arc_on_ray2 < 1e-10,
+  message: "Angle mark endpoints left their rays")
+// Chord approximation is slightly shorter than a quarter-circle (0.001442 mm).
+#assert(metrics.arc_len_err < 0.002, message: "Angle mark arc-length error exceeds 0.002 mm")
+#assert(metrics.spring_end_err < 1e-10, message: "Spring endpoints moved")
+#assert(metrics.spring_perp_err < 1e-10, message: "Spring radius changed")
+#assert(metrics.spring_axial_err < 1e-10, message: "Spring extends beyond its axis endpoints")
+#assert(metrics.lens_x_err < 1e-10 and metrics.lens_y_err < 1e-10,
+  message: "Convex lens dimensions changed")
+#assert(calc.abs(metrics.lens_conc_x - 4) < 1e-10
+  and calc.abs(metrics.lens_conc_xmin + 4) < 1e-10,
+  message: "Concave lens rim dimensions changed")
+#assert(P1.quad < 1e-10 and P2.quad < 1e-10,
+  message: "Pulley solution violates its quadratic constraint")
+
+// Canvas primitives must not consume flow space when composed with `+`.
+// An unplaced open stipple fill used to push following brush marks down.
+#context {
+  let extent = measure(stroke-stipple-brush(((8, 9), (16, 9)), 0.11 * pt,
+    dot-size: 0.6 * pt, track-spacing: 0.9 * pt, closed: false, per: 0, seed: 4))
+  assert(extent.width == 0pt and extent.height == 0pt,
+    message: "Open stippled brush consumes canvas flow space")
+}
