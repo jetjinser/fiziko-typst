@@ -1446,6 +1446,7 @@
                      gamma: 1.0, min-w: _source-min-stroke, period: _source-dash-length,
                      seed: 1, rng: "keyed", rng-offset: 0,
                      with-rng: false, with-trace: false,
+                     surface-mask: none, mask-rotation: (0, 0),
                      trace-latitude: none, outline: true,
                      center: (0, 0), shadow-regions: (), shadow-planes: (), shadow-polygons: (), fill: black) = {
   assert(rng == "keyed" or rng == "metapost",
@@ -1607,11 +1608,21 @@
       let xfade = 1 - calc.pow(1 - xn, calc.abs(slat))
       let density = calc.sqrt(calc.max(0.0, 1 - calc.pow(yn, 2) - calc.pow(xfade, 2)))
       let depth = calc.sqrt(calc.max(0.0, R * R - radius * radius))
+      // Recover geographic coordinates from the orthographic screen point.
+      // `local-y` uses Typst's downward-positive drawing coordinates.
+      let world-y = -local-y
+      let mask-lat = calc.asin(calc.clamp(
+        world-y / R * _cos(mask-rotation.at(1))
+          + depth / R * _sin(mask-rotation.at(1)), -1.0, 1.0)) / 1deg
+      let mask-lon = mask-rotation.at(0) + calc.atan2(
+        depth * _cos(mask-rotation.at(1))
+          - world-y * _sin(mask-rotation.at(1)), local-x) / 1deg
       let cast-shadow = _shadowed(_add(center, (local-x, local-y)),
         shadow-regions, center, depth: depth, plane-depth: depth - R, light: L, shadow-planes: shadow-planes,
         shadow-polygons: shadow-polygons)
       let lightness = if cast-shadow { 1.0 } else { calc.pow(1 - lam, gamma) }
-      max-w * _lat-density(density, k) * lightness
+      let in-mask = surface-mask == none or surface-mask(mask-lon, mask-lat)
+      if in-mask { max-w * _lat-density(density, k) * lightness } else { 0.0 }
     })
     let ws = pts.enumerate().map(((i, _)) => {
       let s = path-s.at(i)
@@ -3220,13 +3231,24 @@
   paths
 }
 
+#let _globe-land-mask(lands) = (lon, lat) => {
+  lands.any(poly => {
+    if poly.len() < 3 { false }
+    else {
+      let mean-lon = poly.fold(0.0, (sum, p) => sum + p.at(0)) / poly.len()
+      let unwrapped-lon = lon + 360 * calc.round((mean-lon - lon) / 360)
+      _inside-poly((unwrapped-lon, lat), poly)
+    }
+  })
+}
+
 /// Orthographic globe with visible latitude/longitude graticules and optional
 /// coast polylines. `lands` is a tuple of polylines, each containing (lon,lat)
 /// vertices; segments are linearly interpolated and subdivided to at most 5°
 /// before hidden portions are clipped at the horizon.
 #let globe(d, rotation: (0, 0), lands: (), parallels: 30, meridians: 30,
           shading: "graticule", shading-spacing: _source-spacing,
-          shading-width: _source-max-shading, shading-gamma: 0.0,
+          shading-width: _source-max-shading, shading-gamma: 0.0, seed: 1,
           center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
   let radius = d / 2
   assert(shading == "graticule" or shading == "latitude",
@@ -3251,10 +3273,30 @@
   }
   let elements = lines.map(path => stroke-path(path, stroke: stroke, per: 0))
   if shading == "latitude" {
-    let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
-      spacing: shading-spacing, max-w: shading-width, gamma: shading-gamma,
-      center: center, outline: true)
-    _join((latitude-lines, ..elements))
+    if lands.len() == 0 {
+      let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
+        spacing: shading-spacing, max-w: shading-width, gamma: shading-gamma,
+        center: center, outline: true)
+      _join((latitude-lines, ..elements))
+    } else {
+      let is-land = _globe-land-mask(lands)
+      // The source constructs p1 (ocean) before p2 (land), then draws p2,
+      // coast brushes, and the inverse-masked p1 in that visual order.
+      let ocean = sphere-latitude(d, latitude: rotation.at(1),
+        spacing: shading-spacing, max-w: 0.85 * shading-width,
+        gamma: shading-gamma, center: center, outline: false,
+        seed: seed, rng: "metapost",
+        surface-mask: (lon, lat) => not is-land(lon, lat),
+        mask-rotation: rotation, with-rng: true)
+      let land = sphere-latitude(d, latitude: rotation.at(1),
+        spacing: shading-spacing, max-w: 1.28 * shading-width,
+        gamma: shading-gamma, center: center, outline: false,
+        seed: seed, rng: "metapost", rng-offset: ocean.at(1),
+        surface-mask: is-land, mask-rotation: rotation, with-rng: true)
+      _join((land.at(0), ..elements, ocean.at(0),
+        stroke-path(circle-pts(radius, 180, center: center),
+          stroke: outline, closed: true, per: 0)))
+    }
   } else {
     elements.push(stroke-path(circle-pts(radius, 180, center: center),
                               stroke: outline, closed: true, per: 0))
