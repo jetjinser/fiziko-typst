@@ -3328,25 +3328,49 @@
   let radius = d / 2
   assert(shading == "graticule" or shading == "latitude",
     message: "globe shading must be graticule or latitude")
-  let lines = ()
+  let graticule-lines = ()
   if shading == "graticule" and parallels > 0 {
     for k in range(calc.max(0, int(calc.ceil(180 / parallels)) - 1)) {
       let lat = -90 + (k + 1) * parallels
       let geo = range(73).map(i => (-180 + i * 5, lat))
-      lines += _globe-visible-paths(geo, rotation, radius, center)
+      graticule-lines += _globe-visible-paths(geo, rotation, radius, center)
     }
   }
   if shading == "graticule" and meridians > 0 {
     for k in range(int(calc.ceil(360 / meridians))) {
       let lon = k * meridians
       let geo = range(37).map(i => (lon, -90 + i * 5))
-      lines += _globe-visible-paths(geo, rotation, radius, center)
+      graticule-lines += _globe-visible-paths(geo, rotation, radius, center)
     }
   }
+  let coast-lines = ()
   for land in lands {
-    lines += _globe-visible-paths(_globe-densify(land), rotation, radius, center)
+    coast-lines += _globe-visible-paths(_globe-densify(land), rotation, radius, center)
   }
-  let elements = lines.map(path => stroke-path(path, stroke: stroke, per: 0))
+  let elements = graticule-lines.map(path => stroke-path(path, stroke: stroke, per: 0))
+  let coast-elements = coast-lines.enumerate().map(((i, path)) => {
+    if shading != "latitude" {
+      stroke-path(path, stroke: stroke, per: 0)
+    } else {
+      let fractions = _path-fractions(path, false)
+      let width(t) = {
+        let j = range(path.len() - 1).find(j =>
+          fractions.at(j) <= t and t <= fractions.at(j + 1))
+        let j = if j == none { path.len() - 2 } else { j }
+        let span = fractions.at(j + 1) - fractions.at(j)
+        let q = if span > 0 { (t - fractions.at(j)) / span } else { 0.0 }
+        let point = _add(path.at(j), _mul(_sub(path.at(j + 1), path.at(j)), q))
+        // The source coast template uses arcsin(|point| / diameter) as a
+        // spherical latitude, then maps 1 - cos(latitude) to pen width.
+        let radial = _len(_sub(point, center)) / d
+        let lightness = 1 - calc.sqrt(calc.max(0.0, 1 - radial * radial))
+        _source-min-stroke * (2 / 3 + lightness / 3)
+      }
+      stroke-ink(path, width, closed: false, per: 0,
+        min-w: _source-min-stroke, period: _source-dash-length,
+        seed: seed + i * 104729)
+    }
+  })
   if shading == "latitude" {
     if lands.len() == 0 {
       let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
@@ -3368,11 +3392,12 @@
         gamma: shading-gamma, center: center, outline: false,
         seed: seed, rng: "metapost", rng-offset: ocean.at(1),
         surface-mask: is-land, mask-rotation: rotation, with-rng: true)
-      _join((land.at(0), ..elements, ocean.at(0),
+      _join((land.at(0), ..elements, ..coast-elements, ocean.at(0),
         stroke-path(circle-pts(radius, 180, center: center),
           stroke: outline, closed: true, per: 0)))
     }
   } else {
+    elements += coast-elements
     elements.push(stroke-path(circle-pts(radius, 180, center: center),
                               stroke: outline, closed: true, per: 0))
     _join(elements)
