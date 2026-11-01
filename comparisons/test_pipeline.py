@@ -99,11 +99,12 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(a[:-3], b[:-3])
         self.assertNotIn("-dPDFFitPage", a)
 
-    def test_reference_only_plate_cannot_be_claimed_as_a_pair(self):
-        with patch("sys.argv", ["run.py", "--case", "M8"]), contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as error:
-                run.main()
-        self.assertEqual(error.exception.code, 2)
+    def test_remaining_source_plates_have_paired_typst_cases(self):
+        manifest = run.load_manifest()
+        newly_paired = {"M8", "M9", "M10", "M11", "S102", "S103", "S104",
+                        "S105", "S106", "S107", "S108"}
+        self.assertTrue(newly_paired <= manifest["cases"].keys())
+        self.assertFalse(newly_paired & manifest["source_only_cases"].keys())
 
     def test_failure_keeps_provenance_and_later_cases_still_run(self):
         manifest = run.load_manifest()

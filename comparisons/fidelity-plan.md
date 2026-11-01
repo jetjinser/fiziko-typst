@@ -1,0 +1,83 @@
+# Source-fidelity baseline and follow-up plan
+
+## Baseline
+
+The paired report covers the pinned upstream revision
+`54a63dba8e6700a5e70d3508838edebcbf0f45fe`: historical plates M1–M11 and
+S101–S108, plus isolated sphere C1. The latest full report is generated at
+`build/source-parity/index.html` with:
+
+```sh
+nix develop path:./nix --command ./compare.sh --mode nominal --ppi 600 --output build/source-parity
+```
+
+This run completed 20/20 plates. MetaPost and Typst PDFs use the same pinned
+Ghostscript grayscale rasterizer at 600 ppi, with no image registration or
+rescaling. The report keeps each source PDF, Typst PDF, raster, amplified
+difference, full-frame metrics, declared component crops and input hashes.
+RMSE is normalized to 0–1. Ink/dark coverage helps reveal missing or excess
+marks, but neither it nor RMSE establishes shape similarity on its own. Review
+the paired images and compare crops only with the same dimensions and renderer.
+
+The added pairs use nominal, source-mapped dimensions and control points.
+Their `calibrated` values currently equal `nominal`; they are not fit to the
+source plates. Existing M2 calibration changes its width law, so its calibrated
+score must not be presented as equal-parameter fidelity.
+
+## Added plate results
+
+Full-frame dark coverage is reported as source → Typst. Component results are
+included where a plate contains distinct drawing families.
+
+| Plate | RMSE | Dark coverage | Component findings |
+| --- | ---: | ---: | --- |
+| M8 pulley composites | 0.16877 | 1.778% → 3.276% | Left and right figures are both over-inked, with crop RMSE 0.18759 and 0.15045. |
+| M9 wood panels | 0.29579 | 4.349% → 7.570% | All four panel crops score about 0.291–0.300 RMSE; the port's smooth field does not reproduce the source's irregular knot-driven grain. |
+| M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
+| M11 globe, eye, knot, refraction | 0.24449 | 5.013% → 3.194% | Globe crop: RMSE 0.49895 and dark coverage 26.446% → 8.069%. Knot crop: RMSE 0.30447 and ink coverage is 3.079× the source. Eye: 0.23617; refraction: 0.08193. |
+| S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
+| S103 surface fills | 0.23772 | 3.284% → 4.913% | Opaque crop RMSE 0.35878; glass 0.28235; gradient 0.36034. All three over-ink the source. |
+| S104 flat surfaces | 0.29890 | 10.908% → 3.074% | Hatch crop 14.493% → 4.900%; stipple crop 7.201% → 1.187%. These are large density gaps as well as placement differences. |
+| S105 wood block and surface | 0.13445 | 0.768% → 1.531% | Block crop is near source coverage (1.111% → 1.207%); wooden-surface crop is over-inked (0.511% → 1.841%). |
+| S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
+| S107 wheels and centroid | 0.18217 | 3.260% → 2.575% | Pulley wheel is over-inked (3.949% → 5.796%); the open-spoke wheel is under-inked (7.319% → 2.739%); centroid crop RMSE 0.05441. |
+| S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
+
+These whole-plate RMSE values are useful for locating large residuals, not for
+ranking unlike subjects as if the scores were a universal similarity scale.
+M11's globe crop, for example, combines a large shaded region with coastline
+strokes, while M10 contains mostly whitespace.
+
+## Recommended implementation order
+
+1. **Reproduce MetaPost's seeded random stream and draw-call order.** The
+   source consumes one global stream; the port uses independently keyed
+   streams. Add a standalone sequence fixture first, then exercise it on one
+   brush, one stipple family and wood before making it the rendering default.
+   This can improve several plates at once and prevents plate-specific seed
+   searches from standing in for algorithm parity.
+2. **Bring the wood field closer to `woodBlock`.** M9 has the largest broad
+   mismatch after S104. Port its knot placement, field perturbation and
+   isoline spacing as separable pieces, then check all four M9 crops and S105's
+   block/surface crops. Preserve a deterministic option for repeatable builds.
+3. **Reconcile `flatSurface` and the S103 fill families.** S104 currently
+   renders only 28% of source ink overall. Match the source lighting envelope,
+   row/edge behavior and stipple allocation separately for hatches and dots;
+   check S103 opaque, glass and gradient crops to avoid solving density by
+   globally darkening all fills.
+4. **Split M11 into faithful globe and knot renderers.** The comparison now
+   supplies the exact eight upstream coast paths, but the public `globe` draws
+   coast strokes and a graticule where the source clips shaded latitude marks
+   to land. Port that shading/mask behavior first. Then match the source knot
+   over-under sequence; its current crop has roughly three times the source
+   ink. Keep eye and refraction as separate component gates.
+5. **Tune the mechanical details from local crops.** After the cross-cutting
+   algorithms, work on M8 pulley/rope strokes and S107 rim, groove and spoke
+   shading. M10 and S102 are closer by full-plate measures and can remain
+   lower priority unless visual review finds a specific defect.
+
+At each step, keep a same-input nominal comparison, review the difference
+image, and record geometry, dark coverage and ink coverage together. Keep any
+visual-only parameter calibration in its own mode. The Typst-only pixel
+regression suite remains a change detector; source parity is measured by
+`compare.sh` and reviewed source/Typst/difference images.

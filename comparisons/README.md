@@ -9,7 +9,7 @@ files in `/tmp`. No upstream code is vendored into this Git repository.
 
 ```sh
 nix develop path:./nix
-./compare.sh                                 # 9 paired plates, both modes, 600 ppi
+./compare.sh                                 # 20 paired plates, both modes, 600 ppi
 ./compare.sh --case M2 --case M4               # selected pairs
 ./compare.sh --case M2 --mode nominal         # shared nominal inputs
 ./compare.sh --case M2 --mode calibrated      # documented visual adjustments
@@ -48,10 +48,21 @@ historical PDFs. The new behavior makes individual builds independent of
 which earlier plates were rendered. M9/S105 retain the explicit 1 mm wood
 grid setting; the upstream library itself is unmodified.
 
-Paired measurements currently cover M1–M7, S101 and the added isolated sphere
-C1. The other source plates can be rebuilt with `--source-only`, but have no
-paired fidelity claim yet. Existing subject galleries with substantially
-different geometry are not silently treated as same-parameter comparisons.
+Paired measurements cover all 19 historical source plates (M1–M11 and
+S101–S108), plus the isolated sphere C1. The new M8–M11 and S102–S108 pairs
+use source dimensions and control points where the port exposes a corresponding
+primitive; algorithm and API differences are recorded in the manifest and
+report. M11's eight coast paths are converted from the pinned source's
+longitude/colatitude data and retained in `globe-coasts.typ`; regenerate that
+file with:
+
+```sh
+nix develop path:./nix --command python3 comparisons/extract-globe-coasts.py comparisons/globe-coasts.typ
+```
+
+New pairs currently use the same inputs in both modes, with no per-plate calibration.
+See [the fidelity work plan](fidelity-plan.md) for the 600 ppi baseline and
+ranked follow-up work.
 
 | Case | Subject | Calibration relative to nominal |
 | --- | --- | --- |
@@ -64,6 +75,8 @@ different geometry are not silently treated as same-parameter comparisons.
 | M7 | Transverse tube | Dash period 1.2 → 0.9 TeX pt; both keep `per: 384` |
 | C1 | Isolated 26 mm concentric sphere | None; avoids M5's tube and annotations |
 | S101 | Stippled brush, sphere and tube | No extra override; retains current density defaults |
+| M8–M11 | Pulley composites; wood; mechanics; globe/eye/knot/optics | None; both modes use the source-mapped nominal inputs |
+| S102–S108 | Tube/shadow; fills; flat surfaces; wood; weights; wheels; lenses | None; both modes use the source-mapped nominal inputs |
 
 **Nominal** matches the shared physical inputs, source seed number and width
 law wherever the APIs admit a direct mapping. It is not a promise of equal

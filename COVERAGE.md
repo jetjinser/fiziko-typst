@@ -9,11 +9,12 @@ project devshell, run `./compare.sh --source-only` to rebuild all 19 source
 plates, or `./compare.sh` for paired core comparisons. See the
 [comparison guide](comparisons/README.md).
 
-Paired measurements currently cover M1–M7, S101 and an isolated concentric
-sphere C1. The other source plates are reproducible references, not claimed
-same-parameter pairs. Numerical scores below are historical investigation
-results; new reports specify their renderers, ppi, crops, modes and thresholds
-and should be used for subsequent comparisons.
+The 19 historical source plates M1–M11 and S101–S108 now have Typst pairs;
+C1 is an additional isolated concentric-sphere pair. New 600 ppi nominal
+results and component crops are in `build/source-parity/index.html`, with the
+ranked next steps in `comparisons/fidelity-plan.md`. Numerical scores below
+are historical investigation results; use each generated report's recorded
+renderer, ppi, crop, mode and threshold for its measurements.
 
 **Approximate** means Typst can draw the subject, while its source algorithm
 or visible details still differ. **Missing** means no corresponding drawing
@@ -42,7 +43,7 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `shapeCenterOfMass` | S107 | `polygon-centroid`, `centroid-marker` | Approximate: standard area centroid for simple polygon vertices. |
 | `drawmidarrow`, `markAngle` | S108 | `vector`, `mark-angle` | Approximate: arrow and label placement differ. |
 | `refractionPath`, reflection | M11 | `refraction-path` | Approximate: sampled polygon boundaries. |
-| `globe`, landmass projection | M11 | `globe` | Approximate: caller-supplied coasts are linearly densified to 5° and clipped at the horizon; built-in coast data and source shading remain out of scope. |
+| `globe`, landmass projection | M11 | `globe` | Approximate: caller-supplied coasts are linearly densified to 5° and clipped at the horizon; built-in coast data and source shading are not part of the public API. The M11 comparison fixture supplies the eight coast paths from the pinned upstream source. |
 | `eye` | M11 | `eye` | Approximate: configurable anatomy and deterministic lashes; shapes differ from the source. Aspect, gaze and rotation edge cases are shown in `eye.typ`. |
 | `knotFromStrands`, styles and layers | M11 | `strand-knot` | Approximate: open and self-crossing polylines support alternating crossings or explicit global layers, including paths with duplicate vertices; tube styles and shadows differ. |
 

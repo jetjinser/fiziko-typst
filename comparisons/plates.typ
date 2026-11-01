@@ -1,6 +1,7 @@
 // Native drawing counterparts. All differing numeric inputs come from the
 // manifest and are recorded in each report; no parameter fitting occurs here.
 #import "../fiziko.typ": *
+#import "globe-coasts.typ": upstream-landmasses
 
 #let case = sys.inputs.at("case")
 #let n(key) = float(sys.inputs.at(key))
@@ -57,6 +58,78 @@
     + sphere-stipple-rings(22, center: (70,22), seed: seed, density: n("sphere_density"))
     + tube(((89,33),(103,10),(115,28)), 3, hatch: "s", per: i("per"),
       seed: seed, dot-density: n("tube_density")))
+  } else if case == "M8" {
+    (l-hopital-pulley(6, 2, 5.5, at: (8,6), seed: seed)
+    + l-hopital-pulley(3, 2.5, 3, at: (58,6), seed: seed))
+  } else if case == "M9" {
+    (wooden-thing(((0,0),(55,0),(55,33),(0,33)), angle: 0, cell: 1)
+    + wooden-thing(((55,0),(110,0),(110,33),(55,33)), angle: 90, cell: 1)
+    + wooden-thing(((0,33),(55,33),(55,66),(0,66)), angle: 90, cell: 1)
+    + wooden-thing(((55,33),(110,33),(110,66),(55,66)), angle: 0, cell: 1))
+  } else if case == "M10" {
+    (stroke-path(((8,6),(30,6)), stroke: 0.6pt + black, per: 0)
+    + combine(range(5).map(i => stroke-path(((11+4.5*i,6),(9.5+4.5*i,3.5)),
+        stroke: 0.35pt + black, per: 0)))
+    + spring((19,6),(19,30), coils: 7, rad: 1.2, lead: 3)
+    + weight(14, r: 3, at: (19,30), seed: seed)
+    + vector((19,45.5),(19,54), w: 0.07, head: 1.4, seed: seed)
+    + tag([k],(25,17)) + tag([mg],(23.5,52))
+    + lens(20, 2.087, rim: 1.6, at: (72,30))
+    + stroke-path(((51,30),(94,30)), stroke: (paint: black, thickness: 0.35pt, dash: "dashed"), per: 0)
+    + vector((52,24),(68.5,24), w: 0.07, head: 1.4, seed: seed)
+    + vector((74.5,24),(86,33.6), w: 0.07, head: 1.4, seed: seed)
+    + stroke-path(circle-pts(0.4,24,center:(82,30)), stroke: 0.35pt + black, closed: true, per: 0)
+    + tag([F],(84.5,36)) + tag([f],(78.6,32.8)) + tag([i],(75.6,27.7)))
+  } else if case == "M11" {
+    let wa = range(97).map(i => (86 + 32 * i / 96,
+      22 + 6 * calc.sin(720 * i / 96 * 1deg)))
+    let wb = range(97).map(i => (86 + 32 * i / 96,
+      22 - 6 * calc.sin(720 * i / 96 * 1deg)))
+    (globe(30, rotation: (0,0), lands: upstream-landmasses, center: (19,22))
+    + eye(at: (62,22), size: (18,10), look: (0,0), lashes: 7, seed: seed)
+    + strand-knot((wa,wb), widths: (0.8,0.8), gap: 0.4, seed: seed)
+    + stroke-path(circle-pts(10,128,center:(136,22)), stroke: 0.35pt + black, closed: true, per: 0)
+    + refraction-path(((122,17),(128,17)), circle-pts(10,128,center:(136,22)), ior: 1.5))
+  } else if case == "S102" {
+    (tube(((7,32),(35,10),(56,31)), 3, hatch: none, per: 8, seed: seed)
+    + sphere(26, center: (90,22), seed: seed, shadow-planes: (
+        sphere-shadow-plane(((-4,-18),(-2,-18),(-2,18),(-4,18)), 12),
+      )))
+  } else if case == "S103" {
+    (solid-surface(((4,20),(30,17),(53,21)))
+    + solid(((62,9),(82,9),(82,32),(62,32)), angle: 45, style: "opaque")
+    + solid(((87,9),(105,9),(105,32),(87,32)), angle: -45, style: "glass")
+    + gradient-shade(((108,9),(117,9),(117,32),(108,32)), angle: 90, seed: seed))
+  } else if case == "S104" {
+    (flat-surface(((8,8),(56,13),(50,36),(5,31)), (0,0,-1), angle: 30)
+    + stroke-path(((8,8),(56,13),(50,36),(5,31)), stroke: 0.35pt + black, closed: true, per: 0)
+    + flat-surface(((65,8),(114,13),(108,36),(62,31)), (1,0,1), angle: -30,
+        style: "stipples")
+    + stroke-path(((65,8),(114,13),(108,36),(62,31)), stroke: 0.35pt + black, closed: true, per: 0))
+  } else if case == "S105" {
+    (wood(5,29,39,12, cell: 1)
+    + wooden-surface(((60,18),(84,12),(112,18))))
+  } else if case == "S106" {
+    (weight-standing(18, r: 3, at: (36,31), seed: seed)
+    + weight(18, r: 3, at: (84,13), seed: seed)
+    + stroke-path(((10,31),(62,31)), stroke: 0.35pt + black, per: 0)
+    + stroke-path(((64,13),(112,13)), stroke: 0.35pt + black, per: 0))
+  } else if case == "S107" {
+    let plate = ((83,8),(113,11),(108,36),(87,31))
+    (pulley-wheel(23, center: (22,22), seed: seed)
+    + wheel(23, center: (61,22), spokes: 6)
+    + stroke-path(plate, stroke: 0.35pt + black, closed: true, per: 0)
+    + stroke-path(circle-pts(0.75,24,center:polygon-centroid(plate)),
+        stroke: 0.35pt + black, closed: true, per: 0))
+  } else if case == "S108" {
+    (lens(24,3.068,rim:1.5,at:(15,21))
+    + lens(24,1.5,rim:3.068,at:(34,21))
+    + lens(24,1.5,rim:1.5,right-sag:3.068,at:(53,21))
+    + stroke-path(((70,30),(87,11),(105,30)), stroke: 0.35pt + black, per: 0)
+    + vector((87,11),(89,9), w: 0.01, head: 1.2)
+    + stroke-path(((104,32),(111,20),(119,32)), stroke: 0.35pt + black, per: 0)
+    + mark-angle((104,32),(111,20),(119,32),r: 5)
+    + tag($a$,(111,27)))
   } else {
     panic("Unknown comparison plate: " + case)
   }
