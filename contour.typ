@@ -5,12 +5,14 @@
 // exactly one horizontal and one vertical edge), so chaining is a graph walk
 // with integer keys — no floating-point endpoint matching.
 
-/// Iso-lines of `f` over the rectangle (x0, y0, w, h) at multiples of `step`.
+/// Iso-lines of `f` over the rectangle (x0, y0, w, h).
+/// By default, levels are multiples of `step` spanning the sampled range;
+/// `levels` may instead provide an explicit array of scalar values.
 /// `level-jitter(index, level)` can offset each successive threshold, and
 /// `with-count` also returns the number of thresholds visited. The result is
 /// an array of polylines, each an array of (x, y) float points.
 #let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24,
-                      level-jitter: none, with-count: false) = {
+                      levels: none, level-jitter: none, with-count: false) = {
   let dx = w / nx
   let dy = h / ny
   let V = range(ny + 1).map(j => range(nx + 1).map(i => f(x0 + i * dx, y0 + j * dy)))
@@ -18,6 +20,9 @@
   for row in V { flat += row }
   let l0 = calc.ceil(calc.min(..flat) / step - 1e-9)
   let l1 = calc.floor(calc.max(..flat) / step + 1e-9)
+  let level-values = if levels == none {
+    range(calc.max(0, l1 - l0 + 1)).map(i => (l0 + i) * step)
+  } else { levels }
   let hCount = nx * (ny + 1)
 
   // case table: index → list of edge pairs ("T"/"R"/"B"/"L"); 5 and 10 (the
@@ -33,11 +38,11 @@
   )
 
   let polylines = ()
-  let level-count = calc.max(0, l1 - l0 + 1)
+  let level-count = level-values.len()
   if level-count > 0 {
     for li in range(level-count) {
-      let level = l0 + li
-      let L = level * step + if level-jitter == none { 0.0 } else { level-jitter(li, level) }
+      let level = level-values.at(li)
+      let L = level + if level-jitter == none { 0.0 } else { level-jitter(li, level) }
       let segs = ()   // (edgeA, pointA, edgeB, pointB)
 
       for j in range(ny) {

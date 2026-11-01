@@ -2778,6 +2778,22 @@
   else { place(top + left, curve(fill: none, stroke: stroke, ..segs)) }
 }
 
+/// Return sampled contour polylines for selected scalar-field levels.
+/// `field(x, y)` returns a number; bounds and grid dimensions are in mm and
+/// sample counts. The output groups all connected contour paths into one flat
+/// array, so it can be inspected, clipped, transformed, or drawn by the caller.
+#let contour-lines(field, x, y, w, h, levels, nx: 40, ny: 24) = {
+  marching-squares(field, x, y, w, h, levels: levels, nx: nx, ny: ny)
+}
+
+/// Draw scalar-field isolines at explicit levels using a shared stroke style.
+/// Marching-squares segments are stitched into connected polylines first.
+#let iso-lines(field, x, y, w, h, levels, nx: 40, ny: 24,
+               stroke: 0.35pt + black, per: 0) = {
+  let lines = contour-lines(field, x, y, w, h, levels, nx: nx, ny: ny)
+  _join(lines.map(line => stroke-path(line, stroke: stroke, per: per)))
+}
+
 /// Wood-grain contours clipped to an arbitrary simple polygon. `eyes` use
 /// coordinates local to the polygon's bounding box.
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,

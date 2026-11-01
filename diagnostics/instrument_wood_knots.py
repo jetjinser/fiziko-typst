@@ -23,7 +23,7 @@ def main() -> None:
         '\n                message "WKCAND " & decimal(i) & " " & decimal(j) & " "'
         ' & decimal(woodBlockRes*xpart(wKnot[-1])/woodBlockDetail) & " "'
         ' & decimal(woodBlockRes*ypart(wKnot[-1])/woodBlockDetail) & " "'
-        ' & decimal(traceRngCount);'
+        ' & decimal(traceRngCount) & " " & decimal(traceRngTotal);'
     )
     source = source.replace(anchor, hook)
     loop_anchor = "i := -1;\n            j := 0;"
@@ -34,14 +34,20 @@ def main() -> None:
     angle_anchor = "surfaceAngle := findNarrowest(surfaceOutline);"
     if source.count(angle_anchor) != 1:
         raise ValueError(f"expected one wooden-surface angle hook, found {source.count(angle_anchor)}")
-    angle_hook = angle_anchor + '\n        message "WOODANGLE " & decimal(surfaceAngle);'
+    angle_hook = angle_anchor + (
+        '\n        message "WOODANGLE " & decimal(surfaceAngle) & " "'
+        ' & decimal(traceRngTotal);'
+    )
     source = source.replace(angle_anchor, angle_hook)
     source = source.replace("uniformdeviate(", "traceUniformdeviate(")
     source += """
 numeric traceRngCount;
+numeric traceRngTotal;
 traceRngCount := 0;
+traceRngTotal := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngCount := traceRngCount + 1;
+    traceRngTotal := traceRngTotal + 1/100;
     uniformdeviate(x)
 enddef;
 """
