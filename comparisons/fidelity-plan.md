@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The pulley uses its wheel's existing thin outer rim and a thinpen support outline. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833, down from 0.12579; left/right crops are 0.13227/0.10421. Wheel/support clipping and overall ink coverage remain high. |
 | M9 wood panels | 0.22456 | 4.203% → 4.272% | Landscape panels now use the source's internal axis swap. The first panel's first accepted knot matches its traced source coordinate; each accepted knot advances the 28 brush random draws observed in MetaPost. Contour-brush RNG calls still shift later panel streams. |
 | M10 mechanics and optics | 0.07549 | 0.645% → 0.811% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and an approximate auricle outline reduce spring/weight crop RMSE to 0.09909 (previous 0.10150); lens/rays remain 0.06302. Auricle interior and hatch remain approximate. |
-| M11 globe, eye, knot, refraction | 0.12639 | 4.917% → 4.780% | Latest 600 ppi candidate: globe uses separate land/ocean masks and the source coast pen law, RMSE 0.19552 with ink coverage 25.940% → 25.120% (prior masked candidate 0.20950; unmasked baseline 0.18935). Knot tube radius matches the source parameter directly and hidden-strand clearance is radius plus optional margin; knot RMSE is 0.14362 with ink coverage 2.302% (source 2.606%). Latitude-layer width laws, coast RNG phase, curve-time crossing detection and tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.12630 | 4.917% → 4.774% | Latest 600 ppi candidate: globe uses separate land/ocean masks and the source coast pen law, RMSE 0.19552 with ink coverage 25.940% → 25.120% (prior masked candidate 0.20950; unmasked baseline 0.18935). Knot tube radius matches the source parameter directly and hidden intervals expand with crossing angle; knot RMSE is 0.14316 with ink coverage 2.266% (source 2.606%). Latitude-layer widths, coast RNG phase, curve-time crossing detection and tube-mask edges remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.21054 | 10.630% → 10.287% | Mapping the source +30° hatch through the fixture's vertical-axis flip gives Typst angle −30°. Reversing the MetaPost RNG draw order to match its y-up scan gives hatch crop RMSE 0.09247 and ink coverage 14.066% → 13.333%. Stipple coverage is 7.079% → 7.138%. Hatch brush shape remains approximate. |
@@ -89,8 +89,9 @@ strokes, while M10 contains mostly whitespace.
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and gaps. Mapping the upstream strand parameter to
    the same tube radius and removing the M11 fixture's unsupported extra gap
-   lowers whole-plate RMSE to 0.12639 and knot RMSE to 0.14362; knot ink
-   coverage is 2.302% (source 2.606%). The latitude mode still approximates the source's
+   lowers whole-plate RMSE to 0.12630 and knot RMSE to 0.14316; knot ink
+   coverage is 2.266% (source 2.606%). Tube-style gaps now account for the
+   crossing angle, reducing knot crop RMSE from 0.14362. The latitude mode still approximates the source's
    two separately masked shading layers and random width law; curve-time
    crossing detection, source tube masks and strand interpolation also differ.
    The coast brush now follows the source projected-radius pen-width law;

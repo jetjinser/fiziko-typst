@@ -3545,7 +3545,9 @@
 /// successive crossings. `widths` may be one value for all strands or a tuple
 /// with one value per strand; values are stroke widths for `style: "stroke"`
 /// and tube radii for `style: "tube"`. `gap` adds clearance beyond the visible
-/// width or diameter at an over-under crossing.
+/// width or diameter at an over-under crossing. In tube style, the hidden
+/// interval expands by the crossing angle to match the projection of the
+/// over-strand tube onto the under-strand path.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke") = {
@@ -3554,8 +3556,8 @@
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
-  let crossing-half-gap(width) = if style == "tube" {
-    width + gap / 2
+  let crossing-half-gap(width, crossing-sine: 1.0) = if style == "tube" {
+    width / calc.max(0.1, crossing-sine) + gap / 2
   } else { (width + gap) / 2 }
   // A strand may carry a sequence of source `intLayers` values, one for each
   // successive crossing interval. Scalar entries retain the simpler global
@@ -3600,11 +3602,14 @@
               if sa <= 1e-5 or sa >= enda - 1e-5 or sb <= 1e-5 or sb >= endb - 1e-5 {
                 continue
               }
+              let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
               let i-over = over-at(pair-count, i, j)
               if i-over {
-                events.at(j).push((sb, crossing-half-gap(widths.at(i))))
+                events.at(j).push((sb, crossing-half-gap(widths.at(i),
+                  crossing-sine: crossing-sine)))
               } else {
-                events.at(i).push((sa, crossing-half-gap(widths.at(j))))
+                events.at(i).push((sa, crossing-half-gap(widths.at(j),
+                  crossing-sine: crossing-sine)))
               }
               pair-count += 1
             }
@@ -3635,7 +3640,9 @@
               let sb = lengths.at(i).at(bi) + tb * _dist(path.at(bi), path.at(bi + 1))
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
-                let half-gap = crossing-half-gap(widths.at(i))
+                let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
+                let half-gap = crossing-half-gap(widths.at(i),
+                  crossing-sine: crossing-sine)
                 if over-at(pair-count, i, i) {
                   events.at(i).push((sb, half-gap))
                 } else {
