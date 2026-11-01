@@ -3447,11 +3447,10 @@
                 continue
               }
               let i-over = over-at(pair-count, i, j)
-              let half-gap = (widths.at(i) + widths.at(j) + gap) / 2
               if i-over {
-                events.at(j).push((sb, half-gap))
+                events.at(j).push((sb, (widths.at(i) + gap) / 2))
               } else {
-                events.at(i).push((sa, half-gap))
+                events.at(i).push((sa, (widths.at(j) + gap) / 2))
               }
               pair-count += 1
             }
@@ -3482,7 +3481,7 @@
               let sb = lengths.at(i).at(bi) + tb * _dist(path.at(bi), path.at(bi + 1))
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
-                let half-gap = widths.at(i) + gap / 2
+                let half-gap = (widths.at(i) + gap) / 2
                 if over-at(pair-count, i, i) {
                   events.at(i).push((sb, half-gap))
                 } else {
