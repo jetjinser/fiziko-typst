@@ -109,7 +109,7 @@
       "title": "Globe, eye, knot and refraction", "frame_mm": [155,44], "driver": "main.mp", "figure": 11,
       "shared": {"globe_diameter_mm": 30, "globe_rotation": [0,0], "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Uses all eight upstream coast polylines and the new latitude-hatching globe mode; knot strands use longitudinal tube fills and over/under gaps. Latest 600 ppi trial: whole RMSE 0.13134 (baseline 0.24449), globe 0.18935 (baseline 0.49895), knot 0.17410 (baseline 0.30447). Globe ink coverage is close; knot is under-inked. The two source-masked globe shading layers and exact knot crossing order remain approximate.",
+      "notes": "Uses all eight upstream coast polylines and the latitude-hatching globe mode. Knot strands now accept the source's per-crossing layer sequences and use longitudinal tube fills with over/under gaps. Latest 600 ppi trial: whole RMSE 0.13136 (baseline 0.24449), globe 0.18935 (baseline 0.49895), knot 0.17419 (baseline 0.30447). Globe ink coverage is close; knot is under-inked. Source curve-time crossing detection, segment masks, and the two globe shading layers remain approximate.",
       "regions_mm": {"globe": [3,6,32,32], "eye": [50,8,24,28], "knot": [82,7,37,31], "refraction": [119,5,36,34]}
     },
     "S102": {

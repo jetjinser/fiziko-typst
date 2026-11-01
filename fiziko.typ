@@ -3357,9 +3357,10 @@
 
 /// Draw sampled strands with real over/under gaps at their intersections.
 /// `strands` is a tuple of open polylines. By default, crossings between each
-/// strand pair alternate over/under in traversal order. Pass numeric `layers`
-/// to keep a fixed global ordering. `widths` may be one width for all strands
-/// or a tuple with one width per strand.
+/// strand pair alternate over/under in traversal order. `layers` accepts either
+/// one numeric global rank per strand or a per-strand sequence of ranks for
+/// successive crossings. `widths` may be one width for all strands or a tuple
+/// with one width per strand.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke") = {
@@ -3368,6 +3369,23 @@
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
+  // A strand may carry a sequence of source `intLayers` values, one for each
+  // successive crossing interval. Scalar entries retain the simpler global
+  // per-strand ordering accepted by the original Typst API.
+  let over-at(pair-count, strand-index, other-index) = {
+    if layers == auto or strand-index == other-index { _mod(pair-count, 2) == 0 }
+    else {
+      let own = layers.at(strand-index)
+      let other = layers.at(other-index)
+      let own-level = if type(own) == array and own.len() > 0 {
+        own.at(_mod(pair-count, own.len()))
+      } else { own }
+      let other-level = if type(other) == array and other.len() > 0 {
+        other.at(_mod(pair-count, other.len()))
+      } else { other }
+      own-level >= other-level
+    }
+  }
   let events = range(n).map(_ => ())
   for i in range(n) {
     for j in range(i + 1, n) {
@@ -3394,8 +3412,7 @@
               if sa <= 1e-5 or sa >= enda - 1e-5 or sb <= 1e-5 or sb >= endb - 1e-5 {
                 continue
               }
-              let i-over = if layers == auto { _mod(pair-count, 2) == 0 }
-                           else { layers.at(i) >= layers.at(j) }
+              let i-over = over-at(pair-count, i, j)
               let half-gap = (widths.at(i) + widths.at(j) + gap) / 2
               if i-over {
                 events.at(j).push((sb, half-gap))
@@ -3432,7 +3449,7 @@
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
                 let half-gap = widths.at(i) + gap / 2
-                if _mod(pair-count, 2) == 0 {
+                if over-at(pair-count, i, i) {
                   events.at(i).push((sb, half-gap))
                 } else {
                   events.at(i).push((sa, half-gap))
