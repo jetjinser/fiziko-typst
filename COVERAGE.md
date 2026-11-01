@@ -45,7 +45,7 @@ requirement to copy MetaPost's recursion or match its internal call counts.
 | `refractionPath`, reflection | M11 | `refraction-path` | Approximate: sampled polygon boundaries. |
 | `globe`, landmass projection | M11 | `globe` | Approximate: caller-supplied coasts are linearly densified to 5° and clipped at the horizon; built-in coast data and source shading are not part of the public API. The M11 comparison fixture supplies the eight coast paths from the pinned upstream source. |
 | `eye` | M11 | `eye` | Approximate: configurable anatomy and deterministic lashes; shapes differ from the source. Aspect, gaze and rotation edge cases are shown in `eye.typ`. |
-| `knotFromStrands`, styles and layers | M11 | `strand-knot` | Approximate: open and self-crossing polylines support alternating crossings or explicit global layers, including paths with duplicate vertices; tube styles and shadows differ. |
+| `knotFromStrands`, styles and layers | M11 | `strand-knot` | Approximate: open and self-crossing polylines support alternating crossings or explicit per-crossing layers, including paths with duplicate vertices. Tube style now maps source strand widths directly to Typst tube radii; curve-time crossing detection, source tube masks, and shadow handling still differ. |
 
 For M3, a fresh 600 ppi full-frame `max-w` scan at the current `main.typ`
 settings (`samples: 360`, `seed: 15`, shared RNG cursor) tested 0.26/0.28/

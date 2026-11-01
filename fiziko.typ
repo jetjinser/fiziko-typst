@@ -3447,8 +3447,9 @@
 /// `strands` is a tuple of open polylines. By default, crossings between each
 /// strand pair alternate over/under in traversal order. `layers` accepts either
 /// one numeric global rank per strand or a per-strand sequence of ranks for
-/// successive crossings. `widths` may be one width for all strands or a tuple
-/// with one width per strand.
+/// successive crossings. `widths` may be one value for all strands or a tuple
+/// with one value per strand; values are stroke widths for `style: "stroke"`
+/// and tube radii for `style: "tube"`.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke") = {
@@ -3553,7 +3554,9 @@
   for i in range(n) {
     let fragments = _strand-fragments(strands.at(i), lengths.at(i), events.at(i))
     if style == "tube" {
-      drawings += fragments.map(part => tube(part, widths.at(i) / 2,
+      // The upstream knot stores the same radius consumed by tube.l; its
+      // tube macro doubles that radius when constructing the diameter.
+      drawings += fragments.map(part => tube(part, widths.at(i),
         hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
         end-caps: false))
     } else {
