@@ -2589,7 +2589,8 @@
 /// Wood-grain on the beam arrives with the grain milestone — for now the
 /// beam is hatched as in figure 5.
 #let l-hopital-pulley(AB, l, m, at: (0, 0), k: 6, d1: 2 / 3, d2: 1,
-                      rope-w: 3 * _source-min-stroke, seed: 0) = {
+                      rope-w: 3 * _source-min-stroke, seed: 0,
+                      length-labels: false) = {
   let G = _pulley-geometry(AB, l, m, d1: d1)
   let to-mm(p) = _add(_mul(p, k), at)
   let A = to-mm(G.A)
@@ -2618,14 +2619,16 @@
   // dots and labels
   let dot(p) = place(top + left, _fill((circle-pts(0.35, 20, center: p),), black))
   els.push(dot(A) + dot(B))
-  els.push(tag($A$, (A.at(0) - 2.4, A.at(1) + 3.4)))
-  els.push(tag($B$, (B.at(0) + 2.4, B.at(1) + 3.4)))
-  els.push(tag($C$, (C.at(0) - 3.2, C.at(1) - 1.2)))
+  els.push(tag($A$, (A.at(0) - 2, A.at(1) + 3)))
+  els.push(tag($B$, (B.at(0) + 2, B.at(1) + 3)))
+  els.push(tag($C$, (C.at(0) - 3, C.at(1) - 2)))
+  if length-labels {
   let mid(p, q) = ((p.at(0) + q.at(0)) / 2, (p.at(1) + q.at(1)) / 2)
   let uAD = _unit(_sub(D, A))
   let uBD = _unit(_sub(D, B))
   els.push(tag($l$, _add(mid(A, D), _mul((uAD.at(1), -uAD.at(0)), 2.6))))
   els.push(tag($m$, _add(mid(B, D), _mul((-uBD.at(1), uBD.at(0)), 2.6))))
+  }
   _join(els)
 }
 
