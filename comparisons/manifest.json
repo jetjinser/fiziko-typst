@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "upstream": {
+    "repository": "https://github.com/jemmybutton/fiziko",
+    "revision": "54a63dba8e6700a5e70d3508838edebcbf0f45fe",
+    "source_sha256": "55c7b8053e62516e5091713b31d4cc21707901f9ffa5e456afbf6fef2b39e2b5",
+    "file": "fiziko.mp",
+    "license_file": "LICENSE.md"
+  },
+  "render": {"ppi": 600, "dark_threshold": 128, "difference_gain": 4},
+  "source_only_cases": {
+    "M8": {"title": "L'Hôpital pulley composites", "frame_mm": [110,40], "driver": "main.mp", "figure": 8},
+    "M9": {"title": "Wood-grain panels", "frame_mm": [110,66], "driver": "main.mp", "figure": 9},
+    "M10": {"title": "Mechanical and optical primitives", "frame_mm": [110,58], "driver": "main.mp", "figure": 10},
+    "M11": {"title": "Globe, eye, knot and refraction", "frame_mm": [155,44], "driver": "main.mp", "figure": 11},
+    "S102": {"title": "Tube outline and cast shadow", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 102},
+    "S103": {"title": "Solid and glass surface fills", "frame_mm": [120,45], "driver": "supplemental.mp", "figure": 103},
+    "S104": {"title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104},
+    "S105": {"title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105},
+    "S106": {"title": "Standing and hanging weights", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 106},
+    "S107": {"title": "Wheels and centroid", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 107},
+    "S108": {"title": "Lens and annotation variants", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 108}
+  },
+  "cases": {
+    "M1": {
+      "title": "Curve and variable offset",
+      "frame_mm": [110, 52], "driver": "main.mp", "figure": 1,
+      "shared": {"anchors_mm": [[6,36],[38,16],[72,34],[104,14]], "offset_mm": "7 sin(pi t)", "source_seed": 1},
+      "nominal": {"seed": 1, "per": 24},
+      "calibrated": {"seed": 1, "per": 24},
+      "notes": "No plate-specific calibration. Native dash patterns and offset interpolation differ."
+    },
+    "M2": {
+      "title": "Variable-width brush",
+      "frame_mm": [110, 52], "driver": "main.mp", "figure": 2,
+      "shared": {"anchors_mm": [[6,36],[38,16],[72,34],[104,14]], "width_tex_pt": "3 sin(pi t)^2", "source_seed": 1},
+      "nominal": {"seed": 1, "per": 24, "amplitude": 3, "exponent": 2},
+      "calibrated": {"seed": 1, "per": 96, "amplitude": 7.5, "exponent": 1},
+      "notes": "Calibrated mode changes the width law to match the source's offset-fit envelope. It is not a same-width-law comparison."
+    },
+    "M3": {
+      "title": "Latitude spheres",
+      "frame_mm": [110, 56], "driver": "main.mp", "figure": 3,
+      "shared": {"diameters_mm": [20,30], "latitudes_degrees": [-60,45], "centers_mm": [[36,28],[70,28]], "source_seed": 1},
+      "nominal": {"seed": 1, "samples": 360},
+      "calibrated": {"seed": 15, "samples": 360},
+      "notes": "Both Typst spheres share a cursor, but Typst's keyed random stream does not reproduce MetaPost's RNG. Calibrated mode selects a plate-specific seed."
+    },
+    "M4": {
+      "title": "Longitudinal arc tube",
+      "frame_mm": [110, 56], "driver": "main.mp", "figure": 4,
+      "shared": {"arc_center_mm": [55,68], "arc_radius_mm": 42, "arc_degrees": [205,335], "arc_segments": 40, "tube_radius_mm": 6, "source_seed": 1},
+      "nominal": {"seed": 1, "per": 4, "max_width": 0.30},
+      "calibrated": {"seed": 1, "per": 4, "max_width": 0.308},
+      "notes": "Calibrated mode slightly increases maximum hatch width (TeX pt)."
+    },
+    "M5": {
+      "title": "Suspended sphere composite",
+      "frame_mm": [110, 82], "driver": "main.mp", "figure": 5,
+      "shared": {"sphere_diameter_mm": 26, "sphere_center_mm": [59.4,51.9], "tube_radius_mm": 1, "source_seed": 1},
+      "nominal": {"seed": 1, "sphere_seed": 1},
+      "calibrated": {"seed": 1, "sphere_seed": 14},
+      "notes": "Native annotation and arrow construction differ. MetaPost draws the tube before the sphere and uses one global RNG. Use C1 for an isolated sphere measurement."
+    },
+    "M6": {
+      "title": "Variable-radius closed tube and taper",
+      "frame_mm": [110, 62], "driver": "main.mp", "figure": 6,
+      "shared": {"ring_center_mm": [32,31], "ring_radius_mm": 24, "ring_tube_radius_mm": "3.5 + 1.8 sin(10 pi t)", "taper_radius_mm": "9 (1-t)", "source_seed": 1},
+      "nominal": {"seed": 1, "per": 2},
+      "calibrated": {"seed": 12, "per": 2},
+      "notes": "Typst reverses the sine sign to account for its opposite circle traversal; this is coordinate conversion. Calibrated mode changes the seed of both tubes."
+    },
+    "M7": {
+      "title": "Transverse tube",
+      "frame_mm": [110, 42], "driver": "main.mp", "figure": 7,
+      "shared": {"anchors_mm": [[6,32],[40,14],[74,32],[104,16]], "tube_radius_mm": 5, "source_seed": 1},
+      "nominal": {"seed": 1, "per": 384, "period": 1.2},
+      "calibrated": {"seed": 1, "per": 384, "period": 0.9},
+      "notes": "Calibrated mode changes the dash period (TeX pt). Both modes keep the same drawing resolution."
+    },
+    "C1": {
+      "title": "Isolated concentric sphere",
+      "frame_mm": [110, 56], "driver": "isolated.mp", "figure": 201,
+      "shared": {"diameter_mm": 26, "center_mm": [55,28], "source_seed": 1},
+      "nominal": {"seed": 1, "samples": 128},
+      "calibrated": {"seed": 1, "samples": 128},
+      "notes": "No plate-specific calibration. This isolates the sphere from M5's tube and annotations.",
+      "regions_mm": {"sphere": [41,14,28,28]}
+    },
+    "S101": {
+      "title": "Stippled brush, sphere and tube",
+      "frame_mm": [120, 44], "driver": "supplemental.mp", "figure": 101,
+      "shared": {"brush_anchors_mm": [[5,35],[26,13],[48,32]], "brush_width_tex_pt": "0.3 sin(pi t)", "sphere_diameter_mm": 22, "sphere_center_mm": [70,22], "tube_anchors_mm": [[89,33],[103,10],[115,28]], "tube_radius_mm": 3, "source_seed": 1},
+      "nominal": {"seed": 1, "per": 48, "brush_density": 0.5, "sphere_density": 0.55, "tube_density": 0.56},
+      "calibrated": {"seed": 1, "per": 48, "brush_density": 0.5, "sphere_density": 0.55, "tube_density": 0.56},
+      "notes": "No extra per-plate overrides. The existing Typst density defaults were calibrated previously; they are not upstream parameters. The source uses one global RNG, while Typst uses separate keyed streams.",
+      "regions_mm": {"brush": [3,8,48,30], "sphere": [58,10,24,24], "tube": [88,6,30,30]}
+    }
+  }
+}

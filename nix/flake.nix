@@ -1,5 +1,5 @@
 {
-  description = "A startup basic project";
+  description = "fiziko.typ development and reproducible source comparisons";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -11,6 +11,10 @@
     devshell = {
       url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    fiziko-upstream = {
+      url = "github:jemmybutton/fiziko/54a63dba8e6700a5e70d3508838edebcbf0f45fe";
+      flake = false;
     };
   };
 
@@ -28,6 +32,8 @@
               tinymist
               python3
               imagemagick
+              texliveSmall
+              ghostscript
             ];
             env = [
               {
@@ -37,6 +43,10 @@
               {
                 name = "FIZIKO_TEST_FONT_PATH";
                 value = lib.makeSearchPath "share/fonts" [ pkgs.dejavu_fonts ];
+              }
+              {
+                name = "FIZIKO_UPSTREAM_PATH";
+                value = toString inputs.fiziko-upstream;
               }
             ];
           };
