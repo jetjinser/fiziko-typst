@@ -40,7 +40,7 @@ included where a plate contains distinct drawing families.
 | S104 flat surfaces | 0.32819 | 10.630% → 9.745% | At 600 ppi stipple coverage now matches (7.079% → 7.121%, RMSE 0.28549). Hatch is still under-dense (14.066% → 12.284%, RMSE 0.36477); overall RMSE regressed from 0.29890 despite better density balance. |
 | S105 wood block and surface | 0.10509 | 0.741% → 0.846% | Latest 600 ppi candidate: wooden-surface RMSE 0.07958, ink coverage 0.489% → 0.611% (previously 0.13138 and 0.489% → 1.754%). Block remains at RMSE 0.13129 and near-source coverage (1.077% → 1.166%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
-| S107 wheels and centroid | 0.14064 | 3.159% → 3.441% | New source-style wheel (600 ppi): RMSE fell from 0.25567 to 0.12807 and coverage is 6.034% vs 7.100%. Pulley wheel remains over-inked (RMSE 0.23299; 3.833% → 5.689%); centroid crop RMSE 0.05441. |
+| S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
 
 These whole-plate RMSE values are useful for locating large residuals, not for
@@ -93,9 +93,9 @@ strokes, while M10 contains mostly whitespace.
    2.5 mm hatched beam band and 3× minimum source rope width; whole-plate RMSE
    fell from 0.16877 to 0.13182 and ink coverage moved from 3.23% to 2.23%
    (source 1.73%). Pulley geometry and labels remain approximate. S107's
-   source-style wheel crop RMSE fell from 0.25567 to 0.12807, with coverage
-   within about 15% of source; the pulley wheel still differs (RMSE 0.23299 and
-   excess ink). M10 and S102 are closer and can remain lower priority unless
+   pulley-wheel crop RMSE is 0.09105 with near-equal ink coverage; the source-
+   style wheel crop RMSE fell from 0.25567 to 0.12807, with coverage within
+   about 15% of source. M10 and S102 are closer and can remain lower priority unless
    visual review finds a specific defect.
 
 At each step, keep a same-input nominal comparison, review the difference

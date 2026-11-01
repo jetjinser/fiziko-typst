@@ -2430,15 +2430,38 @@
 
 /// Shaded pulley wheel with rim, groove and axle details.
 #let pulley-wheel(d, center: (0, 0), rings: auto, seed: 0) = {
-  let n = if rings == auto { calc.max(2, int(calc.round(d / 1.6))) } else { rings }
-  _join((
-    place(top + left, _fill((circle-pts(d / 2, 96, center: center),), white)),
-    sphere(d * 0.98, center: center, rings: n, seed: seed),
-    stroke-path(circle-pts(d * 8 / 9 / 2, 96, center: center), stroke: 0.45pt + black, closed: true, per: 0),
-    stroke-path(circle-pts(d * 7 / 9 / 2, 96, center: center), stroke: 0.35pt + black, closed: true, per: 0),
-    stroke-path(circle-pts(d * 3 / 5 / 2, 96, center: center), stroke: 0.35pt + black, closed: true, per: 0),
-    stroke-path(circle-pts(d / 16, 24, center: center), stroke: 0.5pt + black, closed: true, per: 0),
-  ))
+  let first = 3 / 5 * d
+  let middle = 7 / 9 * d
+  let last = 8 / 9 * d
+  let step = 2 * _source-spacing
+  let n = if rings == auto { int(calc.floor((last - first) / step)) + 1 } else { rings }
+  let items = ()
+  for i in range(n) {
+    let diameter = if rings == auto { first + i * step }
+      else { first + (last - first) * i / calc.max(1, n - 1) }
+    if diameter > last { continue }
+    let outer = diameter <= middle
+    let lat = if outer { calc.asin(diameter / (4 * d)) } else { 30deg }
+    let angle-offset = if outer { 0 } else { 180 }
+    let pts = circle-pts(diameter / 2, 96, center: center)
+    items.push(stroke-ink(pts, t => {
+      let theta = 360 * t + angle-offset
+      let nx = calc.sin(lat) * _cos(theta)
+      let ny = calc.sin(lat) * _sin(theta)
+      let nz = calc.cos(lat)
+      let lightness = calc.max(0.0, 1 - (-0.353553 * nx + 0.382683 * ny + 0.853553 * nz))
+      let base = if outer { 2 / 3 } else { 1 / 4 }
+      _source-min-stroke * (base + lightness)
+    }, closed: true, per: 0, min-w: _source-min-stroke,
+       period: _source-dash-length, seed: seed + i))
+  }
+  for diameter in (middle, last, d, first) {
+    items.push(stroke-path(circle-pts(diameter / 2, 120, center: center),
+      stroke: _source-min-stroke * 1mm + black, closed: true, per: 0))
+  }
+  items.push(stroke-path(circle-pts(d / 16, 48, center: center),
+    stroke: 3 * _source-min-stroke * 1mm + black, closed: true, per: 0))
+  _join(items)
 }
 
 /// A wheel with a rim, hub, and evenly spaced spokes.
