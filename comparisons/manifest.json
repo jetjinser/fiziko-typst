@@ -123,14 +123,14 @@
       "title": "Solid and glass surface fills", "frame_mm": [120,45], "driver": "supplemental.mp", "figure": 103,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same source paths, polygons, hatch angles and styles; the port uses polygon scanline fills and sampled curves.",
+      "notes": "Same source paths, polygons, hatch angles and styles. Defaults now follow upstream stroke and row scales. At 600 ppi whole-plate RMSE is 0.22142 (was 0.23772); opaque and gradient ink coverage closely match, while glass remains over-inked (5.68% vs 3.64%).",
       "regions_mm": {"solid_surface": [0,4,58,36], "opaque": [60,4,25,38], "glass": [85,4,23,38], "gradient": [107,4,13,38]}
     },
     "S104": {
       "title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same panel vertices, lighting normals, hatch angles and source styles; shading and stipple placement differ.",
+      "notes": "Same panel vertices, lighting normals, hatch angles and source styles. Stipple ink coverage now matches at 600 ppi (7.12% vs 7.08%); hatch remains under-dense (12.28% vs 14.07%), and whole-plate RMSE is 0.32819 (baseline 0.29890). Placement and edge behavior still differ.",
       "regions_mm": {"hatch_panel": [0,0,61,44], "stipple_panel": [61,0,59,44]}
     },
     "S105": {

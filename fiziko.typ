@@ -2175,8 +2175,10 @@
 
 /// Parallel clipped strokes inside a polygon. `style: "glass"` leaves
 /// periodic gaps to suggest a transparent material.
-#let solid(poly, angle: 45, style: "opaque", spacing: 0.65, stroke: 0.35pt + black) = {
-  let segs = _scanline-segments(poly, angle, spacing)
+#let solid(poly, angle: 45, style: "opaque", spacing: none,
+           stroke: _source-min-stroke * 1mm + black) = {
+  let line-spacing = if spacing == none { 4.5 * _source-max-shading } else { spacing }
+  let segs = _scanline-segments(poly, angle, line-spacing)
   let items = ()
   for s in segs {
     let row = s.at(2)
@@ -2187,9 +2189,11 @@
 }
 
 /// A clipped set of strokes whose width increases across the polygon.
-#let gradient-shade(poly, angle: 90, spacing: 0.4,
-                    min-w: 0.15 * pt, max-w: 0.45 * pt, seed: 0) = {
-  let segs = _scanline-segments(poly, angle, spacing)
+#let gradient-shade(poly, angle: 90, spacing: none,
+                    min-w: _source-min-stroke / 4,
+                    max-w: _source-min-stroke, seed: 0) = {
+  let line-spacing = if spacing == none { 3 * _source-max-shading } else { spacing }
+  let segs = _scanline-segments(poly, angle, line-spacing)
   let items = ()
   for s in segs {
     let t = s.at(2) / calc.max(1, s.at(3))
@@ -2201,14 +2205,17 @@
 }
 
 /// A shaded plane, with either parallel hatches or deterministic stipples.
-#let flat-surface(poly, normal, angle: 30, style: "hatch", spacing: 0.65,
-                  dot-size: 0.3 * pt, dot-step: 0.65, seed: 0,
+#let flat-surface(poly, normal, angle: 30, style: "hatch", spacing: none,
+                  dot-size: 1.5 * _source-min-stroke, dot-step: 0.75 * _source-min-stroke, seed: 0,
                   light: (-0.353553, 0.382683, 0.853553)) = {
   let nn = calc.sqrt(normal.at(0) * normal.at(0) + normal.at(1) * normal.at(1) + normal.at(2) * normal.at(2))
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
   let lam = calc.max(0.0, (normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)) / (nn * ln))
   let shade = calc.pow(1 - lam, 1.0)
-  let segs = _scanline-segments(poly, angle, spacing)
+  let line-spacing = if spacing == none {
+    if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
+  } else { spacing }
+  let segs = _scanline-segments(poly, angle, line-spacing)
   let along = (_cos(angle), _sin(angle))
   let along-projections = poly.map(p => _dot(p, along))
   let total-width = calc.max(..along-projections) - calc.min(..along-projections)
@@ -2216,24 +2223,27 @@
   for s in segs {
     let row-fraction = s.at(2) / calc.max(1, s.at(3))
     let line-length = _dist(s.at(0), s.at(1))
-    let relative-width(t, end-fade) = {
+    let width(t, end-fade, scale) = {
       let envelope = (
         calc.sin(180deg * t)
         * (line-length / calc.max(total-width, 0.000001))
         * calc.sin(180deg * row-fraction)
       )
-      let source-factor = (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
-      calc.clamp(source-factor / (16 / 15), 0.0, 1.0)
+      scale * _source-min-stroke * (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
     }
     let pts = range(25).map(i => _add(s.at(0),
       _mul(_sub(s.at(1), s.at(0)), i / 24)))
     if style == "stipples" {
-      items.push(stroke-stipple(pts, t => dot-size * relative-width(t, 5 / 6),
-        closed: false, per: 0, dot-size: dot-size, step: dot-step,
+      items.push(stroke-stipple-brush(pts,
+        t => width(t, 5 / 6, dot-size / _source-min-stroke),
+        closed: false, per: 0, dot-size: dot-size,
+        track-spacing: 1.5 * dot-size, dot-range: (0.9, 1.2),
+        density: 0.72 * (0.75 * _source-min-stroke / dot-step),
         seed: seed + s.at(2)))
     } else {
-      items.push(stroke-ink(pts, t => _source-max-shading * relative-width(t, 6 / 7),
-        closed: false, per: 0, seed: seed + s.at(2)))
+      items.push(stroke-ink(pts, t => width(t, 6 / 7, 2),
+        closed: false, per: 0, min-w: _source-min-stroke,
+        period: _source-dash-length, seed: seed + s.at(2)))
     }
   }
   _join(items)

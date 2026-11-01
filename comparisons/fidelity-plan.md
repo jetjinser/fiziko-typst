@@ -36,8 +36,8 @@ included where a plate contains distinct drawing families.
 | M10 mechanics and optics | 0.08506 | 0.672% → 0.823% | Spring/weight crop RMSE 0.11766; lens/rays 0.06302. |
 | M11 globe, eye, knot, refraction | 0.24449 | 5.013% → 3.194% | Globe crop: RMSE 0.49895 and dark coverage 26.446% → 8.069%. Knot crop: RMSE 0.30447 and ink coverage is 3.079× the source. Eye: 0.23617; refraction: 0.08193. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
-| S103 surface fills | 0.23772 | 3.284% → 4.913% | Opaque crop RMSE 0.35878; glass 0.28235; gradient 0.36034. All three over-ink the source. |
-| S104 flat surfaces | 0.29890 | 10.908% → 3.074% | Hatch crop 14.493% → 4.900%; stipple crop 7.201% → 1.187%. These are large density gaps as well as placement differences. |
+| S103 surface fills | 0.22142 | 3.240% → 3.635% | At 600 ppi opaque RMSE 0.33901 with near-equal coverage (8.738% → 8.699%); gradient RMSE 0.33668 and coverage 6.901% → 6.917%. Glass remains over-inked (3.638% → 5.683%; RMSE 0.26279). |
+| S104 flat surfaces | 0.32819 | 10.630% → 9.745% | At 600 ppi stipple coverage now matches (7.079% → 7.121%, RMSE 0.28549). Hatch is still under-dense (14.066% → 12.284%, RMSE 0.36477); overall RMSE regressed from 0.29890 despite better density balance. |
 | S105 wood block and surface | 0.13445 | 0.768% → 1.531% | Block crop is near source coverage (1.111% → 1.207%); wooden-surface crop is over-inked (0.511% → 1.841%). |
 | S106 weights | 0.10910 | 1.162% → 0.805% | Standing weight crop 1.692% → 0.853%; hanging weight 1.208% → 0.986%. |
 | S107 wheels and centroid | 0.18217 | 3.260% → 2.575% | Pulley wheel is over-inked (3.949% → 5.796%); the open-spoke wheel is under-inked (7.319% → 2.739%); centroid crop RMSE 0.05441. |
@@ -70,11 +70,15 @@ strokes, while M10 contains mostly whitespace.
    are approximated, and the wood-knot outlines are not yet source brush loops.
    Next, port the source's contour-width modulation and shared RNG cursor,
    then tackle `woodenSurface` separately.
-3. **Reconcile `flatSurface` and the S103 fill families.** S104 currently
-   renders only 28% of source ink overall. Match the source lighting envelope,
-   row/edge behavior and stipple allocation separately for hatches and dots;
-   check S103 opaque, glass and gradient crops to avoid solving density by
-   globally darkening all fills.
+3. **Reconcile `flatSurface` and the S103 fill families.** The port now uses
+   upstream stroke/row scales, the lightness envelope and three-track stipples.
+   At 600 ppi S103 whole-plate RMSE improved from 0.23772 to 0.22142, and its
+   opaque and gradient ink coverages now closely match. S104 stipple ink
+   coverage moved from 1.19% to 7.12% (source 7.08%), but the hatch remains
+   under-dense and S104 whole-plate RMSE rose from 0.29890 to 0.32819. Glass
+   remains over-inked. Further work should compare row placement and edge
+   clipping, then isolate glass width and hatch allocation rather than changing
+   global fill density.
 4. **Split M11 into faithful globe and knot renderers.** The comparison now
    supplies the exact eight upstream coast paths, but the public `globe` draws
    coast strokes and a graticule where the source clips shaded latitude marks
