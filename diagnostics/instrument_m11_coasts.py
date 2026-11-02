@@ -46,9 +46,11 @@ def main() -> None:
     source = replace_once(
         source,
         coast,
+        '            message "M11-COAST-BEGIN " & decimal(i);\n'
         "            traceCoastRng := 0;\n"
         + coast
-        + '            message "M11-COAST " & decimal(i) & " " & decimal(traceCoastRng);\n',
+        + '            message "M11-COAST " & decimal(i) & " " & decimal(traceCoastRng);\n'
+        + '            message "M11-COAST-END " & decimal(i);\n',
         "coast brush",
     )
     source = re.sub(r"\buniformdeviate\s*\(", "traceUniformdeviate(", source)

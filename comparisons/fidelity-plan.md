@@ -325,13 +325,17 @@ contours with the sampled source rings (the measured render regressed).
    Typst's current 348/580 layer dash-call totals are not comparable because
    they omit recursive brush draws and mix coastline work with the masked
    latitude layers. Per-mass leaf and callback tracing is still needed before
-   a source stream offset can be inferred. A fixed stream offset tested with
-   the prior projection and again with closed contours was reverted. An
-   independent diagnostic that copied the production width closure fails
-   Typst type inference (`cannot join float with float`), while the production
-   globe fixture still compiles. Put any further trace hook inside `globe`'s
-   existing coastline calculation so the trace observes the exact production
-   widths and recursion inputs instead of maintaining a parallel closure.
+   a source stream offset can be inferred. The production-path trace now
+   records source/Typst RNG draws by visible mass as `6/36`, `15/42`, `3/8`,
+   `1/0`, `1/4`, and `1/2` (source/Typst order for masses 1, 2, 4, 5, 7, 8).
+   Thin recursion nodes are `15/37`, `57/41`, `31/7`, `1/0`, `1/3`, and
+   `1/1`. The mismatch is localized rather than a uniform stream offset:
+   masses 2 and 4 have many more source nodes, while mass 1 has more Typst
+   nodes. Enabling 16.16 rounding in the Typst coast trace increases its total
+   from 92 to 112 calls, so the change was reverted. Pair source cut parameters
+   and width-cubic ranges on masses 2 and 4 before changing the coast width law
+   or stream. A fixed stream offset tested with the prior projection and again
+   with closed contours was reverted.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived

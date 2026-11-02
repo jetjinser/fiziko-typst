@@ -1096,7 +1096,8 @@
                 min-w: _source-min-stroke, period: _source-dash-length, seed: 0,
                 shift: (0, 0), fill: black,
                 _random-stream: none, _rng-offset: 0, _with-rng: false,
-                _source-rounding: false) = {
+                _source-rounding: false, _with-stats: false,
+                _trace-nodes: false) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1111,10 +1112,12 @@
   let ink = _ink-loops(fr, ws, closed, min-w, period,
     seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     random-stream: _random-stream, rng-offset: _rng-offset,
-    with-rng: _with-rng, source-rounding: _source-rounding)
+    with-rng: _with-rng, with-stats: _with-stats,
+    trace-nodes: _trace-nodes, source-rounding: _source-rounding)
   let drawing = place(top + left,
-    _fill(if _with-rng { ink.at(0) } else { ink }, fill))
-  if _with-rng { (drawing, ink.at(1)) } else { drawing }
+    _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
+  if _with-stats { (drawing, ink.at(1), ink.at(2)) }
+  else if _with-rng { (drawing, ink.at(1)) } else { drawing }
 }
 
 /// Deterministic stippled stroke. `w(t)` is the local density in mm;
@@ -3892,7 +3895,8 @@
           shading-width: _source-max-shading, shading-gamma: 0.0,
           coast-step: 5, seed: 1,
           light: (-0.353553, 0.382683, 0.853553),
-          center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
+          center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black,
+          _trace-coasts: false) = {
   let radius = d / 2
   let light-length = calc.sqrt(light.at(0) * light.at(0)
     + light.at(1) * light.at(1) + light.at(2) * light.at(2))
@@ -3915,20 +3919,24 @@
     }
   }
   let coast-lines = ()
-  for land in lands {
+  let coast-landmass-ids = ()
+  for (land-index, land) in lands.enumerate() {
     if shading == "latitude" {
       let data = _globe-land-outline-data(
         _globe-densify(land, max-step: coast-step), rotation, radius, center)
-      if data != none { coast-lines += (data.points,) }
+      if data != none {
+        coast-lines += (data.points,)
+        coast-landmass-ids.push(land-index + 1)
+      }
     } else {
       coast-lines += _globe-visible-paths(
         _globe-densify(land, max-step: coast-step), rotation, radius, center)
     }
   }
   let elements = graticule-lines.map(path => stroke-path(path, stroke: stroke, per: 0))
-  let coast-elements = coast-lines.enumerate().map(((i, path)) => {
+  let coast-results = coast-lines.enumerate().map(((i, path)) => {
     if shading != "latitude" {
-      stroke-path(path, stroke: stroke, per: 0)
+      (drawing: stroke-path(path, stroke: stroke, per: 0), trace: none)
     } else {
       let fractions = _path-fractions(path, true)
       let width(t) = {
@@ -3953,12 +3961,24 @@
         let lightness = calc.clamp(1 - lam, 0.0, 1.0)
         _source-min-stroke * (2 / 3 + lightness / 3)
       }
-      stroke-ink(path, width, closed: true, per: 0,
+      let result = stroke-ink(path, width, closed: true, per: 0,
         min-w: _source-min-stroke, period: _source-dash-length,
-        seed: seed + i * 104729)
+        seed: seed + i * 104729,
+        _with-rng: _trace-coasts, _with-stats: _trace-coasts,
+        _trace-nodes: _trace-coasts, _source-rounding: false)
+      if _trace-coasts {
+        (drawing: result.at(0), trace: (
+          landmass: coast-landmass-ids.at(i), points: path.len(),
+          calls: result.at(1), outer: result.at(2).outer,
+          thin: result.at(2).thin, dashes: result.at(2).dashes,
+          nodes: result.at(2).nodes))
+      } else { (drawing: result, trace: none) }
     }
   })
-  if shading == "latitude" {
+  let coast-elements = coast-results.map(item => item.drawing)
+  let coast-traces = coast-results.filter(item => item.trace != none)
+    .map(item => item.trace)
+  let drawing = if shading == "latitude" {
     if lands.len() == 0 {
       let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
         spacing: shading-spacing, max-w: shading-width, gamma: shading-gamma,
@@ -3989,6 +4009,9 @@
                               stroke: outline, closed: true, per: 0))
     _join(elements)
   }
+  if _trace-coasts {
+    [#metadata(coast-traces) <m11-coast-brush-trace> #drawing]
+  } else { drawing }
 }
 
 // ---------------------------------------------------------------------------

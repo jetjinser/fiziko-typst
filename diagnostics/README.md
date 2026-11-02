@@ -304,6 +304,32 @@ units. At 600 ppi globe crop RMSE falls from 0.188772 to 0.188748; ink is
 0.112680. The raster gain is small, but the topology and arc order now follow
 the source. Coast brush phase and recursive call counts remain open.
 
+`diagnostics/m11_coast_brush_trace.typ` enables a private trace inside the
+production `globe` coast loop. It records the exact width samples' recursive
+outer/thin node tree and RNG cursor by source landmass ID. For the pinned M11
+fixture, source versus Typst counts are:
+
+| Landmass | Source RNG calls | Source thin nodes | Typst RNG calls | Typst thin nodes |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 6 | 15 | 36 | 37 |
+| 2 | 15 | 57 | 42 | 41 |
+| 3 (empty) | 0 | 1 | 0 | 0 |
+| 4 | 3 | 31 | 8 | 7 |
+| 5 | 1 | 1 | 0 | 0 |
+| 6 (empty) | 0 | 1 | 0 | 0 |
+| 7 | 1 | 1 | 4 | 3 |
+| 8 | 1 | 1 | 2 | 1 |
+
+The source trace counts all `uniformdeviate` calls inside each coast brush;
+Typst's RNG cursor counts the two values consumed per modeled dash. The totals
+are 27 versus 92, and the per-mass differences show that aggregate stream
+offsets cannot fix the phase. Mass 4 is the largest tree-shape gap: 31 source
+thin nodes versus 7 Typst nodes, while mass 2 has 57 versus 41. A trial enabling
+source 16.16 width rounding in the production coast trace increased Typst to
+112 calls and 109 thin nodes, so it was reverted. The next port should pair
+source cut parameters and width-cubic ranges on masses 2 and 4 before changing
+the coast width law or RNG stream.
+
 To extract and inspect the source path samples and Typst run counts inside the
 Nix devshell:
 
@@ -320,6 +346,30 @@ rg 'M11ARC' /tmp/m11-coast-paths/trace.log
 typst eval 'query(<m11-coast-geometry>).first().value' \
   --in diagnostics/m11_coast_geometry_trace.typ --root .
 ```
+
+To compare source recursion nodes and random calls by landmass, layer the
+generic brush instrumenter with the M11 coast counter and evaluate the
+production Typst trace:
+
+```sh
+mkdir -p /tmp/m11-coast-brush
+python3 diagnostics/instrument_brush.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-coast-brush/brush.mp
+python3 diagnostics/instrument_m11_coasts.py \
+  /tmp/m11-coast-brush/brush.mp /tmp/m11-coast-brush/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m11-coast-brush/main.mp
+printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-brush/trace.mp
+(cd /tmp/m11-coast-brush && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+typst eval 'query(<m11-coast-brush-trace>).first().value' \
+  --in diagnostics/m11_coast_brush_trace.typ --root . \
+  > /tmp/m11-coast-brush/typst.json
+```
+
+The source transcript brackets each coast brush with `M11-COAST-BEGIN` and
+`M11-COAST-END`; count `S101 NODE` markers only inside those brackets. Source
+RNG draws are the corresponding `M11-COAST` values. The Typst metadata stores
+`landmass`, `calls`, `outer`, `thin`, and the complete recursive `nodes`.
 
 To reproduce the source stage counts and the Typst layer counts inside the
 Nix devshell:
