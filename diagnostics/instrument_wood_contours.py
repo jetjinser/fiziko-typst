@@ -77,6 +77,32 @@ def main() -> None:
     source = replace_once(source, width_end_anchor, width_end_trace,
                            "isoLines width callback end")
 
+    brush_anchor = "    t := cutPathTime(bt, minStrokeWidth);"
+    brush_trace = brush_anchor + """
+    if traceWoodLine = 1:
+        message "WBNODE " & decimal(i) & " " & decimal(w0) & " "
+            & decimal(w1) & " " & decimal(t) & " " & decimal(arclength(p))
+            & " " & decimal(xpart(point 0 of p)/mm) & " "
+            & decimal(ypart(point 0 of p)/mm) & " "
+            & decimal(xpart(point length(p) of p)/mm) & " "
+            & decimal(ypart(point length(p) of p)/mm);
+    fi;"""
+    source = replace_once(source, brush_anchor, brush_trace, "brush recursion node")
+    fill_anchor = "            fill brushPath1 -- reverse(brushPath2) -- cycle;"
+    fill_trace = """            if traceWoodLine = 1:
+                message "WBLEAF FILL " & decimal(i) & " " & decimal(w0) & " "
+                    & decimal(w1) & " " & decimal(arclength(p));
+            fi;
+""" + fill_anchor
+    source = replace_once(source, fill_anchor, fill_trace, "brush fill leaf")
+    thin_anchor = "            thinBrushGenerate (p, q, 0)"
+    thin_trace = """            if traceWoodLine = 1:
+                message "WBLEAF THIN " & decimal(i) & " " & decimal(w0) & " "
+                    & decimal(w1) & " " & decimal(arclength(p));
+            fi;
+""" + thin_anchor
+    source = replace_once(source, thin_anchor, thin_trace, "brush thin leaf")
+
     range_anchor = "for i := -maxWithinMask/woodBlockYRdensity - 1 upto -minWithinMask/woodBlockYRdensity + 1:"
     range_trace = (
         'message "CLFIELD " & decimal(minWithinMask) & " " & decimal(maxWithinMask);\n'

@@ -162,9 +162,21 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
 rg 'CL(FIELD|VALUE|LEVEL|PATH|WIDTH)' /tmp/m9-cLine-trace/trace.log
+rg 'WB(NODE|LEAF)' /tmp/m9-cLine-trace/trace.log
 typst eval 'query(<m9-contour-walk>).first().value' \
   --in diagnostics/m9_contour_walk_trace.typ --root .
 ```
+
+The same trace now instruments `brushGenerate` for the first accepted M9
+contour. `WBNODE` records recursion depth, endpoint widths, the source cut
+time, path length, and endpoints; `WBLEAF` records whether a node ends as a
+filled band or a thin brush. The pinned source trace has 37 nodes and 19
+leaves. Its first root splits at path time `4.7189`; an accepted fill leaf
+appears at depth 1, while a thin-brush branch reaches the recursion limit of
+10. This is a source-side baseline only: `m9_contour_walk_trace.typ` still
+selects a Typst contour by fixed index, so it is not yet paired to that source
+tree. Pairing by transformed geometry and comparing node decisions remains
+the next diagnostic step before changing the renderer.
 
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`

@@ -86,9 +86,12 @@ affected source-parity crops do not materially regress.
   brush calls remain approximate. The source `fullcircle` cubic sampler now
   matches within 3.1e-5 and reproduces ring counts; feeding those rings into
   the current band renderer worsened RMSE, so geometry and width templates
-  must be paired before changing production strokes. Trace source brush
-  boundary/leaf geometry separately from its eight-knot width template, then
-  apply the source recursive `(i,j,st)` traversal and path-time width law.
+  must be paired before changing production strokes. The first M9 source
+  contour now has a `brushGenerate` baseline: 37 recursion nodes, 19 leaves,
+  with one thin branch reaching the source depth-10 limit. Pair this tree to
+  the matching Typst contour by transformed geometry, then trace the source
+  brush boundary and apply its recursive `(i,j,st)` traversal and path-time
+  width law.
   Acceptance: match per-contour leaf/call order and improve M9 contour crop
   without regressing S105's independently verified field/width behavior.
 - [ ] **M11 coast brush sampling.** The projected coast paths, seam merging,
