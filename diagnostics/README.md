@@ -1134,9 +1134,10 @@ nix develop path:./nix --command typst eval \
   --in diagnostics/m11_q_split_replay.typ --root .
 ```
 
-All 19 left and 19 right child control arrays in the default lane match after
-16.16 quantization. `_ink-loops` does not yet carry these q curves between
-recursive nodes, so production output is unchanged.
+The Typst replay matches all 19, 9 and 14 left/right child control arrays for
+the three divergent lanes after 16.16 quantization. `_ink-loops` does not yet
+carry these q curves between recursive nodes, so production output is
+unchanged.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
