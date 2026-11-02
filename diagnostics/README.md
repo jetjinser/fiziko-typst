@@ -50,6 +50,14 @@ densities 16 and 32 also improve monotonically, but 64 better resolves the
 outline at the measurement scale. This is a comparison-specific sampling
 setting; the `tube` API and its caller-controlled `per` value are unchanged.
 
+A separate sphere-shadow probe removed the per-sample shadow override and used
+only the source ring's eight lightness callback knots. This brought sphere
+dark coverage from 5.9547% to 5.5558% against 5.6997% source, but sphere-crop
+RMSE regressed `0.09110 → 0.10564` and whole S102 RMSE regressed
+`0.04909 → 0.05650`. Revert the probe; the eight source callbacks also depend
+on `shadowCut`'s inserted path knots, so simply dropping the denser shadow
+classification does not reproduce their width path.
+
 The pinned `tubeGenerate` loop includes both boundary lanes (`k=0` and
 `k=bw1`). The first M4 pilot drew them with sampled offset geometry; it raised
 ink coverage from 1.751% to 1.835% against 1.789% source and slightly
