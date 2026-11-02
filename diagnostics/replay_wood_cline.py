@@ -27,9 +27,12 @@ def read_trace(path):
         if match:
             points.append(tuple(map(float, match.groups())))
             continue
-        match = re.match(r"CLSTEP\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+", line)
+        match = re.match(
+            r"CLSTEP\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+([\d.]+)", line
+        )
         if match:
-            steps.append(tuple(map(int, match.groups())))
+            i, j, state = map(int, match.groups()[:3])
+            steps.append((i, j, state, float(match.group(4))))
     if level is None or not values or not points or not steps:
         raise ValueError("trace must include CLLEVEL, CLVALUE, CLPATH, and CLSTEP")
     return level, values, points, steps
@@ -129,8 +132,21 @@ def main():
     path_local = [(j, args.height - i) for i, j in path]
     errors = [math.dist(a, b) for a, b in zip(path_local, expected)]
     max_error = max(errors) if len(path_local) == len(expected) else math.inf
-    traced_cells = {(i, j) for i, j, state in steps
+    traced_cells = {(i, j) for i, j, state, _ in steps
                     if state >= 0 and 0 <= i < args.height and 0 <= j < args.width}
+    step_by_cell = {(i, j): (state, extent) for i, j, state, extent in steps}
+    segment_states = []
+    for index, (a, b) in enumerate(zip(source_points, source_points[1:])):
+        mid_i = (a[0] + b[0]) / 2
+        mid_j = (a[1] + b[1]) / 2
+        cell = (math.floor(mid_i), math.floor(mid_j))
+        state = step_by_cell.get(cell)
+        segment_states.append({
+            "segment": index,
+            "source-cell": cell,
+            "st": state[0] if state else None,
+            "cell-range": state[1] if state else None,
+        })
     report = {
         "seed-cell": first[:2],
         "source-points": len(expected),
@@ -139,6 +155,7 @@ def main():
         "replayed-cells": len(visited),
         "max-point-error-mm": max_error,
         "within-tolerance": max_error <= args.tolerance,
+        "segment-width-states": segment_states,
         "replayed-path": path_local,
     }
     print(json.dumps(report, indent=2))

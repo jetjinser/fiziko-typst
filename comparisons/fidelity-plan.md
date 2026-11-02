@@ -220,6 +220,17 @@ affected source-parity crops do not materially regress.
   `0.6960% → 0.7004%` toward `0.7405%`. Keep the source traversal because its
   path topology follows the pinned source and M9 improves, with the S105 crop
   tradeoff recorded.
+  A follow-up reversed each clipped path and its geometric-width profile to
+  mirror `brushGenerate(reverse(iL))`; M9 RMSE worsened
+  `0.212436 → 0.213024` and coverage was effectively unchanged. That direction-
+  only trial was reverted. The production profile still uses normalized arc
+  fractions and midpoint cell inference, so it does not implement source
+  `offsetPathTime`/`st` interpolation; fix that correspondence before retrying
+  source-order brushing. The cLine replay now maps every first-path segment to
+  its source state: `iL` descends `st=19…-1`, while `reverse(iL)` consumes
+  `st=-1…19`; both exterior segments have zero cell range. Use this mapping to
+  build the width knots at source path-time integers and preserve the terminal
+  unit's special width.
   Brush recursion remains open (11 outer/48 thin nodes versus 37/65 source),
   and the path is still clipped before brushing; width lookup must next follow
   source `st` along the full path before changing that order.

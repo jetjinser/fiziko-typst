@@ -132,8 +132,11 @@ The exterior `cLine` calls return their grid coordinates `(i,j)` directly;
 they are not cell midpoints. With M9's landscape transform the two endpoints
 become `(22,34)` and `(12,34)`. `replay_wood_cline.py` now replays the directed
 `cLine` recursion from the traced field values and starting cell, including
-its edge order, visited-cell state, and `st`-dependent path orientation. Run
-it on the saved MetaPost trace with:
+its edge order, visited-cell state, and `st`-dependent path orientation. It
+also assigns each output segment to its traced `st` and cell range. In the
+first path, `iL` segment states descend from `19` to `-1`; the brush input
+`reverse(iL)` therefore consumes `-1` through `19`, with both boundary
+segments carrying zero cell range. Run it on the saved MetaPost trace with:
 
 ```sh
 nix develop path:./nix --command python diagnostics/replay_wood_cline.py \
@@ -161,6 +164,12 @@ source and M9 improves, with the S105 crop tradeoff recorded. Recursive brush
 decisions remain 11 outer
 and 48 thin nodes versus source 37 and 65; the production renderer also still
 clips paths before brushing and derives widths from geometric midpoint cells.
+A trial that simply reversed each clipped path and its width profile, matching
+the source's `reverse(iL)` brush direction, worsened M9 RMSE
+`0.212436 → 0.213024` with effectively unchanged ink coverage; it was
+reverted. `_wood-source-width` still uses normalized arc fractions and inferred
+midpoint cells, while MetaPost indexes `v` from `offsetPathTime` and recursive
+`st`. These must be paired before another source-order brush trial.
 
 The pinned `isoLines` source confirms the exact width lookup: except for the
 terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`
