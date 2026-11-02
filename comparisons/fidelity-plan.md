@@ -287,6 +287,14 @@ affected source-parity crops do not materially regress.
   dashes. A mere x-origin reset is translation-invariant in the intersection
   search and cannot explain the child-tree divergence. This no-effect probe
   was removed without a raster trial.
+  A separate boundary probe changed the thin-recursion span test from raw
+  floating subtraction to a 16.16-rounded width span. Using the already
+  rounded `thin-step` alone leaves all 142 row traces identical; rounding the
+  span adds four thin nodes (`1613 → 1617`) but worsens the paired per-row
+  thin-node error (`429 → 433`) while leaving dash counts unchanged. The
+  threshold candidate was reverted. The source-equal one-step boundary still
+  needs to be tested together with the carried q-template branch where it
+  occurs, rather than applied as a global width-span adjustment.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
