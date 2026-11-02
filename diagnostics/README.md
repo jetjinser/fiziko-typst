@@ -1479,6 +1479,16 @@ callback/template knots and using that generated state in production. The
 earlier 15/18 result above records replays without this complete injected q
 state and is superseded for the exact-state diagnostic only.
 
+Removing the injected q controls and increasing only the sampled center-curve
+density does not recover all three trees. At 8 samples per cubic, calls 4/lanes
+2 and 6 match their 40- and 20-node trees, but call 5/lane 2 grows to 36 nodes
+against 30 source nodes. At 1, 16, and 32 samples per cubic, both call 4/lane 2
+and call 5/lane 2 also differ from source. Since denser sampling changes
+estimated centerline arc positions and the branch results are non-monotonic,
+do not treat sampling density as the q-template fix. The next probe should
+compare source q knot abscissae to source `arclength(subpath(...))` values
+before implementing the generic template builder.
+
 The replay now samples callback widths linearly in source path time. This
 matches `offsetPathTemplate`, which joins its integer-time callback points with
 MetaPost `--` segments. The previous diagnostic interpolated widths by
