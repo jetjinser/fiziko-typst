@@ -321,6 +321,12 @@ python3 diagnostics/compare_wood_contours.py \
   /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/typst.json
 ```
 
+`m9_field_fixedpoint_probe.typ` isolates the known source minimum cell
+`(33,29)` and emits the per-knot fixed-point radius, angle and cumulative
+field terms. Compare it with `CLWRFIX`, `CLWTERMFIX`, `CLWBASEFIX` and
+`CLWFINALFIX` from the source trace. The current probe first diverges at the
+third knot; it is diagnostic only and does not alter rendering.
+
 The same trace now instruments `brushGenerate` for the first accepted M9
 contour. `WBNODE` records recursion depth, width extrema in millimetres, cut
 time and path length; `WBCUT` records the cut point; `WBLEAF` records whether

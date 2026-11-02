@@ -420,6 +420,17 @@ affected source-parity crops do not materially regress.
   `wField` intermediate arithmetic in a max-only evaluator before trying a
   level-only correction; the earlier full-field 16.16 candidate also
   regressed both plates.
+  A follow-up traces the fixed-point minimum at `(33,29)`. Source cumulative
+  knot terms are `0.01546, 0.01967, -9.91542, -9.90645, -9.88245`; the
+  diagnostic fixed-point port gives `0.015457, 0.019668, -9.915268,
+  -9.906296, -9.882294`. The first visible difference is the third knot:
+  source radius/angle decode to `20/256+40/65536` and
+  `716/256+119/65536` from MetaPost's 16.16 trace, while the port gives
+  radius `0.078812` and angle `2.798401`.
+  The final field differs by about `0.00015`, consistent with the prior grid
+  minimum discrepancy. A diagnostic-only probe now reproduces the port's
+  terms; no production field or contour-level change is justified until the
+  knot-coordinate conversion and source `angleRad` rounding are matched.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →
