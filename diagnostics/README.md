@@ -117,6 +117,17 @@ source-rate random-column offsets, increased ink coverage and regressed M9 to
 first contour geometry now have direct source comparisons; recursive width
 interpolation and brush placement remain to be aligned.
 
+The trace now includes out-of-bounds cells and `CLSPAN` (`sqB`, `sqBm`, and
+path length). In the first M9 path, the two exterior cells are
+`(-1,22,19)` and `(-1,12,-1)`; after transforming back to source grid
+coordinates, the reversed Typst path cell sequence matches the in-bounds
+`cLine` traversal. This establishes traversal correspondence for that path,
+but a prototype that projected the source per-cell width profile onto the
+clipped Typst vertices produced M9 RMSE 0.214688, worse than the retained
+0.213280. That production prototype was reverted. The next width attempt must
+reproduce MetaPost's `offsetPathTime`/`v[st]` interpolation and clipped-end
+behavior directly instead of projecting onto geometric segments.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh

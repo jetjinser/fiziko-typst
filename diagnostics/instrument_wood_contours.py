@@ -24,6 +24,16 @@ def main() -> None:
                 & decimal(xpart(dr)) & " " & decimal(ypart(dr));
         fi;"""
     source = replace_once(source, c_line_anchor, c_line_trace, "cLine cell")
+    boundary_anchor = "    else:\n        outputPath := (i, j);"
+    boundary_trace = (
+        '    else:\n'
+        '        if traceWoodCells:\n'
+        '            message "CLSTEP " & decimal(i) & " " & decimal(j) & " "\n'
+        '                & decimal(st) & " 0 0 0";\n'
+        '        fi;\n'
+        '        outputPath := (i, j);'
+    )
+    source = replace_once(source, boundary_anchor, boundary_trace, "cLine boundary cell")
 
     call_anchor = "iL := cLine (xy)((i, j), (0, 0), 0, cs) scaled s;"
     call_trace = """traceWoodLine := traceWoodLine + 1;
@@ -31,6 +41,8 @@ def main() -> None:
                             iL := cLine (xy)((i, j), (0, 0), 0, cs) scaled s;
                             if traceWoodLine = 1:
                                 message "CLLEVEL " & decimal(lvl);
+                                message "CLSPAN " & decimal(sqB) & " "
+                                    & decimal(sqBm) & " " & decimal(length(iL));
                                 for traceWoodPoint := 0 step 1 until length(iL):
                                     message "CLPATH " & decimal(traceWoodPoint) & " "
                                         & decimal(xpart(point traceWoodPoint of iL)/mm) & " "
