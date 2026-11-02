@@ -74,9 +74,13 @@ affected source-parity crops do not materially regress.
   the first divergent shared depth-4 cut is x=39.539 mm versus x=44.895 mm.
   Pair the source cubic/template knots with the exact Typst sample intervals
   used by `cutPathTime`; derive the selected crossing and midpoint from that
-  paired geometry. Acceptance: match that cut and its terminal leaf/dash tree,
-  then improve paired row decisions without the known flat-crossing node-count
-  explosion.
+  paired geometry. A thin-only rounded-cubic probe matched the cut within
+  0.0017 mm but regressed whole S104 RMSE (`0.207029 → 0.207733`) and hatch
+  crop RMSE (`0.075285 → 0.079011`), while moving all-row thin-node count
+  farther from source (`1577 → 1490`, source `1696`); it was reverted.
+  Acceptance: match the target node and terminal leaf/dash tree, then improve
+  paired row decisions without the known flat-crossing node-count explosion
+  or this all-row raster regression.
 - [ ] **Wood contour brush geometry and traversal.** M9's source cLine width
   ranges now match to at most 4.91e-5 normalized units, but source contour
   brush calls remain approximate. The source `fullcircle` cubic sampler now

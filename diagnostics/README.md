@@ -1099,6 +1099,16 @@ evaluates the same law over normalized cumulative path length with
 replacing arc-length width interpolation with path-time interpolation would
 not address this cut.
 
+A second probe applied the rounded source cubic only to thin-recursion cuts,
+leaving the already matching outer cuts unchanged. On row 93 it moves node
+172's cut to x=39.537 mm, within 0.0017 mm of the source's x=39.539 mm, and
+reaches 19 thin nodes on that row. Across all hatch rows, however, thin nodes
+fall from 1577 to 1490 (source: 1696), thin leaves from 819 to 776, and dash
+calls from 699 to 668. The 600 ppi render also regresses: whole S104 RMSE
+0.207029 → 0.207733 and hatch crop RMSE 0.075285 → 0.079011. This candidate
+was reverted. The matched node is a useful local oracle, but reproducing it
+alone does not establish a better brush tree across rows.
+
 A diagnostic-only port of that cubic model was tried after the trace above.
 It used the original global cubic controls with 64 subdivisions per Typst path
 segment, then bisected candidate threshold crossings. It did not reproduce the
