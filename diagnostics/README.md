@@ -769,6 +769,13 @@ numerical difference is the recursive crossing parameter. Quantizing that
 parameter improved aggregate outer-node counts, but remaining mismatches are
 concentrated around narrow residual crossings and in cut selection.
 
+A follow-up also quantized the interpolated width at each recursive cut. This
+reduced Typst outer-node records from 942 to 870 (source: 1340), while thin
+nodes stayed at 1577 (source: 1696). The recursive tree moved farther from the
+source, so this candidate was reverted before raster comparison. Fixed-point
+rounding belongs at the source's returned path-time boundary here; applying it
+again to the interpolated width does not reproduce MetaPost's cut semantics.
+
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
 the Nix devshell:
