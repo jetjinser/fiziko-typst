@@ -2857,11 +2857,10 @@
 }
 
 // Source `wField` used by woodBlock, expressed in physical millimetres.
-// The field uses 0.2 mm detail. The comparison fixture samples contours on
-// a 1 mm grid; the source woodBlockRes is 1/3 mm.
-#let _woodblock-field(w, h, seed, rng-offset: 0) = {
+// `source-res` is woodBlockRes; field samples are taken on its grid while the
+// geometric contour sampler may use a coarser independent grid.
+#let _woodblock-field(w, h, seed, source-res: 1 / 3, rng-offset: 0) = {
   let detail = 0.2
-  let source-res = 1 / 3
   let knot-radius = 1.25
   let knot-angle = 60
   let rho = 1 / 24
@@ -2890,17 +2889,18 @@
     } else { rejected += 1 }
     cursor += 2
   }
-  let bd = knot-radius / 2 * detail
+  let bd = knot-radius / (2 * source-res) * detail
   let field = (px, py) => {
-    let i = px / detail
-    let j = py / detail
+    let i = px / source-res
+    let j = py / source-res
     let column = int(calc.clamp(calc.round(px / source-res), 0, columns - 1))
     let result = 0.0
     for knot in knots {
-      let dx = (px - knot.at(0)) / detail
-      let dy = (py - knot.at(1)) / detail
+      let dx = (px - knot.at(0)) * detail / source-res
+      let dy = (py - knot.at(1)) * detail / source-res
       let r = calc.sqrt(dx * dx + dy * dy * calc.pow(_sin(knot-angle), 2))
-      let a = calc.atan2(dx, -dy)
+      // MetaPost angleRad uses the field's source-space (x, y) direction.
+      let a = calc.atan2(dx, dy)
       if r >= 2 * bd and 0.5 * r - bd < 8 {
         let q = 0.5 * r - bd
         let wave = (calc.sqrt(calc.max(0.0, q)) / calc.pow(3.0, q)) * (_sin(knot-angle) * 0.5 * calc.sin(-a) + 1) * (1 / 3 + 2 / 3 * calc.abs(calc.cos(a)))
@@ -2911,12 +2911,37 @@
       result += calc.cos(2 * calc.pi / 30 * r * 1rad) / 64
     }
     result -= i * rho / 5
-    result += calc.sin((calc.pi * i / w + 4 * calc.pi * j / h) * 1rad) / 32
-    // Source draws one uniform vertical displacement per 1 mm wood column,
-    // shared by every finer field sample in that column.
+    result += calc.sin((calc.pi * i / (w / source-res) +
+      4 * calc.pi * j / (h / source-res)) * 1rad) / 32
+  // Source draws one uniform vertical displacement per woodBlockRes column,
+  // shared by every finer field sample in that column.
     (result + rho / 8 * randoms.at(cursor + column)) / rho
   }
   (field: field, knots: knots, rng-count: cursor + columns)
+}
+
+// woodBlock walks its iso-level loop from the sampled field maximum down,
+// preserving that maximum's fractional part. Its jitter is added to the
+// source field level, so the contour threshold moves in the negative direction.
+#let _wood-source-levels(field, w, h, nx, ny, seed, rng-offset) = {
+  let values = ()
+  for j in range(ny + 1) {
+    for i in range(nx + 1) {
+      values.push(field(w * i / nx, h * j / ny))
+    }
+  }
+  let lo = calc.min(..values)
+  let hi = calc.max(..values)
+  let stream = _metapost-rng-sequence(seed, rng-offset + 32768)
+  let levels = ()
+  let draw = 0
+  let base = hi - 1
+  while base > lo {
+    levels.push(base - stream.at(rng-offset + draw) / 8)
+    draw += 1
+    base -= 1
+  }
+  levels
 }
 
 #let _clip-polyline(path, regions) = {
@@ -3102,7 +3127,7 @@
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
                   stroke: 0.45pt + black, source-field: false, seed: 1,
                   grain-stroke: none, contour-brush: "uniform",
-                  rng-offset: 0, with-rng: false) = {
+                  source-res: 1 / 3, rng-offset: 0, with-rng: false) = {
   assert(contour-brush == "uniform" or contour-brush == "cell-range",
     message: "contour-brush must be uniform or cell-range")
   assert(contour-brush == "uniform" or source-field,
@@ -3124,29 +3149,31 @@
   let ny = calc.max(8, int(calc.ceil(h / cell)))
   // woodenThing rotates its local outline for a 90° grain angle. woodBlock
   // also swaps wide, landscape blocks internally before drawing their field.
-  let swapped = source-field and (
-    calc.rem(calc.abs(angle), 180) == 90 or w > h)
+  let turned = source-field and calc.rem(calc.abs(angle), 180) == 90
+  let swapped = source-field and (turned or w > h)
   // MetaPost rounds its woodBlock dimensions to woodBlockRes before it
-  // samples knots and the field; source fixtures use a 1 mm resolution.
-  let model-w = calc.round(if swapped { h } else { w })
-  let model-h = calc.round(if swapped { w } else { h })
+  // samples knots and the field. `source-res` models that source setting.
+  let model-w = calc.round((if swapped { h } else { w }) / source-res) * source-res
+  let model-h = calc.round((if swapped { w } else { h }) / source-res) * source-res
   let wood-model = if source-field {
-    _woodblock-field(model-w, model-h, seed, rng-offset: rng-offset)
+    _woodblock-field(model-w, model-h, seed, source-res: source-res,
+      rng-offset: rng-offset)
   } else { none }
   let field = if source-field {
-    if swapped { (x, y) => (wood-model.field)(model-h - y, x) } else { wood-model.field }
+    if swapped { (x, y) => (wood-model.field)(model-w - y, x) }
+    else { wood-model.field }
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
-  let contour-stream = if source-field {
-    _metapost-rng-sequence(seed, contour-offset + 32768)
-  } else { none }
-  let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
   let contour-result = if source-field {
-    marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny,
-      level-jitter: level-jitter, with-count: true)
+    let levels = _wood-source-levels(field, w, h, nx, ny, seed, contour-offset)
+    marching-squares(field, 0, 0, w, h, levels: levels,
+      nx: nx, ny: ny, with-count: true)
   } else {
     (marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
   }
+  let contour-stream = if source-field {
+    _metapost-rng-sequence(seed, contour-offset + contour-result.at(1) + 32768)
+  } else { none }
   let contours = contour-result.at(0)
   let segments = ()
   let source-brushes = ()
@@ -3169,7 +3196,7 @@
   }
   let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
   let source-knots = if source-field {
-    if swapped { wood-model.knots.map(k => (k.at(1), model-h - k.at(0))) }
+    if swapped { wood-model.knots.map(k => (k.at(1), model-w - k.at(0))) }
     else { wood-model.knots }
   } else { () }
   let texture-stroke = if source-field {
@@ -3210,7 +3237,7 @@
 /// `wooden-surface` resumes the seeded MetaPost stream after earlier objects.
 #let wood(x, y, w, h, angle: 0, spacing: 2.6, eyes: (),
           stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1,
-          contour-brush: "uniform") = {
+          contour-brush: "uniform", source-res: 1 / 3) = {
   assert(contour-brush == "uniform" or contour-brush == "cell-range",
     message: "contour-brush must be uniform or cell-range")
   assert(contour-brush == "uniform" or source-field,
@@ -3218,25 +3245,25 @@
   let nx = calc.max(8, int(calc.round(w / cell)))
   let ny = calc.max(8, int(calc.round(h / cell)))
   let swapped = source-field and w > h
-  let model-w = calc.round(if swapped { h } else { w })
-  let model-h = calc.round(if swapped { w } else { h })
+  let model-w = calc.round((if swapped { h } else { w }) / source-res) * source-res
+  let model-h = calc.round((if swapped { w } else { h }) / source-res) * source-res
   let model = if source-field {
-    _woodblock-field(model-w, model-h, seed)
+    _woodblock-field(model-w, model-h, seed, source-res: source-res)
   } else { none }
   let f = if source-field {
-    if swapped { (x, y) => (model.field)(model-h - y, x) } else { model.field }
+    if swapped { (x, y) => (model.field)(model-w - y, x) } else { model.field }
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { model.rng-count } else { 0 }
-  let contour-stream = if source-field {
-    _metapost-rng-sequence(seed, contour-offset + 32768)
-  } else { none }
-  let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
   let contour-result = if source-field {
-    marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny,
-      level-jitter: level-jitter, with-count: true)
+    let levels = _wood-source-levels(f, w, h, nx, ny, seed, contour-offset)
+    marching-squares(f, 0, 0, w, h, levels: levels,
+      nx: nx, ny: ny, with-count: true)
   } else {
     (marching-squares(f, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
   }
+  let contour-stream = if source-field {
+    _metapost-rng-sequence(seed, contour-offset + contour-result.at(1) + 32768)
+  } else { none }
   let loops = contour-result.at(0)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
   let paths = loops.fold((), (acc, pl) => acc + _clip-polyline-paths(pl, (rect,)))
@@ -3256,7 +3283,7 @@
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }
   let knot-segments = ()
   if source-field {
-    for knot in model.knots.map(k => if swapped { (k.at(1), model-h - k.at(0)) } else { k }) {
+    for knot in model.knots.map(k => if swapped { (k.at(1), model-w - k.at(0)) } else { k }) {
       let ring = _ellipse-pts(1.25, 1.25 / _sin(60), center: knot, n: 72)
       for i in range(ring.len()) {
         knot-segments.push((ring.at(i), ring.at(_mod(i + 1, ring.len()))))

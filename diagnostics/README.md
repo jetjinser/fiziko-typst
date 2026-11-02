@@ -52,23 +52,25 @@ variable-radius boundary-call behavior remains open.
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`
-sample the upstream knot-warped `wField` at the 0.2 mm detail scale. The
-current Typst contour grid is 1 mm; source `woodBlockRes` is 1/3 mm. The field
-includes the source's elliptic knot distance, radial well, far-field decay,
-per-column offset and low-frequency perturbation. Field offsets now consume
-one random value per 1/3 mm source column rather than once per millimetre.
-Landscape blocks use the source's internal axis swap. A pinned-source trace
-shows that each accepted knot's five brush rings consume 28 random values;
-the Typst stream now advances by that amount. In M9, the first accepted knot
-matches its source position within 0.1 mm. Exact source panel-end call counts
-are 1456, 2823, 4120 and 5416, so Typst now starts the four panels at offsets
-0, 1456, 2823 and 4120. M9's 600 ppi whole-plate RMSE falls from 0.22456 to
-0.22407, with 4.224% ink coverage (source 4.203%). The 1/3 mm random-column
-correction changes M9 from 0.22412 to 0.22407; S105 moves from 0.09792 to
-0.09852 (block 0.12161, surface 0.07655). Source-scaled 16.16 threshold
-rounding subsequently lowers the current S105 comparison to 0.09837 (block
-0.12142, surface 0.07644). Source contour-brush shapes remain approximate;
-see the measured per-cell brush mode below.
+now use the source `woodBlockRes` as an explicit `source-res` parameter. M9's
+reference driver overrides it to 1 mm; other source examples use the 1/3 mm
+default. The field equations now follow the source grid index, 0.2 detail
+scale, elliptic knot radius, angle convention, per-column displacement and
+low-frequency perturbation. The first M9 panel's 72 sampled lattice values
+match the pinned source with mean error 0.00029 (normalized by `rho=1/24`),
+maximum error 0.00151; the source maximum occurs at `(6,42)` and matches to
+0.00062. The first source contour path pairs with a Typst path within about
+0.11 mm mean vertex distance. Source level thresholds preserve the fractional
+phase of the sampled maximum and subtract the source's positive jitter.
+Landscape knot coordinates now use the same reflected short-axis transform
+as the field. Source panel stream offsets remain 0, 1456, 2823 and 4120.
+
+At 600 ppi M9 whole-plate RMSE moves from 0.22407 to 0.21526 with uniform
+contours, then to 0.21328 with `contour-brush: "cell-range"`; ink coverage is
+3.778% versus 4.203% source. S105 also uses the source field equations and
+1/3 mm resolution. Its current score is 0.10304 (block 0.12838, surface
+0.07851), a regression from the earlier tuned 0.09792. Keep this tradeoff
+visible while the remaining contour width and brush calls are aligned.
 
 S105's landscape transform and stream continuity now follow the pinned source
 trace; the contour-brush rendering and per-brush call count remain different.
@@ -88,16 +90,14 @@ edge. The 600 ppi M9 score changes from 0.22412 to 0.22411; S105 changes from
 does not materially reduce raster error; source brush width, dash recursion,
 and random-call behavior remain the larger gap.
 
-`contour-brush: "cell-range"` now applies the `cLine` width law on source-field
-wood. `_woodblock-field` stores the source field divided by `rho = 1/24` so
-levels are one unit apart; `cLine` computes its width from the unnormalized
-cell range, so the brush calculation multiplies that range back by `rho`.
-This is opt-in because the same law improves S105 but regresses M9: with the
-continuous path mode, 600 ppi S105 RMSE falls from 0.10555 to 0.09792 (block
-0.12095, surface 0.07598), while M9 rises from 0.22411 to 0.24644 and ink
-coverage rises from 4.224% to 4.432%. S105 surface ink is 0.510% versus 0.489%
-in the source. Width scaling alone is not enough; source `cLine` traversal
-order, width interpolation and global dash-call phase remain relevant.
+`contour-brush: "cell-range"` applies the source `cLine` per-cell width law
+to the connected contour path. `_woodblock-field` stores the source field
+divided by `rho = 1/24`, so this mode restores the unnormalized range before
+computing width. With the former approximate field it improved S105 but
+regressed M9; after the source field and level phase were aligned, M9 improves
+from 0.21526 to 0.21328. S105 remains worse than its prior tuned candidate,
+so keep its score as a separate gate. Exact `v[st]` interpolation, recursive
+leaf placement and global dash-call phase remain open.
 
 A pilot that linearly interpolated cell ranges between adjacent geometric
 contour segments attempted to model `v[st]` interpolation. It regressed S105
@@ -106,14 +106,16 @@ contour segments attempted to model `v[st]` interpolation. It regressed S105
 segment order is not a reliable substitute for `cLine`'s recursive `st`
 sequence, so the next width-law change needs a source traversal trace.
 
-`instrument_wood_contours.py` now records the first source `cLine` traversal's
+`instrument_wood_contours.py` records the first source `cLine` level, source
+field range, selected field samples, path vertices, and traversal's
 `(i, j, st, cell-range, direction)` values. For M9 the first visits begin
 `(0,12,0)`, `(0,13,1)`, `(1,13,2)`, `(1,14,3)` and continue for 19 cells;
 `st` rises and falls according to the recursive walk, rather than a simple
 row or geometric-segment order. A 1/3 mm contour-grid pilot, combined with the
 source-rate random-column offsets, increased ink coverage and regressed M9 to
-0.22506 and S105 to 0.13050. That pilot was reverted; field sampling, level
-selection and contour stitching need to be aligned together.
+0.22506 and S105 to 0.13050. That pilot was reverted. Field samples and the
+first contour geometry now have direct source comparisons; recursive width
+interpolation and brush placement remain to be aligned.
 
 To capture the source traversal from the pinned M9 driver:
 
@@ -126,6 +128,9 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
 (cd /tmp/m9-cLine-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
+rg 'CL(FIELD|VALUE|LEVEL|PATH)' /tmp/m9-cLine-trace/trace.log
+typst eval 'query(<m9-contour-walk>).first().value' \
+  --in diagnostics/m9_contour_walk_trace.typ --root .
 ```
 
 The instrumented M9 source now also records the random calls made by each

@@ -29,14 +29,46 @@ def main() -> None:
     call_trace = """traceWoodLine := traceWoodLine + 1;
                             traceWoodCells := (traceWoodLine = 1);
                             iL := cLine (xy)((i, j), (0, 0), 0, cs) scaled s;
+                            if traceWoodLine = 1:
+                                message "CLLEVEL " & decimal(lvl);
+                                for traceWoodPoint := 0 step 1 until length(iL):
+                                    message "CLPATH " & decimal(traceWoodPoint) & " "
+                                        & decimal(xpart(point traceWoodPoint of iL)/mm) & " "
+                                        & decimal(ypart(point traceWoodPoint of iL)/mm);
+                                endfor;
+                            fi;
                             traceWoodCells := false;"""
     source = replace_once(source, call_anchor, call_trace, "isoLines call")
+    range_anchor = "for i := -maxWithinMask/woodBlockYRdensity - 1 upto -minWithinMask/woodBlockYRdensity + 1:"
+    range_trace = (
+        'message "CLFIELD " & decimal(minWithinMask) & " " & decimal(maxWithinMask);\n'
+        + range_anchor
+    )
+    source = replace_once(source, range_anchor, range_trace, "wood field range")
+    field_anchor = "wood[i][j] := wField (wKnot)(i, j, (wS, lS), nwKnot) + k;"
+    field_trace = field_anchor + """
+                if traceWoodBlock = 1:
+                    if i <= 5:
+                        if (j >= 12) and (j <= 23):
+                            message "CLVALUE " & decimal(i) & " " & decimal(j) & " "
+                                & decimal(wood[i][j]);
+                        fi;
+                    fi;
+                fi;"""
+    source = replace_once(source, field_anchor, field_trace, "wood field sample")
+    max_anchor = "if wood[i][j] > maxWithinMask:"
+    max_trace = max_anchor + "\n                            message \"CLMAX \" & decimal(i) & \" \" & decimal(j) & \" \" & decimal(wood[i][j]);"
+    source = replace_once(source, max_anchor, max_trace, "wood field maximum")
+    block_anchor = "vardef woodBlock (expr w, l) ="
+    block_trace = block_anchor + "\n    traceWoodBlock := traceWoodBlock + 1;"
+    source = replace_once(source, block_anchor, block_trace, "wood block")
     source += """
 
 boolean traceWoodCells;
-numeric traceWoodLine;
+numeric traceWoodLine, traceWoodPoint, traceWoodBlock;
 traceWoodCells := false;
 traceWoodLine := 0;
+traceWoodBlock := 0;
 """
     Path(sys.argv[2]).write_text(source)
 
