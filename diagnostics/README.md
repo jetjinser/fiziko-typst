@@ -1077,15 +1077,23 @@ call totals unchanged. This narrows the three mismatches beyond path density,
 but does not yet identify a production-safe recursive change. No renderer
 change is implied by this diagnostic.
 
+The replay now samples callback widths linearly in source path time. This
+matches `offsetPathTemplate`, which joins its integer-time callback points with
+MetaPost `--` segments. The previous diagnostic interpolated widths by
+centerline arc length and therefore changed the input curve. With source
+path-time interpolation, the replay still matches 15/18 lane totals and leaves
+the same three differences. This rules out arc-length resampling as their
+cause; production rendering is unchanged.
+
 A production trial inserted lane knots at shifted-outline intersections and
 resampled widths on the resulting time grid. It produced per-segment calls
 `14/54/54/34/34/16` (206 total) versus source `14/58/54/42/38/18`; the
 pre-trial baseline was `14/56/54/38/40/10` (212 total). Absolute segment
 error increased from 16 to 18. At 600 ppi whole M11 RMSE regressed
 `0.11295018 → 0.11301771` and the knot crop `0.05881920 → 0.05958444`; the
-production edit was reverted. The next candidate needs to match the source
-width-template interpolation and exact intersection timing as well as its
-inserted cubic knots.
+production edit was reverted. Any next candidate must preserve the source
+width-template interpolation and reproduce exact intersection timing as well
+as its inserted cubic knots.
 
 The projection orientation is independently checked on source call 4, lane
 k=2. Its pre-cut lane and the shifted high-layer outline at `(rank=1,

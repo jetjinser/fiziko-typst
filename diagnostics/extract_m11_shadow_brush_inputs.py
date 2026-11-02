@@ -17,11 +17,7 @@ def cubic(points, t):
 
 
 def sampled_curve(points, steps):
-    samples = [cubic(points, i / steps) for i in range(steps + 1)]
-    lengths = [0.0]
-    for a, b in zip(samples, samples[1:]):
-        lengths.append(lengths[-1] + ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5)
-    return samples, lengths
+    return [cubic(points, i / steps) for i in range(steps + 1)]
 
 
 def main():
@@ -96,10 +92,11 @@ def main():
             if i not in width_samples or i + 1 not in width_samples:
                 raise ValueError(f"missing integer callback for {key}, segment {i}")
             control_points = [controls[name] for name in ("p0", "p1", "p2", "p3")]
-            # Integrate cubic arclength densely, but retain four geometry
-            # samples per source unit and map them back to source path time.
-            integration_points, lengths = sampled_curve(control_points, 32)
-            segment_length = lengths[-1]
+            # Integrate cubic arclength densely, but retain evenly spaced
+            # geometry samples in source path time. offsetPathTemplate joins
+            # integer-time width callbacks with `--`, so its width y-value is
+            # linear in path time, not in the centerline's arc length.
+            integration_points = sampled_curve(control_points, 32)
             def width(sample):
                 if "width_fixed" in sample:
                     return sample["width_fixed"] / 65536
@@ -114,8 +111,7 @@ def main():
             for sample_index in range(1, samples_per_cubic + 1):
                 integration_index = sample_index * (32 // samples_per_cubic)
                 sample = integration_points[integration_index]
-                distance = lengths[integration_index]
-                fraction = distance / segment_length if segment_length else 1.0
+                fraction = sample_index / samples_per_cubic
                 path_points.append(sample)
                 widths.append(w0 * (1 - fraction) + w1 * fraction)
                 path_times.append(i + sample_index / samples_per_cubic)

@@ -162,6 +162,10 @@ affected source-parity crops do not materially regress.
   and the render is rechecked.
   This replay is diagnostic only; no production rendering change is justified
   until the three divergent branch trees are paired and a render improves.
+  The replay now samples callback widths linearly in source path time,
+  matching `offsetPathTemplate`'s straight `--` segments between integer-time
+  samples. This replaces the diagnostic's former arc-length interpolation;
+  the same 15/18 call totals remain, so the three branch mismatches persist.
   Reproduction is documented in `diagnostics/README.md`.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
