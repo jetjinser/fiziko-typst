@@ -846,6 +846,18 @@ Typst reports no crossing. See the M11 coast item in
 [`comparisons/fidelity-plan.md`](../comparisons/fidelity-plan.md) for the
 measured pairing and rejected production trial.
 
+To compare one recursive source q-template node's knots with the original
+Typst coast samples, run:
+
+```sh
+nix develop path:./nix --command python3 \
+  diagnostics/compare_m11_coast_qknots.py \
+  /tmp/m11-coast-brush/trace.log /tmp/m11-coast-brush/typst.json 1 2
+```
+
+The generated child endpoints need not coincide with original input samples;
+the diagnostic reports those separately from matched intermediate knots.
+
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
 `S101-HIT1/2`, `S101-QCTRL-FIX`, and `S101-QX1/QY1` or `S101-QX2/QY2` records.
 They contain the exact 16.16 midpoint, target, selected hit, ray controls, and

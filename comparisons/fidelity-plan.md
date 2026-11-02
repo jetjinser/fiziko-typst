@@ -598,7 +598,14 @@ affected source-parity crops do not materially regress.
   was reverted before raster rendering.
   The exact cubic replay remains diagnostic; the next implementation needs to
   preserve the source q path as recursive state instead of rebuilding it from
-  each sampled child.
+  each sampled child. A q-knot pairing against the original Typst coast
+  samples narrows the geometry contribution: 23 of 25 source knots on the
+  first mass-1 depth-2 node match Typst samples within 0.001 mm. Those matched
+  knots have mean/max position error `0.000111/0.000228 mm` and width error
+  `0.00000303/0.00000550 mm`. The two unmatched points are the recursive
+  child's generated endpoints (nearest input-sample errors 1.082/0.434 mm),
+  not widespread projection or callback drift. This points the next work at
+  preserving the cut endpoints and q subpath parameter through recursion.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.
