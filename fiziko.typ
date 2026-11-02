@@ -2123,6 +2123,7 @@
     max-w: max-w,
     center-at: center-at,
     normal-at: normal-at,
+    radius-slope: radius-slope,
     shade: shade,
     path-length: total-length,
     cov: cov,

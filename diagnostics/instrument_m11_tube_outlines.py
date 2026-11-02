@@ -98,6 +98,11 @@ def main() -> None:
     if source.count(light_return) != 1:
         raise ValueError(f"expected one lightness return hook, found {source.count(light_return)}")
     source = source.replace(light_return, '''    if traceKnotActive:
+        message "M11WIDTHINPUT " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(bw1) & " "
+            & decimal(offsetPathTime) & " " & decimal(maxShadingStrokeWidth/mm)
+            & " " & decimal(lineDensity/mm) & " "
+            & decimal(ypart(point offsetPathTime of tubeWidth)/mm);
         message "M11LIGHT " & decimal(traceTubeCall) & " "
             & decimal(traceCurrentK) & " " & decimal(xpart(q)/mm) & " "
             & decimal(ypart(q)/mm) & " " & decimal(redpart(normalVector)) & " "
@@ -108,6 +113,19 @@ def main() -> None:
 enddef;
 
 vardef lightnessPP''')
+    normal_return = "    normalVector := rotateXYZaround.z(normalVector, -greenpart(p));\n    normalVector\nenddef;"
+    if source.count(normal_return) != 1:
+        raise ValueError(f"expected one tube normal return hook, found {source.count(normal_return)}")
+    source = source.replace(normal_return, '''    normalVector := rotateXYZaround.z(normalVector, -greenpart(p));
+    if traceKnotActive:
+        message "M11ANGLE " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(redpart(p)) & " "
+            & decimal(greenpart(p)) & " " & decimal(bluepart(p)) & " "
+            & decimal(redpart(normalVector)) & " " & decimal(greenpart(normalVector))
+            & " " & decimal(bluepart(normalVector));
+    fi;
+    normalVector
+enddef;''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
         raise ValueError(f"expected one knot start hook, found {source.count(knot_start)}")

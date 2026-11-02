@@ -221,16 +221,20 @@ strokes, while M10 contains mostly whitespace.
    lanes: mean point error is 0.0005–0.0012 mm, with mean tangent error
    0.04–0.10 degrees. This makes boundary geometry an unlikely source of the
    remaining 20-call deficit. Source normal/lightness samples are now recorded
-   alongside shadow hits; the Typst diagnostic also retains lane points and
-   widths, but a width-normalized, point-paired lighting comparison is still
-   needed before changing the shading law. A trial flipping the radial y
-   component reduced the 37-sample mean lightness error from 0.220 to 0.00072,
-   but worsened the 600 ppi M11 knot crop from 0.05895 to 0.07697, M4 whole
-   plate from 0.07109 to 0.12625, and M6 whole plate from 0.08919 to 0.11594.
-   The render change was reverted. This confirms a pointwise normal-convention
-   discrepancy, but does not yet establish that the paired lane sample is the
-   source brush-width sample; recover the source's exact tube-angle and width
-   evaluation parameters before changing the shared shading formula. The latitude mode
+   alongside shadow hits; the Typst diagnostic retains each lane's radial
+   coordinate, sample points, widths and lightness. For source call 2/lane 6,
+   `asin(u)` matches the source cross-section angle within 8.8e-6 rad; the
+   center tangent differs by 0.0051 rad on average, and both radius slopes are
+   zero. The source's even `k=6` has no parity width factor: its sampled width
+   averages 0.01996 mm (max 0.04525 mm), versus Typst 0.04315 mm (max
+   0.05493 mm). A radial-y sign trial matches pointwise source lightness and
+   widths and moves M11's six-segment absolute call-count error from 64 to 20
+   (source calls 14/58/54/42/38/18; candidate 14/52/50/40/38/10), while the
+   total remains 204 versus 224. It nevertheless worsens 600 ppi RMSE for M11
+   knot (0.05895→0.07697), M4 (0.07109→0.12625) and M6 (0.08919→0.11594), so
+   the render change was reverted. The next evidence target is how source thin
+   widths map to dash lengths and random calls, plus the y-axis/light-direction
+   transform. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the

@@ -6,6 +6,24 @@
 #let times = paths.map(path => range(path.len()).map(i => i / upstream-m11-knot-paths.path-step))
 #let intervals = ((0, 9), (9, 15), (15, 24))
 #let traces = ()
+#let y-flipped-shade(layout, u, t) = {
+  let nv = (layout.normal-at)(t)
+  let slope = (layout.radius-slope)(t)
+  let radial-z = calc.sqrt(calc.max(0.0, 1 - u * u))
+  let tangent = (nv.at(1), nv.at(0))
+  let norm = calc.max(1e-9, calc.sqrt(1 + slope * slope))
+  let nx = (u * nv.at(0) - slope * tangent.at(0)) / norm
+  let ny = (u * nv.at(1) - slope * tangent.at(1)) / norm
+  let nz = radial-z / norm
+  let lam = calc.clamp(nx * -0.353553 + ny * 0.382683 + nz * 0.853553,
+    0.0, 1.0)
+  calc.pow(1 - lam, 1.0)
+}
+#let y-flipped-widths(layout, u, times, widths) = times.enumerate().map(((i, t)) => {
+  let current = (layout.shade)(u, t)
+  if current > 1e-9 { widths.at(i) * y-flipped-shade(layout, u, t) / current }
+  else { 0.0 }
+})
 
 #for strand in range(2) {
   for (segment, interval) in intervals.enumerate() {
@@ -20,6 +38,7 @@
     let thin-nodes = 0
     let lane-count = 0
     let edge-calls = 0
+    let candidate-edge-calls = 0
     let edge-dashes = 0
     let edge-lanes = ()
     let inner-lanes = ()
@@ -49,13 +68,20 @@
           dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
         edge-calls += result.at(1)
         edge-dashes += result.at(2).dashes
+        let candidate-widths = y-flipped-widths(layout, side, knots, lane-widths)
+        let candidate-result = _ink-loops(_frame(points, false),
+          candidate-widths, false, _source-min-stroke,
+          _source-dash-length, seed: 1 + 500000 + section-index * 2 + side-index,
+          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
+        candidate-edge-calls += candidate-result.at(1)
         edge-lanes.push((section: section-index, side: side,
           start: points.first(), end: points.last(),
           points: points,
           width-min: calc.min(..lane-widths), width-max: calc.max(..lane-widths),
-          calls: result.at(1)))
+          calls: result.at(1), candidate-calls: candidate-result.at(1)))
       }
     }
+    let candidate-calls = 0
     for (lane-index, lane) in layout.inner.enumerate() {
       for (piece-index, piece) in lane.pieces.enumerate() {
         lane-count += 1
@@ -65,11 +91,21 @@
           source-rounding: false)
         calls += result.at(1)
         dashes += result.at(2).dashes
+        let candidate-widths = y-flipped-widths(layout, piece.u, piece.times, piece.widths)
+        let candidate-result = _ink-loops(piece.frames, candidate-widths,
+          piece.closed, _source-min-stroke, _source-dash-length,
+          seed: 1 + piece.seed-offset, dash-extra: 0.01 * _mp-unit,
+          dash-cap: 1, with-stats: true, source-rounding: false)
+        candidate-calls += candidate-result.at(1)
         inner-lanes.push((lane: lane-index, piece: piece-index,
+          u: piece.u,
           start: piece.frames.first().at(0), end: piece.frames.last().at(0),
           points: piece.frames.map(frame => frame.at(0)), widths: piece.widths,
           times: piece.times,
+          normals: piece.times.map(t => (layout.normal-at)(t)),
+          radius-slopes: piece.times.map(t => (layout.radius-slope)(t)),
           lightness: piece.times.map(t => (layout.shade)(piece.u, t)),
+          candidate-calls: candidate-result.at(1),
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()
@@ -81,6 +117,8 @@
       divisions: layout.inner-n + 1,
       lanes: lane-count, random-calls: calls, dash-patterns: dashes,
       edge-random-calls: edge-calls, edge-dash-patterns: edge-dashes,
+      candidate-random-calls: candidate-calls,
+      candidate-edge-random-calls: candidate-edge-calls,
       edge-lanes: edge-lanes, inner-lanes: inner-lanes, outer-nodes: outer-nodes,
       thin-nodes: thin-nodes))
   }

@@ -383,10 +383,11 @@ Across the six segments, mean point error is 0.00051–0.00117 mm (maximum
 0.0179–0.0374 mm); mean tangent error is 0.041–0.104 degrees. Their centerline
 endpoints match exactly. These measurements rule out a broad offset-boundary
 error as the cause of the remaining brush-call mismatch. The source trace now
-also records surface normal/lightness values and shadow hits, while the Typst
-trace retains lane sample points and widths for a subsequent normalized
-lighting comparison. Do not tune the shade law from raw width values: they also
-include source residual-width and lane-parity factors.
+also records all three inputs to `tubeAnglesToNormalVector`, its output
+normal/lightness values, and shadow hits. The Typst trace retains each lane's
+radial coordinate and sampled points, widths and lightness. Do not tune the
+shade law from raw width values: they also include source residual-width and
+lane-parity factors.
 
 For source call 2, lane 6, 37 source lightness samples pair to Typst lane 1
 within 0.0021 mm mean distance (0.0188 mm maximum). The current Typst shade
@@ -394,9 +395,20 @@ averages 0.220 absolute error against the source values; flipping the radial
 y component in a trial formula reduces that to 0.00072 (0.00961 maximum).
 However, that formula trial regresses 600 ppi RMSE: M11 knot `0.05895 →
 0.07697`, M4 whole plate `0.07109 → 0.12625`, and M6 whole plate
-`0.08919 → 0.11594`. It was reverted. The unresolved issue is therefore the
-mapping from source `k`/tube angles and width sampling to the paired Typst lane,
-not a license to apply the pointwise sign change to the renderer.
+`0.08919 → 0.11594`. It was reverted. The source angle mapping itself is
+close: source alpha differs from `asin(u)` by 8.8e-6 rad on average, the center
+tangent angle differs by 0.0051 rad, and both sides have zero radius slope.
+For even source k=6, no parity width factor applies. Source width averages
+0.01996 mm (maximum 0.04525 mm), while Typst's current profile averages
+0.04315 mm (maximum 0.05493 mm); the first paired width is 0.00227 mm versus
+0.01866 mm. The pointwise formula trial corrected the measured source widths
+and moved the six per-segment absolute call-count error from 64 to 20: current
+Typst calls in source order are `10/38/40/52/50/14`, while the candidate gives
+`14/52/50/40/38/10` against source `14/58/54/42/38/18`. The total remains 204
+versus 224. Despite the closer call distribution, the candidate worsened the
+render, so keep it reverted until the y-axis/light-direction transform and
+thin-brush dash placement are reconciled. The diagnostic now reports
+`candidate-calls` and `candidate-edge-calls` without changing drawing output.
 
 ### M11 knot tube lanes and shared RNG
 
@@ -457,7 +469,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11LIGHT|^M11SHADOW' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
