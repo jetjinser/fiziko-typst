@@ -81,6 +81,13 @@ coverage rises from 4.224% to 4.432%. S105 surface ink is 0.510% versus 0.489%
 in the source. Width scaling alone is not enough; source `cLine` traversal
 order, width interpolation and global dash-call phase remain relevant.
 
+A pilot that linearly interpolated cell ranges between adjacent geometric
+contour segments attempted to model `v[st]` interpolation. It regressed S105
+600 ppi RMSE from 0.09792 to 0.09898; block and surface crops regressed from
+0.12095 to 0.12250 and 0.07598 to 0.07648. The pilot was reverted. Geometric
+segment order is not a reliable substitute for `cLine`'s recursive `st`
+sequence, so the next width-law change needs a source traversal trace.
+
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
 calls, 28 total, between its candidate-position draws and the next knot. A
