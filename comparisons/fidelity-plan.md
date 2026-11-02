@@ -738,14 +738,16 @@ affected source-parity crops do not materially regress.
   child's generated endpoints (nearest input-sample errors 1.082/0.434 mm),
   not widespread projection or callback drift. This points the next work at
   preserving the cut endpoints and q subpath parameter through recursion.
-  The comparator now also checks cumulative q.x against the matched Typst
-  sample arc. Across matched knots at M1 depths 1–2 the offset is nearly
-  constant (`0.3729–0.3738 mm`); at M2 depths 1–2 it is `0.168–0.177 mm`,
-  while spatial/width errors stay below `0.0006/0.000007 mm`. This is
-  consistent with a closed-path arc-origin offset, not accumulating length
+  The comparator now reports signed source-minus-Typst q.x deltas against
+  matched sample arcs. At M1 depth 2, 23 matched knots average `-0.37381 mm`
+  with at most `0.00034 mm` deviation; at M2 depth 2, 56 matched knots average
+  `-0.16806 mm` with at most `0.00064 mm` deviation. Their position/width
+  errors stay below `0.00053/0.0000063 mm`. These nearly constant offsets are
+  consistent with different closed-path arc origins, not accumulating length
   error; a uniform q.x translation cannot change the midpoint intersection.
-  The remaining actionable gap is mapping each q cut time to the recursive
-  centerline child.
+  M2 depth 1 has a wider `0.02264 mm` maximum deviation, so the origin
+  explanation is not assumed for that node. The remaining actionable gap is
+  mapping each q cut time to the recursive centerline child.
   The source trace also contains three identical consecutive q knots at one
   M1 contour location (path times 108–110). Typst had collapsed the repeated
   centerline vertex while advancing its source-time label from 108 to 110;
