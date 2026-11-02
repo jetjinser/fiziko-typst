@@ -150,7 +150,10 @@ strokes, while M10 contains mostly whitespace.
    `coast-step: 0` also preserves the source's projected control-point chords;
    together these give globe crop RMSE 0.19545. Globe ink coverage is 25.12%
    versus 25.94% in the source, so dash phase and brush recursion remain
-   approximate. Keep eye and refraction as independent component gates.
+   approximate. Starting the coast brush stream after the traced 3456 p1/p2
+   calls slightly regresses globe and whole-plate RMSE; that fixed-offset
+   candidate was reverted. Keep eye and refraction as independent component
+   gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
    body radii; its whole-plate RMSE falls from 0.10910 to 0.07788, standing

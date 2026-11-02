@@ -222,6 +222,14 @@ callback. This explains why a coast stream offset cannot yet be inferred from
 the Typst layer counts; the source recursion and callback calls need porting or
 tracing into the Typst RNG cursor first.
 
+Using the known source prefix `780 + 2676 = 3456` as a shared Typst coast
+stream offset did not improve the M11 globe crop: RMSE moved from `0.197196`
+to `0.197208`, and ink coverage moved from `25.2125%` to `25.2113%` against
+`25.9400%` source. Whole-plate RMSE also moved from `0.114834` to `0.114837`.
+That candidate was reverted. Matching the stream start alone is insufficient;
+the coast brush must also reproduce the source recursion's per-coast call
+consumption before later coast phases can align.
+
 To reproduce the source stage counts and the Typst layer counts inside the
 Nix devshell:
 
