@@ -12,6 +12,7 @@ reproduces every child's q-path control point.
 import argparse
 from pathlib import Path
 
+MP_UNIT_MM = 25.4 / 72
 
 SCALE = 1 << 16
 
@@ -93,13 +94,63 @@ def parse_groups(log, call, lane):
     return groups
 
 
+def split_cases(groups):
+    cases = []
+    for index, parent in enumerate(groups[:-1]):
+        child_depth = parent["depth"] + 1
+        left_index = index + 1
+        if parent["cut"] is None or left_index >= len(groups):
+            continue
+        if groups[left_index]["depth"] != child_depth:
+            continue
+        expected_left, expected_right = subpaths(parent["segments"], parent["cut"])
+        right_index = left_index + 1
+        while right_index < len(groups) and groups[right_index]["depth"] > parent["depth"]:
+            if groups[right_index]["depth"] == child_depth:
+                break
+            right_index += 1
+        if right_index >= len(groups) or groups[right_index]["depth"] != child_depth:
+            continue
+        if expected_left != groups[left_index]["segments"] or expected_right != groups[right_index]["segments"]:
+            continue
+        cases.append({"t": parent["cut"] / SCALE,
+                      "segments": parent["segments"],
+                      "left": expected_left,
+                      "right": expected_right})
+    return cases
+
+
+def write_typst_cases(path, cases):
+    def point_expr(point):
+        return "(" + ", ".join(f"{x / SCALE * MP_UNIT_MM:.12f}" for x in point) + ")"
+
+    def curve_expr(segments):
+        items = [
+            "(" + ", ".join(point_expr(point) for point in segment) + ")"
+            for segment in segments
+        ]
+        suffix = "," if len(items) == 1 else ""
+        return "(" + ", ".join(items) + suffix + ")"
+
+    lines = ["#let m11-q-split-cases = ("]
+    for case in cases:
+        lines.append(
+            f"  (t: {case['t']:.12f}, segments: {curve_expr(case['segments'])}, "
+            f"left: {curve_expr(case['left'])}, right: {curve_expr(case['right'])}),"
+        )
+    lines.append(")")
+    Path(path).write_text("\n".join(lines) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log")
     parser.add_argument("--call", type=int, default=4)
     parser.add_argument("--lane", type=int, default=2)
+    parser.add_argument("--typst-output")
     args = parser.parse_args()
     groups = parse_groups(Path(args.log).read_text(), args.call, args.lane)
+    cases = split_cases(groups)
     checked_left = 0
     checked_right = 0
     for index, parent in enumerate(groups[:-1]):
@@ -136,6 +187,9 @@ def main():
         raise SystemExit("no parent/left-child q splits were checked")
     print(f"verified {checked_left} left-child and {checked_right} right-child "
           "two-dimensional q cubic splits exactly in 16.16 units")
+    if args.typst_output:
+        write_typst_cases(args.typst_output, cases)
+        print(f"wrote {len(cases)} matched split cases to {args.typst_output}")
 
 
 if __name__ == "__main__":

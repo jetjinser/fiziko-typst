@@ -166,7 +166,10 @@ affected source-parity crops do not materially regress.
   verifies 18 parent/left-child and 18 parent/right-child two-dimensional q
   curves exactly using fixed-point de Casteljau subdivision with nearest-unit
   rounding. Reuse and recursively split those source q controls in the replay
-  before changing production recursion.
+  before changing production recursion. Typst now implements this 16.16
+  subdivision primitive, and a paired replay matches all 18 left and 18 right
+  child control arrays exactly after quantization. The primitive is not yet
+  wired into `_ink-loops`, so no renderer change is claimed.
   Source recursive nodes now include their geometric endpoints and cut points.
   In call 4 lane 2, the source chooses width `0.03807` and splits near
   `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm

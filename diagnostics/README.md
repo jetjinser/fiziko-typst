@@ -1105,6 +1105,23 @@ exactly against fixed-point de Casteljau splits with nearest-unit rounding. It
 gives the exact split rule; a replay must still carry each parent q cubic and
 split it, rather than recreate it from callback widths.
 
+Typst now has `_mp-cubic-split` and `_mp-cubic-path-split` using the same
+dimensional and scalar 16.16 quantizers. Generate the paired controls and
+compare the Typst result:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_splits.py /tmp/m11-calctrace/trace.log \
+  --typst-output build/m11-q-split-cases.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-q-split-replay>).first().value' \
+  --in diagnostics/m11_q_split_replay.typ --root .
+```
+
+All 18 left and 18 right child control arrays match after 16.16 quantization.
+This validates the subdivision primitive; `_ink-loops` does not yet carry these
+q curves between recursive nodes, so production output is unchanged.
+
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
 repeated endpoint callback values, before evaluating brush recursion.

@@ -38,6 +38,38 @@
 // different scaled units.
 #let _mp-rounded(x) = calc.round(x / _mp-unit * 65536) / 65536 * _mp-unit
 #let _mp-scalar-rounded(x) = calc.round(x * 65536) / 65536
+#let _mp-fixed-mix(a, b, t) = {
+  let q = _mp-scalar-rounded(t)
+  _mp-rounded(a + _mp-rounded((b - a) * q))
+}
+#let _mp-fixed-mix-point(a, b, t) = (
+  _mp-fixed-mix(a.at(0), b.at(0), t),
+  _mp-fixed-mix(a.at(1), b.at(1), t),
+)
+#let _mp-cubic-split(points, t) = {
+  let a = _mp-fixed-mix-point(points.at(0), points.at(1), t)
+  let b = _mp-fixed-mix-point(points.at(1), points.at(2), t)
+  let c = _mp-fixed-mix-point(points.at(2), points.at(3), t)
+  let d = _mp-fixed-mix-point(a, b, t)
+  let e = _mp-fixed-mix-point(b, c, t)
+  let f = _mp-fixed-mix-point(d, e, t)
+  (left: (points.at(0), a, d, f), right: (f, e, c, points.at(3)))
+}
+#let _mp-cubic-path-split(segments, t) = {
+  let whole = calc.floor(t)
+  let fraction = t - whole
+  let left = segments.slice(0, whole)
+  let right = ()
+  if fraction > 0 {
+    let parts = _mp-cubic-split(segments.at(whole), fraction)
+    left.push(parts.left)
+    right.push(parts.right)
+    right += segments.slice(whole + 1)
+  } else {
+    right = segments.slice(whole)
+  }
+  (left: left, right: right)
+}
 #let _mp-path-subdivision-times(n) = {
   let step = _mp-scalar-rounded(1 / n)
   let times = (0.0,)
