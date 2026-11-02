@@ -484,6 +484,15 @@ independent. A 1/32 candidate (1281 points) did not complete: Typst exited
 with status -9 during the comparison after several minutes, before producing
 metrics. Keep 1/16 as the best completed source-path sample.
 
+A `per: 0` pilot that connected the 641 source samples directly (without the
+additional Hobby resampling used by the fixture's `per: 4`) scored 0.06055,
+with ink coverage 1.756% versus 1.789% source. It was reverted; the smoother
+Hobby reconstruction currently gives better tangents and brush placement.
+The S104 16.16 recursive-cut change leaves the M4 600 ppi RMSE and ink hash
+unchanged at 0.060190/1.756%, so the shared cut-time fix does not regress this
+constant-radius tube. Variable-radius lane geometry and source-exact tangent
+lightness remain open.
+
 Regenerate the M4 path from the pinned comparison driver inside the Nix shell:
 
 ```sh
