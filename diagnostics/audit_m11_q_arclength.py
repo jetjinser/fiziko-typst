@@ -146,6 +146,22 @@ def metapost_arc_length_fixed(points):
     return metapost_arc_test(d0, d1, d2)
 
 
+def reconstruct_from_quarters(points):
+    """Mirror the tube's p0/p25/p75/p3 cubic reconstruction in 16.16."""
+    sampled = [tuple(int(round(x * FIXED)) for x in bezier(points, t))
+               for t in (0, 0.25, 0.75, 1)]
+    p0, p25, p75, p3 = sampled
+    controls = [p0]
+    p1, p2 = [], []
+    for axis in (0, 1):
+        a = 64 * p25[axis] - 27 * p0[axis] - p3[axis]
+        b = 64 * p75[axis] - p0[axis] - 27 * p3[axis]
+        p1.append(round_ratio(3 * a - b, 72))
+        p2.append(round_ratio(-a + 3 * b, 72))
+    controls.extend((tuple(p1), tuple(p2), p3))
+    return controls
+
+
 def read_trace(path):
     curves = defaultdict(dict)
     qcurves = defaultdict(lambda: defaultdict(dict))
@@ -188,9 +204,12 @@ def typst_fixture(path, output):
             previous = current
             fixed = [tuple(int(round(axis * FIXED)) for axis in points[i])
                      for i in range(4)]
+            reconstructed = reconstruct_from_quarters([points[i] for i in range(4)])
             point_text = ", ".join(
                 f"({p[0]} / 65536, {p[1]} / 65536)" for p in fixed)
-            parts.append(f"(points: ({point_text}), expected: {arc})")
+            reconstructed_text = ", ".join(
+                f"({p[0]} / 65536, {p[1]} / 65536)" for p in reconstructed)
+            parts.append(f"(points: ({point_text}), reconstructed: ({reconstructed_text}), expected: {arc})")
         items = ",\n    ".join(parts)
         lines.append(f"  (call: {key[0]}, lane: {key[1]}, segments: (\n    {items}\n  )),")
     lines.extend([")", ""])
@@ -210,6 +229,7 @@ def audit(path):
         arc_errors = []
         source_arc_errors = []
         port_arc_errors = []
+        reconstructed_arc_errors = []
         sampled_arc_errors = {steps: [] for steps in (1, 4, 8, 16, 32)}
         control_errors = []
         for index in curve_ids:
@@ -234,6 +254,11 @@ def audit(path):
                 port_prefix = source_arc_total
             source_arc_total = port_prefix + port_arc
             port_arc_errors.append(abs(source_arc - source_arc_total))
+            source_arc_start = source_arcs[(key[0], key[1], index - 1)] if index > 0 else 0
+            source_arc_segment = source_arc - source_arc_start
+            reconstructed_arc = metapost_arc_length_fixed(reconstruct_from_quarters(
+                [c[i] for i in range(4)]))
+            reconstructed_arc_errors.append(abs(source_arc_segment - reconstructed_arc))
             for steps in sampled_arc_errors:
                 points = [bezier([c[i] for i in range(4)], j / steps)
                           for j in range(steps + 1)]
@@ -258,20 +283,25 @@ def audit(path):
         reports.append((key, len(arc_errors), max(arc_errors), sum(arc_errors) / len(arc_errors),
                         max(control_errors, default=0), max(source_arc_errors),
                         sum(source_arc_errors) / len(source_arc_errors), sampled_arc_errors,
-                        max(port_arc_errors), sum(port_arc_errors) / len(port_arc_errors)))
+                        max(port_arc_errors), sum(port_arc_errors) / len(port_arc_errors),
+                        max(reconstructed_arc_errors),
+                        sum(reconstructed_arc_errors) / len(reconstructed_arc_errors)))
     if not reports:
         raise SystemExit("no M11 root q templates or exact post-shadow controls found")
     print("call lane segments max-arc-error mean-arc-error max-line-control-error (16.16 bp units)")
     for row in reports:
-        key, count, maximum, mean, control, source_max, source_mean, _, port_max, port_mean = row
+        key, count, maximum, mean, control, source_max, source_mean, _, port_max, port_mean, recon_max, recon_mean = row
         print(f"{key[0]} {key[1]} {count} {maximum:.3f} {mean:.3f} {control} "
               f"source-arclength-q-error={source_max}/{source_mean:.3f} "
-              f"ported-arc-error={port_max}/{port_mean:.3f}")
+              f"ported-arc-error={port_max}/{port_mean:.3f} "
+              f"quarter-reconstructed-arc-error={recon_max}/{recon_mean:.3f}")
     weighted_mean = sum(row[3] * row[1] for row in reports) / sum(row[1] for row in reports)
     print(f"aggregate quadrature/q error: {max(row[2] for row in reports):.3f}/{weighted_mean:.3f} units")
     print(f"aggregate max source-arc/q mismatch: {max(row[5] for row in reports)} units")
     print(f"aggregate max/mean ported arc error: {max(row[8] for row in reports)}/"
           f"{sum(row[9]*row[1] for row in reports)/sum(row[1] for row in reports):.3f} units")
+    print(f"aggregate max/mean quarter-reconstructed arc error: {max(row[10] for row in reports)}/"
+          f"{sum(row[11]*row[1] for row in reports)/sum(row[1] for row in reports):.3f} units")
     for steps in (1, 4, 8, 16, 32):
         vals = [err for row in reports for err, _ in row[7][steps]]
         print(f"polyline samples/cubic={steps}: max/mean source-arc error "

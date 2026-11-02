@@ -1514,12 +1514,14 @@ trees. Fixed-point implementations of MetaPost's recursive `arc_test` and
 `pyth_add` in both the audit script and `fiziko.typ` reproduce all 121 traced
 M11 segment arc lengths exactly (maximum and mean error 0 in 16.16 units).
 The Typst port is verified as a cubic helper and now feeds an isolated q
-replay. On the three targeted lanes it computes the segment arcs, builds q
-knots from the source width callbacks, and still matches all 40, 20, and 30
-recursion nodes and their q controls exactly. The fixture supplies traced
-centerline cubic controls; the other 15 lane inputs still use source arc
-knots, and production q-template generation is not wired yet. Re-run the
-paired check with:
+replay. Reconstructing center cubics from their quarter and three-quarter
+samples produces source arc lengths within 2 fixed units (maximum; mean
+0.587). Using these reconstructed cubics, Typst-computed arc knots, and the
+source callback widths still matches all 40, 20, and 30 recursion nodes and
+their q controls exactly. The diagnostic samples come from traced source
+curves; other 15 lane inputs still use source arc knots, so production q
+template generation from its own sampled paths remains to be integrated.
+Re-run the paired check with:
 
 ```sh
 nix develop path:./nix --command python \
@@ -1532,7 +1534,8 @@ nix develop path:./nix --command typst eval \
 nix develop path:./nix --command python \
   diagnostics/extract_m11_shadow_brush_inputs.py \
   /tmp/m11-q-audit/trace.log build/m11-shadow-brush-inputs.typ \
-  --samples-per-cubic 4 --arc-json build/m11-fixed-arc-results.json
+  --samples-per-cubic 4 --arc-json build/m11-fixed-arc-results.json \
+  --arc-json-field reconstructed-arcs
 nix develop path:./nix --command typst eval \
   'query(<m11-shadow-arc-replay>).first().value' \
   --in diagnostics/m11_shadow_arc_replay.typ --root . \

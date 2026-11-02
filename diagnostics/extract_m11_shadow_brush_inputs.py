@@ -37,6 +37,9 @@ def main():
                         help="use traced MetaPost arc knots or integrate the traced cubics")
     parser.add_argument("--arc-json", type=Path,
                         help="use per-cubic arc lengths emitted by m11_fixed_arc_check.typ")
+    parser.add_argument("--arc-json-field", choices=("arcs", "reconstructed-arcs"),
+                        default="arcs",
+                        help="select exact trace-control arcs or quarter-sample reconstructed arcs")
     args = parser.parse_args()
     log_path, output_path = args.log, args.output
     samples_per_cubic = args.samples_per_cubic
@@ -48,7 +51,7 @@ def main():
     typst_arcs = {}
     if args.arc_json:
         arc_result = json.loads(args.arc_json.read_text())
-        typst_arcs = {(item["call"], item["lane"]): item["arcs"]
+        typst_arcs = {(item["call"], item["lane"]): item[args.arc_json_field]
                       for item in arc_result}
     exact_curves = {}
     if args.arc_mode == "integrated":
