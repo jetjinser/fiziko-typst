@@ -73,7 +73,8 @@ affected source-parity crops do not materially regress.
   [`thinBrushGenerate`](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L445-L487)
   only searches for a cut when the upper width corner exceeds
   `minWidth + 0.01 bp`. `_ink-loops` now applies the equivalent strict
-  `hi > dash-floor` condition before thin recursion. On the exact M11 q replay,
+  `hi > dash-floor` condition before thin recursion. On the exact M11 knot-strand
+  q replay,
   this resolves both formerly extra splits and produces exact source trees and
   q controls on all three traced lanes (40/40, 20/20, 30/30 nodes); random-call
   totals now match 16/16, 6/6 and 14/14. Same-checkout 600 ppi comparisons of
@@ -1027,7 +1028,7 @@ contours with the sampled source rings (the measured render regressed).
    The source trace now emits q cubic controls (`S101-CUBIC`) around each cut.
    A fixed stream offset tested with the prior projection and again with
    closed contours was reverted.
-   For M11 coast recursion, the fresh MetaPost trace now exports the exact
+   For M11 knot-strand recursion, the fresh MetaPost trace now exports the exact
    outer q cubics for calls 4/lane 2, 4/lane 6 and 5/lane 2. Feeding those
    controls into the isolated Typst replay matches source outer-node counts
    on all three lanes and all 18 source random-call totals. Lane 4/6 also
