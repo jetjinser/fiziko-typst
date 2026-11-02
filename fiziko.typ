@@ -455,6 +455,10 @@
     let best-distance = 1e99
     let crossing = none
     let arc = 0.0
+    // MetaPost's cutPathTime resolves equidistant crossings toward the
+    // second ray hit (the earlier path-time). Tiny floating-point asymmetry
+    // in accumulated arc lengths must not reverse that source tie-break.
+    let tie-tolerance = if source-rounding { 1e-9 * calc.max(1.0, total) } else { 0.0 }
     for q in range(path.len() - 1) {
       let a = width-index(path.at(q))
       let b = width-index(path.at(q + 1))
@@ -468,7 +472,7 @@
         let f = if source-rounding { _mp-scalar-rounded(raw-f) } else { raw-f }
         let at = arc + f * span
         let distance = calc.abs(at - total / 2)
-        if distance < best-distance {
+        if distance < best-distance - tie-tolerance {
           best-distance = distance
           crossing = (q, f, at)
         }
@@ -490,7 +494,8 @@
         let right = (cut,) + path.slice(q + 1)
         let llen = range(left.len() - 1).map(i => _dist(frame-index(left.at(i)).at(0), frame-index(left.at(i + 1)).at(0))).sum()
         let rlen = range(right.len() - 1).map(i => _dist(frame-index(right.at(i)).at(0), frame-index(right.at(i + 1)).at(0))).sum()
-        (left, right, llen, rlen, at, total, valid, source-path-time(path, cut))
+        (left, right, llen, rlen, at, total, valid,
+          source-path-time(path, cut), frame-index(cut).at(0))
       }
     }
   }
@@ -675,7 +680,11 @@
       let recurse = hi - lo >= step and depth < 15 and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
-          target: target, length: total, has-cut: candidate != none,
+          target: target, length: total,
+          path-start: frame-index(path.first()).at(0),
+          path-end: frame-index(path.last()).at(0),
+          cut-point: if candidate == none { none } else { candidate.at(8) },
+          has-cut: candidate != none,
           cut-distance: if candidate == none { none } else { candidate.at(4) },
           cut-param: if candidate == none { none } else { candidate.at(7) },
           left-length: if candidate == none { 0.0 } else { candidate.at(2) },
@@ -718,7 +727,11 @@
     let recurse = hi > minw and lo < minw and depth < 10 and total > minlen and crossing != none
     if trace-nodes {
       nodes.push((stage: "outer", depth: depth, width-min: lo, width-max: hi,
-        target: minw, length: total, has-cut: crossing != none,
+        target: minw, length: total,
+        path-start: frame-index(path.first()).at(0),
+        path-end: frame-index(path.last()).at(0),
+        cut-point: if crossing == none { none } else { crossing.at(8) },
+        has-cut: crossing != none,
         cut-distance: if crossing == none { none } else { crossing.at(4) },
         cut-param: if crossing == none { none } else { crossing.at(7) },
         left-length: if crossing == none { 0.0 } else { crossing.at(2) },

@@ -825,6 +825,18 @@ source's 39 outer and 9 thin nodes; nearby rows still differ, so this improves
 the recursion model without claiming a complete port. The remaining mismatch
 is in cut selection/branch behavior around narrow residual crossings.
 
+The source outer-node and Typst recursion logs now include centerline
+endpoints and cut points, allowing exact row pairing. On one symmetric-width
+row, source `cutPathTime` chooses the left of two equidistant intersections;
+Typst previously chose the right due to tiny arc-length accumulation error.
+With a source-mode tie tolerance, the first cut moves to within 0.001 mm of
+the source cut. Aggregate node counts remain 942/1577 (source 1340/1696),
+while the 600 ppi hatch crop RMSE improves from 0.075286 to 0.07528521 and
+whole-plate RMSE from 0.207029 to 0.20702865. Rounding the recursive cut
+width itself was retested and reverted: outer nodes fell to 814 and hatch
+RMSE regressed to 0.07529141. The instrumentation records `S104-CUT` only
+when the source returns an interior cut.
+
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches; 34
 mismatches, with per-row deltas up to ±20 calls). It slightly regressed the

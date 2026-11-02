@@ -43,6 +43,7 @@
     source-rounding: true)
   rows.push((
     row: segment.at(2), length: line-length,
+    start: segment.at(0), end: segment.at(1),
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,
     width-min: calc.min(..widths), width-max: calc.max(..widths),

@@ -57,7 +57,16 @@ def main() -> None:
     if traceFlatHatch:
         message "S104-OUTER " & decimal(traceHatchRow) & " "
             & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
-            & " " & decimal(t) & " " & decimal(arclength(p));
+            & " " & decimal(t) & " " & decimal(arclength(p))
+            & " " & decimal(xpart(point 0 of p)/mm)
+            & " " & decimal(ypart(point 0 of p)/mm)
+            & " " & decimal(xpart(point length(p) of p)/mm)
+            & " " & decimal(ypart(point length(p) of p)/mm);
+        if (t > 0) and (t < length(p)):
+            message "S104-CUT " & decimal(traceHatchRow) & " " & decimal(i)
+                & " " & decimal(xpart(point t of p)/mm)
+                & " " & decimal(ypart(point t of p)/mm);
+        fi;
 ''' + control_trace("outer", "        ") + '''
     fi;'''
     if source.count(outer_brush) != 1:

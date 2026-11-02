@@ -151,7 +151,14 @@ strokes, while M10 contains mostly whitespace.
    effectively unchanged at 0.075285 (previously 0.075286), so this is a
    recursion-fidelity improvement, not a material raster improvement. Other
    rows still differ around narrow residual crossings; brush shape and random
-   details remain open.
+   details remain open. A new trace found symmetric crossing ties where
+   floating-point arc accumulation selected the opposite side from source
+   `cutPathTime`. A tiny source-mode tie tolerance moves a representative cut
+   to within 0.001 mm of the source-selected intersection. With no width
+   quantization, hatch crop RMSE improves to 0.07528521 and whole-plate RMSE
+   to 0.20702865; aggregate recursion counts stay 942/1577. Reapplying
+   16.16 rounding to recursive cut widths lowers outer nodes to 814 and
+   worsens hatch RMSE to 0.07529141, so that trial was reverted.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to
