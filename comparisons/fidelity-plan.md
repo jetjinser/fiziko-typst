@@ -295,6 +295,17 @@ affected source-parity crops do not materially regress.
   threshold candidate was reverted. The source-equal one-step boundary still
   needs to be tested together with the carried q-template branch where it
   occurs, rather than applied as a global width-span adjustment.
+  A thin-only q-state replay then applied that one-step comparison in 16.16
+  integers. On row 93 it reproduces the source branch through nodes 172–175:
+  cuts land at `x=39.53897`, `36.69320`, `35.27024`, and `38.11617 mm` versus
+  source `39.53911`, `36.69320`, `35.27024`, and `38.11617 mm`; the row tree
+  reaches all 19 thin nodes and 5 dash leaves, matching source. Across 142
+  rows, however, it creates 2749 thin nodes (source 1696, baseline 1613), and
+  per-row thin-node/dash error rises from `429/166` to `1429/168`. This local
+  exact match does not justify production use; the remaining mismatch is the
+  initial q-template and child-curve topology across rows, not this branch's
+  threshold comparison. The diagnostic implementation was removed before
+  raster rendering.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
