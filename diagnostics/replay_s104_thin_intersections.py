@@ -200,11 +200,15 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
 
         # The pinned scaled build has room for 17 nominal plus two extra
         # bisections. A further descent trips MetaPost's packet-stack guard;
-        # that guard resets both encoded times and terminates this cubic call.
+        # the source routes that miss through NOT_FOUND, so this branch fails
+        # and the enclosing search continues with its remaining packet pairs.
         if level >= MAX_INTERSECTION_DEPTH:
-            stopped = True
-            answer = None
-            return answer if stopped else None
+            backtracks += 1
+            if backtracks > 5000:
+                stopped = True
+                answer = timeout_answer()
+                return answer
+            return None
 
         a_left, a_right = split_packet(a)
         b_left, b_right = split_packet(b)

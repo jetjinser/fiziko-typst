@@ -1685,9 +1685,13 @@ target row's 76 pairs into 43 matched hits, 24 matching misses, eight missed
 source hits within 1/64 path-time of a cubic endpoint, and one missed interior
 source hit. Adding source state did not explain those nine mismatches, so the
 remaining discrepancy lies in the fixed-point packet overlap evaluation or
-its arithmetic order. This is a diagnostic improvement only; no production
-change is justified until the endpoint and interior cases are explained
-together. The instrumenter now emits
+its arithmetic order. The replay's packet-limit handling was adjusted to
+reject an over-depth branch and resume sibling enumeration, matching the
+source's `NOT_FOUND` backtracking path more closely than aborting the cubic.
+This sensitivity probe leaves both row results unchanged at 67/76 and 15/20;
+it therefore does not explain the mismatches. This is diagnostic work only;
+no production change is justified until the endpoint and interior cases are
+explained together. The instrumenter now emits
 `S104-FIRST-FIX`, preserving all four returned path times as signed 16.16
 integers; the replay uses these exact values when present and still accepts
 older decimal-only logs. For node 173's interior source pair

@@ -144,8 +144,9 @@ affected source-parity crops do not materially regress.
   all four for node 172. Raising its depth from 17 to 18 accounts for five
   additional pairs. The replay now models the source's packed `max_t`
   progression, saved approximation, backtrack timeout and packet-stack guard.
-  This does not add any matches: the S104 target row remains 67/76, and a
-  second recorded row remains 15/20. Nine raw pairs still disagree: eight
+  Treating stack-limit overflow as a failed packet branch that can resume
+  sibling search instead of terminating the cubic leaves both recorded rows
+  unchanged at 67/76 and 15/20. Nine raw pairs still disagree: eight
   source hits lie within 1/64 path-time of a cubic endpoint, and one is an
   interior source hit. A new trace records exact 16.16 intersection times;
   evaluating node 173's recorded cubics at its source pair leaves an estimated
