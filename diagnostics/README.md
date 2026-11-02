@@ -837,8 +837,11 @@ locates it at outline index 1 for masses 1, 2, and 4 (within `0.000058` to
 exactly on the 15 mm horizon. A production trial rotated those closed paths to
 index 1. The 600 ppi M11 metrics and all six per-mass recursion node arrays,
 width samples, and RNG call counts were unchanged, so the production rotation
-was reverted. The source seam is geometrically present already; this cyclic
-reindexing does not resolve the recursive q-template mismatch.
+were exactly unchanged against the saved baseline: full/globe/knot RMSE
+`0.11289878/0.18989608/0.05823034`, with per-mass calls
+`10/30/6/2/2/2`. The production rotation was reverted. The source seam is
+geometrically present already; this cyclic reindexing does not resolve the
+recursive q-template mismatch.
 
 To compare source recursion nodes and random calls by landmass, layer the
 generic brush instrumenter with the M11 coast counter and evaluate the
