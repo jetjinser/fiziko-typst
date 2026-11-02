@@ -57,7 +57,8 @@ def main():
         nearest = min(samples, key=lambda sample: math.dist(point, sample["point"]))
         error = math.dist(point, nearest["point"])
         width_error = abs(qy * PT_TO_MM - nearest["width"])
-        pairs.append((int(index), error, width_error))
+        arc_error = abs(qx * PT_TO_MM - nearest["arc"])
+        pairs.append((int(index), error, width_error, arc_error))
 
     matched = [item for item in pairs if item[1] <= 0.001]
     print(f"landmass {landmass} depth {depth}: {len(matched)}/{len(pairs)} knots "
@@ -69,10 +70,14 @@ def main():
         print("matched width error mean/max: "
               f"{sum(item[2] for item in matched) / len(matched):.8f}/"
               f"{max(item[2] for item in matched):.8f} mm")
-    for index, error, width_error in pairs:
+        print("matched cumulative-arc error mean/max: "
+              f"{sum(item[3] for item in matched) / len(matched):.8f}/"
+              f"{max(item[3] for item in matched):.8f} mm")
+    for index, error, width_error, arc_error in pairs:
         if error > 0.001:
             print(f"unpaired source knot {index}: nearest position error "
-                  f"{error:.6f} mm; width difference {width_error:.8f} mm")
+                  f"{error:.6f} mm; width difference {width_error:.8f} mm; "
+                  f"cumulative-arc difference {arc_error:.8f} mm")
 
 
 if __name__ == "__main__":

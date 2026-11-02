@@ -885,6 +885,16 @@ nix develop path:./nix --command python3 \
 
 The generated child endpoints need not coincide with original input samples;
 the diagnostic reports those separately from matched intermediate knots.
+It also compares source q.x (cumulative arc length) with the paired Typst
+sample's cumulative arc. On mass 1, matched knots at depths 1 and 2 differ by
+an almost constant `0.3729–0.3738 mm`; on mass 2, matched knots at depths 1
+and 2 differ by about `0.168–0.177 mm`. Their point and width errors remain
+below `0.0006 mm` and `0.000007 mm`. This pattern is consistent with a
+closed-path arc-origin offset, rather than an error accumulating along those
+matched spans. Translating every q.x value leaves the midpoint intersection
+choice invariant, so this offset alone does not explain the recursion-tree
+mismatch. Keep the next probe focused on mapping q cut times onto the child
+centerline path.
 
 For exact recursive-state verification, the same source trace now records the
 16.16 q-path knots, the four cubic controls around each selected cut, and its

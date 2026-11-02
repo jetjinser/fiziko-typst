@@ -738,6 +738,14 @@ affected source-parity crops do not materially regress.
   child's generated endpoints (nearest input-sample errors 1.082/0.434 mm),
   not widespread projection or callback drift. This points the next work at
   preserving the cut endpoints and q subpath parameter through recursion.
+  The comparator now also checks cumulative q.x against the matched Typst
+  sample arc. Across matched knots at M1 depths 1–2 the offset is nearly
+  constant (`0.3729–0.3738 mm`); at M2 depths 1–2 it is `0.168–0.177 mm`,
+  while spatial/width errors stay below `0.0006/0.000007 mm`. This is
+  consistent with a closed-path arc-origin offset, not accumulating length
+  error; a uniform q.x translation cannot change the midpoint intersection.
+  The remaining actionable gap is mapping each q cut time to the recursive
+  centerline child.
   The source closed-path seam was checked separately: its first point maps to
   Typst outline index 1 for masses 1, 2, and 4, and index 0 for masses 5, 7,
   and 8, all within 0.00014 mm. The first three outlines start at the horizon
