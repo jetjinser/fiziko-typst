@@ -2,6 +2,7 @@
 // manifest and are recorded in each report; no parameter fitting occurs here.
 #import "../fiziko.typ": *
 #import "globe-coasts.typ": upstream-landmasses
+#import "m11-knot-paths.typ": upstream-m11-knot-paths
 
 #let case = sys.inputs.at("case")
 #let n(key) = float(sys.inputs.at(key))
@@ -93,10 +94,8 @@
     + stroke-path(circle-pts(0.4,24,center:(82,30)), stroke: 0.35pt + black, closed: true, per: 0)
     + tag([F],(84.5,36)) + tag([f],(78.6,32.8)) + tag([i],(75.6,27.7)))
   } else if case == "M11" {
-    let wa = range(97).map(i => (86 + 32 * i / 96,
-      22 + 6 * calc.sin(720 * i / 96 * 1deg)))
-    let wb = range(97).map(i => (86 + 32 * i / 96,
-      22 - 6 * calc.sin(720 * i / 96 * 1deg)))
+    let wa = upstream-m11-knot-paths.wa
+    let wb = upstream-m11-knot-paths.wb
     (globe(30, rotation: (0,0), lands: upstream-landmasses,
       shading: "latitude", coast-step: 0,
       center: (19,22))

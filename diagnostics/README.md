@@ -121,18 +121,38 @@ whole-plate RMSE from 0.12622 to 0.12662. This is a source-equation match with
 a small raster-score regression; the remaining latitude width law and coast
 random phase are still approximate.
 
-## M11 knot layer intervals
+## M11 source knot paths and layer intervals
+
+The M11 fixture's original sine samples did not reproduce the actual curves in
+the pinned MetaPost source: MetaPost interpolates the 25 anchor points with its
+own path solver. Sampling each source path every 1/4 path-time and storing the
+result in `comparisons/m11-knot-paths.typ` lowers 600 ppi knot crop RMSE from
+0.14230 to 0.06233 and whole-plate RMSE from 0.12653 to 0.11513. The other
+M11 crops are unchanged. `comparisons/run.py` includes this data file in the
+isolated input snapshot so the comparison remains reproducible.
+
+Regenerate the sample data from the pinned driver inside the Nix devshell:
+
+```sh
+mkdir -p /tmp/m11-path-source
+python3 diagnostics/instrument_m11_knot_paths.py \
+  comparisons/reference/main.mp /tmp/m11-path-source/main.mp
+cp "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-path-source/fiziko.mp
+printf 'selected := 11; input main.mp;\n' > /tmp/m11-path-source/trace.mp
+(cd /tmp/m11-path-source && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+python3 diagnostics/extract_m11_knot_paths.py \
+  /tmp/m11-path-source/trace.log comparisons/m11-knot-paths.typ
+```
 
 Tube mask mode now follows `knotFromStrands`' interval construction: each
 strand is split halfway between adjacent crossings, the supplied per-crossing
 layer value is assigned to that interval, and higher-layer tube silhouettes
-erase earlier ink before their own hatch is drawn. `path-times:` lets callers
-map samples to source curve parameters; M11 maps its 97 samples onto the
-upstream path's 24 intervals. This yields the same 600 ppi crop RMSE of 0.14230
-as arc-length splitting, down from 0.14280 before midpoint segmentation. Ink
-coverage is 2.242% versus 2.606% in the source. Crossing positions still use
-sampled polylines, and the erasing silhouette remains a width-stroke
-approximation.
+erase earlier ink before their own hatch is drawn. `path-times:` maps sample
+positions onto source curve parameters, so these source-derived points place
+the mask boundaries in the same parameter space. Knot ink coverage is 2.253%
+versus 2.606% in the source. Crossing positions still use sampled line
+segments, and the erasing silhouette remains a width-stroke approximation.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
