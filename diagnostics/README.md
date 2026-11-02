@@ -56,6 +56,13 @@ produces (8.27285, 46.31245) mm. Rounding source-field extents to the source's
 ink 0.599% vs 0.489% in the source). Source contour-brush rendering and its
 random call count still differ.
 
+Wood contours are now kept as connected paths through polygon clipping, so a
+stroke continues across marching-grid vertices instead of restarting at each
+edge. The 600 ppi M9 score changes from 0.22412 to 0.22411; S105 changes from
+0.10553 to 0.10555. This makes path continuity match `cLine` more closely but
+does not materially reduce raster error; source brush width, dash recursion,
+and random-call behavior remain the larger gap.
+
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
 calls, 28 total, between its candidate-position draws and the next knot. A

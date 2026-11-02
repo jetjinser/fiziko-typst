@@ -2777,6 +2777,62 @@
   out
 }
 
+// Like _clip-polyline, but retain connected runs so each contour is stroked
+// continuously instead of restarting the pen at every grid edge.
+#let _clip-polyline-paths(path, regions) = {
+  let out = ()
+  let current = ()
+  let cross(a, b) = a.at(0) * b.at(1) - a.at(1) * b.at(0)
+  for i in range(path.len() - 1) {
+    let a = path.at(i)
+    let b = path.at(i + 1)
+    let direction = _sub(b, a)
+    let cuts = (0.0, 1.0)
+    for poly in regions {
+      for j in range(poly.len()) {
+        let c = poly.at(j)
+        let edge = _sub(poly.at(_mod(j + 1, poly.len())), c)
+        let denom = cross(direction, edge)
+        if calc.abs(denom) > 1e-9 {
+          let delta = _sub(c, a)
+          let t = cross(delta, edge) / denom
+          let u = cross(delta, direction) / denom
+          if t > 1e-9 and t < 1 - 1e-9 and u >= -1e-9 and u <= 1 + 1e-9 {
+            cuts.push(t)
+          }
+        }
+      }
+    }
+    let sorted = cuts.sorted()
+    let unique = ()
+    for t in sorted {
+      if unique.len() == 0 or calc.abs(t - unique.last()) > 1e-9 {
+        unique.push(t)
+      }
+    }
+    for j in range(unique.len() - 1) {
+      let t0 = unique.at(j)
+      let t1 = unique.at(j + 1)
+      if t1 - t0 <= 1e-9 { continue }
+      let p = _add(a, _mul(direction, t0))
+      let q = _add(a, _mul(direction, t1))
+      if regions.any(poly => _inside-poly(_mul(_add(p, q), 0.5), poly)) {
+        if current.len() > 0 and _dist(current.last(), p) <= 1e-8 {
+          if _dist(current.last(), q) > 1e-8 { current.push(q) }
+        } else {
+          if current.len() > 1 { out.push(current) }
+          current = (p, q)
+        }
+      } else {
+        if current.len() > 1 { out.push(current) }
+        current = ()
+      }
+    }
+  }
+  if current.len() > 1 { out.push(current) }
+  out
+}
+
 #let _stroke-segments(segments, stroke) = {
   let segs = ()
   for s in segments {
@@ -2786,6 +2842,9 @@
   if segs.len() == 0 { none }
   else { place(top + left, curve(fill: none, stroke: stroke, ..segs)) }
 }
+
+#let _stroke-paths(paths, stroke) = _join(paths.map(path =>
+  stroke-path(path, stroke: stroke, per: 0)))
 
 // Approximate cLine's v[st] width profile: each traversed square contributes
 // its scalar range, and the brush is thinner where that range is larger.
@@ -2894,10 +2953,8 @@
   let contours = contour-result.at(0)
   let segments = ()
   for contour in contours {
-    let clipped = _clip-polyline(contour, (local-poly,))
-    segments += clipped.map(seg => (
-      _add(seg.at(0), (x0, y0)), _add(seg.at(1), (x0, y0)),
-    ))
+    let clipped = _clip-polyline-paths(contour, (local-poly,))
+    segments += clipped.map(path => path.map(p => _add(p, (x0, y0))))
   }
   let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
   let source-knots = if source-field {
@@ -2920,7 +2977,7 @@
       knot-segments.push((loop.at(i), loop.at(_mod(i + 1, loop.len()))))
     }
   }
-  let els = (_stroke-segments(segments, texture-stroke),
+  let els = (_stroke-paths(segments, texture-stroke),
              stroke-path(poly, stroke: border-stroke, closed: true, per: 0))
   if eye-loops.len() > 0 { els.push(place(top + left, _fill(eye-loops, black))) }
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
@@ -2965,7 +3022,7 @@
   }
   let loops = contour-result.at(0)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
-  let segments = loops.fold((), (acc, pl) => acc + _clip-polyline(pl, (rect,)))
+  let paths = loops.fold((), (acc, pl) => acc + _clip-polyline-paths(pl, (rect,)))
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }
   let knot-segments = ()
   if source-field {
@@ -2976,7 +3033,7 @@
       }
     }
   }
-  let els = (_stroke-segments(segments, texture-stroke),)
+  let els = (_stroke-paths(paths, texture-stroke),)
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
   els += eyes.map(e => place(top + left, _fill(
     (_ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
