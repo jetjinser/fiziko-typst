@@ -122,7 +122,7 @@
 
 // MetaPost's default scaled arithmetic uses a 55-value subtractive stream.
 // `randomseed := n` is converted to 16.16 before the stream is initialized.
-#let _metapost-rng-sequence(seed, count) = {
+#let _metapost-rng-raw-sequence(seed, count) = {
   assert(seed != 0, message: "MetaPost seed zero is time-dependent")
   let modulus = 268435456
   let j = int(calc.abs(seed) * 65536)
@@ -158,10 +158,14 @@
       values = refill(values)
       cursor = 54
     } else { cursor -= 1 }
-    // `uniformdeviate 1` goes through a 16.16 scaled result.
-    out.push(calc.round(values.at(cursor) / modulus * 65536) / 65536)
+    out.push(values.at(cursor) / modulus)
   }
   out
+}
+
+#let _metapost-rng-sequence(seed, count) = {
+  _metapost-rng-raw-sequence(seed, count).map(value =>
+    calc.round(value * 65536) / 65536)
 }
 
 // One of MetaPost's eight cubic segments in fullcircle, rotated by 90°.
