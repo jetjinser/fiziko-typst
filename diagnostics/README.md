@@ -532,6 +532,10 @@ callback at recursive cut parameters instead of linearly interpolating sampled
 widths. It changed thin nodes from 27 to 30 without changing the 52 modeled
 calls, and regressed whole M11 RMSE `0.112950` → `0.113000` and globe RMSE
 `0.189896` → `0.190092`; it was reverted.
+Enabling the existing arc-based width interpolation on the coast call changed
+some sampled widths but left the six recursion trees and all call counts
+unchanged. Its 600 ppi whole/globe RMSE remained `0.11295018`/`0.18989608`,
+identical to baseline, so the option was not retained.
 
 The paired root cuts make that priority concrete. Upstream
 `offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the

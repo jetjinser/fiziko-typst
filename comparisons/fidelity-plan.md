@@ -201,6 +201,10 @@ affected source-parity crops do not materially regress.
   0.01187 percentage points. Rounding only the lightness-derived width also
   regressed RMSE (`0.11295018 → 0.11298345` whole, `0.18989608 → 0.19002779`
   globe) despite slightly closer ink coverage; that candidate was reverted.
+  Enabling the library's arc-based width interpolation for coast brushes
+  changed sampled widths slightly but left all six tree counts unchanged and
+  produced identical whole/globe RMSE (`0.11295018`/`0.18989608`); that
+  candidate was reverted too.
   Source/Typst calls remain 27/52. A parent-aware diagnostic corrects the
   previous mixed node/leaf count: visible source/Typst trees contain 106/48
   recursion nodes, with 46 paired nodes, 37 matching recurse/stop decisions,
