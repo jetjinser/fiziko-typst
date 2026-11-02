@@ -3720,6 +3720,11 @@
   result
 }
 
+#let _polyline-range(points, lengths, start, finish) = {
+  _polyline-window(points, lengths, (start + finish) / 2,
+    (finish - start) / 2)
+}
+
 #let _sort-crossings(events) = {
   let sorted = ()
   for e in events {
@@ -3814,8 +3819,18 @@
       own-level >= other-level
     }
   }
+  let layer-rank(strand-index, crossing-index, is-over) = {
+    if layers == auto { if is-over { 1 } else { 0 } }
+    else {
+      let own = layers.at(strand-index)
+      if type(own) == array and own.len() > 0 {
+        own.at(_mod(crossing-index, own.len()))
+      } else { own }
+    }
+  }
   let events = range(n).map(_ => ())
-  let overpasses = ()
+  let strand-crossings = range(n).map(_ => ())
+  let crossing-counts = range(n).map(_ => 0)
   for i in range(n) {
     for j in range(i + 1, n) {
       let pair-count = 0
@@ -3843,15 +3858,17 @@
               }
               let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
               let i-over = over-at(pair-count, i, j)
+              strand-crossings.at(i).push((sa,
+                layer-rank(i, crossing-counts.at(i), i-over)))
+              strand-crossings.at(j).push((sb,
+                layer-rank(j, crossing-counts.at(j), not i-over)))
+              crossing-counts.at(i) += 1
+              crossing-counts.at(j) += 1
               if i-over {
                 events.at(j).push((sb, crossing-half-gap(widths.at(i),
                   crossing-sine: crossing-sine)))
-                overpasses.push((i, sa, crossing-half-gap(widths.at(i),
-                  crossing-sine: crossing-sine)))
               } else {
                 events.at(i).push((sa, crossing-half-gap(widths.at(j),
-                  crossing-sine: crossing-sine)))
-                overpasses.push((j, sb, crossing-half-gap(widths.at(j),
                   crossing-sine: crossing-sine)))
               }
               pair-count += 1
@@ -3886,13 +3903,21 @@
                 let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
                 let half-gap = crossing-half-gap(widths.at(i),
                   crossing-sine: crossing-sine)
-                if over-at(pair-count, i, i) {
+                let self-over = over-at(pair-count, i, i)
+                if self-over {
                   events.at(i).push((sb, half-gap))
-                  overpasses.push((i, sa, half-gap))
+                  strand-crossings.at(i).push((sa,
+                    layer-rank(i, crossing-counts.at(i), true)))
+                  strand-crossings.at(i).push((sb,
+                    layer-rank(i, crossing-counts.at(i) + 1, false)))
                 } else {
                   events.at(i).push((sa, half-gap))
-                  overpasses.push((i, sb, half-gap))
+                  strand-crossings.at(i).push((sb,
+                    layer-rank(i, crossing-counts.at(i), true)))
+                  strand-crossings.at(i).push((sa,
+                    layer-rank(i, crossing-counts.at(i) + 1, false)))
                 }
+                crossing-counts.at(i) += 2
                 pair-count += 1
               }
             }
@@ -3902,33 +3927,56 @@
     }
   }
   let drawings = ()
-  for i in range(n) {
-    let fragments = if style == "tube" and occlusion == "mask" {
-      (strands.at(i),)
-    } else { _strand-fragments(strands.at(i), lengths.at(i), events.at(i)) }
-    if style == "tube" {
-      // The upstream knot stores the same radius consumed by tube.l; its
-      // tube macro doubles that radius when constructing the diameter.
-      drawings += fragments.map(part => tube(part, widths.at(i),
-        hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
-        end-caps: false))
-    } else {
-      drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
-        per: 0, fill: stroke, seed: seed))
-    }
-  }
-  // MetaPost's knot renderer masks each previously drawn tube by the
-  // silhouette of an over-passing tube. Recreate that local occlusion by
-  // erasing a tube-width corridor, then redraw the over-strand hatching.
   if style == "tube" and occlusion == "mask" {
-    for (strand-index, distance, half-width) in overpasses {
-      let part = _polyline-window(strands.at(strand-index),
-        lengths.at(strand-index), distance, half-width + widths.at(strand-index))
-      drawings.push(stroke-path(part,
-        stroke: (paint: white, thickness: 2 * widths.at(strand-index) * 1mm),
-        per: 0))
-      drawings.push(tube(part, widths.at(strand-index), hatch: "l",
-        w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
+    // MetaPost splits each strand halfway between successive intersections;
+    // each resulting path segment receives the corresponding intLayers rank.
+    let strand-segments = range(n).map(_ => ())
+    let layer-ranks = ()
+    for i in range(n) {
+      let sorted = _sort-crossings(strand-crossings.at(i))
+      if sorted.len() == 0 {
+        strand-segments.at(i).push((path: strands.at(i), rank: 0))
+        layer-ranks.push(0)
+      } else {
+        for k in range(sorted.len()) {
+          let crossing = sorted.at(k)
+          let start = if k == 0 { 0.0 }
+            else { (sorted.at(k - 1).at(0) + crossing.at(0)) / 2 }
+          let finish = if k + 1 == sorted.len() {
+            lengths.at(i).last()
+          } else { (crossing.at(0) + sorted.at(k + 1).at(0)) / 2 }
+          let part = _polyline-range(strands.at(i), lengths.at(i), start, finish)
+          strand-segments.at(i).push((path: part, rank: crossing.at(1)))
+          layer-ranks.push(crossing.at(1))
+        }
+      }
+    }
+    let sorted-ranks = layer-ranks.sorted()
+    for (rank-index, rank) in sorted-ranks.enumerate() {
+      if rank-index > 0 and rank == sorted-ranks.at(rank-index - 1) { continue }
+      for i in range(n) {
+        for segment in strand-segments.at(i) {
+          if segment.rank != rank { continue }
+          // A higher layer first erases lower-layer ink with its tube silhouette,
+          // then draws its own hatching, matching the source mask order.
+          drawings.push(stroke-path(segment.path,
+            stroke: (paint: white, thickness: 2 * widths.at(i) * 1mm), per: 0))
+          drawings.push(tube(segment.path, widths.at(i), hatch: "l",
+            w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
+        }
+      }
+    }
+  } else {
+    for i in range(n) {
+      let fragments = _strand-fragments(strands.at(i), lengths.at(i), events.at(i))
+      if style == "tube" {
+        drawings += fragments.map(part => tube(part, widths.at(i),
+          hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
+          end-caps: false))
+      } else {
+        drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
+          per: 0, fill: stroke, seed: seed))
+      }
     }
   }
   _join(drawings)

@@ -121,6 +121,17 @@ whole-plate RMSE from 0.12622 to 0.12662. This is a source-equation match with
 a small raster-score regression; the remaining latitude width law and coast
 random phase are still approximate.
 
+## M11 knot layer intervals
+
+Tube mask mode now follows `knotFromStrands`' interval construction: each
+strand is split halfway between adjacent crossings, the supplied per-crossing
+layer value is assigned to that interval, and higher-layer tube silhouettes
+erase earlier ink before their own hatch is drawn. On the 600 ppi M11 crop this
+reduces RMSE from 0.14280 to 0.14230. Ink coverage is 2.242% versus 2.606% in
+the source. The current strand inputs are sampled polylines, so the midpoint
+uses arc length rather than the MetaPost curve parameter; the erasing silhouette
+also remains a width stroke approximation.
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and

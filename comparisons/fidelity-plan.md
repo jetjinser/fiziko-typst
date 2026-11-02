@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
 | M9 wood panels | 0.22412 | 4.203% → 4.224% | Landscape panels use the source's internal axis swap; accepted knots advance the 28 brush draws. Source-traced panel offsets (0, 1456, 2823, 4120) improve later-panel field placement and coverage. The 600 ppi RMSE falls from 0.22456 to 0.22412. Contour-brush shapes remain approximate. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
-| M11 globe, eye, knot, refraction | 0.12622 | 4.917% → 4.776% | `coast-step: 0` connects projected source vertices directly; globe RMSE is 0.19545 with ink coverage 25.940% → 25.119%. Knot `occlusion: "mask"` draws continuous tubes then locally erases and redraws overpasses; knot RMSE is 0.14280 with ink coverage 2.279% (source 2.606%), a small improvement over gap mode (0.14316, 2.266%). Latitude-layer widths, coast RNG phase, curve-parameter crossing detection and exact tube-mask contours remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.12653 | 4.917% → 4.784% | `coast-step: 0` connects projected source vertices directly. Coast widths now use the source sphere normal/light dot product; globe crop RMSE is 0.19720 and ink 25.940% → 25.213%. Knot mask mode splits strands at crossing-interval midpoints, orders the resulting segments by their source layer values, erases prior ink with each higher tube silhouette, and redraws its hatch; knot RMSE is 0.14230 with ink 2.242% (source 2.606%). Segment boundaries still use sampled-polyline arc length rather than source curve time; exact tube masks remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20725 | 10.630% → 10.814% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650 (previously 0.09247), with ink 14.066% → 14.370%. Stipple coverage remains 7.079% → 7.138%. Brush recursion and local random details remain approximate. |
@@ -101,11 +101,13 @@ strokes, while M10 contains mostly whitespace.
    the same tube radius and removing the M11 fixture's unsupported extra gap
    lowers whole-plate RMSE to 0.12630 and knot RMSE to 0.14316; knot ink
    coverage is 2.266% (source 2.606%). Tube-style gaps now account for the
-   crossing angle, reducing knot crop RMSE from 0.14362. A new local mask mode
-   improves M11 knot crop RMSE from 0.14316 to 0.14280 and ink coverage from
-   2.266% to 2.279% (source 2.606%). It approximates the source's silhouette
-   masks by white overdraw and redraws the overpass hatch; exact source tube
-   contours and path-time crossing detection remain open. The latitude mode
+   crossing angle, reducing knot crop RMSE from 0.14362. Mask mode now splits
+   each strand midway between adjacent crossings, sorts the resulting tube
+   segments by their source layer values, then erases prior marks with the
+   higher segment's silhouette before drawing its hatch. This lowers M11 knot
+   crop RMSE from 0.14280 to 0.14230; ink is 2.242% versus 2.606% source.
+   Boundaries still use sampled-polyline arc length rather than source curve
+   time, and tube masks use a white stroke approximation. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush now follows the source projected-radius pen-width law;
