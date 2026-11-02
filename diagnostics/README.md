@@ -1099,8 +1099,9 @@ On the current pinned trace, 15 of 18 lane call totals match exactly. The
 remaining differences are call 4 lane 2 (`18` vs source `16`), call 4 lane 6
 (`8` vs `6`), and call 5 lane 2 (`12` vs `14`). Calls 1–3 and 6 match on all
 three traced lanes; the other call-4–6 lanes also match. Increasing path
-sampling from one to four or sixteen samples per source cubic leaves these
-call totals unchanged. This narrows the three mismatches beyond path density,
+sampling from one, two, four, eight, sixteen, or thirty-two points per source
+cubic leaves these call totals unchanged. This narrows the three mismatches
+beyond path density,
 but does not yet identify a production-safe recursive change. No renderer
 change is implied by this diagnostic.
 
@@ -1111,6 +1112,11 @@ centerline arc length and therefore changed the input curve. With source
 path-time interpolation, the replay still matches 15/18 lane totals and leaves
 the same three differences. This rules out arc-length resampling as their
 cause; production rendering is unchanged.
+
+Rounding `param-at` results onto the source 16.16 path-time grid also left the
+same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
+whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
+`0.0582292769 → 0.0582303411`; the candidate was reverted.
 
 A production trial inserted lane knots at shifted-outline intersections and
 resampled widths on the resulting time grid. It produced per-segment calls

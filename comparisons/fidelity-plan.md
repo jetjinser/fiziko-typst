@@ -166,6 +166,11 @@ affected source-parity crops do not materially regress.
   matching `offsetPathTemplate`'s straight `--` segments between integer-time
   samples. This replaces the diagnostic's former arc-length interpolation;
   the same 15/18 call totals remain, so the three branch mismatches persist.
+  A sweep from 1 through 32 geometry samples per source cubic leaves those
+  calls unchanged. Rounding mapped `param-at` values to 16.16 also leaves the
+  call vector unchanged and slightly regresses same-checkout M11 RMSE
+  (`0.1128986841 → 0.1128987766`; knot crop `0.0582292769 → 0.0582303411`);
+  that production candidate was reverted.
   Reproduction is documented in `diagnostics/README.md`.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
