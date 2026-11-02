@@ -217,6 +217,13 @@ affected source-parity crops do not materially regress.
   a near-endpoint `firstIntersectionTimes` behavior but does not yet isolate
   its low-level cause or justify a production special case. Continue pairing
   the Typst interpolation interval and source cut inputs on masses 2 and 4.
+  A reduced MetaPost probe reproduces the M2 hit using only this cubic and its
+  original ray bounds: local time `0.95935` (full q time `3.95935`) returns
+  the hit; raising
+  the target by one 16.16 unit returns `0.99634`, and lowering it by one unit
+  returns no hit. The source result is therefore reproducible independently
+  of coast traversal; the remaining implementation gap is matching this
+  fixed-point cubic intersection behavior in the Typst brush model.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.

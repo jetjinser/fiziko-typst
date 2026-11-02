@@ -502,10 +502,16 @@ ray has no hit. The cubic ends at q time 4, so MetaPost cuts about 0.160 mm
 before the endpoint although the exact target equals its endpoint width. This
 confirms a near-endpoint `firstIntersectionTimes` case, but does not yet
 identify which low-level intersection step causes the early hit or justify a
-production special case. Mass 4 has 31 source nodes and five Typst nodes, with four of five
-paired decisions agreeing. The current trace also logs each source normal and
-its lightness. For
-source mass 4's first callback, the normal is
+production special case. A reduced MetaPost probe in
+`m11_coast_endpoint_intersection.mp` reproduces the behavior from that one
+cubic plus the original template's ray bounds: exact endpoint target gives
+`t=0.95935`; raising the target by one 16.16 unit moves the hit to `0.99634`,
+and lowering it by one unit returns no hit. This isolates the behavior to
+MetaPost's intersection routine and exact fixed-point inputs, independently of
+the rest of the coastline traversal. Mass 4 has 31 source nodes and five
+Typst nodes, with four of five paired decisions agreeing. The current trace
+also logs each source normal and its lightness. For source mass 4's first
+callback, the normal is
 `(0.19894, -0.45815, 0.86633)` at `(16.91675, -38.96030)` MetaPost units;
 the corresponding Typst coast sample uses the globe center `(19, 22)` mm and
 diameter `30` mm, yielding a normalized vector within 0.001 per component.
@@ -591,6 +597,18 @@ The instrumented source also emits `S101-CUTINPUT`, `S101-HIT1/2`, and
 `S101-QX1/QY1` or `S101-QX2/QY2` records. They contain exact 16.16 midpoint,
 target, hit times, and cubic controls for reproducing near-endpoint cases
 without relying on rounded `S101-CUBIC` values.
+
+To reproduce the reduced endpoint probe:
+
+```sh
+mkdir -p /tmp/m11-endpoint-probe
+cp original/fiziko.mp diagnostics/m11_coast_endpoint_intersection.mp \
+  /tmp/m11-endpoint-probe/
+nix develop path:./nix --command bash -c \
+  'cd /tmp/m11-endpoint-probe && mpost -interaction=nonstopmode \
+    -halt-on-error -jobname=probe m11_coast_endpoint_intersection.mp'
+rg '(EXACT|ABOVE|BELOW) ' /tmp/m11-endpoint-probe/probe.log
+```
 
 The source transcript brackets each coast brush with `M11-COAST-BEGIN` and
 `M11-COAST-END`; count `S101 NODE` and `S101-CUBIC` markers only inside those
