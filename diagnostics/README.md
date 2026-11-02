@@ -928,11 +928,13 @@ The source instrumenter also emits unique `S104-TNODE` endpoint IDs and
 `S104-TDASH` markers. On row `-6.37912`, these pair all five source dash leaves
 with three Typst dash-eligible leaves. The first divergent width cut belongs
 to the same depth-4 path on both sides: source cuts at x=39.539 mm, Typst at
-x=44.895 mm. The selected width levels are close after unit conversion, so the
-remaining difference is in crossing placement or midpoint selection. A
-diagnostic-only `width-by-arc` trial left the 17-node tree unchanged and was
-discarded. Compare the source template's cumulative arc-length knots directly
-before changing production behavior.
+x=44.895 mm. The source width base/step/target (0.06642/0.00830/0.15773 in
+MetaPost units) match Typst after unit conversion. A diagnostic-only
+`width-by-arc` trial left the 17-node tree unchanged. Treating quantized flat
+segments as crossing intervals increased total Typst thin nodes from 1739 to
+3259 (source: 1696), so that candidate was reverted. Pair the source template
+knots with the corresponding Typst sample intervals before changing production
+behavior.
 
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model

@@ -182,13 +182,15 @@ strokes, while M10 contains mostly whitespace.
    nodes and 3 dash-eligible leaves. Unique source leaf IDs now pair five
    source dashes against three Typst dashes. The first tree divergence is a
    shared depth-4 path: MetaPost cuts it at x=39.539 mm, while Typst cuts it at
-   x=44.895 mm. The selected levels are close after unit conversion
-   (0.15773 source points versus 0.05564 mm in Typst), so the remaining
-   discrepancy is in where the width curve crosses that level or how the
-   midpoint-nearest crossing is chosen. A diagnostic-only arc-length width
-   interpolation trial left this row's 17-node tree unchanged and was
-   discarded; the source template's cumulative arc-length knots need direct
-   comparison before changing production behavior.
+   x=44.895 mm. The selected width base, step and level agree after unit
+   conversion: source values are 0.06642/0.00830/0.15773 pt; Typst's
+   corresponding values convert from 0.023432/0.002928/0.055644 mm to the
+   same values. The residual is therefore in the sampled crossing geometry or
+   midpoint selection, not the width thresholds. A diagnostic-only arc-length
+   interpolation trial left the row's 17-node tree unchanged. A flat-interval
+   crossing candidate increased total Typst thin nodes from 1739 to 3259
+   (source: 1696), so it was reverted. Keep the production model until the
+   source template knots and corresponding Typst sample intervals are paired.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to

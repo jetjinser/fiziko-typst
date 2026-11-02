@@ -94,7 +94,8 @@ def main() -> None:
                 & decimal(ypart(point length(p) of p)/mm);
             message "S104-THIN " & decimal(traceHatchRow) & " "
                 & decimal(traceThisThin) & " " & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
-                & " " & decimal(w2) & " " & decimal(t)
+                & " " & decimal(w2) & " " & decimal(minWidth)
+                & " " & decimal(dashStrokeWidthStep) & " " & decimal(t)
                 & " " & decimal(arclength(p))
                 & " " & decimal(arclength(brushPath1))
                 & " " & decimal(arclength(brushPath2));
