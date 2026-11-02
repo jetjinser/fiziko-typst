@@ -399,6 +399,12 @@ were unchanged. The rounding toggle alone does not improve the coast image,
 so it was reverted. The coast recursion still needs a source-matched width
 and crossing model rather than a global rounding switch.
 
+An isolated width-only quantization probe also failed the raster gate: rounding
+the lightness-derived coast width to 16.16 while leaving recursion unchanged
+moved whole M11 RMSE to `0.11298345` and globe RMSE to `0.19002779`. Globe ink
+coverage moved closer (`26.35265% → 26.34438%`), but both errors increased, so
+this narrower candidate was reverted too.
+
 `instrument_m11_coasts.py` resets a counter around each source drawing stage.
 On the pinned M11 input, MetaPost consumes 780 calls while constructing p1,
 2676 for p2, then `[6, 15, 0, 3, 1, 0, 1, 1]` across the eight coastline

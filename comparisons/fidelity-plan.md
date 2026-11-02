@@ -198,7 +198,10 @@ affected source-parity crops do not materially regress.
   open: turning `_source-rounding` on for coast brushes alone regressed the
   same-checkout M11 RMSE `0.11295018 → 0.11302680` and globe crop
   `0.18989608 → 0.19019925`, although globe ink coverage moved closer by
-  0.01187 percentage points. That candidate was reverted. Source/Typst calls
+  0.01187 percentage points. Rounding only the lightness-derived width also
+  regressed RMSE (`0.11295018 → 0.11298345` whole, `0.18989608 → 0.19002779`
+  globe) despite slightly closer ink coverage; that candidate was reverted.
+  Source/Typst calls
   are 27/52 over visible masses, and thin-node totals
   are 106/27. Continue pairing source cut parameters and width-cubic ranges on
   masses 2 and 4. Acceptance: improve paired leaf/call traces and the globe
