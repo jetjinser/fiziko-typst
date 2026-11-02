@@ -167,6 +167,33 @@ whole-plate RMSE from 0.12622 to 0.12662. This is a source-equation match with
 a small raster-score regression; the remaining latitude width law and coast
 random phase are still approximate.
 
+`instrument_m11_coasts.py` resets a counter around each source drawing stage.
+On the pinned M11 input, MetaPost consumes 780 calls while constructing p1,
+2676 for p2, then `[6, 15, 0, 3, 1, 0, 1, 1]` across the eight coastline
+brushes. The current Typst latitude layers report 348 and 580 dash-stream
+calls with their land/ocean masks. These are not yet equivalent counters:
+Typst counts only its modeled dash calls, while the source wrapper counts every
+`uniformdeviate`, including brush recursion and p2's randomized lightness
+callback. This explains why a coast stream offset cannot yet be inferred from
+the Typst layer counts; the source recursion and callback calls need porting or
+tracing into the Typst RNG cursor first.
+
+To reproduce the source stage counts and the Typst layer counts inside the
+Nix devshell:
+
+```sh
+mkdir -p /tmp/m11-coast-trace
+python3 diagnostics/instrument_m11_coasts.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-coast-trace/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m11-coast-trace/main.mp
+printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-trace/trace.mp
+(cd /tmp/m11-coast-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'M11-(P1|P2|COAST)' /tmp/m11-coast-trace/trace.log
+typst eval 'query(<m11-coast-rng>).first().value' \
+  --in diagnostics/m11_coast_rng_trace.typ --root .
+```
+
 ## M11 source knot paths and layer intervals
 
 The M11 fixture's original sine samples did not reproduce the actual curves in
