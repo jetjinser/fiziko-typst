@@ -19,7 +19,8 @@ def main() -> None:
     )
     if source.count(anchor) != 1:
         raise ValueError(f"expected one wood-knot hook, found {source.count(anchor)}")
-    hook = anchor + (
+    hook = "traceWoodCandidate := true;\n                " + anchor + (
+        "\n                traceWoodCandidate := false;"
         '\n                message "WKCAND " & decimal(i) & " " & decimal(j) & " "'
         ' & decimal(woodBlockRes*xpart(wKnot[-1])/woodBlockDetail) & " "'
         ' & decimal(woodBlockRes*ypart(wKnot[-1])/woodBlockDetail) & " "'
@@ -79,6 +80,8 @@ def main() -> None:
     source = source.replace(block_anchor, block_hook)
     source = source.replace("uniformdeviate(", "traceUniformdeviate(")
     source += """
+boolean traceWoodCandidate;
+traceWoodCandidate := false;
 numeric traceRngCount;
 numeric traceRngTotal;
 numeric traceRngCalls;
@@ -97,7 +100,12 @@ vardef traceUniformdeviate (expr x) =
         traceRngCalls := 0;
         traceRngBatches := traceRngBatches + 1;
     fi;
-    uniformdeviate(x)
+    save traceRandomValue;
+    traceRandomValue := uniformdeviate(x);
+    if traceWoodCandidate:
+        message "WKRAND " & decimal(x) & " " & decimal(traceRandomValue);
+    fi;
+    traceRandomValue
 enddef;
 """
     Path(sys.argv[2]).write_text(source)

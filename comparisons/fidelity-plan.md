@@ -440,6 +440,16 @@ affected source-parity crops do not materially regress.
   consistently reduce the paired knot-coordinate residuals, so the candidate
   was reverted. Trace the source random product and shifted grid coordinate
   separately before another knot-generation change.
+  A second candidate formed the source `mm`/`cm` point constants before
+  rounding the bound and final coordinate. The new `WKRAND` trace confirms
+  this does not remove the coordinate residual: paired point-unit
+  residuals remain around `0.00008–0.00041 mm`, and 600 ppi RMSE regresses on
+  both M9 (`0.21156032 → 0.21161418`) and S105
+  (`0.10213793 → 0.10214069`). This candidate was also reverted. Keep the
+  added candidate-only `WKRAND` source trace; its 57 existing `WKCAND` records
+  are byte-for-byte unchanged, so the instrumentation preserves the source
+  random sequence. The next arithmetic probe should expose the exact shifted
+  `wKnot` pair before the `woodBlockRes/detail` output conversion.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →

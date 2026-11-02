@@ -561,12 +561,16 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-source-trace/trace.mp
 (cd /tmp/m9-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'WKCAND' /tmp/m9-source-trace/trace.log
+rg 'WKRAND' /tmp/m9-source-trace/trace.log
 typst eval 'query(<m9-wood-knot-trace>).first().value' \
   --in diagnostics/wood_knot_trace.typ --root .
 ```
 
 `WKCAND` coordinates are MetaPost units; divide by `72/25.4` to convert them
 to millimetres. The final field reports output-space coordinates in millimetres.
+`WKRAND` records the two candidate-only `uniformdeviate` bounds and returned
+products immediately before the pair is shifted into `wKnot`; it is restricted
+to the candidate assignment and leaves the existing `WKCAND` sequence intact.
 
 ## M11 coastline lightness
 
