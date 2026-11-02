@@ -65,10 +65,15 @@ affected source-parity crops do not materially regress.
   and whole M11 RMSE from 0.112672 to 0.112661.
 - [ ] **M11 knot dash-phase restarts.** The source-cubic geometry is now
   retained, but Typst still consumes 202 calls against 224 source calls across
-  the six visible intervals. Pair the current width-threshold leaf intervals
-  against the two source splits previously measured at 11.976–12.483 mm and
-  18.780–19.219 mm; acceptance is matching those two phase restarts and
-  improving the six per-interval call counts without regressing M11/M4/M6.
+  the six visible intervals. The rounded source-normal diagnostic now matches
+  all 19 source dash leaves and 38 source calls on target lane k=6; projected
+  leaf endpoints differ by 0.00364 mm mean and 0.01194 mm maximum arc length.
+  It restores the phase restarts near 17.894 and 18.780 mm. The previous
+  17-leaf result used `source-rounding: false` and was not representative of
+  production tube rendering. The broader source-normal render candidate still
+  regresses M11/M4/M6, so lane-level phase pairing is improved but no production
+  shading change is retained. Acceptance remains matching the six
+  per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
   Typst use the same subdivision request and matching width thresholds, yet
   the first divergent shared depth-4 cut is x=39.539 mm versus x=44.895 mm.

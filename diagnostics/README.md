@@ -594,17 +594,29 @@ thin-brush dash placement are reconciled. The diagnostic now reports
 `candidate-calls` and `candidate-edge-calls` without changing drawing output.
 
 The target k=6 lane's source trace contains 19 thin-brush dash leaves; the
-current Typst lane has 5 and the source-normal width candidate has 17. The
-candidate's quantized dash widths match the source levels within 0.00002 mm.
-Projecting both leaf sets onto the same sampled lane shows two specific source
-splits that Typst merges: source intervals 11.976–12.483 and 12.547–13.073 mm
-share one candidate interval 11.976–13.069 mm; source intervals
-18.780–19.219 and 19.273–19.876 mm share candidate interval
-18.783–19.876 mm. The missing source gaps are only 0.064 and 0.054 mm. This
-narrows the remaining four random values on this lane to two short local width
-troughs and their dash-phase restart, rather than a broad width-scale error.
-Earlier pre-cubic traces attributed the gaps to a 0.02009 rad tangent error;
-the retained `source-cubic-step: 4` model resolves that tangent discrepancy.
+current Typst lane has 5. An earlier source-normal width diagnostic produced
+17 leaves and appeared to merge two source intervals, but it called
+`_ink-loops` with `source-rounding: false`, unlike the production tube path.
+With production 16.16 rounding enabled, the source-normal diagnostic produces
+19 leaves and 38 random calls, matching the source lane's 19 leaves and 38
+calls. Projecting the source and Typst leaf endpoints onto the same sampled
+lane gives 0.00364 mm mean and 0.01194 mm maximum arc-position error; maximum
+geometric projection error is 0.00134 mm. The two restarts near arc positions
+17.894 and 18.780 mm are present in both traces. Reproduce this focused result
+after generating the source and Typst traces above with:
+
+```sh
+nix develop path:./nix --command python3 diagnostics/compare_m11_knot_dashes.py \
+  /tmp/m11-tube-outline-trace/trace.log /tmp/m11-knot-tube-trace.json \
+  --candidate
+```
+
+This resolves the lane-level phase-pairing discrepancy in the rounded
+diagnostic. It does not establish a production shading fix: the broader
+source-normal rendering candidate still regresses M11/M4/M6 and worsens the
+six-interval call distribution, so it remains reverted. Earlier pre-cubic
+traces attributed the apparent gaps to a 0.02009 rad tangent error; the
+retained `source-cubic-step: 4` model resolves that tangent discrepancy.
 The source cubic controls for both `currentTubePath` and k=6 `currentPath` (36
 segments each) remain available for exact sample pairing.
 

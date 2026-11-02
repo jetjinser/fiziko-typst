@@ -89,7 +89,7 @@
         let result = _ink-loops(piece.frames, piece.widths, piece.closed,
           _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
           dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
-          source-rounding: false,
+          source-rounding: true,
           trace-nodes: strand == 0 and segment == 0 and lane-index == 1
             and piece-index == 0)
         calls += result.at(1)
@@ -98,7 +98,7 @@
         let candidate-result = _ink-loops(piece.frames, candidate-widths,
           piece.closed, _source-min-stroke, _source-dash-length,
           seed: 1 + piece.seed-offset, dash-extra: 0.01 * _mp-unit,
-          dash-cap: 1, with-stats: true, source-rounding: false,
+          dash-cap: 1, with-stats: true, source-rounding: true,
           trace-nodes: strand == 0 and segment == 0 and lane-index == 1
             and piece-index == 0)
         candidate-calls += candidate-result.at(1)
