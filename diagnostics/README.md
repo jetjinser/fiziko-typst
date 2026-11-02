@@ -411,6 +411,14 @@ render regressed both plates: M9 RMSE `0.212742 → 0.212848` and S105
 `0.102443 → 0.102495`. Revert the field-arithmetic candidate; the lower grid
 sample error alone did not preserve the contour rendering.
 
+A narrower `source-walk` probe left the field and levels unchanged, rounding
+only each edge-crossing parameter and physical contour point to MetaPost's
+16.16 grids. Against the same-checkout source-parity reports, M9 RMSE regressed
+`0.21155798 → 0.21162015`. S105 changed only `0.10213802 → 0.10213798`, with
+block crop `0.12790809 → 0.12790793` and surface crop
+`0.07693635 → 0.07693648`. Revert this probe: it does not improve the wood
+contour pair as a whole.
+
 MetaPost computes each thin node's `w2` level from the average of its two
 endpoint widths. A direct Typst probe using the path endpoint widths was
 reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends

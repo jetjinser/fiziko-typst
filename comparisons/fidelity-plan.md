@@ -356,6 +356,11 @@ affected source-parity crops do not materially regress.
   A field-operation 16.16 probe improved the 72 grid samples (mean/max
   `8.48e-6/4.58e-5`, 37 exact matches versus 29), but regressed 600 ppi M9
   `0.212742 → 0.212848` and S105 `0.102443 → 0.102495`; it was reverted.
+  A narrower contour-only probe rounded edge parameters and physical crossing
+  points to 16.16 while leaving field sampling untouched. It regressed same-
+  checkout M9 RMSE `0.21155798 → 0.21162015`; S105 changed only
+  `0.10213802 → 0.10213798` (block `0.12790809 → 0.12790793`, surface
+  `0.07693635 → 0.07693648`). This candidate was also reverted.
   The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate
