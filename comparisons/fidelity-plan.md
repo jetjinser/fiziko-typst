@@ -326,7 +326,12 @@ contours with the sampled source rings (the measured render regressed).
    they omit recursive brush draws and mix coastline work with the masked
    latitude layers. Per-mass leaf and callback tracing is still needed before
    a source stream offset can be inferred. A fixed stream offset tested with
-   the prior projection and again with closed contours was reverted.
+   the prior projection and again with closed contours was reverted. An
+   independent diagnostic that copied the production width closure fails
+   Typst type inference (`cannot join float with float`), while the production
+   globe fixture still compiles. Put any further trace hook inside `globe`'s
+   existing coastline calculation so the trace observes the exact production
+   widths and recursion inputs instead of maintaining a parallel closure.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
