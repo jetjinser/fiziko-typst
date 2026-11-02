@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -36,6 +36,21 @@
   let frames = _frame(points, false)
   let fractions = _path-fractions(frames.map(e => e.at(0)), false)
   let widths = fractions.map(width)
+  let source-arc-fixed = if segment.at(2) == 93 {
+    let arcs = (0,)
+    for i in range(frames.len() - 1) {
+      let a = frames.at(i).at(0)
+      let b = frames.at(i + 1).at(0)
+      let p0 = (a.at(0) / _mp-unit, a.at(1) / _mp-unit)
+      let p3 = (b.at(0) / _mp-unit, b.at(1) / _mp-unit)
+      let p1 = (p0.at(0) + (p3.at(0) - p0.at(0)) / 3,
+        p0.at(1) + (p3.at(1) - p0.at(1)) / 3)
+      let p2 = (p0.at(0) + 2 * (p3.at(0) - p0.at(0)) / 3,
+        p0.at(1) + 2 * (p3.at(1) - p0.at(1)) / 3)
+      arcs.push(arcs.last() + _mp-fixed-cubic-arc-raw((p0, p1, p2, p3)))
+    }
+    arcs
+  } else { () }
   let ink = _ink-loops(frames, widths, false, _source-min-stroke,
     _source-dash-length, random-stream: stream, rng-offset: cursor,
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
@@ -53,6 +68,7 @@
     start: segment.at(0), end: segment.at(1),
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,
+    source-arc-fixed: if segment.at(2) == 93 { source-arc-fixed } else { () },
     width-min: calc.min(..widths), width-max: calc.max(..widths),
     sample-times: fractions, sample-widths: widths,
     outer: ink.at(2).outer, thin: ink.at(2).thin,

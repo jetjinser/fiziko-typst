@@ -2266,6 +2266,18 @@ typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
 
+On row 93 (`y=-6.37912`), rebuilding q x knots from fixed-point cubic arc
+lengths of the sampled straight segments does not change the q-candidate tree:
+it remains 11 outer / 9 thin nodes and 4 dash leaves, versus source 21 / 19 / 5.
+The source root q knots are `0, 2298558, 4597113, 6895671, 6895777` in 16.16
+bp; the Typst line-arc reconstruction gives
+`0, 2298550, 4597100, 6895650, 6895754`, ending 23 units short. This residual
+comes from the scanline segment endpoints: after the source page's vertical
+flip, paired endpoint coordinates differ by about 0.0001–0.0002 mm.
+Fixed-point arc arithmetic alone
+does not correct that geometry. The experimental q injection was removed; the
+row's fixed-arc knots remain in its metadata for follow-up endpoint mapping.
+
 The source instrumenter also emits unique `S104-TNODE` endpoint IDs and
 `S104-TDASH` markers. On row `-6.37912`, these pair all five source dash leaves
 with three Typst dash-eligible leaves. The first divergent width cut belongs
