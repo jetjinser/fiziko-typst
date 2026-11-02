@@ -49,6 +49,19 @@ better geometry and has cross-plate coverage tradeoffs; see the M11 knot
 trace below. Constant-radius M4 boundary paths consume no dash calls, while
 variable-radius boundary-call behavior remains open.
 
+`_ink-loops(..., source-rounding: true)` now rounds the scalar interpolation
+fraction to 16.16, rounds each width-times-fraction product as a dimensional
+MetaPost value, and rounds their sum. The fraction and width use different
+quantizers; treating `1 - fraction` as a length produced the wrong units and
+was corrected before final measurements. At 600 ppi, paired same-checkout
+reports show M4 RMSE `0.06017598 → 0.05947335`, M11 `0.11295018 → 0.11289878`
+and its knot crop `0.05881920 → 0.05823034`, and S105 `0.10214839 →
+0.10213793`. M9 changes by only `+0.00000057`; S104 changes by `+0.00001057`
+(hatch crop `+0.00005715`). The remaining 15 plates have identical regional
+metrics. All 20 cases rendered successfully. M11 brush call counts remain
+`224` source versus `226` Typst; this width-arithmetic fix improves the raster
+but does not yet match recursive call trees.
+
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`

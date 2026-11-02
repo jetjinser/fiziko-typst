@@ -370,6 +370,12 @@
     positions
   } else { () }
 
+  let width-interpolate(a, b, f) = if source-rounding {
+    let q = _mp-scalar-rounded(f)
+    let one-minus-q = _mp-scalar-rounded(1 - q)
+    _mp-rounded(_mp-rounded(a * one-minus-q) + _mp-rounded(b * q))
+  } else { a * (1 - f) + b * f }
+
   // Fractional sample coordinates let recursive cuts land exactly where the
   // width template crosses its target, as cutPathTime does in MetaPost.
   let frame-index(s) = {
@@ -385,7 +391,7 @@
     )
   }
   let width-index(s) = {
-    if width-by-arc {
+    let value = if width-by-arc {
       let base = calc.floor(s)
       let t = s - base
       let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
@@ -400,14 +406,15 @@
       let span = arc-positions.at(k + 1) - arc-positions.at(k)
       let f = if span > 0 { calc.clamp((arc - arc-positions.at(k)) / span, 0.0, 1.0) } else { 0.0 }
       let j = if closed { _mod(k + 1, n) } else { k + 1 }
-      ws.at(k) * (1 - f) + ws.at(j) * f
+      width-interpolate(ws.at(k), ws.at(j), f)
     } else {
       let base = calc.floor(s)
       let t = s - base
       let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
       let j = if closed { _mod(base + 1, n) } else { calc.clamp(base + 1, 0, n - 1) }
-      ws.at(i) * (1 - t) + ws.at(j) * t
+      width-interpolate(ws.at(i), ws.at(j), t)
     }
+    value
   }
   // Optional source-template time. Some callers retain the width template's
   // original knots, whose path parameter is not uniform in physical length.

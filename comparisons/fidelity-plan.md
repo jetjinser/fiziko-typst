@@ -57,6 +57,18 @@ source; it does not promise that every implementation attempt improves raster
 RMSE. Keep each change only when source-level agreement improves and the
 affected source-parity crops do not materially regress.
 
+- [x] **MetaPost fixed-point brush-width interpolation.** With
+  `source-rounding: true`, `_ink-loops` separately rounds the scalar fraction,
+  each dimensional width product, and their sum to source 16.16 precision.
+  Same-checkout 600 ppi reports cover all 20 plates. M4 RMSE improves
+  `0.06017598 → 0.05947335`; M11 improves `0.11295018 → 0.11289878`, with knot
+  crop `0.05881920 → 0.05823034`; S105 improves `0.10214839 → 0.10213793`.
+  M9 changes only `+0.00000057`, while S104 changes `+0.00001057` (hatch crop
+  `+0.00005715`); the other 15 plates' regional metrics are identical. Keep
+  the arithmetic correction with these small measured tradeoffs. It does not
+  resolve the remaining M11 call-vector difference (`224` source, `226`
+  Typst).
+
 - [x] **M11 knot centerline tangent.** Reconstruct the source cubic from
   five equally spaced input samples over each four-interval source segment.
   The fitted controls match the traced MetaPost midpoint cubic within
