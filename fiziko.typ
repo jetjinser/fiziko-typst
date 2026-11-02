@@ -491,7 +491,9 @@
       // source-rounded mode `cut` is that quantized parameter; comparing the
       // same margin to physical arc length changes recursion near crossings.
       let valid = if param-times == none and source-rounding {
-        cut > margin and cut < path.last() - margin
+        let local-cut = source-path-time(path, cut)
+        let local-end = source-path-time(path, path.last())
+        local-cut > margin and local-cut < local-end - margin
       } else if param-times == none { at > margin and total - at > margin }
         else { source-cut-valid(path, cut, margin) }
       if not valid { none } else {

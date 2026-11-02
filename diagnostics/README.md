@@ -936,10 +936,20 @@ less faithful and its raster gain is negligible.
 
 The thin-recursion endpoint guard had also compared the source's path-time
 margin (`t > 0.01` and `t < length(p) - 0.01`) against physical arc length.
-In source-rounded mode it now compares the quantized cut parameter in the
-same path-time units. A regenerated, endpoint-paired trace matches all 142
-source hatch rows to Typst rows within 0.0015 mm. Aggregate outer recursion
-decisions move from 942 to 1270 (source: 1340), and thin decisions from 1577
+An initial correction compared the quantized cut parameter in path-time units.
+A follow-up source audit showed that MetaPost evaluates this condition on each
+recursive subpath, whose local parameter starts at zero. The current
+source-rounded guard therefore maps each cut and subpath endpoint back to
+their local path times before applying the margin. This changes the traced
+recursion tree without changing the S104 raster: the candidate and baseline
+600 ppi Typst PNGs have identical SHA-256 hashes, and both report whole-plate
+RMSE `0.20702865` and hatch RMSE `0.07528521`. The previous global-parameter
+guard trace below remains useful as a historical comparison, not as the
+current local-guard node count. For the earlier global-parameter guard, a
+regenerated, endpoint-paired trace matched all 142 source hatch rows to Typst
+rows within 0.0015 mm. In that earlier global-parameter implementation,
+aggregate outer recursion decisions moved from 942 to 1270 (source: 1340),
+and thin decisions from 1577
 to 1739 (source: 1696); all 142 rows pair by endpoints with maximum summed
 endpoint error 0.0015 mm, and 80 rows now have exact outer/thin node counts. The
 S104 PDF pixel hash and RMSE remain unchanged (`0.20702865` whole plate,
@@ -1010,17 +1020,19 @@ branch. The diagnostic's `arc-width-nodes` and `arc-width-calls` fields are
 populated only for row 93. Treating quantized flat segments as crossing
 intervals increased total Typst thin nodes from 1739 to 3259 (source: 1696),
 so that candidate was reverted. A source trace now links every thin-node ID
-to its template knots, cubic controls, and `cutPathTime` hit pair. For source
-node 173, `w2` and the middle knot are exactly 10337/65536 pt. The next cubic
-segment's control/end widths are 10337, 10336, 10336, 10336 in that grid. The
-one-unit descent rounds back onto the threshold near the template midpoint.
-MetaPost records that midpoint-side hit at x=43.3005 with q time 1.469, versus
-the other hit at x=35.0732 with q time 1; this selects the page-space cut
-x=39.539 mm. Typst's sampled width polyline has no corresponding rounded
-cubic hit and chooses x=44.895 mm. The specific behavior to port is therefore
-the source width template's `--` cubic controls, 16.16 control-point rounding,
-and intersection behavior through recursive subpaths. Arc-length interpolation
-alone cannot reproduce this branch.
+to its template knots, cubic controls, and `cutPathTime` hit pair. At the first
+divergent parent, source node 172, `w2` and the middle knot are exactly
+10337/65536 pt. The next cubic segment's control/end widths are 10337, 10337,
+10336, 10336 in that grid. Its midpoint is a one-unit tie; MetaPost's
+`cutPathTime` trace selects that midpoint-side hit (q time 1.50017, x=52.61568)
+over the other hit (q time 1, x=35.07321). This maps to the page-space cut
+x=39.539 mm. Typst's sampled width polyline chooses x=44.895 mm. The following
+child, source node 173, shows the same behavior again at a nearby midpoint:
+its 16.16 cubic value before rounding is 10336.546…, and its source hit has q
+time 1.469 at x=43.3005. That child cut is separate from the parent cut above.
+The specific behavior to port is the source width template's `--` cubic
+controls, 16.16 point evaluation, and intersection behavior through recursive
+subpaths. Arc-length interpolation alone cannot reproduce this branch.
 
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model
