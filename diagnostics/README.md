@@ -533,16 +533,10 @@ share one candidate interval 11.976–13.069 mm; source intervals
 18.783–19.876 mm. The missing source gaps are only 0.064 and 0.054 mm. This
 narrows the remaining four random values on this lane to two short local width
 troughs and their dash-phase restart, rather than a broad width-scale error.
-At both troughs, the source normal trace gives width 0.026209 mm while the
-source-normal Typst candidate gives 0.026759 mm. The points themselves pair
-within 0.00011 mm, but source centerline angle is −0.77792 rad and Typst's is
-−0.79801 rad (0.02009 rad difference). This crosses the local thin-width
-level, removing the two source splits. The next implementation target is the
-source cubic tangent used for `currentTubePath`, rather than a global light or
-width scale. The instrumenter now emits the cubic control points of both the
-source `currentTubePath` and k=6 `currentPath` (36 segments each), so a
-follow-up can reconstruct and compare the tangent at the exact source width
-samples.
+Earlier pre-cubic traces attributed the gaps to a 0.02009 rad tangent error;
+the retained `source-cubic-step: 4` model resolves that tangent discrepancy.
+The source cubic controls for both `currentTubePath` and k=6 `currentPath` (36
+segments each) remain available for exact sample pairing.
 
 Replaying that trace and differentiating the cubic controls of
 `currentTubePath` at the 37 k=6 width samples reproduces the source
@@ -558,6 +552,17 @@ the source tangent within 0.000156 rad maximum (0.000033 rad mean). Enabling
 0.058819 and whole-plate RMSE from 0.112672 to 0.112661. Ink coverage remains
 2.843% against 2.606% source; segment calls are still 202 against 224, so the
 two short dash-phase restarts remain open.
+
+The regenerated post-cubic trace pairs source call 2, lane k=6 to Typst's
+strand 0, interval 0, `u=0.5` lane within 0.000039 mm mean point error. At its
+37 matched samples, flipping the vertical component in the Typst cross-section
+normal gives source-normal error 0.000055 mean and 0.000127 maximum; the old
+sign gives 0.573 mean and 0.983 maximum. Applying that correction only to
+`u=0.5` lanes moves this lane from 10 to 34 calls (source: 38), but across all
+six intervals raises total calls from 202 to 240 (source: 224) and worsens the
+per-interval distribution. The diagnostic-only lane scope was reverted; the
+normal evidence alone does not justify a production shade-law change while
+the existing global source-normal candidate regresses the raster.
 
 ### M11 knot tube lanes and shared RNG
 
