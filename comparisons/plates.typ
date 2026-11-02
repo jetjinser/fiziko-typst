@@ -110,7 +110,9 @@
     + stroke-path(circle-pts(10,128,center:(136,22)), stroke: 0.35pt + black, closed: true, per: 0)
     + refraction-path(((122,17),(128,17)), circle-pts(10,128,center:(136,22)), ior: 1.5))
   } else if case == "S102" {
-    (tube(((7,32),(35,10),(56,31)), 3, hatch: none, per: 8, seed: seed)
+    // The source's `..` joins are smooth cubics; dense Hobby resampling keeps
+    // the outline approximation below the 600 ppi pixel scale.
+    (tube(((7,32),(35,10),(56,31)), 3, hatch: none, per: 64, seed: seed)
     + sphere(26, center: (90,22), seed: seed, shadow-planes: (
         sphere-shadow-plane(((-4,-18),(-2,-18),(-2,18),(-4,18)), 12),
       )))

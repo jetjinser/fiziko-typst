@@ -39,6 +39,17 @@ the option is deliberately restricted to longitudinal tubes. M11 boundary
 lane calls are now traced, but variable-radius boundary behavior and exact
 subdivision still differ, so this is not yet a complete tube RNG port.
 
+S102's outline-only tube uses two source MetaPost `..` joins through three
+points. Typst's `tube` reconstructs their Hobby curve, then approximates the
+offset outlines with `per` samples per segment. The comparison fixture's
+former `per: 8` leaves visible faceting against the source cubic. Raising it to
+64 lowers 600 ppi tube-crop RMSE `0.07861 → 0.01821` and whole-plate RMSE
+`0.06951 → 0.04909`; tube dark-ink coverage moves from 0.6135% to 0.6195%
+against 0.6208% source. The sphere crop is unchanged at 0.09110. Intermediate
+densities 16 and 32 also improve monotonically, but 64 better resolves the
+outline at the measurement scale. This is a comparison-specific sampling
+setting; the `tube` API and its caller-controlled `per` value are unchanged.
+
 The pinned `tubeGenerate` loop includes both boundary lanes (`k=0` and
 `k=bw1`). The first M4 pilot drew them with sampled offset geometry; it raised
 ink coverage from 1.751% to 1.835% against 1.789% source and slightly

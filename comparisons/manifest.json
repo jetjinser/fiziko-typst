@@ -116,7 +116,7 @@
       "title": "Tube outline and cast shadow", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 102,
       "shared": {"tube_radius_mm": 3, "sphere_diameter_mm": 26, "shadow_depth_mm": 12, "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Same tube path, sphere size, mask polygon and source shadow depth; outline interpolation and shadow projection differ.",
+      "notes": "The source tube follows two MetaPost smooth cubic joins; Typst samples the same Hobby path at per: 64. Same sphere size, mask polygon and source shadow depth. Tube crop RMSE is 0.01821 with 0.6195% vs 0.6208% dark coverage; the sphere remains the larger residual (0.09110 crop RMSE), where shadow projection differs.",
       "regions_mm": {"tube": [3,4,56,39], "sphere": [73,5,38,38]}
     },
     "S103": {
