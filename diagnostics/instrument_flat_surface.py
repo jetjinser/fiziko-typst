@@ -130,20 +130,18 @@ def main() -> None:
                 & decimal(floor(w2*256)) & " "
                 & decimal(round((w2*256 - floor(w2*256))*256));
             if traceHatchRow = -6.37912:
-                if traceThisThin >= 172:
-                    for tracePathControl := 0 step 1 until length(p) - 1:
-                        message "S104-PCURVE " & decimal(traceHatchRow) & " "
-                            & decimal(traceThisThin) & " " & decimal(tracePathControl) & " "
-                            & decimal(xpart(point tracePathControl of p)/mm) & " "
-                            & decimal(ypart(point tracePathControl of p)/mm) & " "
-                            & decimal(xpart(postcontrol tracePathControl of p)/mm) & " "
-                            & decimal(ypart(postcontrol tracePathControl of p)/mm) & " "
-                            & decimal(xpart(precontrol (tracePathControl+1) of p)/mm) & " "
-                            & decimal(ypart(precontrol (tracePathControl+1) of p)/mm) & " "
-                            & decimal(xpart(point (tracePathControl+1) of p)/mm) & " "
-                            & decimal(ypart(point (tracePathControl+1) of p)/mm);
-                    endfor;
-                fi;
+                for tracePathControl := 0 step 1 until length(p) - 1:
+                    message "S104-PCURVE " & decimal(traceHatchRow) & " "
+                        & decimal(traceThisThin) & " " & decimal(tracePathControl) & " "
+                        & decimal(xpart(point tracePathControl of p)/mm) & " "
+                        & decimal(ypart(point tracePathControl of p)/mm) & " "
+                        & decimal(xpart(postcontrol tracePathControl of p)/mm) & " "
+                        & decimal(ypart(postcontrol tracePathControl of p)/mm) & " "
+                        & decimal(xpart(precontrol (tracePathControl+1) of p)/mm) & " "
+                        & decimal(ypart(precontrol (tracePathControl+1) of p)/mm) & " "
+                        & decimal(xpart(point (tracePathControl+1) of p)/mm) & " "
+                        & decimal(ypart(point (tracePathControl+1) of p)/mm);
+                endfor;
             fi;
 ''' + control_trace("thin", "            ") + '''
         fi;'''

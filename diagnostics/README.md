@@ -1205,6 +1205,21 @@ calls from 699 to 668. The 600 ppi render also regresses: whole S104 RMSE
 was reverted. The matched node is a useful local oracle, but reproducing it
 alone does not establish a better brush tree across rows.
 
+The source centerline trace hook has since been widened to capture every
+recursive path segment on this row; its prior `traceThisThin >= 172` filter
+missed node 164 after the trace serials changed. A fresh source/Typst pair
+confirms that the source's node 172 width segment has fixed-point controls
+`10337, 10337, 10336, 10336` at threshold `10337`. A Typst fixed-point cubic
+evaluator selects x=39.537 mm, matching the source x=39.539 mm at that cut.
+Applying the evaluator across all width segments yields 1692 Typst thin nodes
+(source 1696) but regresses 600 ppi RMSE from `0.207029`/`0.075285` to
+`0.207368`/`0.077099` (whole/hatch); total brush calls are 1554 versus 1516
+source. A narrower evaluator, activated only when the threshold equals a
+rounded cubic control, yields 1524 thin nodes and 1494 calls, with whole/hatch
+RMSE `0.207325`/`0.076870`. Both production candidates were reverted: matching
+the one midpoint tie does not yet preserve the source tree across its recursive
+subpaths and rows.
+
 A diagnostic-only port of that cubic model was tried after the trace above.
 It used the original global cubic controls with 64 subdivisions per Typst path
 segment, then bisected candidate threshold crossings. It did not reproduce the
