@@ -1549,6 +1549,49 @@ nix develop path:./nix --command python \
 MetaPost's documented `arclength` uses recursive bisection and an adaptive
 Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); the verified fixed-point implementation now supplies the arc-length primitive needed for the remaining q-template integration.
 
+### M11 q replay from production lane samples
+
+The q replay can now use the actual sampled inner lanes emitted by
+`m11_knot_tube_trace.typ`, rather than center cubics sampled from the source
+trace. A geometry comparison pairs source call/lane records to the Typst
+segments: source call 4/lane 2 and 4/lane 6 pair to strand 1/segment 0/lanes 5
+and 1; call 5/lane 2 pairs to strand 1/segment 2/lane 5. The exporter then
+maps those samples through the traced `shadowCut` time splices and supplies the
+source callback widths. Its source-arc mode matches all three complete trees,
+confirming the geometry pairing and splice map. With arcs calculated from the
+Typst samples, call 4/lane 6 still matches its 20-node tree; calls 4/lane 2
+and 5/lane 2 each stop two nodes early (38/40 and 28/30). Their segment arc
+errors peak at 24–26 fixed units, with about 9.2 units mean absolute error.
+A fifth-sample least-squares cubic fit shifts the error but is not a universal
+fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
+the quarter-sample implementation as the measured baseline; no production
+renderer change is claimed.
+
+Rebuild the actual Typst lane trace and compare generated, fifth-fit, and
+source-arc q trees with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-knot-tube-trace>).first().value' \
+  --in diagnostics/m11_knot_tube_trace.typ --root . \
+  > build/m11-knot-tube-trace.json
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_typst_q_inputs.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json \
+  build/m11-production-q-inputs.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-production-q-replay>).first().value' \
+  --in diagnostics/m11_production_q_replay.typ --root . \
+  > build/m11-production-q-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json \
+  --nodes-field source-arc-q-nodes
+```
+
 Removing the injected q controls and increasing only the sampled center-curve
 density does not recover all three trees. At 8 samples per cubic, calls 4/lanes
 2 and 6 match their 40- and 20-node trees, but call 5/lane 2 grows to 36 nodes

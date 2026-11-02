@@ -141,6 +141,30 @@
             (-a.at(1) + 3 * b.at(1)) / 72)
   (p0, p1, p2, p3)
 }
+#let _mp-fixed-cubic-from-fifth-samples-raw(samples) = {
+  assert(samples.len() == 5, message: "fifth-sample cubic fit needs five points")
+  let p = samples.map(point => point.map(axis => calc.round(axis * 65536)))
+  let p0 = p.at(0)
+  let p25 = p.at(1)
+  let p50 = p.at(2)
+  let p75 = p.at(3)
+  let p3 = p.at(4)
+  let solve(axis) = {
+    let r25 = 64 * p25.at(axis) - 27 * p0.at(axis) - p3.at(axis)
+    let r50 = 64 * p50.at(axis) - 8 * p0.at(axis) - 8 * p3.at(axis)
+    let r75 = 64 * p75.at(axis) - p0.at(axis) - 27 * p3.at(axis)
+    let b1 = 27 * r25 + 24 * r50 + 9 * r75
+    let b2 = 9 * r25 + 24 * r50 + 27 * r75
+    let p1 = _mp-fixed-round-ratio(1386 * b1 - 1062 * b2, 793152)
+    let p2 = _mp-fixed-round-ratio(-1062 * b1 + 1386 * b2, 793152)
+    (p1 / 65536, p2 / 65536)
+  }
+  let x = solve(0)
+  let y = solve(1)
+  ((p0.at(0) / 65536, p0.at(1) / 65536),
+   (x.at(0), y.at(0)), (x.at(1), y.at(1)),
+   (p3.at(0) / 65536, p3.at(1) / 65536))
+}
 #let _mp-fixed-cubic-arc(points) = _mp-fixed-cubic-arc-raw(points.map(point =>
   point.map(axis => axis / 1mm / _mp-unit)))
 #let _mp-cubic-split(points, t) = {

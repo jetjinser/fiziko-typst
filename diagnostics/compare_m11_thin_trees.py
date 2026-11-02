@@ -69,6 +69,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log")
     parser.add_argument("replay_json")
+    parser.add_argument("--nodes-field", default="q-nodes",
+                        choices=("q-nodes", "fifth-arc-q-nodes", "blended-arc-q-nodes",
+                                 "source-arc-q-nodes"))
     args = parser.parse_args()
     log = Path(args.log).read_text()
     replay = json.loads(Path(args.replay_json).read_text())
@@ -77,7 +80,7 @@ def main():
         source_q = source_q_paths(log, call, lane)
         item = next(record for record in replay
                     if (record["call"], record["lane"]) == (call, lane))
-        candidate = [node for node in item["q-nodes"]
+        candidate = [node for node in item[args.nodes_field]
                      if node["stage"] == "thin"]
         if len(source) != len(source_q):
             raise ValueError(
