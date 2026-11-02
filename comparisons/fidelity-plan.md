@@ -135,10 +135,14 @@ affected source-parity crops do not materially regress.
   source endpoints and differ at width-level/candidate validity; three later
   pairs have 0.115–0.501 mm endpoint error. The source root path is 17.2808 mm,
   versus Typst's 14.5469 mm, because its two boundary-cell endpoints are
-  absent. An extension candidate moved that path to 16.8732 mm but worsened
-  thin-tree pairing (40 pairs, 34/40 decisions) and changed dash calls to 22;
-  at 600 ppi M9 regressed `0.212742 → 0.214788`, so it was reverted. The source
-  clip order is confirmed, but path extension alone does not fix recursion.
+  absent. Adding the exact source endpoints `(22,34)`/`(12,34)` moves the root
+  length to 16.8732 mm while keeping the tree at 11/48 nodes, 12 dashes and 24
+  calls; pairing remains 42 nodes and 37/42 decisions. However, 600 ppi M9 RMSE
+  rises `0.212742 → 0.214067` even as ink coverage moves closer to source.
+  S105 is effectively unchanged at 0.102443. The endpoint extension was
+  reverted; closer length and call counts alone do not improve the source
+  image. (An earlier endpoint guess used the wrong boundary coordinate and is
+  excluded from these measurements.)
   A one-scalar-unit level-bias candidate fixes the first close branch, but the
   corrected `per: 0` trace worsens tree agreement: paired nodes fall 42 → 40,
   pairs within 0.1 mm fall 34 → 30, decisions 37/42 → 36/40, and dash leaves

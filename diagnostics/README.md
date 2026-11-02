@@ -245,6 +245,18 @@ S105 RMSE improved from 0.102443 to 0.102240, but its ink coverage fell from
 The source clip ordering remains confirmed; reproducing the full path alone is
 insufficient without matching its width-template and recursive cut behavior.
 
+A follow-up added only the exact source endpoint tuples `(22,34)` and
+`(12,34)` to the clipped contour. At `per: 0`, the Typst root length moves
+from 14.54685 to 16.87318 mm, while the first cut remains 0.00383 mm from the
+source. The tree remains at 11 outer / 48 thin nodes with 12 dash leaves and
+24 RNG calls; 42 parent-aware pairs and 37/42 decisions still agree, while
+pairs within 0.1 mm move from 34 to 33. A full 600 ppi M9 comparison shows the
+visual cost: RMSE rises `0.212742 → 0.214067`, while ink coverage moves closer
+from 3.7497% to 3.8294% (source: 4.2032%). S105 is effectively unchanged at
+RMSE 0.102443 and coverage 0.6960% (source: 0.7405%). The candidate was
+reverted: matching the gross path length and source call count does not
+improve the paired M9 image.
+
 The source instrumenter now emits `WBTFIX`, recording `w0`, `w1`, `w2`,
 `minWidth`, and `dashStrokeWidthStep` in 16.16 MetaPost point units. At the
 first close divergence (source call 10), the source values are
