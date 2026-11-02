@@ -1175,8 +1175,24 @@ control-point boxes, tries the four child pairs in order, and returns the
 midpoint times after 17 bisections. Its returned times therefore need not equal
 the mathematical cubic roots. See sections 524 and 531–537 of
 [Knuth's MetaPost source manual](https://mirror.gutenberg-asso.fr/tex.loria.fr/prod-graph/mp.pdf#page=190).
-The production port still uses a sampled width crossing; these exact controls
-make a source-algorithm comparison possible before changing it.
+The path-level search retries with overlap tolerance steps 0, 3, and 6; the
+cubic-level tolerance grows with each bisection. `replay_s104_intersections.py`
+models those retries, the four-pair ordering, the 17-level midpoint result,
+and Fiziko's forward/reverse selection:
+
+```sh
+python3 diagnostics/replay_s104_intersections.py \
+  /tmp/s104-intersection-source/trace.log -15.3487
+```
+
+On the recorded row, the floating-point model reproduces 8 of 11 source cuts
+within one 16.16 path-time unit. It still misses three cuts, including the
+near-endpoint child whose source cut is `0.01159668` but whose replay remains
+near the opposite side. The remaining error is consistent with MetaPost's
+fixed-point packet arithmetic and endpoint fallback, which this model does not
+yet emulate exactly. This is a useful localization diagnostic, not a validated
+production solver; keep the renderer unchanged until the outstanding cases
+are resolved. The production port still uses a sampled width crossing.
 
 The source outer-node and Typst recursion logs now include centerline
 endpoints and cut points, allowing exact row pairing. On one symmetric-width
