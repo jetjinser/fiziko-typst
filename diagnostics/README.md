@@ -252,6 +252,26 @@ sample-time domains therefore need an explicit point-by-point pairing before
 changing the width mapping; the new control trace is diagnostic evidence, not
 a production renderer change.
 
+Thin-node metadata now records widths at both path endpoints. On the paired
+call-10 node, Typst's reversed endpoint widths are 0.04978701 and
+0.05564368 mm; they pair with the source's 0.04977 and 0.05563 mm within
+0.000018 and 0.000014 mm. The endpoint orientation is therefore accounted for
+on this branch. The remaining level-9/level-10 split is sensitive to the
+small local cell-range difference; a global level bias previously worsened
+the aggregate tree and remains reverted. Next compare the exact source and
+Typst cell-corner field values feeding these two endpoint widths.
+
+`CLVFIX` now records the first 72 source lattice values as exact 16.16 chunks.
+Compared after undoing Typst's 24x contour-field scale and applying the same
+16.16 scalar rounding, their mean absolute difference is `1.23e-5` field
+units, with `6.10e-5` maximum. Around the branch, source cell `(3,16)` has
+range `0.033203125`; the corresponding Typst corners give `0.033157349`, a
+`-4.58e-5` difference. The source/Typst value at corner `(4,16)` differs by
+three scalar units. This is enough to explain why the branch is numerically
+close to a width-level boundary, but it does not establish that adjusting the
+field arithmetic will improve the full contour tree; measure such a change
+against both M9 and S105.
+
 MetaPost computes each thin node's `w2` level from the average of its two
 endpoint widths. A direct Typst probe using the path endpoint widths was
 reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends

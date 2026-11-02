@@ -687,6 +687,8 @@
       let recurse = hi - lo >= step and depth < 15 and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
+          width-start: width-index(path.first()),
+          width-end: width-index(path.last()),
           target: target, width-base: base, width-step: thin-step, length: total,
           path-start: frame-index(path.first()).at(0),
           path-end: frame-index(path.last()).at(0),

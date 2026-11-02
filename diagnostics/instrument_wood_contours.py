@@ -202,6 +202,9 @@ def main() -> None:
                         if (j >= 12) and (j <= 23):
                             message "CLVALUE " & decimal(i) & " " & decimal(j) & " "
                                 & decimal(wood[i][j]);
+                            message "CLVFIX " & decimal(i) & " " & decimal(j) & " "
+                                & decimal(floor(wood[i][j]*256)) & " "
+                                & decimal(round((wood[i][j]*256-floor(wood[i][j]*256))*256));
                         fi;
                     fi;
                 fi;"""

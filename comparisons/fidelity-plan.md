@@ -139,6 +139,17 @@ affected source-parity crops do not materially regress.
   `offsetPathTime` samples of `iL`, then recurses over `reverse(iL)`; Typst
   currently interpolates widths by normalized arc fraction. Pair these time
   domains and path orientations explicitly before changing the width law.
+  Typst thin-node traces now include endpoint widths: at paired call 10 they
+  match the source endpoints in reversed spatial order within
+  `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;
+  the level-9/10 disagreement is sensitive to local cell-range values.
+  Compare the source and Typst cell-corner samples before considering a local
+  correction; the global level bias remains reverted.
+  `CLVFIX` now captures exact 16.16 source values for the first 72 lattice
+  samples. Against Typst after undoing its 24x contour scale, mean/max absolute
+  errors are `1.23e-5/6.10e-5`; source cell `(3,16)` has range `0.033203125`
+  versus Typst `0.033157349`. This supports investigating source arithmetic at
+  field corners, with M9 and S105 renders required before retaining a change.
   The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate
