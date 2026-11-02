@@ -38,8 +38,8 @@ included where a plate contains distinct drawing families.
 | M11 globe, eye, knot, refraction | 0.11490 | 4.917% → 4.790% | `coast-step: 0` connects projected source vertices directly. Coast widths use the source sphere normal/light dot product; globe crop RMSE is 0.19720 and ink 25.940% → 25.213%. The knot fixture uses 193 source-curve points per strand at 1/8 path-time intervals; knot crop RMSE falls from 0.06233 to 0.05979 versus the 1/4-sample version. Mask mode splits strands at crossing-interval midpoints, orders by source layer, erases prior ink with each higher tube silhouette, and redraws hatch. Crossing detection and tube silhouettes remain sampled/approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
-| S104 flat surfaces | 0.20725 | 10.630% → 10.814% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650 (previously 0.09247), with ink 14.066% → 14.370%. Stipple coverage remains 7.079% → 7.138%. Brush recursion and local random details remain approximate. |
-| S105 wood block and surface | 0.09852 | 0.741% → 0.606% | Landscape-axis mapping rounds field extents to integer-mm fixture bounds; the source-traced 536-call offset puts the first surface knot within 0.001 mm of the source coordinate. `contour-brush: "cell-range"` uses cLine's per-cell width law; field offsets now consume once per source 1/3 mm column. At 600 ppi block RMSE is 0.12161 (ink 1.077% → 0.733%); surface RMSE is 0.07655 (ink 0.489% → 0.521%). The source-column correction slightly regresses this plate from 0.09792; width interpolation and dash calls remain approximate. |
+| S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. Some brush recursion and local random details still differ. |
+| S105 wood block and surface | 0.09837 | 0.741% → 0.601% | Landscape-axis mapping rounds field extents to integer-mm fixture bounds; the source-traced 536-call offset puts the first surface knot within 0.001 mm of the source coordinate. `contour-brush: "cell-range"` uses cLine's per-cell width law with source-scaled 16.16 width levels; field offsets consume once per source 1/3 mm column. At 600 ppi block RMSE is 0.12142 (ink 1.077% → 0.733%); surface RMSE is 0.07644 (ink 0.489% → 0.519%). cLine traversal interpolation and dash calls remain approximate. |
 | S106 weights | 0.07663 | 1.091% → 1.106% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile plus a 2 mm body offset and 2*shadingDensity auricle capsule reduces hanging crop RMSE to 0.06998; ink is 1.131% → 1.263%. Auricle interior shading and tube hatch remain approximate. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
@@ -57,7 +57,8 @@ strokes, while M10 contains mostly whitespace.
    dark coverage moved from 0.01% above the source to 0.69% below it; rendering
    took 47.6 s versus 40.3 s. The improvement is real but modest, so the
    library default remains keyed. Longitudinal tubes now have an explicit
-   MetaPost-stream mode; M4 RMSE improves from 0.07127 to 0.07109. The same
+   MetaPost-stream mode; source-unit-aware 16.16 thin-brush threshold rounding
+   lowers M4 RMSE further from 0.07109 to 0.07025. The same
    transverse pilot worsens M7 from 0.12453 to 0.12532 and is not enabled.
    Missing boundary-lane brush calls and exact recursive subdivision still
    limit the tube stream. Brush stipples and further wood call-order matching
@@ -83,8 +84,11 @@ strokes, while M10 contains mostly whitespace.
    0.07598. Surface ink moves from 0.599% to 0.510% against 0.489% source.
    Applying this mode to M9 instead raises RMSE from 0.22411 to 0.24644 and
    ink coverage from 4.224% to 4.432%, so M9 retains uniform connected strokes
-   while its contour traversal and brush phase are investigated. The width
-   interpolation, dash recursion and source random-call ordering remain open.
+   while its contour traversal and brush phase are investigated. Source-scaled
+   16.16 thin-brush threshold rounding moves the current S105 column-stream
+   comparison from 0.09852 to 0.09837; block/surface crops improve from
+   0.12161/0.07655 to 0.12142/0.07644. cLine traversal interpolation, dash
+   recursion and source random-call ordering remain open.
 3. **Reconcile `flatSurface` and the S103 fill families.** The port now uses
    upstream stroke/row scales, the lightness envelope, three-track stipples,
    and the source's four-row glass dash cycle. At 600 ppi S103 whole-plate
@@ -96,15 +100,15 @@ strokes, while M10 contains mostly whitespace.
    `pathSubdivide` count per hatch line. These changes lower S104 whole-plate
    RMSE to 0.20725 and hatch crop RMSE to 0.07650; hatch ink coverage is
    14.37% versus 14.07% in the source, while stipple coverage remains close
-   (7.14% versus 7.08%). Prior S104 width and row-phase scans used the wrong
-   hatch orientation and are superseded. Remaining hatch differences are
-   concentrated in brush stroke shape and random details. A source row-level
-   RNG trace counts 1516 calls across 142 drawable rows versus 1322 in Typst.
-   Rounding width interpolation and thin-brush thresholds to MetaPost's 16.16
-   precision increased exact per-row call-count matches only from 87 to 89,
-   left the total unchanged, and regressed hatch RMSE to 0.07974; that prototype
-   was reverted. Further recursion changes should identify the missing calls
-   or branch gates before altering the width law.
+   (7.14% versus 7.08%). Source row-level tracing found 1516 calls across 142
+   drawable rows versus 1322 before the threshold fix. Rounding the width
+   level ratio as a dimensionless 16.16 scalar raises Typst to 1540 calls,
+   with exact per-row counts on 108 rows; hatch crop RMSE falls further to
+   0.07530 and whole-plate RMSE to 0.20703. An earlier prototype incorrectly
+   quantized this ratio as a millimetre length and regressed; it was reverted.
+   Prior S104 width and row-phase scans used the wrong hatch orientation and
+   are superseded. Remaining hatch differences are concentrated in brush
+   stroke shape and random details.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to

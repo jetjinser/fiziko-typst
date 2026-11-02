@@ -40,7 +40,7 @@
       "shared": {"arc_center_mm": [55,68], "arc_radius_mm": 42, "arc_degrees": [205,335], "arc_segments": 40, "tube_radius_mm": 6, "source_seed": 1},
       "nominal": {"seed": 1, "per": 4, "max_width": 0.30},
       "calibrated": {"seed": 1, "per": 4, "max_width": 0.308},
-      "notes": "The nominal Typst renderer opts into rng: metapost for longitudinal hatch dashes; at 600 ppi its RMSE is 0.07109 (keyed baseline 0.07127), with dark coverage 1.8045% vs 1.8385% source (keyed baseline 1.8049%). Calibrated mode slightly increases maximum hatch width (TeX pt)."
+      "notes": "The nominal Typst renderer opts into rng: metapost for longitudinal hatch dashes. Unit-aware 16.16 thin-brush width-level rounding lowers 600 ppi RMSE from 0.07109 to 0.07025 (keyed baseline 0.07127). Calibrated mode slightly increases maximum hatch width (TeX pt)."
     },
     "M5": {
       "title": "Suspended sphere composite",
@@ -130,14 +130,14 @@
       "title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "The source +30° hatch maps to -30° on the Typst page because the fixture flips its vertical axis. The MetaPost RNG mode reverses row traversal and uses its random pathSubdivide count (3 + round(uniformdeviate(2))) for each hatch. At 600 ppi hatch crop RMSE is 0.07650 with ink coverage 14.37% vs 14.07% source; stipple coverage remains close (7.14% vs 7.08%). Whole-plate RMSE is 0.20725 with ink coverage 10.81% vs 10.63%. Brush recursion and local random details still differ.",
+      "notes": "The source +30° hatch maps to -30° on the Typst page because the fixture flips its vertical axis. The MetaPost RNG mode reverses row traversal and uses its random pathSubdivide count (3 + round(uniformdeviate(2))) for each hatch. Unit-aware 16.16 thin-brush width-level rounding gives a 600 ppi hatch crop RMSE of 0.07530 with ink coverage 14.36% vs 14.07% source; stipple coverage remains close (7.14% vs 7.08%). Whole-plate RMSE is 0.20703 with ink coverage 10.81% vs 10.63%. Some brush recursion and local random details still differ.",
       "regions_mm": {"hatch_panel": [0,0,61,44], "stipple_panel": [61,0,59,44]}
     },
     "S105": {
       "title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105,
       "shared": {"wood_block_mm": [39,12], "source_grid_mm": 1, "source_seed": 1},
       "nominal": {"seed": 1, "surface_rng_offset": 536}, "calibrated": {"seed": 1, "surface_rng_offset": 536},
-      "notes": "The plank and wooden surface use the source knot-warped field, a 1 mm Typst contour grid, source-sized per-contour level offsets, rounded field extents and landscape-axis mapping. Field offsets now consume one random value per 1/3 mm woodBlockRes column. Source woodenSurface consumes 536 global random calls through the plank; the first surface knot matches its traced source coordinate within 0.001 mm. Both use the explicit contour-brush cell-range mode, which applies cLine's per-cell width law after undoing the field's 1/24 normalization. At 600 ppi, whole-plate RMSE is 0.09852; block RMSE is 0.12161 and surface RMSE is 0.07655, with surface ink coverage 0.521% vs source 0.489%. The corrected random-column law slightly regresses this plate from 0.09792; width interpolation, dash recursion and call order remain approximate.",
+      "notes": "The plank and wooden surface use the source knot-warped field, a 1 mm Typst contour grid, source-sized per-contour level offsets, rounded field extents and landscape-axis mapping. Field offsets consume one random value per 1/3 mm woodBlockRes column. Source woodenSurface consumes 536 global random calls through the plank; the first surface knot matches its traced source coordinate within 0.001 mm. Both use the explicit contour-brush cell-range mode, which applies cLine's per-cell width law after undoing the field's 1/24 normalization and rounds thin-brush levels in source 16.16 units. At 600 ppi, whole-plate RMSE is 0.09837; block RMSE is 0.12142 and surface RMSE is 0.07644, with surface ink coverage 0.519% vs source 0.489%. cLine traversal interpolation and dash calls remain approximate.",
       "regions_mm": {"block": [0,0,53,44], "surface": [55,0,65,44]}
     },
     "S106": {

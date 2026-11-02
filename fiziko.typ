@@ -33,6 +33,11 @@
 #let _source-max-shading = 1.5 * _source-min-stroke
 #let _source-spacing = 3 * _source-max-shading
 #let _source-dash-length = 6 * _source-min-stroke
+// MetaPost stores both dimensional (bp) and dimensionless values as 16.16.
+// Use distinct quantizers because lengths in mm and scalar ratios have
+// different scaled units.
+#let _mp-rounded(x) = calc.round(x / _mp-unit * 65536) / 65536 * _mp-unit
+#let _mp-scalar-rounded(x) = calc.round(x * 65536) / 65536
 
 // ---------------------------------------------------------------------------
 // vector helpers — points are (x, y) float pairs in mm
@@ -327,7 +332,8 @@
 #let _ink-loops(fr, ws, closed, minw, minlen, seed: 0, dash-extra: 0, dash-cap: 0,
                 random-stream: none, rng-offset: 0,
                 with-rng: false, with-stats: false,
-                param-times: none, param-end: none, trace-nodes: false) = {
+                param-times: none, param-end: none, trace-nodes: false,
+                source-rounding: false) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -595,9 +601,23 @@
           total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
         }
       }
-      let base = minw / 3
+      let source-min = if not source-rounding { minw } else { _mp-rounded(minw) }
+      let base = if not source-rounding { minw / 3 } else {
+        _mp-rounded(source-min / 3)
+      }
+      let thin-step = if not source-rounding { step } else {
+        _mp-rounded(_mp-rounded(source-min - base) / 16)
+      }
+      let midpoint = if not source-rounding { (hi + lo) / 2 }
+        else { _mp-rounded(_mp-rounded(hi + lo) / 2) }
+      let level = if not source-rounding {
+        calc.floor((midpoint - base) / thin-step)
+      } else {
+        calc.floor(_mp-scalar-rounded(_mp-rounded(midpoint - base) / thin-step))
+      }
       let target = if lo > base - 0.01 * _mp-unit {
-        base + calc.floor(((hi + lo) / 2 - base) / step) * step
+        let width = base + level * thin-step
+        if not source-rounding { width } else { _mp-rounded(width) }
       } else { base }
       let candidate = split-path(path, target)
       let split = if candidate != none and (candidate.at(2) > minlen or candidate.at(3) > minlen) {
@@ -1002,7 +1022,8 @@
 #let stroke-ink(pts, w, offset: 0, closed: true, per: 12,
                 min-w: _source-min-stroke, period: _source-dash-length, seed: 0,
                 shift: (0, 0), fill: black,
-                _random-stream: none, _rng-offset: 0, _with-rng: false) = {
+                _random-stream: none, _rng-offset: 0, _with-rng: false,
+                _source-rounding: false) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1017,7 +1038,7 @@
   let ink = _ink-loops(fr, ws, closed, min-w, period,
     seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     random-stream: _random-stream, rng-offset: _rng-offset,
-    with-rng: _with-rng)
+    with-rng: _with-rng, source-rounding: _source-rounding)
   let drawing = place(top + left,
     _fill(if _with-rng { ink.at(0) } else { ink }, fill))
   if _with-rng { (drawing, ink.at(1)) } else { drawing }
@@ -2104,7 +2125,8 @@
             let result = _ink-loops(piece.frames, piece.widths, piece.closed,
               min-w, period, random-stream: random-stream,
               rng-offset: rng-cursor, with-rng: true,
-              dash-extra: 0.01 * _mp-unit, dash-cap: 1)
+              dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+              source-rounding: true)
             els.push(place(top + left, _fill(result.at(0), black)))
             rng-cursor += result.at(1)
           }
@@ -2348,7 +2370,8 @@
         let drawn = stroke-ink(pts, t => width(t, 6 / 7, 2),
           closed: false, per: 0, min-w: _source-min-stroke,
           period: _source-dash-length, seed: seed + s.at(2),
-          _random-stream: stream, _rng-offset: cursor, _with-rng: true)
+          _random-stream: stream, _rng-offset: cursor, _with-rng: true,
+          _source-rounding: true)
         items.push(drawn.at(0))
         cursor += drawn.at(1)
       } else {
@@ -3011,7 +3034,7 @@
           closed: false, min-w: _source-min-stroke,
           period: _source-dash-length, seed: seed, per: 0,
           _random-stream: contour-stream, _rng-offset: brush-cursor,
-          _with-rng: true)
+          _with-rng: true, _source-rounding: true)
         source-brushes.push(drawn.at(0))
         brush-cursor += drawn.at(1)
       } else { segments.push(path.map(p => _add(p, (x0, y0)))) }
@@ -3098,7 +3121,7 @@
       let drawn = stroke-ink(path, width, closed: false,
         min-w: _source-min-stroke, period: _source-dash-length,
         seed: seed, per: 0, _random-stream: contour-stream,
-        _rng-offset: brush-cursor, _with-rng: true)
+        _rng-offset: brush-cursor, _with-rng: true, _source-rounding: true)
       source-brushes.push(drawn.at(0))
       brush-cursor += drawn.at(1)
     }

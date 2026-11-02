@@ -32,11 +32,12 @@ MetaPost call order has not been ported. See the paired artifacts under
 
 Longitudinal `tube(..., rng: "metapost")` now carries the same cursor through
 section-major lane traversal. On M4 its nominal 600 ppi RMSE changes from
-0.07127 to 0.07109; dark coverage changes from 1.8049% to 1.8045% (source:
-1.8385%). The M7 transverse pilot worsened RMSE from 0.12453 to 0.12532, so the
-option is deliberately restricted to longitudinal tubes. Recursive boundary
-lane calls and source-exact subdivision still need tracing before this can
-stand in for a complete tube RNG port.
+0.07127 to 0.07109; unit-aware 16.16 thin-brush threshold rounding lowers it
+further to 0.07025. Dark coverage before that change was 1.8045% (source:
+1.8385%). The M7 transverse pilot worsened RMSE from 0.12453 to 0.12532, so
+the option is deliberately restricted to longitudinal tubes. Recursive
+boundary-lane calls and source-exact subdivision still need tracing before
+this can stand in for a complete tube RNG port.
 
 ## WoodBlock source-field pilot
 
@@ -54,8 +55,10 @@ are 1456, 2823, 4120 and 5416, so Typst now starts the four panels at offsets
 0, 1456, 2823 and 4120. M9's 600 ppi whole-plate RMSE falls from 0.22456 to
 0.22407, with 4.224% ink coverage (source 4.203%). The 1/3 mm random-column
 correction changes M9 from 0.22412 to 0.22407; S105 moves from 0.09792 to
-0.09852 (block 0.12161, surface 0.07655). Source contour-brush shapes remain
-approximate; see the measured per-cell brush mode below.
+0.09852 (block 0.12161, surface 0.07655). Source-scaled 16.16 threshold
+rounding subsequently lowers the current S105 comparison to 0.09837 (block
+0.12142, surface 0.07644). Source contour-brush shapes remain approximate;
+see the measured per-cell brush mode below.
 
 S105's landscape transform and stream continuity now follow the pinned source
 trace; the contour-brush rendering and per-brush call count remain different.
@@ -493,19 +496,16 @@ ranges match (0.68–39.69 mm). MetaPost scans those rows in y-up order, so
 assigning its shared random stream. Each row now uses the same random
 `pathSubdivide` count as MetaPost (`3 + round(uniformdeviate(2))`), rather than
 using a fixed 24-segment path. At 600 ppi hatch crop RMSE falls from 0.09247 to
-0.07650; ink coverage is 14.37% versus 14.07% in the source. S104 full-plate
-RMSE falls from 0.21054 to 0.20725, with ink coverage 10.81% versus 10.63%.
-Brush leaf geometry and local random consumption still approximate MetaPost.
-The per-row source counter added to `instrument_flat_surface.py` now confirms
-1516 random calls across the 142 drawable hatch rows, versus 1322 in the
-Typst trace (including each row's randomized subdivision count). A prototype
-that rounded width interpolation and thin-brush thresholds to MetaPost's
-16.16 `scaled` precision improved exact per-row call-count matches only from
-87 to 89; total calls did not change, and the 600 ppi hatch RMSE regressed
-from 0.07650 to 0.07974. That rendering change was reverted. The remaining
-call deficit therefore needs a better identified branch or call-order cause;
-the source trace is useful for locating it but does not yet justify another
-width-quantization change.
+0.07650; ink coverage is 14.37% versus 14.07% in the source. Source row-level
+tracing counts 1516 random calls across 142 drawable rows. The initial Typst
+trace used 1322 calls and matched the source count on 87 rows. Rounding widths
+in mm and the dimensionless width-level ratio with separate MetaPost 16.16
+quantizers raises Typst to 1540 calls and 108 matching rows. Hatch crop RMSE
+improves further to 0.07530, ink coverage is 14.363% versus 14.066%, and
+whole-plate RMSE is 0.20703 with ink coverage 10.81% versus 10.63%. An earlier
+prototype applied the length quantizer to the scalar ratio; it regressed hatch
+RMSE to 0.07974 and was reverted. Brush leaf geometry and some local random
+calls still differ.
 
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
