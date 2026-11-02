@@ -201,10 +201,24 @@ affected source-parity crops do not materially regress.
   0.01187 percentage points. Rounding only the lightness-derived width also
   regressed RMSE (`0.11295018 → 0.11298345` whole, `0.18989608 → 0.19002779`
   globe) despite slightly closer ink coverage; that candidate was reverted.
-  Source/Typst calls
-  are 27/52 over visible masses, and thin-node totals
-  are 106/27. Continue pairing source cut parameters and width-cubic ranges on
-  masses 2 and 4. Acceptance: improve paired leaf/call traces and the globe
+  Source/Typst calls remain 27/52. A parent-aware diagnostic corrects the
+  previous mixed node/leaf count: visible source/Typst trees contain 106/48
+  recursion nodes, with 46 paired nodes, 37 matching recurse/stop decisions,
+  and 22 pairs within 0.1 mm. Mass 2's first paired divergence is at depth 5:
+  source cuts the q path at 3.95935, 0.160 mm from its endpoint, while Typst
+  finds no crossing at the corresponding width boundary. The source q cubic
+  controls are linear; the observed difference points to near-endpoint
+  `intersectiontimes` behavior. Source trace values are rounded in the log, so
+  the new instrumenter now captures the exact 16.16 input. At the first M2
+  divergence the target equals the q cubic's final width (`0:40:97`), yet
+  MetaPost returns a forward hit at q time `3:245:152` (3.95935059), about
+  0.160 mm before the endpoint; the reverse ray has no hit. Exact q width
+  controls are `0:41:114`, `0:41:23`, `0:40:188`, `0:40:97`. This establishes
+  a near-endpoint `firstIntersectionTimes` behavior but does not yet isolate
+  its low-level cause or justify a production special case. Continue pairing
+  the Typst interpolation interval and source cut inputs on masses 2 and 4.
+  Acceptance:
+  improve paired leaf/call traces and the globe
   render together.
 
 The following are deliberately not implementation tasks until new evidence

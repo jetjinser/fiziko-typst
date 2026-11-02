@@ -74,6 +74,7 @@ def main() -> None:
         "        t := cutPathTime(bt, w2);\n"
         "        brushPath1 := subpath (0, t) of p;\n"
         "        brushPath2 := subpath (t, length(p)) of p;",
+        "        traceCoastDepth := i;\n"
         "        t := cutPathTime(bt, w2);\n"
         "        brushPath1 := subpath (0, t) of p;\n"
         "        brushPath2 := subpath (t, length(p)) of p;\n"
@@ -95,6 +96,58 @@ def main() -> None:
         '        message "S101 CUT " & decimal(i) & " " & decimal(w2)'
         ' & " " & decimal(t) & " " & decimal(arclength(brushPath1))'
         ' & " " & decimal(arclength(brushPath2));',
+    )
+    source = replace_once(
+        source,
+        "        d3 := 1/2(d1 + d2);\n"
+        "        cutTime1 := ypart(((d3, h) -- (d1, h)) firstIntersectionTimes p);\n"
+        "        cutTime2 := ypart(((d3, h) -- (d2, h)) firstIntersectionTimes p);\n"
+        "        d4 := xpart (point cutTime1 of p);\n"
+        "        d5 := xpart (point cutTime2 of p);",
+        "        d3 := 1/2(d1 + d2);\n"
+        '        if traceCoastWidth: message "S101-CUTINPUT " & decimal(traceCoastDepth) & " "'
+        ' & traceFixed(d1) & " " & traceFixed(d2)'
+        ' & " " & traceFixed(d3) & " " & traceFixed(h); fi;\n'
+        "        cutTime1 := ypart(((d3, h) -- (d1, h)) firstIntersectionTimes p);\n"
+        '        if traceCoastWidth: message "S101-HIT1 " & decimal(traceCoastDepth) & " "'
+        ' & traceFixed(cutTime1) & " "'
+        ' & traceFixed(xpart(point cutTime1 of p)); fi;\n'
+        '        if traceCoastWidth and (cutTime1 >= 0)\n'
+        '            and (cutTime1 < length(p)):\n'
+        '            message "S101-QX1 " & decimal(traceCoastDepth) & " "'
+        ' & decimal(floor(cutTime1)) & " "'
+        ' & traceFixed(xpart(point floor(cutTime1) of p)) & " "'
+        ' & traceFixed(xpart(postcontrol floor(cutTime1) of p)) & " "'
+        ' & traceFixed(xpart(precontrol (floor(cutTime1)+1) of p)) & " "'
+        ' & traceFixed(xpart(point (floor(cutTime1)+1) of p));\n'
+        '            message "S101-QY1 " & decimal(traceCoastDepth) & " "'
+        ' & decimal(floor(cutTime1)) & " "'
+        ' & traceFixed(ypart(point floor(cutTime1) of p)) & " "'
+        ' & traceFixed(ypart(postcontrol floor(cutTime1) of p)) & " "'
+        ' & traceFixed(ypart(precontrol (floor(cutTime1)+1) of p)) & " "'
+        ' & traceFixed(ypart(point (floor(cutTime1)+1) of p));\n'
+        '        fi;\n'
+        "        cutTime2 := ypart(((d3, h) -- (d2, h)) firstIntersectionTimes p);\n"
+        '        if traceCoastWidth: message "S101-HIT2 " & decimal(traceCoastDepth) & " "'
+        ' & traceFixed(cutTime2) & " "'
+        ' & traceFixed(xpart(point cutTime2 of p)); fi;\n'
+        '        if traceCoastWidth and (cutTime2 >= 0)\n'
+        '            and (cutTime2 < length(p)):\n'
+        '            message "S101-QX2 " & decimal(traceCoastDepth) & " "'
+        ' & decimal(floor(cutTime2)) & " "'
+        ' & traceFixed(xpart(point floor(cutTime2) of p)) & " "'
+        ' & traceFixed(xpart(postcontrol floor(cutTime2) of p)) & " "'
+        ' & traceFixed(xpart(precontrol (floor(cutTime2)+1) of p)) & " "'
+        ' & traceFixed(xpart(point (floor(cutTime2)+1) of p));\n'
+        '            message "S101-QY2 " & decimal(traceCoastDepth) & " "'
+        ' & decimal(floor(cutTime2)) & " "'
+        ' & traceFixed(ypart(point floor(cutTime2) of p)) & " "'
+        ' & traceFixed(ypart(postcontrol floor(cutTime2) of p)) & " "'
+        ' & traceFixed(ypart(precontrol (floor(cutTime2)+1) of p)) & " "'
+        ' & traceFixed(ypart(point (floor(cutTime2)+1) of p));\n'
+        '        fi;\n'
+        "        d4 := xpart (point cutTime1 of p);\n"
+        "        d5 := xpart (point cutTime2 of p);",
     )
     source = replace_once(
         source,
@@ -157,7 +210,19 @@ def main() -> None:
         "            rv := image();\n"
         "        fi;",
     )
-    source += "\nboolean traceCoastWidth;\ntraceCoastWidth := false;\n"
+    source += """
+
+boolean traceCoastWidth;
+traceCoastWidth := false;
+numeric traceCoastDepth;
+traceCoastDepth := -1;
+vardef traceFixed (expr x) =
+    decimal(floor(x)) & ":"
+    & decimal(floor((x-floor(x))*256)) & ":"
+    & decimal(floor(((x-floor(x))*256
+        - floor((x-floor(x))*256))*256))
+enddef;
+"""
     Path(sys.argv[2]).write_text(source)
 
 

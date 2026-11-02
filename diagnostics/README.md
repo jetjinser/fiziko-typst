@@ -464,23 +464,47 @@ production `globe` coast loop. It records the exact width samples' recursive
 outer/thin node tree and RNG cursor by source landmass ID. For the pinned M11
 fixture, source versus Typst counts are:
 
-| Landmass | Source RNG calls | Source thin nodes | Typst RNG calls | Typst thin nodes |
-| ---: | ---: | ---: | ---: | ---: |
-| 1 | 6 | 15 | 10 | 6 |
-| 2 | 15 | 57 | 30 | 15 |
-| 3 (empty) | 0 | 1 | — | — |
-| 4 | 3 | 31 | 6 | 3 |
-| 5 | 1 | 1 | 2 | 1 |
-| 6 (empty) | 0 | 1 | — | — |
-| 7 | 1 | 1 | 2 | 1 |
-| 8 | 1 | 1 | 2 | 1 |
+| Landmass | Source RNG calls | Source recursion nodes | Typst RNG calls | Typst recursion nodes | Typst thin leaves |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 6 | 15 | 10 | 11 | 6 |
+| 2 | 15 | 57 | 30 | 29 | 15 |
+| 3 (empty) | 0 | 1 | — | — | — |
+| 4 | 3 | 31 | 6 | 5 | 3 |
+| 5 | 1 | 1 | 2 | 1 | 1 |
+| 6 (empty) | 0 | 1 | — | — | — |
+| 7 | 1 | 1 | 2 | 1 | 1 |
+| 8 | 1 | 1 | 2 | 1 | 1 |
 
 The source trace counts all `uniformdeviate` calls inside each coast brush;
 Typst's RNG cursor counts modeled dash draws. The six visible coast paths total
 27 source calls versus 52 Typst calls; source fallback paths 3 and 6 are empty,
-so Typst omits them. Their recursive node totals are 106 and 27 respectively.
-Mass 4 has 31 source nodes versus 3 Typst thin nodes, and mass 2 has 57 versus
-15. The current trace also logs each source normal and its lightness. For
+so Typst omits them. The earlier 106-versus-27 node summary compared source
+recursion nodes to Typst thin leaves. Counting the Typst `nodes` arrays gives
+106 source recursion nodes and 48 Typst recursion nodes across the six visible
+masses. `compare_m11_coast_brush.py` pairs nodes by parent and endpoint after
+converting source bp to the Typst `(19,22)` mm globe frame. Across the six
+trees it pairs 46 nodes; 37/46 recurse/stop decisions agree, and 22 pairs are
+within 0.1 mm. Mass 2 accounts for the largest tree (57 source nodes, 29
+Typst nodes): its first paired divergence is at depth 5. Source selects a
+width cut at q time 3.95935, leaving 32.374/0.160 mm children; Typst finds no
+cut for the corresponding node. The logged source q endpoint and cut level
+both round to `0.15773` pt, while Typst's endpoint and target are both about
+`0.0556478` mm. The q cubic controls are the one-third/two-third controls of a
+straight `--` segment, so this case points to the near-endpoint behavior of
+MetaPost `intersectiontimes`, not a missing curved width profile. The source
+instrumenter now records exact 16.16 values as `integer:high-byte:low-byte`
+triples. At the first M2 divergence, the target and endpoint width are both
+`0:40:97` (0.15773010 pt). The q cubic width controls are
+`0:41:114`, `0:41:23`, `0:40:188`, `0:40:97`; its x controls are
+`238:78:10`, `242:7:112`, `245:192:214`, `249:122:60`. The forward hit is at
+q time `3:245:152` (3.95935059) and x `249:5:249` (249.02333 bp); the reverse
+ray has no hit. The cubic ends at q time 4, so MetaPost cuts about 0.160 mm
+before the endpoint although the exact target equals its endpoint width. This
+confirms a near-endpoint `firstIntersectionTimes` case, but does not yet
+identify which low-level intersection step causes the early hit or justify a
+production special case. Mass 4 has 31 source nodes and five Typst nodes, with four of five
+paired decisions agreeing. The current trace also logs each source normal and
+its lightness. For
 source mass 4's first callback, the normal is
 `(0.19894, -0.45815, 0.86633)` at `(16.91675, -38.96030)` MetaPost units;
 the corresponding Typst coast sample uses the globe center `(19, 22)` mm and
@@ -495,9 +519,9 @@ cut is 139.786/107.763 mm against source 139.59/107.88 mm. At 600 ppi,
 globe ink coverage moves from `26.443%` to `26.353%` against `25.940%` source,
 while globe RMSE changes from `0.188748` to `0.189896` and whole M11 RMSE from
 `0.112661` to `0.112950`. Keep the source-equation match and record the raster
-tradeoff. Mass 2 still has 57 source nodes versus 15 Typst thin nodes; pair
-its source cut parameters and width-cubic ranges before changing dash phase
-or recursion further. A diagnostic-only variant reevaluated the analytic width
+tradeoff. Mass 2 has 57 source recursion nodes and 29 Typst recursion nodes
+(15 Typst thin leaves); pair its source cut parameters and width-cubic ranges
+before changing dash phase or recursion further. A diagnostic-only variant reevaluated the analytic width
 callback at recursive cut parameters instead of linearly interpolating sampled
 widths. It changed thin nodes from 27 to 30 without changing the 52 modeled
 calls, and regressed whole M11 RMSE `0.112950` → `0.113000` and globe RMSE
@@ -559,7 +583,14 @@ printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-brush/trace.mp
 typst eval 'query(<m11-coast-brush-trace>).first().value' \
   --in diagnostics/m11_coast_brush_trace.typ --root . \
   > /tmp/m11-coast-brush/typst.json
+nix develop path:./nix --command python3 diagnostics/compare_m11_coast_brush.py \
+  /tmp/m11-coast-brush/trace.log /tmp/m11-coast-brush/typst.json 2
 ```
+
+The instrumented source also emits `S101-CUTINPUT`, `S101-HIT1/2`, and
+`S101-QX1/QY1` or `S101-QX2/QY2` records. They contain exact 16.16 midpoint,
+target, hit times, and cubic controls for reproducing near-endpoint cases
+without relying on rounded `S101-CUBIC` values.
 
 The source transcript brackets each coast brush with `M11-COAST-BEGIN` and
 `M11-COAST-END`; count `S101 NODE` and `S101-CUBIC` markers only inside those
