@@ -2505,12 +2505,18 @@
   let tx(p) = _add(center, (p.at(0) * c - p.at(1) * s,
                              p.at(0) * s + p.at(1) * c))
   let rim-r = d / 2
-  let rim = arc-pts(rim-r, 135, 405, n: 96)
-  let rim-x = rim-r * _cos(45)
   let support-y = 2 / 3 * d
-  let silhouette = (rim.map(tx) + (tx((rim-x, support-y)),
-                                    tx((-rim-x, support-y))))
   let support-r = 3 / 10 * d
+  // pulleyOutline uses the support arc endpoints' verticals to intersect the
+  // outer rim. Its visible rim arc therefore runs from 90°+δ to 450°−δ,
+  // where δ is set by the inner support radius, not the outer wheel radius.
+  let support-x = support-r * _cos(45)
+  let rim-offset = calc.asin(support-x / rim-r)
+  let rim-offset-deg = rim-offset / 1deg
+  let silhouette-rim = arc-pts(rim-r, 90 + rim-offset-deg,
+    450 - rim-offset-deg, n: 96)
+  let silhouette = (silhouette-rim.map(tx) + (tx((support-x, support-y)),
+                                    tx((-support-x, support-y))))
   let support = (arc-pts(support-r, 135, 405, n: 72).map(tx)
     + (tx((support-r * _cos(45), support-y)),
        tx((-support-r * _cos(45), support-y))))

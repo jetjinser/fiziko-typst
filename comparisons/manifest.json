@@ -88,7 +88,7 @@
       "title": "L'Hôpital pulley composites", "frame_mm": [110,40], "driver": "main.mp", "figure": 8,
       "shared": {"figures": [[6,2,5.5,8,6],[3,2.5,3,58,6]], "source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "Uses the source 2.5 mm hatched beam band and 3× minimum rope width. PulleyWheel supplies the thin outer rim; the support is outlined with source thinpen width. The default L'Hôpital figure now omits the non-source l/m labels and uses source-mapped A/B/C offsets; optional length-labels: true retains l/m labels. At 600 ppi whole-plate RMSE is 0.11833 (previous 0.12579), with ink coverage 1.734% vs 2.116%; left/right crop RMSE is 0.13227/0.10421. Wheel/support clipping remains approximate.",
+      "notes": "Uses the source 2.5 mm hatched beam band and 3× minimum rope width. PulleyWheel supplies the thin outer rim; the rope-occlusion silhouette now uses the source support-arc verticals intersected with the outer rim, while the shaded-wheel mask is still approximated through draw order. The support is outlined with source thinpen width. The default L'Hôpital figure omits the non-source l/m labels and uses source-mapped A/B/C offsets; optional length-labels: true retains l/m labels. At 600 ppi whole-plate RMSE is 0.11833 (previous 0.12579), with ink coverage 1.734% vs 2.116%; left/right crop RMSE is 0.13227/0.10421.",
       "regions_mm": {"left": [0,0,53,40], "right": [54,0,56,40]}
     },
     "M9": {
