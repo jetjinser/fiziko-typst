@@ -102,6 +102,56 @@ def main() -> None:
 """ + thin_anchor
     source = replace_once(source, thin_anchor, thin_trace, "brush thin leaf")
 
+    thin_split_anchor = "        brushPath2 := subpath (t, length(p)) of p;"
+    thin_split_trace = thin_split_anchor + """
+        if traceWoodLine = 1:
+            if (((w0 - w1) >= dashStrokeWidthStep) and (i < 15))
+                and ((arclength(brushPath1) > minLength)
+                or (arclength(brushPath2) > minLength))
+                and (t > 1/100) and (t < length(p) - 1/100):
+                message "WBTHIN " & decimal(i) & " R " & decimal(w0/mm) & " "
+                    & decimal(w1/mm) & " " & decimal(w2/mm) & " "
+                    & decimal(t) & " " & decimal(arclength(p)/mm) & " "
+                    & decimal(arclength(brushPath1)/mm) & " "
+                    & decimal(arclength(brushPath2)/mm);
+            else:
+                message "WBTHIN " & decimal(i) & " L " & decimal(w0/mm) & " "
+                    & decimal(w1/mm) & " " & decimal(w2/mm) & " "
+                    & decimal(t) & " " & decimal(arclength(p)/mm) & " "
+                    & decimal(arclength(brushPath1)/mm) & " "
+                    & decimal(arclength(brushPath2)/mm);
+            fi;
+            message "WBTHINPATH " & decimal(i) & " "
+                & decimal(xpart(point 0 of p)/mm) & " "
+                & decimal(ypart(point 0 of p)/mm) & " "
+                & decimal(xpart(point length(p) of p)/mm) & " "
+                & decimal(ypart(point length(p) of p)/mm);
+            message "WBTHINCUT " & decimal(i) & " "
+                & decimal(xpart(point t of p)/mm) & " "
+                & decimal(ypart(point t of p)/mm);
+        fi;"""
+    source = replace_once(source, thin_split_anchor, thin_split_trace,
+                           "thin brush split trace")
+    thin_call_anchor = "    if (w0 > minWidth + 1/100):"
+    thin_call_trace = """    if traceWoodLine = 1:
+        message "WBTCALL " & decimal(i) & " " & decimal(w0/mm) & " "
+            & decimal(w1/mm) & " " & decimal(arclength(p)/mm);
+    fi;
+""" + thin_call_anchor
+    source = replace_once(source, thin_call_anchor, thin_call_trace,
+                           "thin brush call trace")
+    dash_anchor = "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
+    dash_trace = """                        if traceWoodLine = 1:
+                            message "WBTHINDASH " & decimal(i) & " "
+                                & decimal(w2/mm) & " " & decimal(arclength(p)/mm)
+                                & " " & decimal(xpart(point 0 of p)/mm) & " "
+                                & decimal(ypart(point 0 of p)/mm) & " "
+                                & decimal(xpart(point length(p) of p)/mm) & " "
+                                & decimal(ypart(point length(p) of p)/mm);
+                        fi;
+""" + dash_anchor
+    source = replace_once(source, dash_anchor, dash_trace, "thin brush dash leaf")
+
     range_anchor = "for i := -maxWithinMask/woodBlockYRdensity - 1 upto -minWithinMask/woodBlockYRdensity + 1:"
     range_trace = (
         'message "CLFIELD " & decimal(minWithinMask) & " " & decimal(maxWithinMask);\n'

@@ -94,7 +94,14 @@ affected source-parity crops do not materially regress.
   matched source brush has 37 outer nodes and 19 leaves, with one branch
   reaching depth 10; Typst records 7 outer and 46 thin nodes, with the root
   cut only 0.058 mm from source. Compare deeper splits and terminal band/dash
-  geometry before changing the renderer. The source `fullcircle` cubic
+  geometry before changing the renderer. The first contour's thin trace now
+  counts 66 source calls, 65 recursive/terminal nodes (maximum depth 15), and
+  12 source dash leaves versus 46 Typst thin nodes (maximum depth 6), 10 dash
+  leaves, and 20 RNG calls. Endpoint-nearest diagnostics find 35 thin-node
+  pairs within 0.1 mm, with 34 matching recurse/stop decisions; 7 source dash
+  leaves pair within 0.1 mm. These local pairs are not parent-aware tree
+  matches, so the remaining count difference does not yet justify a threshold
+  patch. The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate
   reverted.

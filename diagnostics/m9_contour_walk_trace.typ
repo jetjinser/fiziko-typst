@@ -49,6 +49,10 @@
 #metadata((contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
   sample-values: sample-values, levels: levels, paths: paths,
+  brush-rng-calls: brush-trace.at(1),
+  brush-outer-leaves: brush-trace.at(2).outer,
+  brush-thin-leaves: brush-trace.at(2).thin,
+  brush-dashes: brush-trace.at(2).dashes,
   brush-widths: brush-trace.at(3).widths,
   brush-nodes: brush-trace.at(2).nodes))
 <m9-contour-walk>

@@ -171,7 +171,7 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
 rg 'CL(FIELD|VALUE|LEVEL|PATH|WIDTH)' /tmp/m9-cLine-trace/trace.log
-rg 'WB(NODE|CUT|LEAF)' /tmp/m9-cLine-trace/trace.log
+rg 'WB(NODE|CUT|LEAF|TCALL|THIN|THINDASH)' /tmp/m9-cLine-trace/trace.log
 typst eval 'query(<m9-contour-walk>).first().value' \
   --in diagnostics/m9_contour_walk_trace.typ --root . \
   > /tmp/m9-cLine-trace/typst.json
@@ -198,6 +198,21 @@ path length is `14.60 mm` versus `17.28 mm` in source. The source records 37
 outer nodes and 19 leaves; Typst records 7 outer and 46 thin nodes, so deeper
 cut and terminal band/dash geometry still needs work. The open wood gap is now
 brush recursion and the boundary it draws, not cLine cell discovery.
+
+The trace also follows `thinBrushGenerate` into its recursive thin branches
+and dash leaves. In this contour, source has 66 thin-brush calls, 65
+split/terminal nodes through depth 15, and 12 dash leaves; Typst has 46 thin
+nodes, reaches depth 6, and draws 10 dash leaves using 20 RNG calls. Pairing
+source and Typst nodes by their endpoints after converting source wood
+coordinates `(u,v)` to `(v,33-u)` gives 35 pairs within 0.1 mm; 34 agree on
+whether to recurse. The paired cut points have 0.098 mm mean error (0.717 mm
+maximum). Seven source dash leaves pair within 0.1 mm, with 0.080 mm mean
+endpoint error over the greedy unique pairing. These are geometric
+nearest-neighbor diagnostics, not a tree correspondence: a nearest pair does
+not establish matching parents. The count and depth differences confirm that
+terminal dash coverage and recursion still differ, but do not isolate a safe
+threshold change. Keep the renderer unchanged until a parent-aware trace
+explains the divergent branches.
 
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
