@@ -16,11 +16,11 @@ from collections import defaultdict
 from pathlib import Path
 
 
-# MetaPost's cubic_intersection keeps two extra bits after the nominal
-# 17-level parameter search. This packet model improves its S104 pairing at
-# depth 18, but does not yet model the packed max_t guard that safely handles
-# the final extra level; depth 19 can collapse integer packets to no hit.
-MAX_INTERSECTION_DEPTH = 18
+# MetaPost's cubic_intersection adds two bits after the nominal 17-level
+# parameter search. The source-state replay below models the packed max_t
+# threshold, saved approximation and backtrack limit; the S104 measurements
+# show that this alone does not explain the remaining raw-hit mismatches.
+MAX_INTERSECTION_DEPTH = 19
 
 
 def load(log_path: str, row: float):
@@ -141,11 +141,12 @@ def packet_boxes_overlap(left, right, dx, dy, tolerance):
 
 
 def fixed_cubic_intersection(left_points, right_points, tolerance_step):
-    """Replay MetaPost's packet bisection for one cubic pair.
+    """Replay MetaPost's fixed-point packet search for one cubic pair.
 
     Coordinates are raw 16.16 scaled integers. Child pairs are visited in
-    MetaPost's lexicographic order; all packet subdivision and tolerance
-    updates use integer arithmetic.
+    MetaPost's lexicographic order. This also models cubic_intersection's
+    global max_t progress threshold and timeout approximation; it remains a
+    diagnostic model, not a production solver.
     """
     left = tuple(tuple(left_points[i + 1][axis] - left_points[i][axis]
                        for axis in range(2)) for i in range(3))
@@ -154,24 +155,56 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
     start_dx = left_points[0][0] - right_points[0][0]
     start_dy = left_points[0][1] - right_points[0][1]
     backtracks = 0
-    aborted = False
-    best_level = -1
-    best = None
+    max_t = 2
+    approximation = None
+    stopped = False
+    answer = None
+    unity = 1 << 16
+    max_t_limit = 8 * unity
+    low_precision_limit = max_t_limit - unity // 2
+
+    def source_time(encoded):
+        # The final MetaPost path-time conversion divides away the two extra
+        # bits, then rounds the remaining scaled parameter upward by halves.
+        return ((encoded // 4 + 1) // 2) / unity - 1
+
+    def timeout_answer():
+        if approximation is None:
+            return None
+        t, tt = (value // 4 for value in approximation)
+        while t < unity:
+            t *= 2
+            tt *= 2
+        return t / unity - 1, tt / unity - 1
 
     def descend(a, b, dx, dy, tolerance, three_l, level, ai, bi):
-        nonlocal backtracks, aborted, best_level, best
+        nonlocal backtracks, max_t, approximation, stopped, answer
+        if stopped:
+            return answer
         if not packet_boxes_overlap(a, b, dx, dy, tolerance):
             backtracks += 1
             if backtracks > 5000:
-                aborted = True
+                stopped = True
+                answer = timeout_answer()
             return None
-        if level >= best_level:
-            best_level = level
-            scale = 1 << level
-            best = (ai / scale, bi / scale)
-        if level == MAX_INTERSECTION_DEPTH:
-            scale = 1 << MAX_INTERSECTION_DEPTH
-            return ((ai + 0.5) / scale, (bi + 0.5) / scale)
+
+        cur_t = (1 << level) + ai
+        cur_tt = (1 << level) + bi
+        if cur_t >= max_t:
+            if max_t == max_t_limit or max_t > low_precision_limit:
+                answer = (source_time(cur_t), source_time(cur_tt))
+                stopped = True
+                return answer
+            max_t *= 2
+            approximation = (cur_t, cur_tt)
+
+        # The pinned scaled build has room for 17 nominal plus two extra
+        # bisections. A further descent trips MetaPost's packet-stack guard;
+        # that guard resets both encoded times and terminates this cubic call.
+        if level >= MAX_INTERSECTION_DEPTH:
+            stopped = True
+            answer = None
+            return answer if stopped else None
 
         a_left, a_right = split_packet(a)
         b_left, b_right = split_packet(b)
@@ -193,14 +226,12 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
                     next_tolerance, next_three_l, level + 1,
                     ai * 2 + a_side, bi * 2 + b_side,
                 )
-                if result is not None:
+                if result is not None or stopped:
                     return result
-                if aborted:
-                    return best
         return None
 
     result = descend(left, right, start_dx, start_dy, 0, 0, 0, 0, 0)
-    return best if aborted else result
+    return answer if stopped else result
 
 
 def fixed_path_intersection(ray, path):

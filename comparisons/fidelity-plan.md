@@ -100,26 +100,20 @@ affected source-parity crops do not materially regress.
   An integer 16.16 packet-search model now reproduces 67/76 raw
   forward/reverse hit pairs within one path-time unit on this row, including
   all four for node 172. Raising its depth from 17 to 18 accounts for five
-  additional pairs. The source precision guard permits two extra bits, but
-  the model does not yet implement its packed `max_t` progression: depth 19
-  collapses the M11 endpoint probe to no hit, while the source reports the
-  near-endpoint forward pair. Nine raw pairs still disagree: eight source hits
-  lie within 1/64 path-time of a cubic endpoint, and one is an interior source
-  hit. A new trace records exact 16.16 intersection times; evaluating node
-  173's recorded cubics at its source pair leaves an estimated residual of
-  about 2.16/0.5 raw coordinate units. This supports a near-overlap/precision
-  fallback explanation, but the fixed-point evaluation order still needs to
-  be reproduced before a production change. No temporary model of packed
-  `cur_t`/`cur_tt`, `max_t`, and the saved
-  approximate pair did not improve the 67/76 result or recover the M11 probe;
-  that trial was discarded. The remaining error is in packet subdivision or
-  fixed-point overlap behavior, not only the fallback selection. No production
-  change is justified yet. A controlled depth-only check confirms that point:
-  changing the current replay from 18 to 19 levels leaves both saved rows
-  unchanged at 67/76 pairs (maximum time error 3.98924) and 15/20 pairs
-  (maximum error 2.96494), respectively. The source's 19th-level behavior is
-  gated by `max_t` and its saved approximation, so a larger terminal depth is
-  not an equivalent implementation. The trace replay is documented in
+  additional pairs. The replay now models the source's packed `max_t`
+  progression, saved approximation, backtrack timeout and packet-stack guard.
+  This does not add any matches: the S104 target row remains 67/76, and a
+  second recorded row remains 15/20. Nine raw pairs still disagree: eight
+  source hits lie within 1/64 path-time of a cubic endpoint, and one is an
+  interior source hit. A new trace records exact 16.16 intersection times;
+  evaluating node 173's recorded cubics at its source pair leaves an estimated
+  residual of about 2.16/0.5 raw coordinate units. This supports a
+  near-overlap/precision-fallback explanation, but fixed-point overlap
+  evaluation still differs on the nine raw pairs; no production change is
+  justified yet. A separate
+  depth-only comparison also leaves both rows unchanged at 67/76 and 15/20,
+  respectively, so a larger terminal depth is not a substitute for the source
+  state transitions. The trace replay is documented in
   `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve

@@ -1545,37 +1545,29 @@ low-level hit choice across the full row before a render candidate is judged.
 The thin replay also includes an integer first-difference packet model of
 MetaPost's cubic search. It uses 16.16 controls, integer `half` operations,
 the four ordered child pairs, and source-style tolerance updates. MetaPost 2.11
-sets a precision guard from 17 nominal bisections plus two extra bits, and
-returns the saved approximate pair after 5000 backtracks
+sets a precision guard from 17 nominal bisections plus two extra bits, tracks
+the packed `max_t` frontier, saves its best approximation, and returns that
+approximation after 5000 backtracks
 ([source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15000-L15101)).
-Raising this model's terminal depth from 17 to 18 improves the target S104 row
-from 62/76 to 67/76 raw forward/reverse pairs within one 16.16 path-time unit;
-node 172 still matches all four ray results. At depth 19 the current integer
-packet model collapses this row to 67/76 and returns no hit for the reduced
-M11 endpoint probe, so it does not yet reproduce MetaPost's packed `max_t`
-precision guard. The M11 probe remains a miss at depth 18 too. A replay
-classification now separates the 76 pairs into 43 matched hits, 24 matching
-misses, eight missed source hits within 1/64 path-time of a cubic endpoint,
-and one missed interior source hit. This is a diagnostic model improvement
-only; no production change is justified until the endpoint cases and the
-interior case are explained together. The instrumenter now emits
+The replay now models those state transitions, the packet-stack guard and
+MetaPost's final 16.16 path-time conversion. It still matches 67/76 raw
+forward/reverse pairs on the target S104 row, including all four node-172 ray
+results; the other saved row remains 15/20. The classification separates the
+target row's 76 pairs into 43 matched hits, 24 matching misses, eight missed
+source hits within 1/64 path-time of a cubic endpoint, and one missed interior
+source hit. Adding source state did not explain those nine mismatches, so the
+remaining discrepancy lies in the fixed-point packet overlap evaluation or
+its arithmetic order. This is a diagnostic improvement only; no production
+change is justified until the endpoint and interior cases are explained
+together. The instrumenter now emits
 `S104-FIRST-FIX`, preserving all four returned path times as signed 16.16
 integers; the replay uses these exact values when present and still accepts
 older decimal-only logs. For node 173's interior source pair
 `(0.05839539, 0.5)`, evaluating the logged cubic controls gives a residual of
 about `(2.16, 0.5)` raw 16.16 coordinate units. This is consistent with an
-approximate near-overlap result, but reproducing MetaPost's intermediate
-fixed-point evaluation and precision fallback is still required. Compare the
-remaining pairs with:
-
-The source's packed-time flow was then modeled temporarily: `cur_t` and
-`cur_tt` advance as `2^l + 2^l*t`; an overlapping box advances `max_t` and
-saves `appr_t`/`appr_tt`, while a rejected box consumes the 5000-backtrack
-budget. This stateful trial did not improve the 67/76 S104 result and still
-returned no hit for the M11 probe. It was discarded. The endpoint mismatch
-therefore remains in packet subdivision or fixed-point overlap behavior, not
-just in the saved-candidate policy; do not reintroduce a max-depth or
-`max_t`-only adjustment as a production fix.
+approximate near-overlap result; reproducing MetaPost's intermediate
+fixed-point overlap evaluation is still required. Compare the remaining pairs
+with:
 
 ```sh
 python3 diagnostics/replay_s104_thin_intersections.py \
