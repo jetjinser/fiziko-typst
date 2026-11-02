@@ -8,6 +8,8 @@ import argparse
 from collections import defaultdict
 from pathlib import Path
 
+from audit_m11_q_arclength import arc_length, read_trace
+
 
 def cubic(points, t):
     p0, p1, p2, p3 = points
@@ -29,6 +31,9 @@ def main():
     parser.add_argument("output")
     parser.add_argument("--samples-per-cubic", type=int, default=4,
                         choices=(1, 2, 4, 8, 16, 32))
+    parser.add_argument("--arc-mode", choices=("metapost", "integrated"),
+                        default="metapost",
+                        help="use traced MetaPost arc knots or integrate the traced cubics")
     args = parser.parse_args()
     log_path, output_path = args.log, args.output
     samples_per_cubic = args.samples_per_cubic
@@ -36,6 +41,10 @@ def main():
     callback_time = {}
     callbacks = defaultdict(dict)
     source_q = defaultdict(lambda: defaultdict(dict))
+    source_arcs = defaultdict(dict)
+    exact_curves = {}
+    if args.arc_mode == "integrated":
+        exact_curves, _qcurves, _trace_arcs = read_trace(Path(log_path))
     lane_calls = {}
     lane_order = []
     for line_number, line in enumerate(Path(log_path).read_text().splitlines()):
@@ -69,6 +78,10 @@ def main():
             key = (int(f[1]), int(f[2]))
             time = int(f[3])
             callbacks[key][time]["width_fixed"] = int(f[4]) * 256 + int(f[5])
+        elif f[0] == "M11POSTARC":
+            key = (int(f[1]), int(f[2]))
+            time = int(f[3]) + 1
+            source_arcs[key][time] = int(f[4]) * 65536 + int(f[5]) * 256 + int(f[6])
         elif f[0] == "M11BQPT":
             key = (int(f[1]), int(f[2]))
             depth, index, control = map(int, f[3:6])
@@ -130,11 +143,24 @@ def main():
                 path_points.append(sample)
                 widths.append(w0 * (1 - fraction) + w1 * fraction)
                 path_times.append(i + sample_index / samples_per_cubic)
+        if args.arc_mode == "metapost":
+            arc_values = source_arcs[key]
+        else:
+            arc_values = {}
+            cumulative_arc = 0.0
+            for i in indices:
+                control_map = exact_curves[(key[0], key[1], i)]
+                cumulative_arc += arc_length([control_map[j] for j in range(4)])
+                arc_values[i + 1] = int(round(cumulative_arc * 65536))
         entries.append({
             "call": key[0], "lane": key[1], "source_calls": source_calls,
             "rng_offset": rng_cursor,
             "source_path_segments": len(indices), "points": path_points,
             "widths": widths, "param_times": path_times,
+            "source_arc_fixed": (
+                [0] + [arc_values[i] for i in range(1, len(indices) + 1)]
+                if len(arc_values) == len(indices) else None
+            ),
             "source_q_fixed": [
                 [source_q[key][index][control] for control in range(4)]
                 for index in sorted(source_q[key])
@@ -163,11 +189,16 @@ def main():
                 for point in curve
             ) for curve in entry["source_q_fixed"])
         )
+        source_arc_fixed = (
+            "none" if entry["source_arc_fixed"] is None else
+            tuple_expr(str(value) for value in entry["source_arc_fixed"])
+        )
         lines.append(
             f"  (call: {entry['call']}, lane: {entry['lane']}, "
             f"source-calls: {entry['source_calls']}, rng-offset: {entry['rng_offset']}, "
             f"source-path-segments: {entry['source_path_segments']}, "
             f"points: {points}, widths: {widths}, param-times: {param_times}, "
+            f"source-arc-fixed: {source_arc_fixed}, "
             f"source-q-fixed: {source_q_fixed}),"
         )
     lines.append(")")

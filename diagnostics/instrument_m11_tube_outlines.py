@@ -344,6 +344,40 @@ enddef;''')
                                 & decimal(ypart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
                                 & decimal(xpart(point (traceCurveIndex+1) of currentPath)/mm) & " "
                                 & decimal(ypart(point (traceCurveIndex+1) of currentPath)/mm);
+                            save tracePostPoint, tracePostXFrac, tracePostYFrac, tracePostControl;
+                            save tracePostArc, tracePostArcFrac;
+                            pair tracePostPoint;
+                            numeric tracePostXFrac, tracePostYFrac, tracePostControl;
+                            numeric tracePostArc, tracePostArcFrac;
+                            for tracePostControl := 0 step 1 until 3:
+                                if tracePostControl = 0:
+                                    tracePostPoint := point traceCurveIndex of currentPath;
+                                elseif tracePostControl = 1:
+                                    tracePostPoint := postcontrol traceCurveIndex of currentPath;
+                                elseif tracePostControl = 2:
+                                    tracePostPoint := precontrol (traceCurveIndex+1) of currentPath;
+                                else:
+                                    tracePostPoint := point (traceCurveIndex+1) of currentPath;
+                                fi;
+                                tracePostXFrac := (xpart tracePostPoint - floor(xpart tracePostPoint))*256;
+                                tracePostYFrac := (ypart tracePostPoint - floor(ypart tracePostPoint))*256;
+                                message "M11POSTFIX " & decimal(traceTubeCall) & " "
+                                    & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                    & decimal(tracePostControl) & " "
+                                    & decimal(floor(xpart tracePostPoint)) & " "
+                                    & decimal(floor(tracePostXFrac)) & " "
+                                    & decimal(round((tracePostXFrac-floor(tracePostXFrac))*256)) & " "
+                                    & decimal(floor(ypart tracePostPoint)) & " "
+                                    & decimal(floor(tracePostYFrac)) & " "
+                                    & decimal(round((tracePostYFrac-floor(tracePostYFrac))*256));
+                            endfor;
+                            tracePostArc := arclength(subpath (0, traceCurveIndex+1) of currentPath);
+                            tracePostArcFrac := (tracePostArc-floor(tracePostArc))*256;
+                            message "M11POSTARC " & decimal(traceTubeCall) & " "
+                                & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                & decimal(floor(tracePostArc)) & " "
+                                & decimal(floor(tracePostArcFrac)) & " "
+                                & decimal(round((tracePostArcFrac-floor(tracePostArcFrac))*256));
                         endfor;
                     fi;
                 fi;''')

@@ -1479,6 +1479,40 @@ callback/template knots and using that generated state in production. The
 earlier 15/18 result above records replays without this complete injected q
 state and is superseded for the exact-state diagnostic only.
 
+The exact-state replay does not need the source q controls if it receives the
+source arc knots. `M11POSTFIX` records each post-shadow centerline cubic in
+16.16 bp coordinates, and `M11POSTARC` records MetaPost's cumulative
+`arclength(subpath(0, i) of currentPath)` at each integer path-time knot.
+`audit_m11_q_arclength.py` checks these records against the root q template:
+all traced q x endpoints equal the source arc values, and every q control is
+the exact 16.16 one-third/two-third linear control between adjacent arc and
+callback-width endpoints. With only source arc knots and widths injected,
+`m11_shadow_arc_replay.typ` builds the q controls in Typst and matches the
+same exact 40/40, 20/20, and 30/30 source trees. Reproduce with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/audit_m11_q_arclength.py /tmp/m11-q-audit/trace.log
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_brush_inputs.py \
+  /tmp/m11-q-audit/trace.log build/m11-shadow-brush-inputs.typ \
+  --samples-per-cubic 4
+nix develop path:./nix --command typst eval \
+  'query(<m11-shadow-arc-replay>).first().value' \
+  --in diagnostics/m11_shadow_arc_replay.typ --root . \
+  > build/m11-shadow-arc-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log build/m11-shadow-arc-replay.json
+```
+
+The cubic integral computed from the exact fixed-point center controls differs
+from MetaPost's arc values by at most 21.337 fixed units (mean 9.371). A
+16-sample-per-cubic polyline is closer than 32 samples on this trace (maximum
+9.140 versus 16.023 units), but neither sampling choice reconstructs all three
+trees. MetaPost's documented `arclength` uses recursive bisection and an
+adaptive Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); its approximation policy, rather than the q line controls, is now the unresolved part of this replay.
+
 Removing the injected q controls and increasing only the sampled center-curve
 density does not recover all three trees. At 8 samples per cubic, calls 4/lanes
 2 and 6 match their 40- and 20-node trees, but call 5/lane 2 grows to 36 nodes

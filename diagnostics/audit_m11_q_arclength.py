@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Compare source M11 q-template x knots with traced post-shadow cubic arc."""
+
+import math
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+
+FIXED = 65536
+
+
+def fixed_pair(hi, lo):
+    return int(hi) * 256 + int(lo)
+
+
+def fixed_coordinate(whole, hi, lo):
+    return int(whole) + int(hi) / 256 + int(lo) / FIXED
+
+
+def simpson_speed(points, t):
+    p0, p1, p2, p3 = points
+    u = 1 - t
+    dx = 3 * u * u * (p1[0] - p0[0]) + 6 * u * t * (p2[0] - p1[0]) + 3 * t * t * (p3[0] - p2[0])
+    dy = 3 * u * u * (p1[1] - p0[1]) + 6 * u * t * (p2[1] - p1[1]) + 3 * t * t * (p3[1] - p2[1])
+    return math.hypot(dx, dy)
+
+
+def integrate(points, a, b, fa, fm, fb, whole, tolerance, depth):
+    middle = (a + b) / 2
+    left_middle = (a + middle) / 2
+    right_middle = (middle + b) / 2
+    flm = simpson_speed(points, left_middle)
+    frm = simpson_speed(points, right_middle)
+    left = (middle - a) * (fa + 4 * flm + fm) / 6
+    right = (b - middle) * (fm + 4 * frm + fb) / 6
+    delta = left + right - whole
+    if depth <= 0 or abs(delta) <= 15 * tolerance:
+        return left + right + delta / 15
+    return integrate(points, a, middle, fa, flm, fm, left, tolerance / 2, depth - 1) + integrate(
+        points, middle, b, fm, frm, fb, right, tolerance / 2, depth - 1
+    )
+
+
+def arc_length(points):
+    fa = simpson_speed(points, 0)
+    fm = simpson_speed(points, 0.5)
+    fb = simpson_speed(points, 1)
+    whole = (fa + 4 * fm + fb) / 6
+    return integrate(points, 0, 1, fa, fm, fb, whole, 1e-12, 24)
+
+
+def read_trace(path):
+    curves = defaultdict(dict)
+    qcurves = defaultdict(lambda: defaultdict(dict))
+    source_arcs = {}
+    for line in path.read_text().splitlines():
+        f = line.split()
+        if not f:
+            continue
+        if f[0] == "M11POSTFIX":
+            key = (int(f[1]), int(f[2]), int(f[3]))
+            control = int(f[4])
+            curves[key][control] = (
+                fixed_coordinate(f[5], f[6], f[7]),
+                fixed_coordinate(f[8], f[9], f[10]),
+            )
+        elif f[0] == "M11BQPT" and int(f[3]) == 0:
+            call, lane, _, segment, control = map(int, f[1:6])
+            qcurves[(call, lane)][segment][control] = (
+                fixed_pair(f[6], f[7]), fixed_pair(f[8], f[9])
+            )
+        elif f[0] == "M11POSTARC":
+            key = (int(f[1]), int(f[2]), int(f[3]))
+            source_arcs[key] = fixed_pair(f[4], f[5]) * 256 + int(f[6])
+    return curves, qcurves, source_arcs
+
+
+def audit(path):
+    curves, qcurves, source_arcs = read_trace(path)
+    reports = []
+    for key, qpath in sorted(qcurves.items()):
+        curve_ids = sorted(index for call, lane, index in curves if (call, lane) == key)
+        if curve_ids != list(range(len(curve_ids))):
+            raise ValueError(f"non-contiguous traced center cubics for {key}: {curve_ids}")
+        if sorted(qpath) != curve_ids:
+            raise ValueError(f"q/center segment mismatch for {key}: {len(qpath)} vs {len(curve_ids)}")
+        cumulative = 0.0
+        arc_errors = []
+        source_arc_errors = []
+        sampled_arc_errors = {steps: [] for steps in (1, 4, 8, 16, 32)}
+        control_errors = []
+        for index in curve_ids:
+            c = curves[(key[0], key[1], index)]
+            if sorted(c) != [0, 1, 2, 3] or sorted(qpath[index]) != [0, 1, 2, 3]:
+                raise ValueError(f"incomplete control points for {key} segment {index}")
+            q = qpath[index]
+            cumulative += arc_length([c[i] for i in range(4)])
+            arc_errors.append(abs(q[3][0] - cumulative * FIXED))
+            if (key[0], key[1], index) not in source_arcs:
+                raise ValueError(f"missing source arclength for {key} segment {index}")
+            source_arc = source_arcs[(key[0], key[1], index)]
+            source_arc_errors.append(abs(q[3][0] - source_arc))
+            for steps in sampled_arc_errors:
+                points = [bezier([c[i] for i in range(4)], j / steps)
+                          for j in range(steps + 1)]
+                cumulative_sampled = sum(math.dist(a, b)
+                                         for a, b in zip(points, points[1:]))
+                # Recompute the prefix because each trace value is cumulative.
+                if index == 0:
+                    prefix = 0.0
+                else:
+                    prefix = sampled_arc_errors[steps][-1][1]
+                estimate = prefix + cumulative_sampled * FIXED
+                sampled_arc_errors[steps].append(
+                    (abs(source_arc - estimate), estimate)
+                )
+            for axis in range(2):
+                start, end = q[0][axis], q[3][axis]
+                # Nearest 16.16 unit for the `--` one-third/two-third controls.
+                expected = (start + round((end - start) / 3),
+                            start + round(2 * (end - start) / 3))
+                control_errors.extend((abs(q[1][axis] - expected[0]),
+                                       abs(q[2][axis] - expected[1])))
+        reports.append((key, len(arc_errors), max(arc_errors), sum(arc_errors) / len(arc_errors),
+                        max(control_errors, default=0), max(source_arc_errors),
+                        sum(source_arc_errors) / len(source_arc_errors), sampled_arc_errors))
+    if not reports:
+        raise SystemExit("no M11 root q templates or exact post-shadow controls found")
+    print("call lane segments max-arc-error mean-arc-error max-line-control-error (16.16 bp units)")
+    for row in reports:
+        key, count, maximum, mean, control, source_max, source_mean, _ = row
+        print(f"{key[0]} {key[1]} {count} {maximum:.3f} {mean:.3f} {control} "
+              f"source-arclength-q-error={source_max}/{source_mean:.3f}")
+    weighted_mean = sum(row[3] * row[1] for row in reports) / sum(row[1] for row in reports)
+    print(f"aggregate quadrature/q error: {max(row[2] for row in reports):.3f}/{weighted_mean:.3f} units")
+    print(f"aggregate max source-arc/q mismatch: {max(row[5] for row in reports)} units")
+    for steps in (1, 4, 8, 16, 32):
+        vals = [err for row in reports for err, _ in row[7][steps]]
+        print(f"polyline samples/cubic={steps}: max/mean source-arc error "
+              f"{max(vals):.3f}/{sum(vals)/len(vals):.3f} units")
+    print(f"aggregate max q-control deviation from linear thirds: {max(row[4] for row in reports)} units")
+
+
+def bezier(points, t):
+    p0, p1, p2, p3 = points
+    u = 1 - t
+    return tuple(u**3 * a + 3 * u * u * t * b + 3 * u * t * t * c + t**3 * d
+                 for a, b, c, d in zip(p0, p1, p2, p3))
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("Usage: audit_m11_q_arclength.py MPOST_LOG")
+    audit(Path(sys.argv[1]))
