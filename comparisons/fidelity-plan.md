@@ -582,7 +582,13 @@ affected source-parity crops do not materially regress.
   regressed the 600 ppi whole-plate RMSE (`0.11289878 → 0.11291172`), so it
   remains reverted. The next probe should replay this exact mass-1 node's
   width-template controls and selected hit before attempting another
-  production integration.
+  production integration. That replay is now in
+  `diagnostics/metapost_intersection_sweep.typ`: with the exact traced cubic
+  and ray controls, the Typst fixed-point solver returns the source-selected
+  hit `(0.98898315, 0.1875)` exactly (direct raw pair `(1, 0)`, reverse raw
+  pair `(0.98898315, 0.8125)`). The intersection algorithm is therefore not
+  the remaining cause for this node; production still needs to preserve or
+  reconstruct the source's cubic width-template through recursive children.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.

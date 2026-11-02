@@ -846,10 +846,14 @@ Typst reports no crossing. See the M11 coast item in
 [`comparisons/fidelity-plan.md`](../comparisons/fidelity-plan.md) for the
 measured pairing and rejected production trial.
 
-The instrumented source also emits `S101-CUTINPUT`, `S101-HIT1/2`, and
-`S101-QX1/QY1` or `S101-QX2/QY2` records. They contain exact 16.16 midpoint,
-target, hit times, and cubic controls for reproducing near-endpoint cases
-without relying on rounded `S101-CUBIC` values.
+The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
+`S101-HIT1/2`, `S101-QCTRL-FIX`, and `S101-QX1/QY1` or `S101-QX2/QY2` records.
+They contain the exact 16.16 midpoint, target, selected hit, ray controls, and
+width-template cubic controls. The mass-1 start-width case is replayed in
+`metapost_intersection_sweep.typ`; the fixed-point solver returns the same
+selected hit as MetaPost. This separates intersection-search parity from the
+remaining production gap: carrying the cubic width template through
+recursive Typst brush paths.
 
 To reproduce the reduced endpoint probe:
 

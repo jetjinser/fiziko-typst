@@ -57,7 +57,28 @@
     selected: intersection-times(ray, (q,)))
 })
 
+// Exact M11 landmass-1 first-divergence input from the brush trace: the ray's
+// final point is the width cubic's initial point, and the target is that
+// initial width. MetaPost's forward/reverse selection returns an interior hit.
+#let coast-start-width = fixed(0, 36, 33)
+#let coast-q = (
+  (fixed(185, 131, 46), coast-start-width),
+  (fixed(186, 137, 4), fixed(0, 36, 48)),
+  (fixed(187, 142, 218), fixed(0, 36, 64)),
+  (fixed(188, 148, 176), fixed(0, 36, 79)),
+)
+#let coast-ray = (
+  (fixed(237, 183, 147), coast-start-width),
+  (fixed(220, 80, 199), coast-start-width),
+  (fixed(202, 233, 250), coast-start-width),
+  (fixed(185, 131, 46), coast-start-width),
+)
+#let coast-start-width-result = (
+  raw: raw-intersections(coast-ray, (coast-q,)),
+  selected: intersection-times(coast-ray, (coast-q,)),
+)
+
 #metadata((m11: results, s104: (
   ray1: (raw: raw-intersections(ray1, curves), selected: intersection-times(ray1, curves)),
   ray2: (raw: raw-intersections(ray2, curves), selected: intersection-times(ray2, curves)),
-))) <metapost-intersection-sweep>
+), m11-coast-start-width: coast-start-width-result)) <metapost-intersection-sweep>
