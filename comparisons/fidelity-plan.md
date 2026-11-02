@@ -720,6 +720,14 @@ affected source-parity crops do not materially regress.
   The paired decision score changed only from 37/46 to 44/54, so this
   representation did not resolve the traced source controls and the prototype
   was reverted before raster rendering.
+  A separate source-time width-grid trial sampled the analytic coast width
+  callback at integer source times and rebuilt straight fixed-point q cubics.
+  It produced 15/11 nodes for source/Typst on mass 1 (9/11 paired decisions,
+  0.372 mm root error) and 57/97 on mass 2 (29/35 paired decisions,
+  0.168 mm root error). This does not establish a closer recursive state, so
+  no full-render trial was warranted and the production hook was removed. The
+  next candidate must carry the source q cubics and their recursive path-time
+  maps, rather than infer them from callback samples.
   The exact cubic replay remains diagnostic; the next implementation needs to
   preserve the source q path as recursive state instead of rebuilding it from
   each sampled child. A q-knot pairing against the original Typst coast

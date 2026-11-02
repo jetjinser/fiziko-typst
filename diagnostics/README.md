@@ -907,6 +907,18 @@ error. This proves the pinned source carries the sliced q state exactly
 through recursion; the remaining production divergence is in Typst's q/path
 state, not source subpath construction.
 
+A rejected coast prototype built a 16.16 width grid at integer source path
+times by evaluating Typst's analytic lightness-width callback at the
+corresponding interpolated arc fractions, then made straight q cubics from
+those samples. It did not reproduce the source recursion: landmass 1 had
+15/11 source/Typst nodes, 9/11 paired decisions, and a 0.372 mm paired-root
+error; landmass 2 had 57/97 nodes, 29/35 paired decisions, and a 0.168 mm
+root error. No full-render trial was warranted. The grid reconstructed width
+values but did not establish the source q-template's recursive path-time and
+arc mapping, so it was removed from the production coast call. Preserve the
+source q cubics and their child parameter maps together before retrying this
+integration.
+
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
 `S101-HIT1/2`, `S101-QCTRLPT-FIX`, and `S101-CUTFIX` records, alongside the
 separate decimal `S101-QX1/QY1` or `S101-QX2/QY2` ray-control records.
