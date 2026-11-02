@@ -24,6 +24,7 @@ INPUTS = (
     "fiziko.typ", "contour.typ", "solve.typ", "nix/flake.nix", "nix/flake.lock",
     "comparisons/manifest.json", "comparisons/plates.typ", "comparisons/run.py",
     "comparisons/metrics.py", "comparisons/globe-coasts.typ",
+    "comparisons/m4-tube-path.typ",
     "comparisons/m11-knot-paths.typ",
     "comparisons/extract-globe-coasts.py", "comparisons/reference/main.mp",
     "comparisons/reference/supplemental.mp", "comparisons/reference/isolated.mp",

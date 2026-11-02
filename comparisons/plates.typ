@@ -2,6 +2,7 @@
 // manifest and are recorded in each report; no parameter fitting occurs here.
 #import "../fiziko.typ": *
 #import "globe-coasts.typ": upstream-landmasses
+#import "m4-tube-path.typ": upstream-m4-tube-path
 #import "m11-knot-paths.typ": upstream-m11-knot-paths
 
 #let case = sys.inputs.at("case")
@@ -33,7 +34,7 @@
       rng-offset: cursor, with-rng: true)
     small + large
   } else if case == "M4" {
-    tube(arc-pts(42,205,335,n: 40,center: (55,68)), 6,
+    tube(upstream-m4-tube-path, 6,
       per: i("per"), seed: seed, rng: "metapost",
       max-w: n("max_width") * pt)
   } else if case == "M5" {

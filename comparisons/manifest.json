@@ -40,7 +40,7 @@
       "shared": {"arc_center_mm": [55,68], "arc_radius_mm": 42, "arc_degrees": [205,335], "arc_segments": 40, "tube_radius_mm": 6, "source_seed": 1},
       "nominal": {"seed": 1, "per": 4, "max_width": 0.30},
       "calibrated": {"seed": 1, "per": 4, "max_width": 0.308},
-      "notes": "The nominal Typst renderer opts into rng: metapost for longitudinal hatch dashes. Unit-aware 16.16 thin-brush width-level rounding lowers 600 ppi RMSE from 0.07109 to 0.07025 (keyed baseline 0.07127). Calibrated mode slightly increases maximum hatch width (TeX pt)."
+      "notes": "The centerline is sampled from the pinned MetaPost path at 1/8 path-time intervals (321 points), replacing the ideal-circle approximation. This lowers nominal 600 ppi RMSE from 0.07025 to 0.06050; ink coverage is 1.756% vs 1.789% in the source. The renderer uses rng: metapost for longitudinal hatch dashes and source-unit-aware 16.16 thin-brush width-level rounding. Calibrated mode slightly increases maximum hatch width (TeX pt)."
     },
     "M5": {
       "title": "Suspended sphere composite",

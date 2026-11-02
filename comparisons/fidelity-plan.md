@@ -60,6 +60,9 @@ strokes, while M10 contains mostly whitespace.
    MetaPost-stream mode; source-unit-aware 16.16 thin-brush threshold rounding
    lowers M4 RMSE further from 0.07109 to 0.07025. The same
    transverse pilot worsens M7 from 0.12453 to 0.12532 and is not enabled.
+   Sampling M4's actual MetaPost spline at 1/8 path-time intervals replaces the
+   ideal-circle approximation and lowers its RMSE from 0.07025 to 0.06050;
+   source path extraction is reproducible from the pinned driver.
    Boundary-lane marks and exact recursive subdivision still limit the tube
    renderer; a direct M4 boundary-stroke pilot regressed and was reverted
    pending better offset geometry. Brush stipples and further wood call-order

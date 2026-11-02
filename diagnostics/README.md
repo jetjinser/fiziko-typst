@@ -376,6 +376,31 @@ order correction also improves the variable-radius M6 plate from RMSE 0.08743
 to 0.08584; coverage is 1.964% versus 1.958% in the source. The per-lane
 recursion counts still differ, so short dash placement and phase remain open.
 
+### M4 source centerline
+
+The M4 comparison used 40 exact-circle samples in Typst, while its pinned
+MetaPost driver connects the same 41 anchors with MetaPost's cubic path solver.
+`instrument_m4_tube_path.py` and `extract_m4_tube_path.py` now export that path
+at 1/8 path-time intervals (321 points) into `comparisons/m4-tube-path.typ`.
+Using the source-derived centerline lowers nominal 600 ppi RMSE from 0.07025 to
+0.06050; Typst ink coverage is 1.756% versus 1.789% in the source. The denser
+path retains the existing lane model and dash stream; remaining width and dash
+differences are independent.
+
+Regenerate the M4 path from the pinned comparison driver inside the Nix shell:
+
+```sh
+mkdir -p /tmp/m4-tube-source
+python3 diagnostics/instrument_m4_tube_path.py \
+  comparisons/reference/main.mp /tmp/m4-tube-source/main.mp 8
+cp "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m4-tube-source/fiziko.mp
+printf 'selected := 4; input main.mp;\n' > /tmp/m4-tube-source/trace.mp
+(cd /tmp/m4-tube-source && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+python3 diagnostics/extract_m4_tube_path.py \
+  /tmp/m4-tube-source/trace.log comparisons/m4-tube-path.typ
+```
+
 The source lane trace uses the same 110 × 56 mm path as M4. The two Typst
 comparison documents render the calibrated M4 and variable-radius M6 samples:
 
