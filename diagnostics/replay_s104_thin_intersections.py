@@ -5,8 +5,10 @@ Usage: replay_s104_thin_intersections.py MPOST_LOG ROW [--node ID]
 
 MetaPost's built-in ``intersectiontimes`` results are recorded as ``S104-FIRST``.
 This script applies Fiziko's forward/reverse preference and cutPathTime's
-midpoint-nearest choice to those raw results. It audits source decisions; it
-does not approximate MetaPost's low-level intersectiontimes implementation.
+midpoint-nearest choice to those raw results. It also compares a fixed-point
+packet-search model of MetaPost's low-level cubic intersection routine with
+the logged raw results; that model remains incomplete on some near-endpoint
+cases and is diagnostic, not a production solver.
 """
 
 import argparse
@@ -17,12 +19,13 @@ from pathlib import Path
 def load(log_path: str, row: float):
     nodes = defaultdict(lambda: {
         "first": [], "controls": defaultdict(dict), "thin": None,
+        "rays": defaultdict(dict), "y_controls": defaultdict(dict),
         "hit": None, "hit_x": None,
     })
     for line in Path(log_path).read_text().splitlines():
         p = line.split()
         if len(p) < 3 or p[0] not in {
-            "S104-FIRST", "S104-TXCTRL", "S104-THIN",
+            "S104-FIRST", "S104-TXCTRL", "S104-TCTRL", "S104-TRAY", "S104-THIN",
             "S104-THIN-HIT-T", "S104-THIN-HIT-X",
         }:
             continue
@@ -33,7 +36,16 @@ def load(log_path: str, row: float):
             node["first"].append(tuple(map(float, p[3:7])))
         elif p[0] == "S104-TXCTRL":
             segment, control = int(p[4]), int(p[5])
-            node["controls"][segment][control] = (int(p[6]) + int(p[7]) / 256) / 256
+            node["controls"][segment][control] = int(p[6]) * 256 + int(p[7])
+        elif p[0] == "S104-TCTRL":
+            segment, control = int(p[4]), int(p[5])
+            node["y_controls"][segment][control] = int(p[8]) * 256 + int(p[9])
+        elif p[0] == "S104-TRAY":
+            ray, control = int(p[3]), int(p[4])
+            node["rays"][ray][control] = (
+                int(p[5]) * 256 + int(p[6]),
+                int(p[7]) * 256 + int(p[8]),
+            )
         elif p[0] == "S104-THIN":
             node["thin"] = {
                 "depth": int(p[3]), "time": float(p[9]),
@@ -73,17 +85,178 @@ def replay(node):
     }
 
 
+def half_signed(value: int) -> int:
+    """MetaPost's integer half uses Pascal ``div`` (truncation toward zero)."""
+    return value // 2 if value >= 0 else -((-value) // 2)
+
+
+def split_packet(packet):
+    """Bisect a cubic's three first-difference packets in scaled integers."""
+    left = []
+    right = []
+    for axis in range(2):
+        u1, u2, u3 = (point[axis] for point in packet)
+        u2_left = half_signed(u1 + u2)
+        u2_right = half_signed(u3 + u2)
+        u3_left = half_signed(u2_left + u2_right)
+        left.append((u1, u2_left, u3_left))
+        right.append((u3_left, u2_right, u3))
+    return (
+        tuple(tuple(left[axis][k] for axis in range(2)) for k in range(3)),
+        tuple(tuple(right[axis][k] for axis in range(2)) for k in range(3)),
+    )
+
+
+def packet_bounds(packet, axis):
+    values = [0]
+    position = 0
+    for point in packet:
+        position += point[axis]
+        values.append(position)
+    return min(values), max(values)
+
+
+def packet_boxes_overlap(left, right, dx, dy, tolerance):
+    for axis, delta in ((0, dx), (1, dy)):
+        left_min, left_max = packet_bounds(left, axis)
+        right_min, right_max = packet_bounds(right, axis)
+        if (delta - tolerance > right_max - left_min
+                or delta + tolerance < right_min - left_max):
+            return False
+    return True
+
+
+def fixed_cubic_intersection(left_points, right_points, tolerance_step):
+    """Replay MetaPost's packet bisection for one cubic pair.
+
+    Coordinates are raw 16.16 scaled integers. Child pairs are visited in
+    MetaPost's lexicographic order; all packet subdivision and tolerance
+    updates use integer arithmetic.
+    """
+    left = tuple(tuple(left_points[i + 1][axis] - left_points[i][axis]
+                       for axis in range(2)) for i in range(3))
+    right = tuple(tuple(right_points[i + 1][axis] - right_points[i][axis]
+                        for axis in range(2)) for i in range(3))
+    start_dx = left_points[0][0] - right_points[0][0]
+    start_dy = left_points[0][1] - right_points[0][1]
+    backtracks = 0
+    aborted = False
+    best_level = -1
+    best = None
+
+    def descend(a, b, dx, dy, tolerance, three_l, level, ai, bi):
+        nonlocal backtracks, aborted, best_level, best
+        if not packet_boxes_overlap(a, b, dx, dy, tolerance):
+            backtracks += 1
+            if backtracks > 5000:
+                aborted = True
+            return None
+        if level >= best_level:
+            best_level = level
+            scale = 1 << level
+            best = (ai / scale, bi / scale)
+        if level == 17:
+            scale = 1 << 17
+            return ((ai + 0.5) / scale, (bi + 0.5) / scale)
+
+        a_left, a_right = split_packet(a)
+        b_left, b_right = split_packet(b)
+        next_tolerance = 2 * (tolerance - three_l + tolerance_step)
+        next_three_l = three_l + tolerance_step
+        next_dx, next_dy = 2 * dx, 2 * dy
+        for a_side, a_child in enumerate((a_left, a_right)):
+            for b_side, b_child in enumerate((b_left, b_right)):
+                dx_child = next_dx
+                dy_child = next_dy
+                if a_side:
+                    dx_child += sum(point[0] for point in a_left)
+                    dy_child += sum(point[1] for point in a_left)
+                if b_side:
+                    dx_child -= sum(point[0] for point in b_left)
+                    dy_child -= sum(point[1] for point in b_left)
+                result = descend(
+                    a_child, b_child, dx_child, dy_child,
+                    next_tolerance, next_three_l, level + 1,
+                    ai * 2 + a_side, bi * 2 + b_side,
+                )
+                if result is not None:
+                    return result
+                if aborted:
+                    return best
+        return None
+
+    result = descend(left, right, start_dx, start_dy, 0, 0, 0, 0, 0)
+    return best if aborted else result
+
+
+def fixed_path_intersection(ray, path):
+    """Match MetaPost's path-level lexicographic search and 0/3 retries."""
+    for tolerance_step in (0, 3):
+        for ray_segment, ray_curve in enumerate((ray,)):
+            for path_segment, path_curve in enumerate(path):
+                result = fixed_cubic_intersection(
+                    ray_curve, path_curve, tolerance_step,
+                )
+                if result is not None:
+                    return ray_segment + result[0], path_segment + result[1]
+    return -1.0, -1.0
+
+
+def fixed_raw_intersections(ray, path):
+    direct = fixed_path_intersection(ray, path)
+    reverse_path = [tuple(reversed(curve)) for curve in reversed(path)]
+    reverse = fixed_path_intersection(ray, reverse_path)
+    return direct, reverse
+
+
+def fixed_intersection_times(ray, path):
+    direct, reverse = fixed_raw_intersections(ray, path)
+    if direct[0] < reverse[0]:
+        return direct
+    if direct[0] < 0:
+        return reverse
+    return reverse[0], len(path) - reverse[1]
+
+
+def fixed_replay(node):
+    path = [
+        [
+            (node["controls"][segment][control],
+             node["y_controls"][segment][control])
+            for control in range(4)
+        ]
+        for segment in sorted(node["controls"])
+    ]
+    raw_hits = []
+    reverse_path = [tuple(reversed(curve)) for curve in reversed(path)]
+    for ray_id in (1, 2):
+        ray = [node["rays"][ray_id][control] for control in range(4)]
+        raw_hits.extend((
+            fixed_path_intersection(ray, path),
+            fixed_path_intersection(ray, reverse_path),
+        ))
+    source_raw = node["first"][-2:]
+    expected_raw = []
+    for raw in source_raw:
+        expected_raw.append((raw[0], raw[1]))
+        expected_raw.append((raw[2], raw[3]))
+    return raw_hits, expected_raw
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log")
     parser.add_argument("row", type=float)
     parser.add_argument("--node", type=int)
+    parser.add_argument("--verbose", action="store_true",
+                        help="print every low-level replay pair, including matches")
     args = parser.parse_args()
 
     nodes = load(args.log, args.row)
     if args.node is not None:
         nodes = {args.node: nodes[args.node]} if args.node in nodes else {}
     replayed = []
+    fixed_results = []
     for serial, node in sorted(nodes.items()):
         if node["thin"] is None:
             continue
@@ -97,6 +270,12 @@ def main():
         ) <= 0.00002
         result["cut_match"] = abs(result["chosen"] - result["source_cut"]) <= 0.00002
         replayed.append(result)
+        if (len(node["rays"][1]) == 4 and len(node["rays"][2]) == 4
+                and len(node["y_controls"]) == len(node["controls"])):
+            fixed_hits, source_hits = fixed_replay(node)
+            for index, (actual, source) in enumerate(zip(fixed_hits, source_hits)):
+                fixed_results.append((serial, index // 2 + 1, index % 2,
+                                      actual, source))
 
     if not replayed:
         raise SystemExit("no complete S104 thin-intersection records for this row")
@@ -112,6 +291,20 @@ def main():
               f"{item['cut2']:10.6f} {item['chosen']:10.6f} "
               f"{item['source_cut']:10.6f} {item['d3']:10.5f} "
               f"{item['d4']:10.5f} {item['d5']:10.5f}")
+    if fixed_results:
+        errors = [max(abs(actual[0] - source[0]), abs(actual[1] - source[1]))
+                  for _, _, _, actual, source in fixed_results]
+        print("fixed packet search vs direct raw hit pairs:",
+              f"{sum(error <= 1 / 65536 for error in errors)}/{len(errors)} "
+              "within one 16.16 time unit")
+        print(f"fixed packet replay mean/max time error: "
+              f"{sum(errors) / len(errors):.8g}/{max(errors):.8g}")
+        for serial, ray_id, reverse, actual, source in fixed_results:
+            error = max(abs(actual[0] - source[0]), abs(actual[1] - source[1]))
+            if not args.verbose and error <= 1 / 65536:
+                continue
+            print(f"  node {serial} ray {ray_id} {'reverse' if reverse else 'direct'}: "
+                  f"source {source}, replay {actual}")
 
 
 if __name__ == "__main__":

@@ -78,8 +78,8 @@ def path_intersection(ray, path, tolerance_step):
 
 
 def intersection_with_retry(ray, path):
-    # MetaPost path_intersection retries with increasing overlap tolerance.
-    for tolerance_step in (0, 3, 6):
+    # MetaPost path_intersection retries at tolerance steps 0 and 3.
+    for tolerance_step in (0, 3):
         result = path_intersection(ray, path, tolerance_step)
         if result[0] >= 0:
             return result

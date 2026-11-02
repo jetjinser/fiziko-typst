@@ -1226,7 +1226,7 @@ control-point boxes, tries the four child pairs in order, and returns the
 midpoint times after 17 bisections. Its returned times therefore need not equal
 the mathematical cubic roots. See sections 524 and 531–537 of
 [Knuth's MetaPost source manual](https://mirror.gutenberg-asso.fr/tex.loria.fr/prod-graph/mp.pdf#page=190).
-The path-level search retries with overlap tolerance steps 0, 3, and 6; the
+The path-level search retries with overlap tolerance steps 0 and 3; the
 cubic-level tolerance grows with each bisection. `replay_s104_intersections.py`
 models those retries, the four-pair ordering, the 17-level midpoint result,
 and Fiziko's forward/reverse selection:
@@ -1413,6 +1413,30 @@ applied to these curves. Typst still selects the other midpoint-side cut at
 x `44.895` mm. Do not infer a production change from the source replay alone;
 the next comparison must pair recursive subpath controls and reproduce the
 low-level hit choice across the full row before a render candidate is judged.
+
+The thin replay now also includes an integer first-difference packet model of
+MetaPost's cubic search. It uses 16.16 controls, integer `half` operations,
+the four ordered child pairs, source-style tolerance updates, and a 17-level
+search. Against the 38 forward/reverse results from the 19 cuts, it reproduces
+62/76 raw pairs within one 16.16 path-time unit. Node 172 matches all four
+logged ray results within that tolerance, including the near-flat hit
+`(0, 1.50017)`. The other 14 pairs remain mismatched, concentrated around
+endpoint and no-hit cases; the source's 5000-backtrack approximate return and
+remaining fixed-point details are not modeled fully. Compare the incomplete
+pairs with:
+
+```sh
+python3 diagnostics/replay_s104_thin_intersections.py \
+  /tmp/s104-thin-ray-replay/trace.log -6.37912
+python3 diagnostics/replay_s104_thin_intersections.py \
+  /tmp/s104-thin-ray-replay/trace.log -6.37912 --node 172 --verbose
+```
+
+This narrows the source solver work but does not validate a Typst change. The
+rounded-cubic production candidates still regress the whole S104 render; keep
+the renderer unchanged until the packet model covers all target-row endpoint
+cases and a full-row Typst comparison improves both recursion decisions and
+the paired hatch image.
 
 The source trace now also emits `S104-PCURVE` for the target row's recursive
 thin paths. At node 172, the path's page-space cubic is straight within each

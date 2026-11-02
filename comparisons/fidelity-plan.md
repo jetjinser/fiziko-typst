@@ -96,8 +96,12 @@ affected source-parity crops do not materially regress.
   and midpoint-nearest selection reproduces all 19 source cuts on the target
   row, including node 172 (`1.50017` at x `52.61568` versus the other hit at
   x `35.07321`). This isolates the remaining mismatch to low-level
-  `intersectiontimes` behavior and Typst's recursive subpath parameterization;
-  no production change is justified yet. The trace replay is documented in
+  `intersectiontimes` behavior and Typst's recursive subpath parameterization.
+  An integer 16.16 packet-search model now reproduces 62/76 raw
+  forward/reverse hit pairs within one path-time unit on this row, including
+  all four for node 172. Fourteen endpoint/no-hit cases still disagree; the
+  source's approximate 5000-backtrack return is not fully modeled. No
+  production change is justified yet. The trace replay is documented in
   `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
