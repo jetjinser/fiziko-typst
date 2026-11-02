@@ -227,6 +227,10 @@ enddef;''')
                 & decimal(traceCurrentK) & " " & decimal(i) & " "
                 & decimal(w2/mm) & " " & decimal(t);
             if (t >= 0) and (t <= length(p)):
+                message "M11TCUTFIX " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(floor(t*256)) & " "
+                    & decimal(round((t*256-floor(t*256))*256));
                 message "M11TCUTPATH " & decimal(traceTubeCall) & " "
                     & decimal(traceCurrentK) & " " & decimal(i) & " "
                     & decimal(xpart(point t of p)/mm) & " "

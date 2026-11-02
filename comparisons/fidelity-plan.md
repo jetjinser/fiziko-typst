@@ -162,6 +162,10 @@ affected source-parity crops do not materially regress.
   production recursion. A diagnostic reconstruction from the original integer
   callback widths regressed to 14/18 because it ignored the q subpaths already
   sliced by the outer brush recursion; it was removed without a render trial.
+  The source trace now stores raw 16.16 cut parameters. A dedicated analyzer
+  verifies 18 parent/left-child q width curves exactly using fixed-point de
+  Casteljau subdivision with nearest-unit rounding. Reuse and recursively split those
+  source q controls in the replay before changing production recursion.
   Source recursive nodes now include their geometric endpoints and cut points.
   In call 4 lane 2, the source chooses width `0.03807` and splits near
   `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm

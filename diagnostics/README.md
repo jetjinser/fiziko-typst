@@ -994,7 +994,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11QSEG|^M11THINPATH|^M11TCUT|^M11TCUTPATH|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11QSEG|^M11THINPATH|^M11TCUT|^M11TCUTFIX|^M11TCUTPATH|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1091,8 +1091,20 @@ An opt-in replay candidate evaluated a fresh cubic from the original integer
 callback widths at each source path time. It regressed the lane match from
 15/18 to 14/18, adding a call-6/lane-8 mismatch. This reconstruction ignores
 the q controls already sliced by `brushGenerate` before thin recursion, so the
-candidate was removed without a render trial. The control trace must include
-those outer-recursion subpaths before this approach can be evaluated fairly.
+candidate was removed without a render trial. `M11QSEG` now records those
+entry controls, and `M11TCUTFIX` records each recursive parameter on the raw
+16.16 grid. Check the parent/left-child split arithmetic with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_splits.py /tmp/m11-calctrace/trace.log
+```
+
+This verifies 18 left-child q width-coordinate cubics exactly against
+fixed-point de Casteljau splits with nearest-unit rounding. It gives the exact
+width split rule; a replay must
+still carry each parent q cubic and split it, rather than recreate it from
+callback widths.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
