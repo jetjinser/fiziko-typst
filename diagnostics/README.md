@@ -853,6 +853,15 @@ width itself was retested and reverted: outer nodes fell to 814 and hatch
 RMSE regressed to 0.07529141. The instrumentation records `S104-CUT` only
 when the source returns an interior cut.
 
+A follow-up removed 16.16 rounding from each local intersection fraction while
+retaining rounding of the selected whole-path parameter. This slightly lowers
+hatch RMSE to 0.07528461, but the outer recursion grows to 2110 nodes (source:
+1340); thin recursion remains 1577 (source: 1696). The source compares the two
+midpoint-side intersections after quantizing each `firstIntersectionTimes`
+hit, so local hit rounding is required even though the final selected path
+time is also rounded. The experiment was reverted because its tree is much
+less faithful and its raster gain is negligible.
+
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches; 34
 mismatches, with per-row deltas up to ±20 calls). It slightly regressed the

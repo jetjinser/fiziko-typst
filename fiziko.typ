@@ -465,10 +465,10 @@
       let span = _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
       if a != b and ((a <= target and b >= target) or (a >= target and b <= target)) {
         let raw-f = calc.clamp((target - a) / (b - a), 0.0, 1.0)
-        // MetaPost's firstIntersectionTimes returns a fixed-point path time.
-        // Quantizing recursive cuts (not only the width knots) can affect
-        // near-endpoint recursion where a tiny residual width crossing is
-        // repeatedly revisited.
+        // MetaPost quantizes each firstIntersectionTimes result before it
+        // compares the two hits around the midpoint. Keep this local hit
+        // rounding here; the selected whole-path parameter is rounded again
+        // when it is mapped back onto the input path below.
         let f = if source-rounding { _mp-scalar-rounded(raw-f) } else { raw-f }
         let at = arc + f * span
         let distance = calc.abs(at - total / 2)
