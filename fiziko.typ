@@ -38,6 +38,22 @@
 // different scaled units.
 #let _mp-rounded(x) = calc.round(x / _mp-unit * 65536) / 65536 * _mp-unit
 #let _mp-scalar-rounded(x) = calc.round(x * 65536) / 65536
+#let _mp-path-subdivision-times(n) = {
+  let step = _mp-scalar-rounded(1 / n)
+  let times = (0.0,)
+  let t = 0.0
+  while t < 1 {
+    let next = _mp-scalar-rounded(t + step)
+    if next < 1 {
+      times.push(next)
+      t = next
+    } else {
+      times.push(1.0)
+      t = 1.0
+    }
+  }
+  times
+}
 
 // ---------------------------------------------------------------------------
 // vector helpers — points are (x, y) float pairs in mm
@@ -2367,10 +2383,16 @@
     // flatSurface calls pathSubdivide(aHatch, 3 + round(uniformdeviate(2))).
     // Its random count changes the path-time knots seen by brushGenerate even
     // though the hatch itself is geometrically straight.
-    let subdivisions = if rng == "metapost" {
+    let requested-subdivisions = if rng == "metapost" {
       3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
     } else { 24 }
     if rng == "metapost" and style != "stipples" { cursor += 1 }
+    // pathSubdivide recursively accumulates 16.16 path-time steps. For 3 and
+    // 5 requested pieces, rounding leaves the final accumulated time just
+    // below 1, so the source emits one additional, very short final segment.
+    let subdivision-times = if rng == "metapost" {
+      _mp-path-subdivision-times(requested-subdivisions)
+    } else { range(requested-subdivisions + 1).map(i => i / requested-subdivisions) }
     let row-fraction = s.at(2) / calc.max(1, s.at(3))
     let line-length = _dist(s.at(0), s.at(1))
     let width(t, end-fade, scale) = {
@@ -2381,8 +2403,8 @@
       )
       scale * _source-min-stroke * (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
     }
-    let pts = range(subdivisions + 1).map(i => _add(s.at(0),
-      _mul(_sub(s.at(1), s.at(0)), i / subdivisions)))
+    let pts = subdivision-times.map(t => _add(s.at(0),
+      _mul(_sub(s.at(1), s.at(0)), t)))
     if style == "stipples" {
       items.push(stroke-stipple-brush(pts,
         t => width(t, 5 / 6, dot-size / _source-min-stroke),

@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -22,16 +22,17 @@
 
 #for segment in draw-segments {
   let subdivision-rng = cursor
-  let subdivisions = 3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
+  let requested-subdivisions = 3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
   cursor += 1
+  let subdivision-times = _mp-path-subdivision-times(requested-subdivisions)
   let row-fraction = segment.at(2) / calc.max(1, segment.at(3))
   let line-length = _dist(segment.at(0), segment.at(1))
   let width(t) = {
     let envelope = calc.sin(180deg * t) * line-length / total-width * calc.sin(180deg * row-fraction)
     2 * _source-min-stroke * (1 / 15 + shade) * (1 - 6 / 7 * calc.sqrt(calc.max(0.0, envelope)))
   }
-  let points = range(subdivisions + 1).map(i => _add(segment.at(0),
-    _mul(_sub(segment.at(1), segment.at(0)), i / subdivisions)))
+  let points = subdivision-times.map(t => _add(segment.at(0),
+    _mul(_sub(segment.at(1), segment.at(0)), t)))
   let frames = _frame(points, false)
   let fractions = _path-fractions(frames.map(e => e.at(0)), false)
   let widths = fractions.map(width)
@@ -41,7 +42,9 @@
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true)
   rows.push((
-    row: segment.at(2), length: line-length, subdivisions: subdivisions,
+    row: segment.at(2), length: line-length,
+    requested-subdivisions: requested-subdivisions,
+    subdivisions: subdivision-times.len() - 1,
     width-min: calc.min(..widths), width-max: calc.max(..widths),
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,

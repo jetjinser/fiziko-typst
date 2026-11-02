@@ -117,10 +117,12 @@ strokes, while M10 contains mostly whitespace.
    to −30° in Typst page coordinates because `P()` flips the vertical axis.
    Reversing the opt-in MetaPost stream traversal also matches the source's
    y-up row order. The brush now also uses MetaPost's randomized 3–5 segment
-   `pathSubdivide` count per hatch line. These changes lower S104 whole-plate
-   RMSE to 0.20725 and hatch crop RMSE to 0.07650; hatch ink coverage is
-   14.37% versus 14.07% in the source, while stipple coverage remains close
-   (7.14% versus 7.08%). Source row-level tracing found 1516 calls across 142
+   `pathSubdivide` count per hatch line. Reproducing its cumulative 16.16 path
+   times adds the source's short terminal segment on requested 3- and 5-way
+   subdivisions. S104 whole-plate RMSE falls from 0.20725 to 0.20703 and hatch
+   crop RMSE from 0.07650 to 0.07529; hatch ink coverage is 14.359% versus
+   14.066% in the source, while stipple coverage remains close (7.14% versus
+   7.08%). Source row-level tracing found 1516 calls across 142
    drawable rows versus 1322 before the threshold fix. Rounding the width
    level ratio as a dimensionless 16.16 scalar raises Typst to 1540 calls,
    with exact per-row counts on 108 rows; hatch crop RMSE falls further to

@@ -630,19 +630,25 @@ The corrected trace has 142 drawable rows; the instrumented source emits 143
 row records including one zero-length edge row. Their physical row-length
 ranges match (0.68–39.69 mm). MetaPost scans those rows in y-up order, so
 `flat-surface(rng: "metapost")` traverses the Typst rows in reverse when
-assigning its shared random stream. Each row now uses the same random
-`pathSubdivide` count as MetaPost (`3 + round(uniformdeviate(2))`), rather than
-using a fixed 24-segment path. At 600 ppi hatch crop RMSE falls from 0.09247 to
-0.07650; ink coverage is 14.37% versus 14.07% in the source. Source row-level
-tracing counts 1516 random calls across 142 drawable rows. The initial Typst
-trace used 1322 calls and matched the source count on 87 rows. Rounding widths
-in mm and the dimensionless width-level ratio with separate MetaPost 16.16
-quantizers raises Typst to 1540 calls and 108 matching rows. Hatch crop RMSE
-improves further to 0.07530, ink coverage is 14.363% versus 14.066%, and
-whole-plate RMSE is 0.20703 with ink coverage 10.81% versus 10.63%. An earlier
-prototype applied the length quantizer to the scalar ratio; it regressed hatch
-RMSE to 0.07974 and was reverted. Brush leaf geometry and some local random
-calls still differ.
+assigning its shared random stream. Each row requests 3–5 divisions via
+`pathSubdivide` (`3 + round(uniformdeviate(2))`). MetaPost then accumulates the
+requested `1/n` path-time step in 16.16 arithmetic. For requests of 3 or 5,
+rounding leaves the final time just below 1, so the source emits 4 or 6 path
+segments, including a very short terminal segment. `_mp-path-subdivision-times`
+now reproduces those accumulated times. At 600 ppi hatch crop RMSE falls from
+0.07650 to 0.07529 and whole-plate RMSE from 0.20725 to 0.20703. Hatch ink
+coverage is 14.359% versus 14.066% source; full-plate coverage is 10.808%
+versus 10.630% source.
+
+Source row-level tracing counts 1516 random calls across 142 drawable rows,
+including each row's subdivision draw. The initial Typst trace used 1322 calls
+and matched the source count on 87 rows. Rounding widths in mm and the
+dimensionless width-level ratio with separate MetaPost 16.16 quantizers raises
+Typst to 1540 calls, with exact per-row brush counts on 108 rows. The new
+path-time accumulation changes the knot positions inside each row but leaves
+that call total unchanged. An earlier prototype applied the length quantizer
+to the scalar ratio; it regressed hatch RMSE to 0.07974 and was reverted. Brush
+leaf geometry and some local random calls still differ.
 
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches) and
