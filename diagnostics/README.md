@@ -543,6 +543,12 @@ prototype applied the length quantizer to the scalar ratio; it regressed hatch
 RMSE to 0.07974 and was reverted. Brush leaf geometry and some local random
 calls still differ.
 
+Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
+left the 142 row call counts unchanged (108 exact source-row matches) and
+slightly regressed the 600 ppi whole/hatch RMSE from 0.20703/0.07530 to
+0.20704/0.07537. That prototype was reverted; the remaining call-count
+differences cluster in the variable-width middle rows.
+
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
 the Nix devshell:
