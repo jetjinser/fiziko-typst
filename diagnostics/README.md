@@ -210,9 +210,23 @@ maximum). Seven source dash leaves pair within 0.1 mm, with 0.080 mm mean
 endpoint error over the greedy unique pairing. These are geometric
 nearest-neighbor diagnostics, not a tree correspondence: a nearest pair does
 not establish matching parents. The count and depth differences confirm that
-terminal dash coverage and recursion still differ, but do not isolate a safe
-threshold change. Keep the renderer unchanged until a parent-aware trace
-explains the divergent branches.
+terminal dash coverage and recursion still differ. `WBTCALL` and `WBTHIN` now
+carry call IDs, so `compare_wood_contours.py` reconstructs both recursion
+forests, pairs their two roots by endpoint error, then pairs each parent's
+children by the least endpoint error. This parent-aware walk pairs 40 nodes;
+33 pairs are within 0.1 mm and 35/40 recurse/stop decisions agree. Five first
+branch divergences remain. One source stop/dash versus Typst recurse decision
+has only 0.026 mm endpoint error: source's `w2` is 0.04979 mm and its cut
+lands 0.0005 mm from the path endpoint, while Typst's target is 0.05272 mm and
+its cut lands inside the path. Another source recurse versus Typst stop occurs
+at 0.043 mm endpoint error with source `w2` and Typst's target near 0.04686 mm;
+source accepts a cut 0.015 path-time units from the start while Typst has no
+candidate. The other three divergences already have 0.15–0.40 mm endpoint
+error. Root pairing
+and sibling assignment are geometry-guided diagnostics, not proof that the
+underlying brush trees correspond. These cases narrow the next source audit to
+width-level selection and endpoint/candidate validity; they do not yet justify
+a global threshold change.
 
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`

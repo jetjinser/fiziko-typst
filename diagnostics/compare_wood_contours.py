@@ -2,6 +2,7 @@
 """Pair one pinned-source cLine trace with its Typst contour metadata."""
 
 import argparse
+import itertools
 import json
 import math
 import re
@@ -55,29 +56,33 @@ def read_source(path: Path, height: int):
                 )
         if line.startswith("WBTHIN "):
             fields = line.split()
-            if len(fields) >= 10:
+            if len(fields) >= 11:
                 thin_nodes.append({
-                    "depth": int(fields[1]),
-                    "branch": fields[2],
-                    "width-a": float(fields[3]),
-                    "width-b": float(fields[4]),
-                    "target": float(fields[5]),
-                    "cut-time": float(fields[6]),
-                    "length": float(fields[7]),
-                    "left-length": float(fields[8]),
-                    "right-length": float(fields[9]),
+                    "call-id": int(fields[1]),
+                    "depth": int(fields[2]),
+                    "branch": fields[3],
+                    "width-a": float(fields[4]),
+                    "width-b": float(fields[5]),
+                    "w2": float(fields[6]),
+                    "cut-time": float(fields[7]),
+                    "length": float(fields[8]),
+                    "left-length": float(fields[9]),
+                    "right-length": float(fields[10]),
                     "cut-point": None,
                     "path-start": None,
                     "path-end": None,
                 })
         if line.startswith("WBTCALL "):
             fields = line.split()
-            if len(fields) == 5:
+            if len(fields) == 10:
                 thin_calls.append({
-                    "depth": int(fields[1]),
-                    "width-a": float(fields[2]),
-                    "width-b": float(fields[3]),
-                    "length": float(fields[4]),
+                    "call-id": int(fields[1]),
+                    "depth": int(fields[2]),
+                    "width-a": float(fields[3]),
+                    "width-b": float(fields[4]),
+                    "length": float(fields[5]),
+                    "path-start": (float(fields[7]), height - float(fields[6])),
+                    "path-end": (float(fields[9]), height - float(fields[8])),
                 })
         if line.startswith("WBTHINPATH ") and thin_nodes:
             fields = line.split()
@@ -97,13 +102,14 @@ def read_source(path: Path, height: int):
                 )
         if line.startswith("WBTHINDASH "):
             fields = line.split()
-            if len(fields) == 8:
+            if len(fields) == 9:
                 thin_dashes.append({
-                    "depth": int(fields[1]),
-                    "width": float(fields[2]),
-                    "length": float(fields[3]),
-                    "path-start": (float(fields[5]), height - float(fields[4])),
-                    "path-end": (float(fields[7]), height - float(fields[6])),
+                    "call-id": int(fields[1]),
+                    "depth": int(fields[2]),
+                    "width": float(fields[3]),
+                    "length": float(fields[4]),
+                    "path-start": (float(fields[6]), height - float(fields[5])),
+                    "path-end": (float(fields[8]), height - float(fields[7])),
                 })
         if line.startswith("WBLEAF "):
             fields = line.split()
@@ -143,6 +149,141 @@ def edit_distance(a, b):
             ))
         row = next_row
     return row[-1]
+
+
+def make_forest(nodes):
+    roots = []
+    stack = []
+    for node in nodes:
+        node["children"] = []
+        while stack and stack[-1]["depth"] >= node["depth"]:
+            stack.pop()
+        if stack:
+            stack[-1]["children"].append(node)
+        else:
+            roots.append(node)
+        stack.append(node)
+    return roots
+
+
+def endpoint_error(a, b):
+    direct = (math.dist(a["path-start"], b["path-start"])
+              + math.dist(a["path-end"], b["path-end"])) / 2
+    reverse = (math.dist(a["path-start"], b["path-end"])
+               + math.dist(a["path-end"], b["path-start"])) / 2
+    return min(direct, reverse)
+
+
+def pair_thin_trees(source_calls, source_nodes, source_dashes, typst_nodes):
+    decisions = {node["call-id"]: node for node in source_nodes}
+    dash_ids = {node["call-id"] for node in source_dashes}
+    source_forest = make_forest(source_calls)
+    typst_thin = [
+        node.copy() for node in typst_nodes if node["stage"] == "thin"
+    ]
+    for index, node in enumerate(typst_thin):
+        node["trace-index"] = index
+    typst_forest = make_forest(typst_thin)
+    for node in source_calls:
+        event = decisions.get(node["call-id"])
+        node["recurse"] = event is not None and event["branch"] == "R"
+        node["dash"] = node["call-id"] in dash_ids
+    pairs = []
+    divergences = []
+    root_candidates = sorted(
+        (endpoint_error(source, typst), si, ti)
+        for si, source in enumerate(source_forest)
+        for ti, typst in enumerate(typst_forest)
+    )
+    used_source = set()
+    used_typst = set()
+    root_pairs = []
+    for error, si, ti in root_candidates:
+        if si in used_source or ti in used_typst:
+            continue
+        used_source.add(si)
+        used_typst.add(ti)
+        root_pairs.append((error, source_forest[si], typst_forest[ti]))
+
+    def walk(source, typst):
+        error = endpoint_error(source, typst)
+        pairs.append((error, source, typst))
+        source_recurse = source["recurse"]
+        typst_recurse = typst["recurse"]
+        if source_recurse != typst_recurse:
+            divergences.append({
+                "source-id": source["call-id"],
+                "source-depth": source["depth"],
+                "source-recurse": source_recurse,
+                "source-dash": source["dash"],
+                "source-widths": (source["width-a"], source["width-b"]),
+                "source-w2": decisions.get(source["call-id"], {}).get("w2"),
+                "source-length-mm": source["length"],
+                "typst-index": typst.get("trace-index"),
+                "typst-depth": typst["depth"],
+                "typst-recurse": typst_recurse,
+                "typst-dash": typst["dash"],
+                "typst-width-range": (typst["width-min"], typst["width-max"]),
+                "typst-target": typst["target"],
+                "typst-length-mm": typst["length"],
+                "endpoint-error-mm": error,
+                "source-child-count": len(source["children"]),
+                "typst-child-count": len(typst["children"]),
+            })
+            return
+        if source_recurse:
+            if len(source["children"]) != len(typst["children"]):
+                divergences.append({
+                    "source-id": source["call-id"],
+                    "source-depth": source["depth"],
+                    "source-recurse": True,
+                    "source-widths": (source["width-a"], source["width-b"]),
+                    "source-w2": decisions.get(source["call-id"], {}).get("w2"),
+                    "source-length-mm": source["length"],
+                    "typst-index": typst.get("trace-index"),
+                    "typst-depth": typst["depth"],
+                    "typst-recurse": True,
+                    "typst-width-range": (typst["width-min"], typst["width-max"]),
+                    "typst-target": typst["target"],
+                    "typst-length-mm": typst["length"],
+                    "endpoint-error-mm": error,
+                    "source-child-count": len(source["children"]),
+                    "typst-child-count": len(typst["children"]),
+                })
+            count = min(len(source["children"]), len(typst["children"]))
+            source_children = source["children"][:count]
+            target_children = typst["children"][:count]
+            assignment = min(
+                itertools.permutations(target_children),
+                key=lambda order: sum(
+                    endpoint_error(source_child, typst_child)
+                    for source_child, typst_child in zip(source_children, order)
+                ),
+            )
+            for source_child, typst_child in zip(source_children, assignment):
+                walk(source_child, typst_child)
+
+    root_report = []
+    for error, source, typst in root_pairs:
+        root_report.append({
+            "source-id": source["call-id"],
+            "typst-index": typst.get("trace-index"),
+            "endpoint-error-mm": error,
+        })
+        walk(source, typst)
+    return {
+        "source-root-count": len(source_forest),
+        "typst-root-count": len(typst_forest),
+        "root-pairs": root_report,
+        "tree-node-pairs": len(pairs),
+        "pairs-within-0.1mm": sum(error <= 0.1 for error, _, _ in pairs),
+        "paired-decision-count": len(pairs),
+        "decision-agreements": sum(
+            source["recurse"] == typst["recurse"]
+            for _, source, typst in pairs
+        ),
+        "divergences": divergences[:12],
+    }
 
 
 def pair_thin_nodes(source_nodes, typst_nodes):
@@ -335,6 +476,10 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
             ),
             "source-thin-brush-recursion-pairs": pair_thin_nodes(
                 source_thin_nodes, typst_nodes
+            ),
+            "source-typst-thin-tree-pairing": pair_thin_trees(
+                source_thin_calls, source_thin_nodes, source_thin_dashes,
+                typst_nodes,
             ),
             "typst-thin-brush-dash-leaves": trace.get("brush-dashes"),
             "typst-brush-rng-calls": trace.get("brush-rng-calls"),

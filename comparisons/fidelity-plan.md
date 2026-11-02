@@ -97,10 +97,15 @@ affected source-parity crops do not materially regress.
   geometry before changing the renderer. The first contour's thin trace now
   counts 66 source calls, 65 recursive/terminal nodes (maximum depth 15), and
   12 source dash leaves versus 46 Typst thin nodes (maximum depth 6), 10 dash
-  leaves, and 20 RNG calls. Endpoint-nearest diagnostics find 35 thin-node
-  pairs within 0.1 mm, with 34 matching recurse/stop decisions; 7 source dash
-  leaves pair within 0.1 mm. These local pairs are not parent-aware tree
-  matches, so the remaining count difference does not yet justify a threshold
+  leaves, and 20 RNG calls. A parent-aware tree walk pairs 40 nodes, 33 within
+  0.1 mm, and matches 35/40 recurse/stop decisions. Five first branch
+  divergences remain: one close pair (0.026 mm) stops and dashes in source
+  near a path endpoint but recurses in Typst; another close pair (0.043 mm)
+  recurses in source from a cut 0.015 path-time units from its start, while
+  Typst finds no cut candidate. Three later divergences already have 0.15–0.40
+  mm endpoint error. The roots and siblings are paired geometrically, so this
+  trace narrows the source audit to width-level selection and endpoint/candidate
+  validity but does not establish tree identity or justify a global threshold
   patch. The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate

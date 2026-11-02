@@ -109,13 +109,13 @@ def main() -> None:
                 and ((arclength(brushPath1) > minLength)
                 or (arclength(brushPath2) > minLength))
                 and (t > 1/100) and (t < length(p) - 1/100):
-                message "WBTHIN " & decimal(i) & " R " & decimal(w0/mm) & " "
+                message "WBTHIN " & decimal(traceThinCall) & " " & decimal(i) & " R " & decimal(w0/mm) & " "
                     & decimal(w1/mm) & " " & decimal(w2/mm) & " "
                     & decimal(t) & " " & decimal(arclength(p)/mm) & " "
                     & decimal(arclength(brushPath1)/mm) & " "
                     & decimal(arclength(brushPath2)/mm);
             else:
-                message "WBTHIN " & decimal(i) & " L " & decimal(w0/mm) & " "
+                message "WBTHIN " & decimal(traceThinCall) & " " & decimal(i) & " L " & decimal(w0/mm) & " "
                     & decimal(w1/mm) & " " & decimal(w2/mm) & " "
                     & decimal(t) & " " & decimal(arclength(p)/mm) & " "
                     & decimal(arclength(brushPath1)/mm) & " "
@@ -134,15 +134,21 @@ def main() -> None:
                            "thin brush split trace")
     thin_call_anchor = "    if (w0 > minWidth + 1/100):"
     thin_call_trace = """    if traceWoodLine = 1:
-        message "WBTCALL " & decimal(i) & " " & decimal(w0/mm) & " "
-            & decimal(w1/mm) & " " & decimal(arclength(p)/mm);
+        traceThinCall := traceThinCall + 1;
+        message "WBTCALL " & decimal(traceThinCall) & " " & decimal(i) & " "
+            & decimal(w0/mm) & " " & decimal(w1/mm) & " " & decimal(arclength(p)/mm)
+            & " " & decimal(xpart(point 0 of p)/mm) & " "
+            & decimal(ypart(point 0 of p)/mm) & " "
+            & decimal(xpart(point length(p) of p)/mm) & " "
+            & decimal(ypart(point length(p) of p)/mm);
     fi;
 """ + thin_call_anchor
     source = replace_once(source, thin_call_anchor, thin_call_trace,
                            "thin brush call trace")
     dash_anchor = "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
     dash_trace = """                        if traceWoodLine = 1:
-                            message "WBTHINDASH " & decimal(i) & " "
+                            message "WBTHINDASH " & decimal(traceThinCall) & " "
+                                & decimal(i) & " "
                                 & decimal(w2/mm) & " " & decimal(arclength(p)/mm)
                                 & " " & decimal(xpart(point 0 of p)/mm) & " "
                                 & decimal(ypart(point 0 of p)/mm) & " "
@@ -178,10 +184,11 @@ def main() -> None:
     source += """
 
 boolean traceWoodCells;
-numeric traceWoodLine, traceWoodPoint, traceWoodBlock;
+numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall;
 traceWoodCells := false;
 traceWoodLine := 0;
 traceWoodBlock := 0;
+traceThinCall := 0;
 """
     Path(sys.argv[2]).write_text(source)
 
