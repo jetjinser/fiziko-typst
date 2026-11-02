@@ -161,7 +161,14 @@ affected source-parity crops do not materially regress.
   0.05563/0.04977 mm endpoints. The source builds this template on integer
   `offsetPathTime` samples of `iL`, then recurses over `reverse(iL)`; Typst
   currently interpolates widths by normalized arc fraction. Pair these time
-  domains and path orientations explicitly before changing the width law.
+  domains and path orientations explicitly before changing the width law. A
+  regenerated source/Typst trace confirms the close call-10 divergence: the
+  source `w2` is 0.04979 mm and stops as a dash, while the paired Typst node
+  spans 0.0497870–0.0556436 mm and recurses at target width 0.0527153 mm.
+  Their endpoint widths still pair within 0.000018/0.000014 mm in reversed
+  spatial order. This points to the interior width-template/path-time mapping
+  on that branch, not an endpoint-width mismatch; it does not establish a
+  safe production width-law change.
   A fresh source trace found a more basic brush-input difference: `woodBlock`
   clips its intermediate picture only after `isoLines` runs `brushGenerate`
   on the full `cLine` path. Typst currently clips the contour before width
