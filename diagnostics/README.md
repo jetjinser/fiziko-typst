@@ -2468,6 +2468,29 @@ RMSE `0.207325`/`0.076870`. Both production candidates were reverted: matching
 the one midpoint tie does not yet preserve the source tree across its recursive
 subpaths and rows.
 
+### S104 fixed-point scanline endpoint probe
+
+`probe_s104_fixed_scanline.py` independently reconstructs a hatch row using
+MetaPost-style 16.16 rotation, half-open polygon crossings, fixed-point
+intersection parameters, and interpolation. For source row `-6.37912`, its two
+page-space endpoints match the source trace within 0.000003 mm and 0.000011 mm.
+The source mechanism is therefore recoverable locally. A production prototype
+using these crossings reduced the row's root q-knot residual from 23 to 7
+16.16 units, but did not improve the complete recursion: across 142 paired
+rows, exact row matches changed from 108 to 107 and RNG-call L1 error from 332
+to 422. At 600 ppi, whole/hatch RMSE regressed from 0.207029/0.075285 to
+0.207417/0.077360. Adding generated q knots recovered only to
+0.207407/0.077308. The prototype was removed from production. The remaining
+S104 task is to carry row scheduling, recursive center-path parameterization,
+and q controls together, then pass both tree and image gates.
+
+Run the endpoint probe with the project toolchain:
+
+```sh
+nix develop path:./nix --command python3 \
+  diagnostics/probe_s104_fixed_scanline.py /tmp/s104-fresh/trace.log
+```
+
 A diagnostic-only port of that cubic model was tried after the trace above.
 It used the original global cubic controls with 64 subdivisions per Typst path
 segment, then bisected candidate threshold crossings. It did not reproduce the
