@@ -57,6 +57,28 @@ source; it does not promise that every implementation attempt improves raster
 RMSE. Keep each change only when source-level agreement improves and the
 affected source-parity crops do not materially regress.
 
+### Remaining work, ordered by evidence and dependency
+
+The items below are the remaining implementation gaps with concrete next
+steps. “Can improve” means the source behavior is known and can be implemented
+or checked locally; the raster benefit still needs to pass the paired-plate
+gate. Items that need a prerequisite are listed after it.
+
+| Order | Gap | Concrete next step | Evidence and acceptance |
+| ---: | --- | --- | --- |
+| 1 | **M11 shadow lane callback remapping** | Rebuild callback knots on the post-`shadowCut` path-time grid, including the repeated endpoint tail, then replay the three divergent lanes with source q controls and exact `subpath` time mapping. | Source traces prove inserted-knot lengths and endpoint-clamped callbacks; the replay already matches 15/18 lane call totals. Accept only if all 18 match and M11/M4/M6 crops do not regress. |
+| 2 | **S104 recursive center/q subpath mapping** | Pair source width-template knots with Typst sample intervals through each recursive child; carry the source q controls and center-path parameter map together. | The fixed-point intersection oracle matches 6,784/6,784 hit pairs and all 1,696 source decisions, and the isolated row-93 cut is exact, but whole-tree counts remain 1004/2615/697 versus 1340/1696/687. Accept on complete row-tree improvement plus S104 hatch/whole-plate parity. |
+| 3 | **M11 knot phase restarts in production** | Integrate the traced source-normal q width template and phase restart points into the six visible production intervals, preserving exact source call offsets. | The source-rounded diagnostic matches all 19 leaves/38 calls on k=6; current production is 212 vs 224 calls. Earlier broad shading changes regressed, so require lane-level call vectors and M11/M4/M6 crops. |
+| 4 | **M11 coast brush callbacks and recursion** | Trace per-mass source leaves, callback widths, and RNG offsets; pair them to the six closed Typst coast outlines before changing brush traversal. | Arc times already pair within 0.001 fullcircle units, but production counts 52 vs source 27 and prior aggregate counts were not comparable. Accept only with per-mass matched call vectors and globe crop/coverage gains. |
+| 5 | **Tube cross-section shading and lane calls** | Resolve the source-vs-Typst inner-lane width/lightness law by paired `(call, lane, sample)` records, then address the compensating per-interval call distribution. | All six intervals and endpoints pair; calls are source `14/58/54/42/38/18` vs Typst `10/38/40/52/50/14`. Normal/lightness candidates fit samples but regress M11/M4/M6 renders; retain only a correction that clears all three gates. |
+| 6 | **Wood cLine recursion and call order** | Carry source `st`/cell-range state and callback parameterization through recursive brush cuts, first on the exact M9 contour, then validate S105. | Source traversal and full-path width samples are close; production has 11/48 outer/thin nodes vs 37/65 on the diagnostic first path. Several generic spline, endpoint-extension, and arithmetic candidates regressed. Accept only exact/closer paired tree decisions and non-regressing M9/S105 crops. |
+| 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
+
+These are evidence-backed investigations, not claims that all seven can be
+made raster improvements. The first two have the strongest bounded replay
+oracles; continue with the smallest isolated case, preserve paired baseline
+metrics, and record a rejected candidate when the production gate fails.
+
 - [x] **MetaPost fixed-point brush-width interpolation.** With
   `source-rounding: true`, `_ink-loops` separately rounds the scalar fraction,
   each dimensional width product, and their sum to source 16.16 precision.
