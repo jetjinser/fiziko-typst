@@ -13,7 +13,7 @@ def main() -> None:
     source_path, output_path = map(Path, sys.argv[1:])
     source = source_path.read_text()
     anchor = '  addStrandToKnot(weave)(wa,.8mm,"l","-1,1,-1,1");'
-    trace = """  for ti := 0 step 1/4 until length(wa):
+    trace = """  for ti := 0 step 1/8 until length(wa):
     message "M11PATH A " & decimal(ti) & " " & decimal(xpart(point ti of wa)/mm) & " " & decimal(44-ypart(point ti of wa)/mm);
     message "M11PATH B " & decimal(ti) & " " & decimal(xpart(point ti of wb)/mm) & " " & decimal(44-ypart(point ti of wb)/mm);
   endfor;

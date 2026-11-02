@@ -160,10 +160,14 @@ random phase are still approximate.
 The M11 fixture's original sine samples did not reproduce the actual curves in
 the pinned MetaPost source: MetaPost interpolates the 25 anchor points with its
 own path solver. Sampling each source path every 1/4 path-time and storing the
-result in `comparisons/m11-knot-paths.typ` lowers 600 ppi knot crop RMSE from
-0.14230 to 0.06233 and whole-plate RMSE from 0.12653 to 0.11513. The other
-M11 crops are unchanged. `comparisons/run.py` includes this data file in the
-isolated input snapshot so the comparison remains reproducible.
+result in `comparisons/m11-knot-paths.typ` lowered 600 ppi knot crop RMSE from
+0.14230 to 0.06233. A denser 1/8-step path (193 samples per strand) lowers the
+knot crop RMSE further to 0.05979 and whole-plate RMSE from 0.11513 to 0.11490.
+The 1/16-step pilot reaches 0.05904, but raises comparison runtime from 28.6 s
+to 41.6 s for only 0.00075 further knot RMSE reduction, so the 1/8-step data
+is retained. The other M11 crops are unchanged. `comparisons/run.py` includes
+this data file in the isolated input snapshot so the comparison remains
+reproducible.
 
 Regenerate the sample data from the pinned driver inside the Nix devshell:
 

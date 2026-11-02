@@ -14,19 +14,21 @@ def main() -> None:
         raise SystemExit("usage: extract_m11_knot_paths.py TRACE_LOG OUTPUT_TYP")
     source = Path(sys.argv[1]).read_text()
     paths: dict[str, list[tuple[float, float]]] = {"A": [], "B": []}
-    for strand, _time, x, y in RECORD.findall(source):
+    times: dict[str, list[float]] = {"A": [], "B": []}
+    for strand, time, x, y in RECORD.findall(source):
+        times[strand].append(float(time))
         paths[strand].append((float(x), float(y)))
-    if len(paths["A"]) != 97 or len(paths["B"]) != 97:
-        raise ValueError(
-            f"expected 97 samples per strand, got {len(paths['A'])} and {len(paths['B'])}"
-        )
+    if len(paths["A"]) < 2 or len(paths["A"]) != len(paths["B"]):
+        raise ValueError(f"expected equal nonempty strand samples, got {len(paths['A'])} and {len(paths['B'])}")
+    if times["A"] != times["B"]:
+        raise ValueError("source strand samples do not share identical path times")
 
     def array(points: list[tuple[float, float]]) -> str:
         values = [f"({x:.5f}, {y:.5f})" for x, y in points]
         return "(\n  " + ",\n  ".join(values) + "\n)"
 
     output = (
-        "// M11 knot paths sampled from the pinned MetaPost 2.11 source at 1/4 path-time intervals.\n"
+        f"// M11 knot paths sampled from the pinned MetaPost 2.11 source at {times['A'][1] - times['A'][0]:g} path-time intervals.\n"
         "#let upstream-m11-knot-paths = (\n"
         f"  wa: {array(paths['A'])},\n"
         f"  wb: {array(paths['B'])},\n"
