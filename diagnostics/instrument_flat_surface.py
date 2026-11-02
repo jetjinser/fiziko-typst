@@ -38,6 +38,32 @@ def main() -> None:
         # may add a short terminal piece, so eight covers all observed paths.
         lines = []
         for segment in range(8):
+            if stage == "thin":
+                lines.extend([
+                    f"{indent}if length(bt) >= {segment}:",
+                    f'{indent}    message "S104-TKNOT " & decimal(traceHatchRow) & " "',
+                    f'{indent}        & decimal(traceThisThin) & " " & decimal(i) & " {segment} "',
+                    f'{indent}        & decimal(xpart(point {segment} of bt)) & " "',
+                    f'{indent}        & decimal(ypart(point {segment} of bt)) & " "',
+                    f'{indent}        & decimal(floor(ypart(point {segment} of bt)*256)) & " "',
+                    f'{indent}        & decimal(round((ypart(point {segment} of bt)*256 - floor(ypart(point {segment} of bt)*256))*256));',
+                    f"{indent}fi;",
+                ])
+                for index, point in enumerate((
+                    f"point {segment} of bt",
+                    f"postcontrol {segment} of bt",
+                    f"precontrol {segment + 1} of bt",
+                    f"point {segment + 1} of bt",
+                )):
+                    lines.extend([
+                        f"{indent}if length(bt) > {segment}:",
+                        f'{indent}    message "S104-TCTRL " & decimal(traceHatchRow) & " "',
+                        f'{indent}        & decimal(traceThisThin) & " " & decimal(i) & " {segment} {index} "',
+                        f'{indent}        & decimal(xpart({point})) & " " & decimal(ypart({point})) & " "',
+                        f'{indent}        & decimal(floor(ypart({point})*256)) & " "',
+                        f'{indent}        & decimal(round((ypart({point})*256 - floor(ypart({point})*256))*256));',
+                        f"{indent}fi;",
+                    ])
             lines.extend([
                 f"{indent}if length(bt) > {segment}:",
                 f'{indent}    message "S104-CTRL {stage} " & decimal(traceHatchRow) & " "',
@@ -99,6 +125,10 @@ def main() -> None:
                 & " " & decimal(arclength(p))
                 & " " & decimal(arclength(brushPath1))
                 & " " & decimal(arclength(brushPath2));
+            message "S104-WFIX " & decimal(traceHatchRow) & " "
+                & decimal(traceThisThin) & " " & decimal(i) & " "
+                & decimal(floor(w2*256)) & " "
+                & decimal(round((w2*256 - floor(w2*256))*256));
 ''' + control_trace("thin", "            ") + '''
         fi;'''
     if source.count(thin_brush) != 1:
@@ -112,6 +142,31 @@ def main() -> None:
         "    save traceThisThin;\n"
         "    numeric traceThisThin;\n"
         "    traceThisThin := 0;\n")
+
+    cut_anchor = "        d4 := xpart (point cutTime1 of p);\n        d5 := xpart (point cutTime2 of p);"
+    if source.count(cut_anchor) != 1:
+        raise ValueError(f"expected one cutPathTime hit hook, found {source.count(cut_anchor)}")
+    source = source.replace(cut_anchor, cut_anchor + '''
+        if traceFlatHatch:
+            traceCutSerial := traceCutSerial + 1;
+            message "S104-HIT " & decimal(traceHatchRow) & " "
+                & decimal(traceCutSerial) & " " & decimal(h) & " "
+                & decimal(d1) & " " & decimal(d2) & " " & decimal(d3) & " "
+                & decimal(cutTime1) & " " & decimal(cutTime2) & " "
+                & decimal(d4) & " " & decimal(d5);
+        fi;
+''')
+    source = source.replace(
+        '        message "S104-OUTER " & decimal(traceHatchRow) & " "',
+        '        message "S104-OUTER-ID " & decimal(traceHatchRow) & " "'
+        '            & decimal(traceCutSerial) & " " & decimal(i);\n'
+        '        message "S104-OUTER " & decimal(traceHatchRow) & " "',
+    )
+    source = source.replace(
+        '            message "S104-WFIX " & decimal(traceHatchRow) & " "',
+        '            message "S104-WFIX " & decimal(traceHatchRow) & " "'
+        '                & decimal(traceCutSerial) & " "',
+    )
     thin_dash = "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
     if source.count(thin_dash) != 1:
         raise ValueError(f"expected one thin dash draw hook, found {source.count(thin_dash)}")
@@ -160,9 +215,11 @@ traceSubdivisions := 0;
 boolean traceFlatHatch;
 numeric traceHatchRow;
 numeric traceThinSerial;
+numeric traceCutSerial;
 traceFlatHatch := false;
 traceHatchRow := 0;
 traceThinSerial := 0;
+traceCutSerial := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
     uniformdeviate(x)

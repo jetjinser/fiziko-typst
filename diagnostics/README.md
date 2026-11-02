@@ -991,7 +991,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|THIN|TNODE|TDASH)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -1009,9 +1009,18 @@ x=44.895 mm in Typst, so arc-length interpolation does not explain this
 branch. The diagnostic's `arc-width-nodes` and `arc-width-calls` fields are
 populated only for row 93. Treating quantized flat segments as crossing
 intervals increased total Typst thin nodes from 1739 to 3259 (source: 1696),
-so that candidate was reverted. The remaining investigation should pair the
-source template's actual crossing hits with corresponding Typst sample
-intervals before changing production behavior.
+so that candidate was reverted. A source trace now links every thin-node ID
+to its template knots, cubic controls, and `cutPathTime` hit pair. For source
+node 173, `w2` and the middle knot are exactly 10337/65536 pt. The next cubic
+segment's control/end widths are 10337, 10336, 10336, 10336 in that grid. The
+one-unit descent rounds back onto the threshold near the template midpoint.
+MetaPost records that midpoint-side hit at x=43.3005 with q time 1.469, versus
+the other hit at x=35.0732 with q time 1; this selects the page-space cut
+x=39.539 mm. Typst's sampled width polyline has no corresponding rounded
+cubic hit and chooses x=44.895 mm. The specific behavior to port is therefore
+the source width template's `--` cubic controls, 16.16 control-point rounding,
+and intersection behavior through recursive subpaths. Arc-length interpolation
+alone cannot reproduce this branch.
 
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model
