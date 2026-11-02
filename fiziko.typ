@@ -2006,6 +2006,7 @@
             calc.min(max-w, calc.max(0.0, ink)) * shade(lane-u, t)
           })
           pieces.push((frames: lane-frames, widths: lane-widths,
+            times: knot-ts, u: lane-u,
             closed: closed and division-sections.len() == 1,
             section-index: section-index,
             seed-offset: k * 7919 + section-index * 104729))

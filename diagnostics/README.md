@@ -388,6 +388,16 @@ trace retains lane sample points and widths for a subsequent normalized
 lighting comparison. Do not tune the shade law from raw width values: they also
 include source residual-width and lane-parity factors.
 
+For source call 2, lane 6, 37 source lightness samples pair to Typst lane 1
+within 0.0021 mm mean distance (0.0188 mm maximum). The current Typst shade
+averages 0.220 absolute error against the source values; flipping the radial
+y component in a trial formula reduces that to 0.00072 (0.00961 maximum).
+However, that formula trial regresses 600 ppi RMSE: M11 knot `0.05895 →
+0.07697`, M4 whole plate `0.07109 → 0.12625`, and M6 whole plate
+`0.08919 → 0.11594`. It was reverted. The unresolved issue is therefore the
+mapping from source `k`/tube angles and width sampling to the paired Typst lane,
+not a license to apply the pointwise sign change to the renderer.
+
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
@@ -452,6 +462,9 @@ rg '^M11TS|^M11TO|^M11EDGE|^M11LIGHT|^M11SHADOW' \
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
   /tmp/m11-tube-outline-trace/outlines.typ
+typst eval 'query(<m11-knot-tube-trace>).first().value' \
+  --in diagnostics/m11_knot_tube_trace.typ --root . \
+  > /tmp/m11-knot-tube-trace.json
 ```
 
 The same instrumenter now emits source lane widths (`M11BW`) and random-call

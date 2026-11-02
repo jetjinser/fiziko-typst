@@ -68,6 +68,8 @@
         inner-lanes.push((lane: lane-index, piece: piece-index,
           start: piece.frames.first().at(0), end: piece.frames.last().at(0),
           points: piece.frames.map(frame => frame.at(0)), widths: piece.widths,
+          times: piece.times,
+          lightness: piece.times.map(t => (layout.shade)(piece.u, t)),
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()

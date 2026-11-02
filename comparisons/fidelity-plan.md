@@ -223,7 +223,14 @@ strokes, while M10 contains mostly whitespace.
    remaining 20-call deficit. Source normal/lightness samples are now recorded
    alongside shadow hits; the Typst diagnostic also retains lane points and
    widths, but a width-normalized, point-paired lighting comparison is still
-   needed before changing the shading law. The latitude mode
+   needed before changing the shading law. A trial flipping the radial y
+   component reduced the 37-sample mean lightness error from 0.220 to 0.00072,
+   but worsened the 600 ppi M11 knot crop from 0.05895 to 0.07697, M4 whole
+   plate from 0.07109 to 0.12625, and M6 whole plate from 0.08919 to 0.11594.
+   The render change was reverted. This confirms a pointwise normal-convention
+   discrepancy, but does not yet establish that the paired lane sample is the
+   source brush-width sample; recover the source's exact tube-angle and width
+   evaluation parameters before changing the shared shading formula. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the
