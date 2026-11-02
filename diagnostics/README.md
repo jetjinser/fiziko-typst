@@ -601,7 +601,16 @@ the rest of the coastline traversal. The raw forward pair is
 `(0.99014, 0.95935)` and the reverse-path pair is `(1, 0)`; Fiziko's wrapper
 chooses the forward result. The existing fixed-point packet replay predicts
 `(0.999996, 0.999996)` for this pair, so the case lands in the model's known
-endpoint/backtrack gap. MetaPost's 2.11 source uses recursive cubic bisection
+endpoint/backtrack gap. A target-level sweep from eight 16.16 units below to
+eight above the exact endpoint level reports no hit for offsets `-8…-1`,
+`t=0.95935` at 0, and `t=0.99634` at +1. Offsets `+2…+8` return
+`0.99268, 0.98901, 0.98535, 0.98169, 0.97803, 0.97437, 0.97070`.
+This is a discontinuity in the fixed-point search, followed by hits tracking
+the shallow cubic's near-endpoint root; it rejects a simple constant
+parameter-margin model. The scan is diagnostic only. Do not encode its values
+as a coast-specific correction: a production port needs a general
+source-compatible intersection search that also reproduces known S104 raw
+pairs. MetaPost's 2.11 source uses recursive cubic bisection
 and falls back to its best approximate pair after 5000 unsuccessful
 backtracks ([pinned-version source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15053-L15102)).
 The next model step is to reproduce that patience and best-candidate path for

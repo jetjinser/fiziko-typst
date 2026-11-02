@@ -349,8 +349,12 @@ affected source-parity crops do not materially regress.
   produces raw forward pair `(0.99014, 0.95935)` and reverse pair `(1, 0)`;
   Fiziko selects the forward pair. The current integer packet replay predicts
   `(0.999996, 0.999996)`, missing the source result. MetaPost 2.11 documents
-  a best-pair fallback after 5000 unsuccessful bisection backtracks; model
-  that path against this probe and the known S104 endpoint cases before
+  a best-pair fallback after 5000 unsuccessful bisection backtracks. An
+  exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the early
+  `0.95935` hit at zero, and `0.99634` at +1; subsequent positive offsets
+  track the shallow cubic root. This rules out a constant endpoint margin but
+  does not yet identify the search state causing the discontinuity. Model the
+  best-pair fallback against this probe and known S104 endpoint cases before
   changing production recursion. Continue pairing the Typst interpolation
   interval and source cut inputs on masses 2 and 4.
   The endpoint behavior is reproduced independently of coast traversal. The
