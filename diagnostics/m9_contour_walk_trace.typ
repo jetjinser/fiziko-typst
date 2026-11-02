@@ -1,5 +1,5 @@
 // Typst's first M9 contour and the 1 mm cells crossed by each path segment.
-#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, stroke-ink
+#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, stroke-ink
 #import "../contour.typ": marching-squares
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
@@ -8,6 +8,8 @@
 #let field = (x, y) => (model.field)(33 - y, x)
 #let levels = _wood-source-levels(field, 55, 33, 55, 33, 1,
   model.rng-count)
+#let first-contour-random = _metapost-rng-sequence(1,
+  model.rng-count + 1).last()
 #let grid = range(34).map(j => range(56).map(i => field(i, j)))
 #let values = grid.fold((), (all, row) => all + row)
 #let groups = levels.enumerate().map(((level-index, level)) => {
@@ -55,6 +57,8 @@
   sample-values: sample-values,
   target-values: ((6, 42, (model.field)(6, 42)),
     (0, 12, (model.field)(0, 12)), (0, 13, (model.field)(0, 13))),
+  field-rng-count: model.rng-count,
+  first-contour-random: first-contour-random,
   levels: levels, paths: paths,
   brush-rng-calls: brush-trace.at(1),
   brush-outer-leaves: brush-trace.at(2).outer,
