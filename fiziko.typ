@@ -21,6 +21,7 @@
 
 #import "solve.typ": solve-linear, line-intersect, pyth-add, pyth-sub
 #import "contour.typ": marching-squares
+#import "intersection.typ": intersection-times
 
 // ---------------------------------------------------------------------------
 // constants
@@ -412,7 +413,8 @@
                 random-stream: none, rng-offset: 0,
                 with-rng: false, with-stats: false,
                 param-times: none, param-end: none, trace-nodes: false,
-                source-rounding: false, width-by-arc: false) = {
+                source-rounding: false, width-by-arc: false,
+                source-width-fixed: none) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -493,6 +495,77 @@
       param-times.at(i) * (1 - t) + param-times.at(j) * t
     }
   }
+  let source-q-cubic(a, b) = {
+    let x1 = a.at(0) + _mp-rounded((b.at(0) - a.at(0)) / 3)
+    let y1 = a.at(1) + _mp-rounded((b.at(1) - a.at(1)) / 3)
+    let x2 = a.at(0) + _mp-rounded(2 * (b.at(0) - a.at(0)) / 3)
+    let y2 = a.at(1) + _mp-rounded(2 * (b.at(1) - a.at(1)) / 3)
+    (a, (x1, y1), (x2, y2), b)
+  }
+  let source-q-split(curves, qtime) = {
+    let whole = int(calc.clamp(calc.floor(qtime), 0, curves.len() - 1))
+    let fraction = _mp-scalar-rounded(calc.clamp(qtime - whole, 0.0, 1.0))
+    let left = curves.slice(0, whole)
+    let right = ()
+    if fraction > 0 {
+      let parts = _mp-cubic-split(curves.at(whole), fraction)
+      left.push(parts.left)
+      right.push(parts.right)
+      right += curves.slice(whole + 1)
+    } else { right = curves.slice(whole) }
+    (left: left, right: right, whole: whole, fraction: fraction)
+  }
+  let source-q-map-split(qmap, split) = {
+    let left = qmap.slice(0, split.whole)
+    let right = ()
+    if split.fraction > 0 {
+      let bounds = qmap.at(split.whole)
+      let cut = bounds.at(0) + split.fraction * (bounds.at(1) - bounds.at(0))
+      left.push((bounds.at(0), cut))
+      right.push((cut, bounds.at(1)))
+      right += qmap.slice(split.whole + 1)
+    } else { right = qmap.slice(split.whole) }
+    (left: left, right: right)
+  }
+  let source-q-bounds(curves) = {
+    let widths = ()
+    for curve in curves { for point in curve { widths.push(point.at(1)) } }
+    (calc.min(..widths), calc.max(..widths))
+  }
+  let source-q-fixed(curves) = curves.map(curve => curve.map(point => (
+    int(calc.round(point.at(0) / _mp-unit * 65536)),
+    int(calc.round(point.at(1) / _mp-unit * 65536)),
+  )))
+  let source-q-point(curves, time) = {
+    let whole = int(calc.clamp(calc.floor(time), 0, curves.len() - 1))
+    let fraction = calc.clamp(time - whole, 0.0, 1.0)
+    _mp-cubic-split(curves.at(whole), fraction).left.at(3)
+  }
+  let source-path-at-time(path, time) = {
+    let result = path.first()
+    for i in range(path.len() - 1) {
+      let a = param-at(path.at(i))
+      let b = param-at(path.at(i + 1))
+      if (a <= time and time <= b) or (b <= time and time <= a) {
+        let f = if b == a { 0.0 } else { (time - a) / (b - a) }
+        result = path.at(i) + f * (path.at(i + 1) - path.at(i))
+        break
+      }
+    }
+    result
+  }
+  let source-path-arc(path, at) = {
+    let total = 0.0
+    for i in range(path.len() - 1) {
+      let span = _dist(frame-index(path.at(i)).at(0), frame-index(path.at(i + 1)).at(0))
+      if at >= path.at(i + 1) { total += span }
+      else if at > path.at(i) {
+        total += span * (at - path.at(i)) / (path.at(i + 1) - path.at(i))
+        break
+      } else { break }
+    }
+    total
+  }
   let source-cut-valid(path, cut, margin) = {
     let start = param-at(path.first())
     let end = param-at(path.last())
@@ -517,7 +590,58 @@
       1 + calc.max(0, calc.floor(at) - first-end) + at - calc.floor(at)
     }
   }
-  let split-path(path, target, margin: 0.01) = {
+  let source-q-split-path(path, target, margin, qcurves, qmap) = {
+    let total = 0.0
+    for i in range(path.len() - 1) {
+      total += _dist(frame-index(path.at(i)).at(0), frame-index(path.at(i + 1)).at(0))
+    }
+    let points = ()
+    for curve in qcurves { for point in curve { points.push(point) } }
+    let xs = points.map(point => point.at(0))
+    let x-min = calc.min(..xs)
+    let x-max = calc.max(..xs)
+    if x-max <= x-min { return none }
+    let midpoint = _mp-rounded((x-min + x-max) / 2)
+    let height = if source-rounding { _mp-rounded(target) } else { target }
+    let ray-right = source-q-fixed((source-q-cubic((midpoint, height), (x-max, height)),))
+    let ray-left = source-q-fixed((source-q-cubic((midpoint, height), (x-min, height)),))
+    let fixed-curves = source-q-fixed(qcurves)
+    let right-hit = intersection-times(ray-right.first(), fixed-curves)
+    let left-hit = intersection-times(ray-left.first(), fixed-curves)
+    let right-time = right-hit.at(1)
+    let left-time = left-hit.at(1)
+    if right-time < 0 and left-time < 0 { return none }
+    let right-x = if right-time < 0 { 0.0 } else { source-q-point(qcurves, right-time).at(0) }
+    let left-x = if left-time < 0 { 0.0 } else { source-q-point(qcurves, left-time).at(0) }
+    let qtime = if right-time < 0 { left-time }
+      else if left-time < 0 { right-time }
+      else if calc.abs(right-x - midpoint) < calc.abs(left-x - midpoint) { right-time }
+      else { left-time }
+    let segment = int(calc.clamp(calc.floor(qtime), 0, qmap.len() - 1))
+    let fraction = calc.clamp(qtime - segment, 0.0, 1.0)
+    let bounds = qmap.at(segment)
+    let source-time = bounds.at(0) + fraction * (bounds.at(1) - bounds.at(0))
+    let cut = source-path-at-time(path, source-time)
+    let arc = source-path-arc(path, cut)
+    let valid = if param-times == none { arc > margin and total - arc > margin }
+      else { source-cut-valid(path, cut, margin) }
+    if not valid { return none }
+    let edge = range(path.len() - 1).find(i => path.at(i) <= cut and cut <= path.at(i + 1))
+    let q = if edge == none { path.len() - 2 } else { edge }
+    let left-path = path.slice(0, q + 1) + (cut,)
+    let right-path = (cut,) + path.slice(q + 1)
+    let qsplit = source-q-split(qcurves, qtime)
+    let mapsplit = source-q-map-split(qmap, qsplit)
+    let llen = source-path-arc(path, cut)
+    let rlen = total - llen
+    (left-path, right-path, llen, rlen, arc, total, valid,
+      source-path-time(path, cut), frame-index(cut).at(0),
+      qsplit.left, qsplit.right, mapsplit.left, mapsplit.right)
+  }
+  let split-path(path, target, margin: 0.01, qcurves: none, qmap: none) = {
+    if qcurves != none {
+      return source-q-split-path(path, target, margin, qcurves, qmap)
+    }
     let total = 0.0
     for q in range(path.len() - 1) {
       total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
@@ -572,7 +696,8 @@
         let llen = range(left.len() - 1).map(i => _dist(frame-index(left.at(i)).at(0), frame-index(left.at(i + 1)).at(0))).sum()
         let rlen = range(right.len() - 1).map(i => _dist(frame-index(right.at(i)).at(0), frame-index(right.at(i + 1)).at(0))).sum()
         (left, right, llen, rlen, at, total, valid,
-          source-path-time(path, cut), frame-index(cut).at(0))
+          source-path-time(path, cut), frame-index(cut).at(0),
+          none, none, none, none)
       }
     }
   }
@@ -713,14 +838,16 @@
 
   // Split thin runs at a width crossing. Each leaf is one nearly
   // constant-width dashed path.
-  let refine-thin(pos) = {
-    let pending = ((pos, 0),)
+  let refine-thin(pos, initial-q: none, initial-qmap: none) = {
+    let pending = ((pos, initial-q, initial-qmap, 0),)
     let leaves = ()
     let thin-nodes = ()
     while pending.len() > 0 {
       let node = pending.pop()
       let path = node.at(0)
-      let depth = node.at(1)
+      let qcurves = node.at(1)
+      let qmap = node.at(2)
+      let depth = node.at(3)
       let lo = width-index(path.at(0))
       let hi = lo
       let total = 0.0
@@ -731,6 +858,11 @@
         if q + 1 < path.len() {
           total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
         }
+      }
+      if qcurves != none {
+        let qbounds = source-q-bounds(qcurves)
+        lo = qbounds.at(0)
+        hi = qbounds.at(1)
       }
       let source-min = if not source-rounding { minw } else { _mp-rounded(minw) }
       let base = if not source-rounding { minw / 3 } else {
@@ -750,9 +882,13 @@
         let width = base + level * thin-step
         if not source-rounding { width } else { _mp-rounded(width) }
       } else { base }
-      let candidate = split-path(path, target)
+      let candidate = split-path(path, target, qcurves: qcurves, qmap: qmap)
       let split = if candidate != none and (candidate.at(2) > minlen or candidate.at(3) > minlen) {
-        (candidate.at(0), candidate.at(1))
+        (candidate.at(0), candidate.at(1),
+          if qcurves == none { none } else { candidate.at(9) },
+          if qcurves == none { none } else { candidate.at(10) },
+          if qcurves == none { none } else { candidate.at(11) },
+          if qcurves == none { none } else { candidate.at(12) })
       } else { none }
       let recurse = hi - lo >= step and depth < 15 and split != none
       if trace-nodes {
@@ -775,10 +911,10 @@
           dash: not recurse and hi > dash-floor and target < minw and total > minlen))
       }
       if recurse {
-        pending.push((split.at(1), depth + 1))
-        pending.push((split.at(0), depth + 1))
+        pending.push((split.at(1), split.at(3), split.at(5), depth + 1))
+        pending.push((split.at(0), split.at(2), split.at(4), depth + 1))
       } else if hi > dash-floor {
-        leaves.push((path, calc.min(minw, target)))
+        leaves.push((path, calc.min(minw, target), qcurves, qmap))
       }
     }
     (leaves, thin-nodes)
@@ -787,12 +923,27 @@
   // Reproduce brushGenerate's outer recursion: split the whole path at each
   // minStrokeWidth crossing, choosing cutPathTime's midpoint-nearest crossing.
   let initial-path = if closed { range(n + 1).map(i => float(i)) } else { range(n).map(i => float(i)) }
-  let pending = ((initial-path, 0),)
+  let source-time-start = if param-times == none { 0.0 } else { param-times.first() }
+  let initial-q = if source-width-fixed == none { none } else {
+    let qpoints = range(source-width-fixed.len()).map(i => {
+      let source-time = source-time-start + i
+      let path-time = source-path-at-time(initial-path, source-time)
+      let arc = source-path-arc(initial-path, path-time)
+      (arc, source-width-fixed.at(i) / 65536 * _mp-unit)
+    })
+    range(qpoints.len() - 1).map(i => source-q-cubic(qpoints.at(i), qpoints.at(i + 1)))
+  }
+  let initial-qmap = if initial-q == none { none } else {
+    range(initial-q.len()).map(i => (source-time-start + i, source-time-start + i + 1))
+  }
+  let pending = ((initial-path, initial-q, initial-qmap, 0),)
   let leaves = ()
   while pending.len() > 0 {
     let node = pending.pop()
     let path = node.at(0)
-    let depth = node.at(1)
+    let qcurves = node.at(1)
+    let qmap = node.at(2)
+    let depth = node.at(3)
     let lo = width-index(path.at(0))
     let hi = lo
     let total = 0.0
@@ -804,10 +955,16 @@
         total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
       }
     }
+    if qcurves != none {
+      let qbounds = source-q-bounds(qcurves)
+      lo = qbounds.at(0)
+      hi = qbounds.at(1)
+    }
     let outer-min = if source-rounding { _mp-rounded(minw) } else { minw }
     // brushGenerate accepts any strictly interior cut; thinBrushGenerate
     // below has its separate 0.01 path-parameter endpoint guard.
-    let crossing = split-path(path, outer-min, margin: 0.0)
+    let crossing = split-path(path, outer-min, margin: 0.0,
+      qcurves: qcurves, qmap: qmap)
     let recurse = hi > outer-min and lo < outer-min and depth < 10 and total > minlen and crossing != none
     if trace-nodes {
       nodes.push((stage: "outer", depth: depth, width-min: lo, width-max: hi,
@@ -823,21 +980,23 @@
         recurse: recurse))
     }
     if recurse {
-      pending.push((crossing.at(1), depth + 1))
-      pending.push((crossing.at(0), depth + 1))
+      pending.push((crossing.at(1), crossing.at(10), crossing.at(12), depth + 1))
+      pending.push((crossing.at(0), crossing.at(9), crossing.at(11), depth + 1))
     } else if lo > 0.99 * outer-min {
-      leaves.push((path, 2))
+      leaves.push((path, 2, qcurves, qmap))
     } else if hi < 1.01 * outer-min {
-      leaves.push((path, 1))
+      leaves.push((path, 1, qcurves, qmap))
     }
   }
   for leaf in leaves {
     let path = leaf.at(0)
+    let qcurves = leaf.at(2)
+    let qmap = leaf.at(3)
     outer-leaf-count += 1
     if leaf.at(1) == 2 {
       loops.push(band(path))
     } else {
-      let thin-result = refine-thin(path)
+      let thin-result = refine-thin(path, initial-q: qcurves, initial-qmap: qmap)
       nodes += thin-result.at(1)
       for thin-leaf in thin-result.at(0) {
         thin-leaf-count += 1

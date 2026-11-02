@@ -724,7 +724,19 @@ affected source-parity crops do not materially regress.
   mass-2 recursive cuts; endpoint error is zero 16.16 units. This confirms
   MetaPost preserves the sliced q state through recursion; the missing
   behavior is carrying that state alongside Typst's recursive center path.
-  The audit is diagnostic and does not change production rendering.
+  The audit is diagnostic and does not change production rendering. A new
+  source-width-fixed replay carries reconstructed 2D q cubics and their source
+  path-time maps through the Typst recursion, then uses the exact
+  `intersection-times` solver. Its call vector matches all 18/18 traced M11
+  lanes (L1 error 0, versus 15/18 and L1 6 at baseline). On call 4/lane 2,
+  both source and candidate also record 25 outer and 40 thin nodes. The other
+  two formerly divergent lanes still have tree differences: call 4/lane 6 is
+  27/13 outer nodes (source/candidate) with 20/20 thin nodes; call 5/lane 2 is
+  23/25 outer and 30/28 thin nodes. Therefore the exact call vector is a
+  promising diagnostic result, not sufficient evidence to change production;
+  next compare cut positions and paired tree decisions on all three lanes,
+  then render the production knot/coast paths and retain only a non-regressing
+  result.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.
