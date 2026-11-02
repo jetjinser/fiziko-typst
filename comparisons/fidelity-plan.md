@@ -308,6 +308,19 @@ affected source-parity crops do not materially regress.
   raster rendering.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
+  A full sequential-cursor integration was then evaluated: the q-state
+  candidate consumed its own subdivision and brush draws before processing the
+  next row. It regressed against the baseline on the 142 paired source rows:
+  requested-subdivision mismatches rose `54 → 63`, per-row brush-call L1 error
+  rose `332 → 630`, and exact brush-call rows fell `108 → 83`. At source row
+  `y=-6.37912`, the candidate consumed 14 brush calls versus 10 in MetaPost
+  (the baseline consumed 6); the candidate's earlier cursor drift had already
+  changed the subdivision request at row 45, while the baseline first diverged
+  at row 53. Total candidate brush calls were 880 versus 1,374 in the paired
+  source rows. The sequential q-state integration was reverted without a
+  raster trial; the fixed-point solver remains a local oracle, and the next
+  useful step is to preserve the original source width-template and its time
+  mapping, rather than reconstructing straight q cubics from sampled widths.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
   paired row decisions without the known flat-crossing node-count explosion
   or this all-row raster regression.
