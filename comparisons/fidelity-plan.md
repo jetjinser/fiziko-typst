@@ -195,7 +195,11 @@ affected source-parity crops do not materially regress.
   source, while globe RMSE changes from 0.188748 to 0.189896 and whole M11
   RMSE from 0.112661 to 0.112950. Keep the source-equation correction with
   this raster tradeoff recorded. Recursive cuts and random-call order remain
-  open: source/Typst calls are 27/52 over visible masses, and thin-node totals
+  open: turning `_source-rounding` on for coast brushes alone regressed the
+  same-checkout M11 RMSE `0.11295018 → 0.11302680` and globe crop
+  `0.18989608 → 0.19019925`, although globe ink coverage moved closer by
+  0.01187 percentage points. That candidate was reverted. Source/Typst calls
+  are 27/52 over visible masses, and thin-node totals
   are 106/27. Continue pairing source cut parameters and width-cubic ranges on
   masses 2 and 4. Acceptance: improve paired leaf/call traces and the globe
   render together.

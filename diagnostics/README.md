@@ -390,6 +390,15 @@ whole-plate RMSE from 0.12622 to 0.12662. This is a source-equation match with
 a small raster-score regression; the remaining latitude width law and coast
 random phase are still approximate.
 
+Turning `_source-rounding` on for the production coast brush was tested by
+itself. Against a same-checkout 600 ppi baseline, whole M11 RMSE regressed
+`0.11295018 → 0.11302680` and globe crop RMSE regressed
+`0.18989608 → 0.19019925`. Globe ink coverage moved slightly closer to source
+(`26.35265% → 26.34078%` versus `25.94004%`); knot, eye, and refraction crops
+were unchanged. The rounding toggle alone does not improve the coast image,
+so it was reverted. The coast recursion still needs a source-matched width
+and crossing model rather than a global rounding switch.
+
 `instrument_m11_coasts.py` resets a counter around each source drawing stage.
 On the pinned M11 input, MetaPost consumes 780 calls while constructing p1,
 2676 for p2, then `[6, 15, 0, 3, 1, 0, 1, 1]` across the eight coastline
