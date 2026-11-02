@@ -66,7 +66,7 @@ gate. Items that need a prerequisite are listed after it.
 
 | Order | Gap | Concrete next step | Evidence and acceptance |
 | ---: | --- | --- | --- |
-| 1 | **M11 shadow lane callback remapping** | Rebuild callback knots on the post-`shadowCut` path-time grid, including the repeated endpoint tail, then replay the three divergent lanes with source q controls and exact `subpath` time mapping. | Source traces prove inserted-knot lengths and endpoint-clamped callbacks; the replay already matches 15/18 lane call totals. Accept only if all 18 match and M11/M4/M6 crops do not regress. |
+| 1 | **M11 shadow lane callback remapping** | Replace the injected source q-control fixture with a generic q-template builder from the post-`shadowCut` callback knots, then replay the three divergent lanes while carrying exact `subpath` time mapping. | A fresh replay using traced source q controls now matches all 18 lane call totals and exact trees on the three formerly divergent lanes (40/40, 20/20, 30/30). The q controls are still injected from the trace, so this validates recursion, not production q generation. Accept only after the generic builder matches the oracle and M11/M4/M6 crops do not regress. |
 | 2 | **S104 recursive center/q subpath mapping** | Pair source width-template knots with Typst sample intervals through each recursive child; carry the source q controls and center-path parameter map together. | The fixed-point intersection oracle matches 6,784/6,784 hit pairs and all 1,696 source decisions, and the isolated row-93 cut is exact, but whole-tree counts remain 1004/2615/697 versus 1340/1696/687. Accept on complete row-tree improvement plus S104 hatch/whole-plate parity. |
 | 3 | **M11 knot phase restarts in production** | Integrate the traced source-normal q width template and phase restart points into the six visible production intervals, preserving exact source call offsets. | The source-rounded diagnostic matches all 19 leaves/38 calls on k=6; current production is 212 vs 224 calls. Earlier broad shading changes regressed, so require lane-level call vectors and M11/M4/M6 crops. |
 | 4 | **M11 coast brush callbacks and recursion** | Trace per-mass source leaves, callback widths, and RNG offsets; pair them to the six closed Typst coast outlines before changing brush traversal. | Arc times already pair within 0.001 fullcircle units, but production counts 52 vs source 27 and prior aggregate counts were not comparable. Accept only with per-mass matched call vectors and globe crop/coverage gains. |
@@ -816,18 +816,20 @@ metrics, and record a rejected candidate when the production gate fails.
   MetaPost preserves the sliced q state through recursion; the missing
   behavior is carrying that state alongside Typst's recursive center path.
   The audit is diagnostic and does not change production rendering. A new
-  source-width-fixed replay carries reconstructed 2D q cubics and their source
-  path-time maps through the Typst recursion, then uses the exact
-  `intersection-times` solver. Its call vector matches all 18/18 traced M11
-  lanes (L1 error 0, versus 15/18 and L1 6 at baseline). On call 4/lane 2,
-  both source and candidate also record 25 outer and 40 thin nodes. The other
-  two formerly divergent lanes still have tree differences: call 4/lane 6 is
-  27/13 outer nodes (source/candidate) with 20/20 thin nodes; call 5/lane 2 is
-  23/25 outer and 30/28 thin nodes. Therefore the exact call vector is a
-  promising diagnostic result, not sufficient evidence to change production;
-  next compare cut positions and paired tree decisions on all three lanes,
-  then render the production knot/coast paths and retain only a non-regressing
-  result. The first call-4/lane-6 tree divergence is now localized: on a
+  source-width-fixed replay injects the traced 2D q cubics, carries their
+  source path-time maps through Typst recursion, and uses the exact
+  `intersection-times` solver. A fresh replay of the same trace now matches
+  all 18/18 lane call totals and exact thin-node trees on the three formerly
+  divergent lanes: call 4/lane 2 has 40/40 nodes, call 4/lane 6 has 20/20,
+  and call 5/lane 2 has 30/30. `compare_m11_thin_trees.py` also confirms every
+  replay q-control array equals its corresponding source control array. This
+  closes the recursive consumer once its q-state is supplied, but the source
+  q controls are still injected from trace fixtures; generic q-template
+  generation after `shadowCut` and production integration remain open. The
+  exact fixture replay is a bounded oracle, not yet a production correction.
+  Earlier q-state replays without the full source controls showed branch
+  differences on these lanes; those are superseded by this exact-state replay.
+  The first historical call-4/lane-6 tree divergence was localized: on a
   5.913 mm branch the source continues splitting around a width maximum of
   `0.19926 bp`, while the replay's reconstructed q cubic peaks at
   `0.07029610 mm`, only `0.00000538 mm` above its `0.07029071 mm` threshold,

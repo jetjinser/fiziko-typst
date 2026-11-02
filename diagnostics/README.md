@@ -1450,6 +1450,35 @@ beyond path density,
 but does not yet identify a production-safe recursive change. No renderer
 change is implied by this diagnostic.
 
+A newer source-q replay narrows the remaining work. The generated input now
+includes the traced 16.16 q cubic controls as an oracle, and the recursion
+carries those controls with the exact source-time map. Replaying against
+`/tmp/m11-q-full/trace.log` gives all 18/18 source lane call totals;
+`compare_m11_thin_trees.py` confirms exact node decisions and q controls on
+the formerly divergent lanes: call 4/lane 2 has 40 nodes, call 4/lane 6 has
+20, and call 5/lane 2 has 30. Reproduce with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_brush_inputs.py \
+  /tmp/m11-q-full/trace.log build/m11-shadow-brush-inputs.typ \
+  --samples-per-cubic 4
+nix develop path:./nix --command typst eval \
+  'query(<m11-shadow-brush-replay>).first().value' \
+  --in diagnostics/m11_shadow_brush_replay.typ --root . \
+  > build/m11-shadow-brush-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-full/trace.log build/m11-shadow-brush-replay.json
+```
+
+This is an exact-state recursion oracle, not a general renderer fix: q cubics
+come from source trace records and are injected into the replay. The remaining
+implementation gap is constructing those q controls from the post-shadow
+callback/template knots and using that generated state in production. The
+earlier 15/18 result above records replays without this complete injected q
+state and is superseded for the exact-state diagnostic only.
+
 The replay now samples callback widths linearly in source path time. This
 matches `offsetPathTemplate`, which joins its integer-time callback points with
 MetaPost `--` segments. The previous diagnostic interpolated widths by
