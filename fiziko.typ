@@ -3539,11 +3539,11 @@
   (x: x, y: y, visible: depth > 1e-10)
 }
 
-#let _globe-crossing(a, b, rotation) = {
+#let _globe-crossing(a, b, rotation, steps: 14) = {
   let lo = 0.0
   let hi = 1.0
   let av = (globe-project(a.at(0), a.at(1), rotation: rotation)).visible
-  for _ in range(14) {
+  for _ in range(steps) {
     let mid = (lo + hi) / 2
     let p = (a.at(0) + (b.at(0) - a.at(0)) * mid,
              a.at(1) + (b.at(1) - a.at(1)) * mid)
@@ -3576,7 +3576,7 @@
   dense
 }
 
-#let _globe-visible-paths(coords, rotation, radius, center) = {
+#let _globe-visible-paths(coords, rotation, radius, center, crossing-steps: 14) = {
   let paths = ()
   let run = ()
   if coords.len() > 0 and (globe-project(coords.at(0).at(0), coords.at(0).at(1), rotation: rotation)).visible {
@@ -3592,13 +3592,13 @@
       if run.len() == 0 { run.push(_add(center, (radius * pa.x, -radius * pa.y))) }
       run.push(_add(center, (radius * pb.x, -radius * pb.y)))
     } else if pa.visible and not pb.visible {
-      let h = _globe-crossing(a, b, rotation)
+      let h = _globe-crossing(a, b, rotation, steps: crossing-steps)
       let ph = globe-project(h.at(0), h.at(1), rotation: rotation)
       run.push(_add(center, (radius * ph.x, -radius * ph.y)))
       if run.len() > 1 { paths.push(run) }
       run = ()
     } else if not pa.visible and pb.visible {
-      let h = _globe-crossing(a, b, rotation)
+      let h = _globe-crossing(a, b, rotation, steps: crossing-steps)
       let ph = globe-project(h.at(0), h.at(1), rotation: rotation)
       run = (_add(center, (radius * ph.x, -radius * ph.y)),
              _add(center, (radius * pb.x, -radius * pb.y)))
@@ -3606,6 +3606,92 @@
   }
   if run.len() > 1 { paths.push(run) }
   paths
+}
+
+// Reconstruct drawLandMass's closed contour, including the source's horizon
+// crossing precision, ordered fullcircle arcs, and arc-conflict resolution.
+#let _globe-land-outline-data(coords, rotation, radius, center) = {
+  if coords.len() < 3 { return none }
+  let path-coords = if coords.first() == coords.last() {
+    coords
+  } else { coords + (coords.first(),) }
+  let runs = _globe-visible-paths(path-coords, rotation, radius, center,
+    crossing-steps: 5)
+  if runs.len() == 0 { return none }
+  let start-visible = (globe-project(
+    path-coords.first().at(0), path-coords.first().at(1),
+    rotation: rotation)).visible
+  let end-visible = (globe-project(
+    path-coords.last().at(0), path-coords.last().at(1),
+    rotation: rotation)).visible
+  if runs.len() > 1 and start-visible and end-visible {
+    let merged = runs.last().slice(0, runs.last().len() - 1) + runs.first()
+    runs = (merged, ..runs.slice(1, runs.len() - 1))
+  }
+  let rim-time(point) = _mod(
+    calc.atan2(point.at(0) - center.at(0),
+      center.at(1) - point.at(1)) / 45deg, 8)
+  let arcs = ()
+  for i in range(runs.len()) {
+    let run = runs.at(i)
+    let next = runs.at(_mod(i + 1, runs.len()))
+    if _dist(run.last(), next.first()) > 1e-8 {
+      let start = rim-time(run.last())
+      let raw-end = rim-time(next.first())
+      arcs.push((start, if raw-end < start { raw-end + 8 } else { raw-end }))
+    } else { arcs.push(none) }
+  }
+  // Match drawLandMass's conflict rule: if two forward arc intervals cross,
+  // advance the later interval's start by one fullcircle turn. A descending
+  // pair then intentionally requests a reverse MetaPost subpath.
+  for i in range(calc.max(0, arcs.len() - 1)) {
+    for j in range(i + 1, arcs.len()) {
+      if arcs.at(i) == none or arcs.at(j) == none { continue }
+      let conflicts = 0
+      for k in (-8, 0, 8) {
+        if (arcs.at(j).at(0) > arcs.at(i).at(0) + k and
+            arcs.at(j).at(0) < arcs.at(i).at(1) + k) { conflicts += 1 }
+        if (arcs.at(i).at(0) > arcs.at(j).at(0) + k and
+            arcs.at(i).at(0) < arcs.at(j).at(1) + k) { conflicts += 1 }
+      }
+      if conflicts > 1 {
+        arcs.at(j) = (arcs.at(j).at(0) + 8, arcs.at(j).at(1))
+      }
+    }
+  }
+  let outline = ()
+  for i in range(runs.len()) {
+    let run = runs.at(i)
+    let repeated-close = run.len() > 2 and _dist(run.first(), run.last()) <= 1e-8
+    let coast = if repeated-close { run.slice(0, run.len() - 1) } else { run }
+    for point in coast {
+      if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
+        outline.push(point)
+      }
+    }
+    let arc = arcs.at(i)
+    if arc != none {
+      let from = arc.at(0)
+      let to = arc.at(1)
+      let steps = int(calc.ceil(calc.abs(to - from) * 16))
+      for j in range(steps + 1) {
+        if steps == 0 { continue }
+        let t = from + (to - from) * j / steps
+        // _mp-circle-point is the source cubic fullcircle rotated by 90°.
+        let p = _mp-circle-point(t - 2)
+        let point = _add(center, (2 * radius * p.at(0), -2 * radius * p.at(1)))
+        if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
+          outline.push(point)
+        }
+      }
+    }
+  }
+  (points: outline, runs: runs, arcs: arcs)
+}
+
+#let _globe-land-outline(coords, rotation, radius, center) = {
+  let data = _globe-land-outline-data(coords, rotation, radius, center)
+  if data == none { none } else { data.points }
 }
 
 #let _globe-land-mask(lands) = (lon, lat) => {
@@ -3653,22 +3739,32 @@
   }
   let coast-lines = ()
   for land in lands {
-    coast-lines += _globe-visible-paths(
-      _globe-densify(land, max-step: coast-step), rotation, radius, center)
+    if shading == "latitude" {
+      let data = _globe-land-outline-data(
+        _globe-densify(land, max-step: coast-step), rotation, radius, center)
+      if data != none { coast-lines += (data.points,) }
+    } else {
+      coast-lines += _globe-visible-paths(
+        _globe-densify(land, max-step: coast-step), rotation, radius, center)
+    }
   }
   let elements = graticule-lines.map(path => stroke-path(path, stroke: stroke, per: 0))
   let coast-elements = coast-lines.enumerate().map(((i, path)) => {
     if shading != "latitude" {
       stroke-path(path, stroke: stroke, per: 0)
     } else {
-      let fractions = _path-fractions(path, false)
+      let fractions = _path-fractions(path, true)
       let width(t) = {
-        let j = range(path.len() - 1).find(j =>
-          fractions.at(j) <= t and t <= fractions.at(j + 1))
-        let j = if j == none { path.len() - 2 } else { j }
-        let span = fractions.at(j + 1) - fractions.at(j)
+        let j = range(path.len()).find(j => {
+          let end = if j + 1 < path.len() { fractions.at(j + 1) } else { 1.0 }
+          fractions.at(j) <= t and t <= end
+        })
+        let j = if j == none { path.len() - 1 } else { j }
+        let next = _mod(j + 1, path.len())
+        let end = if next == 0 { 1.0 } else { fractions.at(next) }
+        let span = end - fractions.at(j)
         let q = if span > 0 { (t - fractions.at(j)) / span } else { 0.0 }
-        let point = _add(path.at(j), _mul(_sub(path.at(j + 1), path.at(j)), q))
+        let point = _add(path.at(j), _mul(_sub(path.at(next), path.at(j)), q))
         let local = _sub(point, center)
         let radial = calc.min(0.999999, 2 * _len(local) / (d + _mp-unit))
         let angle = calc.atan2(-local.at(1), local.at(0)) / 1deg
@@ -3680,7 +3776,7 @@
         let lightness = calc.clamp(1 - lam, 0.0, 1.0)
         _source-min-stroke * (2 / 3 + lightness / 3)
       }
-      stroke-ink(path, width, closed: false, per: 0,
+      stroke-ink(path, width, closed: true, per: 0,
         min-w: _source-min-stroke, period: _source-dash-length,
         seed: seed + i * 104729)
     }

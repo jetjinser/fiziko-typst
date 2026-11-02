@@ -242,16 +242,18 @@ set match: source and Typst both show landmasses 1, 2, 4, 5, 7, and 8. At
 falls from `0.197196` to `0.188772`. Globe ink coverage is now `26.439%`
 against `25.940%` source, closer than the prior `25.213%`.
 
-The coastline topology still differs. Source calls `thinBrushGenerate` once
-for each of eight closed `drawLandMass` paths (landmasses 3 and 6 are empty
-fallback paths); Typst currently strokes 12 separate open visible runs across
-the six visible landmasses. The source paths join visible contour fragments
-with ordered horizon arcs before brushing. `instrument_m11_coast_paths.py`
-samples those projected closed paths at 1/16 path-time; its coordinates are
-millimetres relative to the globe origin, so overlay them at
-`(19 + x, 22 - y)` in the Typst fixture. The remaining geometry target is to
-sew the visible runs with source-ordered horizon arcs, then brush each closed
-outline once.
+The coastline topology now follows `drawLandMass`: source calls
+`thinBrushGenerate` once for each of eight closed paths (landmasses 3 and 6
+are empty fallback paths), and Typst brushes one closed outline for each of
+the same six visible masses. `instrument_m11_coast_paths.py` records both
+projected path samples (`M11COAST`) and the source's conflict-resolved horizon
+intervals (`M11ARC`). The Typst outline uses the source's five-step crossing
+search, seam merge, ordered arc intervals and conflict rule. For example, the
+six visible masses' source arc pairs are reproduced within 0.001 fullcircle
+units. At 600 ppi globe crop RMSE falls from 0.188772 to 0.188748; ink is
+26.443% versus 25.940% source. Whole M11 RMSE changes from 0.112687 to
+0.112680. The raster gain is small, but the topology and arc order now follow
+the source. Coast brush phase and recursive call counts remain open.
 
 To extract and inspect the source path samples and Typst run counts inside the
 Nix devshell:
@@ -265,6 +267,7 @@ printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-paths/trace.mp
 (cd /tmp/m11-coast-paths && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'M11COAST' /tmp/m11-coast-paths/trace.log
+rg 'M11ARC' /tmp/m11-coast-paths/trace.log
 typst eval 'query(<m11-coast-geometry>).first().value' \
   --in diagnostics/m11_coast_geometry_trace.typ --root .
 ```
