@@ -1510,19 +1510,40 @@ The cubic integral computed from the exact fixed-point center controls differs
 from MetaPost's arc values by at most 21.337 fixed units (mean 9.371). A
 16-sample-per-cubic polyline is closer than 32 samples on this trace (maximum
 9.140 versus 16.023 units), but neither sampling choice reconstructs all three
-trees. A fixed-point port of MetaPost's recursive `arc_test` and `pyth_add`
-now reproduces all 121 cumulative `M11POSTARC` values exactly (maximum and
-mean error 0 in 16.16 units). The implementation is currently an audit
-prototype in `audit_m11_q_arclength.py`; it is not yet ported to Typst or wired
-into production recursion. Re-run the source comparison with:
+trees. Fixed-point implementations of MetaPost's recursive `arc_test` and
+`pyth_add` in both the audit script and `fiziko.typ` reproduce all 121 traced
+M11 segment arc lengths exactly (maximum and mean error 0 in 16.16 units).
+The Typst port is verified as a cubic helper and now feeds an isolated q
+replay. On the three targeted lanes it computes the segment arcs, builds q
+knots from the source width callbacks, and still matches all 40, 20, and 30
+recursion nodes and their q controls exactly. The fixture supplies traced
+centerline cubic controls; the other 15 lane inputs still use source arc
+knots, and production q-template generation is not wired yet. Re-run the
+paired check with:
 
 ```sh
 nix develop path:./nix --command python \
-  diagnostics/audit_m11_q_arclength.py /tmp/m11-q-audit/trace.log
+  diagnostics/audit_m11_q_arclength.py /tmp/m11-q-audit/trace.log \
+  --typst-fixture build/m11-fixed-arc-fixture.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-fixed-arc-check>).first().value' \
+  --in diagnostics/m11_fixed_arc_check.typ --root . \
+  > build/m11-fixed-arc-results.json
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_brush_inputs.py \
+  /tmp/m11-q-audit/trace.log build/m11-shadow-brush-inputs.typ \
+  --samples-per-cubic 4 --arc-json build/m11-fixed-arc-results.json
+nix develop path:./nix --command typst eval \
+  'query(<m11-shadow-arc-replay>).first().value' \
+  --in diagnostics/m11_shadow_arc_replay.typ --root . \
+  > build/m11-shadow-arc-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log build/m11-shadow-arc-replay.json
 ```
 
 MetaPost's documented `arclength` uses recursive bisection and an adaptive
-Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); the newly verified fixed-point arithmetic supplies a bounded implementation target for the Typst port.
+Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); the verified fixed-point implementation now supplies the arc-length primitive needed for the remaining q-template integration.
 
 Removing the injected q controls and increasing only the sampled center-curve
 density does not recover all three trees. At 8 samples per cubic, calls 4/lanes

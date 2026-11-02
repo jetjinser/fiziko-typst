@@ -3,6 +3,7 @@
 
 import math
 import sys
+import argparse
 from collections import defaultdict
 from pathlib import Path
 
@@ -171,6 +172,31 @@ def read_trace(path):
     return curves, qcurves, source_arcs
 
 
+def typst_fixture(path, output):
+    curves, qcurves, source_arcs = read_trace(path)
+    lines = ["// Generated from the pinned M11 MetaPost trace by audit_m11_q_arclength.py.",
+             "#let m11-fixed-arc-fixture = ("]
+    for key, qpath in sorted(qcurves.items()):
+        parts = []
+        previous = 0
+        for index in sorted(qpath):
+            points = curves[(key[0], key[1], index)]
+            if sorted(points) != [0, 1, 2, 3]:
+                raise ValueError(f"incomplete controls for {key} segment {index}")
+            current = source_arcs[(key[0], key[1], index)]
+            arc = current - previous
+            previous = current
+            fixed = [tuple(int(round(axis * FIXED)) for axis in points[i])
+                     for i in range(4)]
+            point_text = ", ".join(
+                f"({p[0]} / 65536, {p[1]} / 65536)" for p in fixed)
+            parts.append(f"(points: ({point_text}), expected: {arc})")
+        items = ",\n    ".join(parts)
+        lines.append(f"  (call: {key[0]}, lane: {key[1]}, segments: (\n    {items}\n  )),")
+    lines.extend([")", ""])
+    output.write_text("\n".join(lines))
+
+
 def audit(path):
     curves, qcurves, source_arcs = read_trace(path)
     reports = []
@@ -261,6 +287,10 @@ def bezier(points, t):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: audit_m11_q_arclength.py MPOST_LOG")
-    audit(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("trace", type=Path)
+    parser.add_argument("--typst-fixture", type=Path)
+    args = parser.parse_args()
+    audit(args.trace)
+    if args.typst_fixture:
+        typst_fixture(args.trace, args.typst_fixture)

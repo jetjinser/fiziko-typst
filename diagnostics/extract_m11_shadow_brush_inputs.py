@@ -5,6 +5,7 @@ Usage: extract_m11_shadow_brush_inputs.py MPOST_LOG OUTPUT_JSON
 """
 
 import argparse
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -34,6 +35,8 @@ def main():
     parser.add_argument("--arc-mode", choices=("metapost", "integrated"),
                         default="metapost",
                         help="use traced MetaPost arc knots or integrate the traced cubics")
+    parser.add_argument("--arc-json", type=Path,
+                        help="use per-cubic arc lengths emitted by m11_fixed_arc_check.typ")
     args = parser.parse_args()
     log_path, output_path = args.log, args.output
     samples_per_cubic = args.samples_per_cubic
@@ -42,6 +45,11 @@ def main():
     callbacks = defaultdict(dict)
     source_q = defaultdict(lambda: defaultdict(dict))
     source_arcs = defaultdict(dict)
+    typst_arcs = {}
+    if args.arc_json:
+        arc_result = json.loads(args.arc_json.read_text())
+        typst_arcs = {(item["call"], item["lane"]): item["arcs"]
+                      for item in arc_result}
     exact_curves = {}
     if args.arc_mode == "integrated":
         exact_curves, _qcurves, _trace_arcs = read_trace(Path(log_path))
@@ -143,7 +151,19 @@ def main():
                 path_points.append(sample)
                 widths.append(w0 * (1 - fraction) + w1 * fraction)
                 path_times.append(i + sample_index / samples_per_cubic)
-        if args.arc_mode == "metapost":
+        if args.arc_json:
+            lengths = typst_arcs.get(key)
+            if lengths is None:
+                arc_values = source_arcs[key]
+            else:
+                if len(lengths) != len(indices):
+                    raise ValueError(f"incomplete Typst arc lengths for {key}")
+                arc_values = {}
+                cumulative_arc = 0
+                for index, length in enumerate(lengths, start=1):
+                    cumulative_arc += int(length)
+                    arc_values[index] = cumulative_arc
+        elif args.arc_mode == "metapost":
             arc_values = source_arcs[key]
         else:
             arc_values = {}

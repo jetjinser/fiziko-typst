@@ -47,6 +47,87 @@
   _mp-fixed-mix(a.at(0), b.at(0), t),
   _mp-fixed-mix(a.at(1), b.at(1), t),
 )
+#let _mp-fixed-half-trunc(x) = {
+  if x < 0 { -calc.floor(-x / 2) } else { calc.floor(x / 2) }
+}
+#let _mp-fraction-one = 268435456
+#let _mp-fixed-round-ratio(a, b) = {
+  assert(b != 0, message: "fixed-point ratio denominator cannot be zero")
+  let sign = if (a < 0) != (b < 0) { -1 } else { 1 }
+  sign * calc.floor((calc.abs(a) + calc.abs(b) / 2) / calc.abs(b))
+}
+#let _mp-fixed-pyth-add(x, y) = {
+  let a = calc.abs(x)
+  let b = calc.abs(y)
+  if a < b { let t = a; a = b; b = t }
+  if b == 0 { return a }
+  let big = a >= 2 * _mp-fraction-one
+  if big { a = calc.floor(a / 4); b = calc.floor(b / 4) }
+  while true {
+    let ratio = _mp-fixed-round-ratio(b * _mp-fraction-one, a)
+    let ratio = _mp-fixed-round-ratio(ratio * ratio, _mp-fraction-one)
+    if ratio == 0 { break }
+    let ratio = _mp-fixed-round-ratio(ratio * _mp-fraction-one,
+      4 * _mp-fraction-one + ratio)
+    a += _mp-fixed-round-ratio((a + a) * ratio, _mp-fraction-one)
+    b = _mp-fixed-round-ratio(b * ratio, _mp-fraction-one)
+  }
+  if big { a * 4 } else { a }
+}
+#let _mp-fixed-arc-test(d0, d1, d2, v0: none, v02: none, v2: none,
+                        tolerance: _mp-fraction-one / 4096, depth: 0) = {
+  assert(depth <= 40, message: "MetaPost arc subdivision exceeded 40 levels")
+  let v0 = if v0 == none { _mp-fixed-pyth-add(d0.at(0), d0.at(1)) } else { v0 }
+  let v2 = if v2 == none { _mp-fixed-pyth-add(d2.at(0), d2.at(1)) } else { v2 }
+  let dx01 = ( _mp-fixed-half-trunc(d0.at(0) + d1.at(0)),
+                _mp-fixed-half-trunc(d0.at(1) + d1.at(1)) )
+  let dx12 = ( _mp-fixed-half-trunc(d1.at(0) + d2.at(0)),
+                _mp-fixed-half-trunc(d1.at(1) + d2.at(1)) )
+  let dx02 = ( _mp-fixed-half-trunc(dx01.at(0) + dx12.at(0)),
+                _mp-fixed-half-trunc(dx01.at(1) + dx12.at(1)) )
+  let v002 = _mp-fixed-pyth-add(
+    _mp-fixed-half-trunc(d0.at(0) + dx02.at(0)) + dx01.at(0),
+    _mp-fixed-half-trunc(d0.at(1) + dx02.at(1)) + dx01.at(1))
+  let v022 = _mp-fixed-pyth-add(
+    _mp-fixed-half-trunc(dx02.at(0) + d2.at(0)) + dx12.at(0),
+    _mp-fixed-half-trunc(dx02.at(1) + d2.at(1)) + dx12.at(1))
+  let v02 = if v02 == none {
+    _mp-fixed-pyth-add(
+      _mp-fixed-half-trunc(d0.at(0) + d2.at(0)) + d1.at(0),
+      _mp-fixed-half-trunc(d0.at(1) + d2.at(1)) + d1.at(1))
+  } else { v02 }
+  let tmp = calc.floor((v02 + 2) / 2)
+  let arc1 = _mp-fixed-half-trunc(calc.floor((v0 + tmp) / 2) - v002) + v002
+  let arc2 = _mp-fixed-half-trunc(calc.floor((v2 + tmp) / 2) - v022) + v022
+  let arc = arc1 + arc2
+  let xsimple = ((d0.at(0) >= 0 and d1.at(0) >= 0 and d2.at(0) >= 0) or (d0.at(0) <= 0 and d1.at(0) <= 0 and d2.at(0) <= 0))
+  let ysimple = ((d0.at(1) >= 0 and d1.at(1) >= 0 and d2.at(1) >= 0) or (d0.at(1) <= 0 and d1.at(1) <= 0 and d2.at(1) <= 0))
+  let simple = xsimple and ysimple
+  let direct = ((d0.at(0) >= d0.at(1) and d1.at(0) >= d1.at(1) and d2.at(0) >= d2.at(1)) or (d0.at(0) <= d0.at(1) and d1.at(0) <= d1.at(1) and d2.at(0) <= d2.at(1)))
+  if not simple and direct {
+    let nx = (-d0.at(0), -d1.at(0), -d2.at(0))
+    let swap-simple = ((nx.at(0) >= d0.at(1) and nx.at(1) >= d1.at(1) and nx.at(2) >= d2.at(1)) or (nx.at(0) <= d0.at(1) and nx.at(1) <= d1.at(1) and nx.at(2) <= d2.at(1)))
+    simple = swap-simple
+  }
+  let discrepancy = calc.abs(arc - calc.floor((v0 + v2) / 2) - v02)
+  if simple and discrepancy <= tolerance { return arc }
+  let next-tolerance = tolerance + calc.floor(tolerance / 2)
+  let half-v02 = calc.floor(v02 / 2)
+  let left = _mp-fixed-arc-test(d0, dx01, dx02, v0: v0, v02: v002,
+    v2: half-v02, tolerance: next-tolerance, depth: depth + 1)
+  let right = _mp-fixed-arc-test(dx02, dx12, d2, v0: half-v02,
+    v02: v022, v2: v2, tolerance: next-tolerance, depth: depth + 1)
+  _mp-fixed-half-trunc(right - left) + left
+}
+#let _mp-fixed-cubic-arc-raw(points) = {
+  let p = points.map(point => point.map(axis => calc.round(axis * 65536)))
+  let d0 = (p.at(1).at(0) - p.at(0).at(0), p.at(1).at(1) - p.at(0).at(1))
+  let d1 = (p.at(2).at(0) - p.at(1).at(0), p.at(2).at(1) - p.at(1).at(1))
+  let d2 = (p.at(3).at(0) - p.at(2).at(0), p.at(3).at(1) - p.at(2).at(1))
+  _mp-fixed-arc-test(d0, d1, d2)
+}
+#let _mp-fixed-cubic-arc(points) = _mp-fixed-cubic-arc-raw(points.map(point =>
+  point.map(axis => axis / 1mm / _mp-unit)))
 #let _mp-cubic-split(points, t) = {
   let a = _mp-fixed-mix-point(points.at(0), points.at(1), t)
   let b = _mp-fixed-mix-point(points.at(1), points.at(2), t)
