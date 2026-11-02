@@ -1525,6 +1525,15 @@ diagnostic model improvement only; the 9 unmatched S104 pairs remain
 concentrated around endpoint and no-hit cases, and no production change is
 justified. Compare the remaining pairs with:
 
+The source's packed-time flow was then modeled temporarily: `cur_t` and
+`cur_tt` advance as `2^l + 2^l*t`; an overlapping box advances `max_t` and
+saves `appr_t`/`appr_tt`, while a rejected box consumes the 5000-backtrack
+budget. This stateful trial did not improve the 67/76 S104 result and still
+returned no hit for the M11 probe. It was discarded. The endpoint mismatch
+therefore remains in packet subdivision or fixed-point overlap behavior, not
+just in the saved-candidate policy; do not reintroduce a max-depth or
+`max_t`-only adjustment as a production fix.
+
 ```sh
 python3 diagnostics/replay_s104_thin_intersections.py \
   /tmp/s104-thin-ray-replay/trace.log -6.37912

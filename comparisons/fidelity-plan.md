@@ -104,7 +104,11 @@ affected source-parity crops do not materially regress.
   the model does not yet implement its packed `max_t` progression: depth 19
   collapses the M11 endpoint probe to no hit, while the source reports the
   near-endpoint forward pair. Nine endpoint/no-hit cases still disagree. No
-  production change is justified yet. The trace replay is documented in
+  temporary model of packed `cur_t`/`cur_tt`, `max_t`, and the saved
+  approximate pair did not improve the 67/76 result or recover the M11 probe;
+  that trial was discarded. The remaining error is in packet subdivision or
+  fixed-point overlap behavior, not only the fallback selection. No production
+  change is justified yet. The trace replay is documented in
   `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
