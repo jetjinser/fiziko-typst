@@ -88,6 +88,28 @@ contour segments attempted to model `v[st]` interpolation. It regressed S105
 segment order is not a reliable substitute for `cLine`'s recursive `st`
 sequence, so the next width-law change needs a source traversal trace.
 
+`instrument_wood_contours.py` now records the first source `cLine` traversal's
+`(i, j, st, cell-range, direction)` values. For M9 the first visits begin
+`(0,12,0)`, `(0,13,1)`, `(1,13,2)`, `(1,14,3)` and continue for 19 cells;
+`st` rises and falls according to the recursive walk, rather than a simple
+row or geometric-segment order. A separate 1/3 mm grid pilot, matching the
+source's `woodBlockRes`, increased ink coverage and regressed M9 from 0.22412
+to 0.22527 and S105 from 0.09792 to 0.13003. That pilot was reverted; field
+sampling, level selection and contour stitching need to be aligned together.
+
+To capture the source traversal from the pinned M9 driver:
+
+```sh
+mkdir -p /tmp/m9-cLine-trace
+python3 diagnostics/instrument_wood_contours.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m9-cLine-trace/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m9-cLine-trace/main.mp
+printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
+(cd /tmp/m9-cLine-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
+```
+
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
 calls, 28 total, between its candidate-position draws and the next knot. A
