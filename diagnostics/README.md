@@ -230,6 +230,16 @@ That candidate was reverted. It used the prior projection and open coastline
 segments; re-evaluate stream alignment after the closed source coastline paths
 and their recursive brush calls are ported.
 
+After porting the source projection and closed, conflict-resolved coast paths,
+the 3456-prefix experiment was repeated with one shared MetaPost stream passed
+sequentially through the six visible coast brushes. It still did not improve
+the source match: at 600 ppi whole M11 RMSE moved from `0.11268047` to
+`0.11268452`, globe crop RMSE from `0.18874815` to `0.18876426`, and globe
+ink coverage from `26.44278%` to `26.44952%` against `25.94004%`. The candidate
+was reverted. A reliable coast phase still requires matching source brush
+recursion calls per mass; advancing a Typst stream only by its modeled calls
+does not reproduce those source boundaries.
+
 ### M11 coastline projection and outline topology
 
 The pinned source's `pointOnGlobe` adds 90° to longitude, and
