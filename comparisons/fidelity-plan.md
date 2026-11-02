@@ -83,6 +83,9 @@ strokes, while M10 contains mostly whitespace.
    on an eight-point polygon gives `[14, 10, 6, 2, 0]`, while denser polygons
    over-subdivide. That polygon is only a count diagnostic; a useful port must
    separate the cubic `fullcircle` geometry from its eight-knot width template.
+   An internal arc-length width interpolation probe leaves every tested call
+   count unchanged, confirming that the polygon geometry/knot placement must be
+   corrected before the remaining ring-2 recursion difference can be addressed.
    The first M9 panel knot now matches source coordinates to under
    0.1 mm; M9 whole-plate RMSE improves from 0.22688 to 0.22456, with ink
    coverage 4.272% versus 4.203%. Contour-brush random calls still leave later

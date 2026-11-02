@@ -333,7 +333,7 @@
                 random-stream: none, rng-offset: 0,
                 with-rng: false, with-stats: false,
                 param-times: none, param-end: none, trace-nodes: false,
-                source-rounding: false) = {
+                source-rounding: false, width-by-arc: false) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -346,6 +346,13 @@
     let j = if closed { _mod(i + 1, n) } else { calc.clamp(i + 1, 0, n - 1) }
     _dist(fr.at(i).at(0), fr.at(j).at(0))
   })
+  let arc-positions = if width-by-arc {
+    let positions = (0.0,)
+    for i in range(if closed { n } else { n - 1 }) {
+      positions.push(positions.last() + adj.at(i))
+    }
+    positions
+  } else { () }
 
   // Fractional sample coordinates let recursive cuts land exactly where the
   // width template crosses its target, as cutPathTime does in MetaPost.
@@ -362,11 +369,29 @@
     )
   }
   let width-index(s) = {
-    let base = calc.floor(s)
-    let t = s - base
-    let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
-    let j = if closed { _mod(base + 1, n) } else { calc.clamp(base + 1, 0, n - 1) }
-    ws.at(i) * (1 - t) + ws.at(j) * t
+    if width-by-arc {
+      let base = calc.floor(s)
+      let t = s - base
+      let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
+      let edge = if closed { i } else { calc.min(i, n - 2) }
+      let arc = if (closed and s >= n) or (not closed and s >= n - 1) {
+        arc-positions.last()
+      }
+        else { arc-positions.at(edge) + t * adj.at(edge) }
+      let segment = range(if closed { n } else { n - 1 }).find(k =>
+        arc-positions.at(k) <= arc and arc <= arc-positions.at(k + 1))
+      let k = if segment == none { if closed { n - 1 } else { n - 2 } } else { segment }
+      let span = arc-positions.at(k + 1) - arc-positions.at(k)
+      let f = if span > 0 { calc.clamp((arc - arc-positions.at(k)) / span, 0.0, 1.0) } else { 0.0 }
+      let j = if closed { _mod(k + 1, n) } else { k + 1 }
+      ws.at(k) * (1 - f) + ws.at(j) * f
+    } else {
+      let base = calc.floor(s)
+      let t = s - base
+      let i = if closed { _mod(base, n) } else { calc.clamp(base, 0, n - 1) }
+      let j = if closed { _mod(base + 1, n) } else { calc.clamp(base + 1, 0, n - 1) }
+      ws.at(i) * (1 - t) + ws.at(j) * t
+    }
   }
   // Optional source-template time. Some callers retain the width template's
   // original knots, whose path parameter is not uniform in physical length.

@@ -36,7 +36,7 @@
     let result = _ink-loops(frames, fractions.map(width), true,
       _source-min-stroke, _source-dash-length, random-stream: stream,
       rng-offset: cursor, with-rng: true, with-stats: true,
-      source-rounding: true)
+      source-rounding: true, width-by-arc: true)
     cursor += result.at(1)
     counts.push(result.at(1))
   }

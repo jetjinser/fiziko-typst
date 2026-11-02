@@ -144,6 +144,15 @@ a call-count probe, not acceptable circle geometry. The remaining ring-2
 difference reinforces that the next port needs separate cubic path geometry
 and the source's eight-knot, arc-length width template.
 
+An opt-in `_ink-loops(..., width-by-arc: true)` diagnostic now interpolates the
+sampled width values by cumulative centerline distance instead of frame index.
+On this polygon probe it produces exactly the same counts at every tested
+resolution (8 points still gives `[14, 10, 6, 2, 0]`). Thus arc interpolation
+alone does not explain the extra four calls in ring 2; the next useful trace
+must use the source cubic `fullcircle` geometry and its actual width-knot arc
+positions. The option is internal and is not enabled by the public wood
+renderers.
+
 `wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
 coordinates. To record candidate positions and per-knot random-call counts
 from the pinned MetaPost source, run inside the Nix devshell:
