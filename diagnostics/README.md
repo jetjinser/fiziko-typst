@@ -56,6 +56,15 @@ produces (8.27285, 46.31245) mm. Rounding source-field extents to the source's
 ink 0.599% vs 0.489% in the source). Source contour-brush rendering and its
 random call count still differ.
 
+The instrumented M9 source now also records the random calls made by each
+accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
+calls, 28 total, between its candidate-position draws and the next knot. A
+96-point Typst ellipse passed through the current generic brush recursion
+consumes `[74, 72, 68, 58, 38]`; it over-subdivides the small curved rings, so
+copying the source ring widths into `stroke-ink` made the M9 comparison worse.
+`wood_knot_ring_counts.typ` reproduces that Typst count. The ring shape and
+dash recursion need a curve-aware port before replacing the current knot mark.
+
 `wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
 coordinates. To record candidate positions and per-knot random-call counts
 from the pinned MetaPost source, run inside the Nix devshell:

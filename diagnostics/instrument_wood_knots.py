@@ -26,6 +26,30 @@ def main() -> None:
         ' & decimal(traceRngCount) & " " & decimal(traceRngTotal);'
     )
     source = source.replace(anchor, hook)
+    ring_anchor = (
+        "                    for tr := 2woodKnotRadius step -8minStrokeWidth until 2minStrokeWidth:\n"
+        "                        draw brush(\n"
+    )
+    if source.count(ring_anchor) != 1:
+        raise ValueError(f"expected one wood-knot ring loop, found {source.count(ring_anchor)}")
+    ring_hook = (
+        "                    for tr := 2woodKnotRadius step -8minStrokeWidth until 2minStrokeWidth:\n"
+        '                        message "WKRINGSTART " & decimal(traceWoodCount) & " "'
+        ' & decimal(i) & " " & decimal(tr) & " " & decimal(traceRngBatches)'
+        ' & " " & decimal(traceRngCalls);\n'
+        "                        draw brush(\n"
+    )
+    source = source.replace(ring_anchor, ring_hook)
+    ring_end = "                        );\n                    endfor;"
+    if source.count(ring_end) != 1:
+        raise ValueError(f"expected one wood-knot ring end, found {source.count(ring_end)}")
+    source = source.replace(ring_end, (
+        "                        );\n"
+        '                        message "WKRINGEND " & decimal(traceWoodCount) & " "'
+        ' & decimal(i) & " " & decimal(tr) & " " & decimal(traceRngBatches)'
+        ' & " " & decimal(traceRngCalls);\n'
+        "                    endfor;"
+    ))
     loop_anchor = "i := -1;\n            j := 0;"
     if source.count(loop_anchor) != 1:
         raise ValueError(f"expected one wood-knot loop reset, found {source.count(loop_anchor)}")
