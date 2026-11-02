@@ -268,6 +268,17 @@ affected source-parity crops do not materially regress.
   recovers this local hit but loses source q state across recursion, so the
   production prototype was removed. Preserve the cut as a local oracle; the
   next integration must carry and split q controls with the child paths.
+  A follow-up carried each straight 16.16 q cubic through recursive de
+  Casteljau splits alongside its center path, storing q state as a flat integer
+  sequence to fit Typst's collection typing. It reproduces the row-93 depth-4
+  source cut at `x=39.53914 mm`, but the full 142-row trace does not improve
+  the aggregate dash tree: source/baseline/candidate dash leaves are
+  `687/699/697`, and per-row absolute dash-count error stays `166` (2 rows
+  better, 139 tied, 1 worse). Thin nodes rise from `1613` to `2615` against
+  source `1696`; outer nodes are `1004` against source `1340`. No raster trial
+  was warranted. The candidate was removed. The remaining mismatch is
+  downstream of that matched cut: recursive q-time and center-path subpath
+  mapping still diverge on child branches.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
