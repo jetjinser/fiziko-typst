@@ -185,6 +185,7 @@ enddef;''')
         raise ValueError(f"expected one tube lane path hook, found {source.count(current_path)}")
     source = source.replace(current_path, current_path + '''
                 if traceKnotActive:
+                    traceCurrentK := k;
                     if (k = 2) or (k = 6) or (k = 8):
                         message "M11PARAM " & decimal(traceTubeCall) & " "
                             & decimal(k) & " " & decimal(length(currentPath)) & " "
@@ -231,6 +232,32 @@ enddef;''')
                         endfor;
                     fi;
                 fi;''')
+    shadow_intersection = "            pathShadowCut := ypart(pathShadowIntersection);"
+    if source.count(shadow_intersection) != 1:
+        raise ValueError(f"expected one shadow intersection hook, found {source.count(shadow_intersection)}")
+    source = source.replace(shadow_intersection, shadow_intersection + '''
+            if traceKnotActive:
+                message "M11CUT " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(j) & " "
+                    & decimal(pathShadowCut) & " "
+                    & decimal(xpart(pathShadowIntersection)) & " "
+                    & decimal(length(currentPath)) & " "
+                    & decimal(length(shiftedShadowPath));
+            fi;''')
+    shadow_shift = '''        shiftedShadowPath := shadowPath[j] shifted
+            ((redpart(lightDirectionVectorXYZ), greenpart(lightDirectionVectorXYZ))
+                scaled ((currentDepth - shadowDepth[j])*bluepart(lightDirectionVectorXYZ)));'''
+    if source.count(shadow_shift) != 1:
+        raise ValueError(f"expected one shifted shadow path hook, found {source.count(shadow_shift)}")
+    source = source.replace(shadow_shift, shadow_shift + '''
+        if traceKnotActive:
+            message "M11CUTSHADOW " & decimal(traceTubeCall) & " "
+                & decimal(traceCurrentK) & " " & decimal(j) & " "
+                & decimal(currentDepth/mm) & " " & decimal(shadowDepth[j]/mm) & " "
+                & decimal(redpart(lightDirectionVectorXYZ)) & " "
+                & decimal(greenpart(lightDirectionVectorXYZ)) & " "
+                & decimal(bluepart(lightDirectionVectorXYZ));
+        fi;''')
     current_tube_path = "            currentTubePath := interpath (1/2, q, p);"
     if source.count(current_tube_path) != 1:
         raise ValueError(f"expected one tube centerline hook, found {source.count(current_tube_path)}")

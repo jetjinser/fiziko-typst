@@ -945,7 +945,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -961,7 +961,10 @@ coordinates across transcript lines. Join records by call and curve index
 before comparing controls. `M11CURVEA/B` records do the same for source lanes
 k=2, 6, and 8; `M11PARAM` records list the current lane, centerline, and
 `tubeWidth` path lengths. `M11POSTPARAM` and `M11POSTCURVEA/B` capture each
-lane after `shadowCut`, immediately before `brushGenerate`.
+lane after `shadowCut`, immediately before `brushGenerate`. `M11CUTSHADOW`
+records lane depth, occluder depth, and light vector for each shifted shadow;
+`M11CUT` records each intersection's lane time, shadow-path time, and the
+current path lengths before the cut.
 
 The six source midpoint paths pair to the reconstructed Typst cubics with
 control-point MAE of 0.000010–0.000013 mm and maximum error below 0.000055 mm.

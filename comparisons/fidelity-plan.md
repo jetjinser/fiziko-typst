@@ -95,8 +95,13 @@ affected source-parity crops do not materially regress.
   lengths (24/36); calls 4–6 change from 36/36/24 to 39–41/39–40/28 units on
   the traced lanes. Typst currently masks completed layer drawings but does
   not cut hidden lane geometry before brush recursion, so it consumes random
-  calls for ink the next layer erases. Reproduce `shadowCut` on each tube lane
-  before brush recursion, then recheck per-call RNG vectors and renders.
+  calls for ink the next layer erases. The source cuts each lane at every
+  shifted shadow-boundary intersection, trimming 0.05 path-time units on both
+  sides before searching the next crossing. Its projected offset is
+  `light.xy * (lane-depth - 1.5 * occluder-width) * light.z`; the M11 trace
+  records both depths, the light vector, shadow index, and evolving lane time.
+  Reproduce these cuts before brush recursion, then recheck per-call RNG
+  vectors and renders.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
