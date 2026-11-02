@@ -2,10 +2,17 @@
 #import "../fiziko.typ": _woodblock-field, _mp-scalar-rounded
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
+#let raw-rng-knots = (
+  (7.9966888427734375, 21.603240966796875),
+  (0.9630126953125, 45.08021545410156),
+  (33.3760986328125, 28.865753173828125),
+  (27.247940063476562, 1.2523345947265625),
+  (26.473419189453125, 51.92364501953125),
+)
 #let s(x) = _mp-scalar-rounded(x)
 #let mul(a, b) = s(a * b)
 #let div(a, b) = s(a / b)
-#let fixed-field(i, j) = {
+#let fixed-field(i, j, knots) = {
   let detail = s(1 / 5)
   let rho = s(1 / 24)
   let theta = s(calc.pi / 3)
@@ -13,7 +20,7 @@
   let bd = mul(mul(div(1.25, 1), 1 / 2), detail)
   let cumulative = 0.0
   let terms = ()
-  for knot in model.knots {
+  for knot in knots {
     let knot-x = div(mul(knot.at(0), detail), 1)
     let knot-y = div(mul(knot.at(1), detail), 1)
     let dx = s(mul(i, detail) - knot-x)
@@ -51,5 +58,13 @@
     grid-wave: grid-wave, final: cumulative)
 }
 
-#metadata((target: (33, 29), typst-source-field: (model.field)(33, 29),
-  fixed: fixed-field(33, 29))) <m9-fixed-field-probe>
+#metadata((targets: (
+  min: (cell: (33, 29), source: -10.1679840088,
+    float-knots: fixed-field(33, 29, model.knots),
+    raw-rng-knots: fixed-field(33, 29, raw-rng-knots)),
+  max: (cell: (6, 42), source: 0.2035675049,
+    float-knots: fixed-field(6, 42, model.knots),
+    raw-rng-knots: fixed-field(6, 42, raw-rng-knots))),
+  raw-grid-samples: range(6).map(i => range(12).map(j =>
+    (i: i, j: j + 12, wfield: fixed-field(i, j + 12, raw-rng-knots).final)))))
+  <m9-fixed-field-probe>

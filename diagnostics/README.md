@@ -325,7 +325,20 @@ python3 diagnostics/compare_wood_contours.py \
 `(33,29)` and emits the per-knot fixed-point radius, angle and cumulative
 field terms. Compare it with `CLWRFIX`, `CLWTERMFIX`, `CLWBASEFIX` and
 `CLWFINALFIX` from the source trace. The current probe first diverges at the
-third knot; it is diagnostic only and does not alter rendering.
+third knot when using the 16.16-rounded knot positions. It also exports a
+72-sample fixed-point grid using the raw-fraction knot positions from the
+M9 trace. Pair those values with the first 72 `CLVFIX` records and subtract
+the matching first-block `CLCOL` offset for each column; `CLCOL` records the
+source column jitter as two base-256 digits. This comparison is diagnostic
+only and does not alter rendering. To reproduce the summary:
+
+```sh
+typst eval 'query(<m9-fixed-field-probe>).first().value' \
+  --in diagnostics/m9_field_fixedpoint_probe.typ --root . \
+  > /tmp/m9-cLine-trace/field-probe.json
+python3 diagnostics/compare_m9_field_samples.py \
+  /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/field-probe.json
+```
 
 The same trace now instruments `brushGenerate` for the first accepted M9
 contour. `WBNODE` records recursion depth, width extrema in millimetres, cut

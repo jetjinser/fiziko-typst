@@ -282,6 +282,13 @@ def main() -> None:
                 fi;"""
     source = replace_once(source, field_value_anchor, field_value_trace,
                           "wood maximum field sample")
+    column_anchor = "k := uniformdeviate(1/8woodBlockYRdensity);"
+    column_trace = column_anchor + """
+                message "CLCOL " & decimal(i) & " "
+                    & decimal(floor(k*256)) & " "
+                    & decimal(round((k*256-floor(k*256))*256));"""
+    source = replace_once(source, column_anchor, column_trace,
+                          "wood field column offset")
     level_anchor = "draw isoLines(wood)((wS, lS), woodBlockYRdensity*i + uniformdeviate(1/8woodBlockYRdensity), woodBlockRes);"
     level_trace = """if traceWoodBlock = 1:
                     traceWoodJitter := uniformdeviate(1/8woodBlockYRdensity);

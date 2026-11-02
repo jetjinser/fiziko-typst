@@ -466,6 +466,19 @@ affected source-parity crops do not materially regress.
   contour interpolation currently do not preserve the raster gain; keep the
   exact RNG product as a diagnostic oracle until the field evaluator is paired
   at the same source grid points.
+  The diagnostic now uses those raw-fraction knot positions in the 16.16
+  `wField` evaluator and records the first block's source column jitter. Across
+  the 72 traced source samples, 58 field values match exactly after removing
+  the corresponding column jitter; mean/max absolute field error is
+  `3.60e-6/3.05e-5`. The fixed-point minimum and maximum cells also reproduce
+  the source `wField` values exactly. Feeding these source-grid extrema into
+  contour-level generation while retaining the continuous Typst field still
+  regresses M9 RMSE `0.21156032 → 0.21185228` and S105
+  `0.10213793 → 0.10304308` (surface crop `0.07693635 → 0.07925067`); that
+  production candidate was reverted. The field samples now have a useful
+  source oracle, but contour-level phase or grid-to-continuous mapping remains
+  wrong for the raster. `CLCOL` and the 72-sample evaluator are diagnostic
+  additions only.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →
