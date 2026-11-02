@@ -44,6 +44,7 @@
 #let paired-path = paths.find(p => p.level-index == 0 and p.path-index == 2)
 #let width = _wood-source-width(field, 55, 33, 55, 33, paired-path.points)
 #let brush-trace = stroke-ink(paired-path.points, width, closed: false,
+  per: 0,
   min-w: _source-min-stroke, period: _source-dash-length,
   _source-rounding: true, _with-stats: true, _trace-nodes: true)
 #metadata((contour-count: paths.len(), level-count: levels.len(),

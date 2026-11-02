@@ -117,35 +117,26 @@ affected source-parity crops do not materially regress.
   candidate lowers same-grid M9 RMSE `0.212745 → 0.212742` and S105 RMSE
   `0.102450 → 0.102443`; its S105 coverage falls by 0.00015 percentage points,
   so retain the small pixel-error improvement as a measured tradeoff. The
-  matched source brush has 37 outer nodes and 19 leaves, with one branch
-  reaching depth 10; Typst records 7 outer and 46 thin nodes, with the root
-  cut only 0.058 mm from source. Compare deeper splits and terminal band/dash
-  geometry before changing the renderer. The first contour's thin trace now
-  counts 66 source calls, 65 recursive/terminal nodes (maximum depth 15), and
-  12 source dash leaves versus 46 Typst thin nodes (maximum depth 6), 10 dash
-  leaves, and 20 RNG calls. A parent-aware tree walk pairs 40 nodes, 33 within
-  0.1 mm, and matches 35/40 recurse/stop decisions. Five first branch
-  divergences remain: one close pair (0.026 mm) stops and dashes in source
-  near a path endpoint but recurses in Typst; another close pair (0.043 mm)
-  recurses in source from a cut 0.015 path-time units from its start, while
-  Typst finds no cut candidate. Three later divergences already have 0.15–0.40
-  mm endpoint error. The roots and siblings are paired geometrically, so this
-  trace narrows the source audit to width-level selection and endpoint/candidate
-  validity but does not establish tree identity or justify a global threshold
-  patch. A direct port of MetaPost's endpoint-averaged `w2` level was tested
-  and reverted: the paired Typst root reads about 0.07029 mm at both ends,
-  while source reads 0.07030/0.03394 mm; the candidate reduces parent-aware
-  node pairs from 40 to 4 and dash leaves from 10 to 1. The width-template and
-  path-time mapping must be aligned before this source formula can be applied.
-  A follow-up fixed-point trace isolates the first close branch: source
-  `(w0,w1,minWidth,step)` is `(10335,9248,4353,544)` scaled units, giving a
-  ratio of `5439/544 = 9.99816` and source level 9; the paired Typst widths
-  land at level 10. A one-scalar-unit downward bias fixes this branch, but
-  parent-aware tree pairs fall `40 → 36` and recurse/stop agreements fall
-  `35 → 31`. M9 RMSE improves `0.212740 → 0.212504`, but S105 regresses
-  `0.102443 → 0.102450` and M9 ink coverage moves farther below source. The
-  bias is reverted; investigate the width-template/path-time mapping rather
-  than lowering all near-integer levels.
+  matched source brush has 37 outer nodes/19 leaves and 65 thin nodes/12 dash
+  leaves. The Typst trace was corrected to pass `per: 0`, matching production
+  `wooden-thing`; earlier 7/46 node and 10-dash figures came from accidental
+  default resampling and are invalid. With `per: 0`, Typst has 11 outer nodes,
+  48 thin nodes, 12 dash leaves and 24 RNG calls, matching the source's 12
+  dashes/24 calls. The first outer cut differs by 0.00383 mm. Parent-aware
+  pairing finds 42 node pairs, 34 within 0.1 mm, and 37/42 recurse/stop
+  decisions agree. Five first divergences remain: two are within 0.0033 mm of
+  source endpoints and differ at width-level/candidate validity; three later
+  pairs have 0.115–0.501 mm endpoint error. The source root path is 17.2808 mm,
+  versus Typst's 14.5469 mm, because its two boundary-cell endpoints are
+  absent. An extension candidate moved that path to 16.8732 mm but worsened
+  thin-tree pairing (40 pairs, 34/40 decisions) and changed dash calls to 22;
+  at 600 ppi M9 regressed `0.212742 → 0.214788`, so it was reverted. The source
+  clip order is confirmed, but path extension alone does not fix recursion.
+  A one-scalar-unit level-bias raster candidate also improved M9 slightly while
+  regressing S105; its earlier tree comparison used the invalid resampled
+  diagnostic and must be repeated with `per: 0` before using that branch
+  result. Continue pairing exact width-template knots and endpoint candidates,
+  without global threshold changes.
   The source trace now also records the width-template cubic controls for each
   thin call. On call 10, the first/last template widths agree with the logged
   0.05563/0.04977 mm endpoints. The source builds this template on integer
@@ -157,12 +148,13 @@ affected source-parity crops do not materially regress.
   on the full `cLine` path. Typst currently clips the contour before width
   evaluation and recursion. On the first M9 contour, source has 22 path points
   and a 17.28086 mm outer root, while the paired Typst path has 20 points and
-  a 14.59937 mm root; the source endpoint extensions transform beyond the
+  a 14.54685 mm root; the source endpoint extensions transform beyond the
   block's `y=33` edge. A candidate appended these boundary cells, brushed the
   extended path, and clipped final ink to the rectangle. It moved the Typst
-  root length to 16.92824 mm and RNG calls to 22 versus 24 source calls, but
-  parent-aware decisions remained 35/40 and the root cut moved slightly
-  farther from source. At 600 ppi, M9 regressed `0.212742 → 0.214788`; S105
+  root length to 16.87318 mm and RNG calls to 22 versus 24 source calls, but
+  parent-aware decisions fell from 37/42 to 34/40 and the root cut remained
+  0.00383 mm from source. The candidate worsened tree alignment. At 600 ppi,
+  M9 regressed `0.212742 → 0.214788`; S105
   improved `0.102443 → 0.102240` while ink coverage moved farther below
   source. The renderer candidate was reverted. Source-order clipping remains
   established; a future attempt must also match the source width-template and

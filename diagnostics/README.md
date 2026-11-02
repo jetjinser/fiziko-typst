@@ -193,40 +193,33 @@ Typst field scale of 24, and the reflected landscape axes. Source level
 reversed 19-cell visit sequence. Its mean/max source-point distance is
 `0.108/1.315 mm` (the maximum is at the source's one-cell boundary
 extension), while reversed per-cell ranges differ by `1.54e-5` mean and
-`4.92e-5` max. The matched root cut point is `0.058 mm` from source, but its
-path length is `14.60 mm` versus `17.28 mm` in source. The source records 37
-outer nodes and 19 leaves; Typst records 7 outer and 46 thin nodes, so deeper
-cut and terminal band/dash geometry still needs work. The open wood gap is now
-brush recursion and the boundary it draws, not cLine cell discovery.
+`4.92e-5` max. With the production-matched `per: 0` trace, the root cut point
+is `0.00383 mm` from source, but its path length is `14.5469 mm` versus
+`17.2809 mm` in source. The source records 37 outer nodes and 19 leaves;
+Typst records 11 outer nodes. The open wood gap is brush recursion and the
+boundary it draws, not cLine cell discovery.
 
 The trace also follows `thinBrushGenerate` into its recursive thin branches
-and dash leaves. In this contour, source has 66 thin-brush calls, 65
-split/terminal nodes through depth 15, and 12 dash leaves; Typst has 46 thin
-nodes, reaches depth 6, and draws 10 dash leaves using 20 RNG calls. Pairing
-source and Typst nodes by their endpoints after converting source wood
-coordinates `(u,v)` to `(v,33-u)` gives 35 pairs within 0.1 mm; 34 agree on
-whether to recurse. The paired cut points have 0.098 mm mean error (0.717 mm
-maximum). Seven source dash leaves pair within 0.1 mm, with 0.080 mm mean
-endpoint error over the greedy unique pairing. These are geometric
-nearest-neighbor diagnostics, not a tree correspondence: a nearest pair does
-not establish matching parents. The count and depth differences confirm that
-terminal dash coverage and recursion still differ. `WBTCALL` and `WBTHIN` now
-carry call IDs, so `compare_wood_contours.py` reconstructs both recursion
-forests, pairs their two roots by endpoint error, then pairs each parent's
-children by the least endpoint error. This parent-aware walk pairs 40 nodes;
-33 pairs are within 0.1 mm and 35/40 recurse/stop decisions agree. Five first
-branch divergences remain. One source stop/dash versus Typst recurse decision
-has only 0.026 mm endpoint error: source's `w2` is 0.04979 mm and its cut
-lands 0.0005 mm from the path endpoint, while Typst's target is 0.05272 mm and
-its cut lands inside the path. Another source recurse versus Typst stop occurs
-at 0.043 mm endpoint error with source `w2` and Typst's target near 0.04686 mm;
-source accepts a cut 0.015 path-time units from the start while Typst has no
-candidate. The other three divergences already have 0.15–0.40 mm endpoint
-error. Root pairing
-and sibling assignment are geometry-guided diagnostics, not proof that the
-underlying brush trees correspond. These cases narrow the next source audit to
-width-level selection and endpoint/candidate validity; they do not yet justify
-a global threshold change.
+and dash leaves. Set `per: 0` in `m9_contour_walk_trace.typ` to match the
+production call in `wooden-thing`; omitting it silently resamples every
+segment into a Hobby curve and gives a different brush tree. The older 7/46
+node, 10-dash figures and their parent-pair metrics came from that incorrect
+default and are withdrawn. With the corrected production setting, the source
+has 66 thin-brush calls, 65 split/terminal nodes through depth 15, and 12 dash
+leaves. Typst has 48 thin nodes, 12 dash leaves and 24 RNG calls, exactly
+matching the source's 12 dashes/24 calls. The trace also records 11 Typst
+outer nodes against 37 source outer nodes. The first outer cut is 0.00383 mm
+from source. `WBTCALL` and `WBTHIN` carry call IDs, so
+`compare_wood_contours.py` reconstructs both recursion forests, pairs their
+roots geometrically, then pairs each parent's children by endpoint error. The
+corrected parent-aware walk pairs 42 nodes; 34 pairs are within 0.1 mm and
+37/42 recurse/stop decisions agree. Five first divergences remain: the first
+two differ by only 0.0033 and 0.0025 mm at the endpoints, while three later
+pairs have 0.115–0.501 mm endpoint error. Source/Typst dash leaves pair 8/12
+times within 0.1 mm, with 0.0627 mm endpoint-distance MAE. These are
+geometry-guided parent pairs, not proof of identical trees; the close branches
+narrow the source audit to width-level selection and endpoint/candidate
+validity without justifying a global threshold change.
 
 A fresh pinned-source trace identifies an earlier geometric mismatch that
 should be resolved before those local branch decisions. MetaPost's
@@ -238,20 +231,19 @@ has 20 after `_clip-polyline-paths` runs before `_wood-source-width` and
 `stroke-ink`. The source endpoints transform to `(22,34)` and `(12,34)` in the
 Typst landscape coordinates, beyond the block's `y=33` edge; the Typst path
 instead starts and ends on the clipped boundary. The source path length is
-17.28086 mm, versus 14.59937 mm at the original paired Typst outer recursion
+17.28086 mm, versus 14.54685 mm at the original paired Typst outer recursion
 root. A renderer candidate appended the source boundary-cell points, brushed
 the extended path, and clipped the final ink to the rectangle. It moved the
-Typst root length to 16.92824 mm and dash RNG calls to 22 versus 24 source
-calls, but the root cut point moved slightly farther from source (0.061 mm
-versus 0.058 mm). Parent-aware pairing remained 40 nodes with 33 within
-0.1 mm and 35/40 recurse/stop agreements; the candidate did not improve the
-recursive decisions. At 600 ppi, M9 RMSE regressed from 0.212742 to 0.214788
-and ink coverage moved from 3.7497% to 3.7935% against 4.2032% source. S105
-RMSE improved from 0.102443 to 0.102240, but its ink coverage fell from
-0.6960% to 0.6912% against 0.7405% source. The renderer candidate was
-reverted. The source clip ordering remains confirmed; reproducing the full
-path alone is insufficient without matching its width-template and recursive
-cut behavior.
+Typst input length to 16.87318 mm. With the corrected `per: 0` trace, the
+candidate has 9 outer nodes, 46 thin nodes, 11 dash leaves and 22 RNG calls;
+the baseline has 11/48 nodes, 12 leaves and 24 calls. The outer cut remains
+0.00383 mm from source. Parent-aware pairing falls from 42 to 40 nodes and
+decisions from 37/42 to 34/40. At 600 ppi, M9 RMSE regressed from 0.212742 to
+0.214788 and ink coverage moved from 3.7497% to 3.7935% against 4.2032% source.
+S105 RMSE improved from 0.102443 to 0.102240, but its ink coverage fell from
+0.6960% to 0.6912% against 0.7405% source. The renderer candidate was reverted.
+The source clip ordering remains confirmed; reproducing the full path alone is
+insufficient without matching its width-template and recursive cut behavior.
 
 The source instrumenter now emits `WBTFIX`, recording `w0`, `w1`, `w2`,
 `minWidth`, and `dashStrokeWidthStep` in 16.16 MetaPost point units. At the
