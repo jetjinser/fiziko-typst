@@ -2787,6 +2787,30 @@
   else { place(top + left, curve(fill: none, stroke: stroke, ..segs)) }
 }
 
+// Approximate cLine's v[st] width profile: each traversed square contributes
+// its scalar range, and the brush is thinner where that range is larger.
+#let _contour-source-width(field, x, y, w, h, nx, ny, line) = {
+  let dx = w / nx
+  let dy = h / ny
+  let fractions = _path-fractions(line, false)
+  (t) => {
+    let j = range(line.len() - 1).find(i =>
+      fractions.at(i) <= t and t <= fractions.at(i + 1))
+    let j = if j == none { line.len() - 2 } else { j }
+    let span = fractions.at(j + 1) - fractions.at(j)
+    let q = if span > 0 { (t - fractions.at(j)) / span } else { 0.0 }
+    let p = _add(line.at(j), _mul(_sub(line.at(j + 1), line.at(j)), q))
+    let i = int(calc.clamp(calc.floor((p.at(0) - x) / dx), 0, nx - 1))
+    let k = int(calc.clamp(calc.floor((p.at(1) - y) / dy), 0, ny - 1))
+    let a = field(x + i * dx, y + k * dy)
+    let b = field(x + (i + 1) * dx, y + k * dy)
+    let c = field(x + (i + 1) * dx, y + (k + 1) * dy)
+    let d = field(x + i * dx, y + (k + 1) * dy)
+    let variation = calc.max(a, b, c, d) - calc.min(a, b, c, d)
+    (_source-min-stroke / 16) / (1 / 64 + 2 * variation)
+  }
+}
+
 /// Return sampled contour polylines for selected scalar-field levels.
 /// `field(x, y)` returns a number; bounds and grid dimensions are in mm and
 /// sample counts. The output groups all connected contour paths into one flat
@@ -2800,7 +2824,8 @@
 /// Draw scalar-field isolines at explicit levels using a shared stroke style.
 /// Marching-squares segments are stitched into connected polylines first.
 /// `mask(x, y)` excludes grid cells by their physical center. Set `width:` to
-/// a width in mm or a function of normalized path position returning mm.
+/// a width in mm, a function of normalized path position returning mm, or
+/// `"source"` to use cLine's inverse local-scalar-range width law.
 #let iso-lines(field, x, y, w, h, levels, nx: 40, ny: 24,
                stroke: 0.35pt + black, width: none, min-w: _source-min-stroke,
                period: _source-dash-length, seed: 0, fill: black,
@@ -2810,8 +2835,12 @@
   _join(lines.enumerate().map(((i, line)) => {
     if width == none { stroke-path(line, stroke: stroke, per: per) }
     else {
-      let w = if type(width) == function { width } else { _ => width }
-      stroke-ink(line, w, closed: false, min-w: min-w, period: period,
+      let stroke-width = if type(width) == function { width }
+        else if type(width) == str {
+          assert(width == "source", message: "width string must be \"source\"")
+          _contour-source-width(field, x, y, w, h, nx, ny, line)
+        } else { _ => width }
+      stroke-ink(line, stroke-width, closed: false, min-w: min-w, period: period,
         seed: seed + i * 104729, per: per, fill: fill)
     }
   }))

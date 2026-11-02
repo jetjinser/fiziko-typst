@@ -8,7 +8,8 @@
 `contour-lines` returns connected polylines for further processing;
 `iso-lines` draws them directly. The field is sampled over the given bounds.
 An optional cell-center mask excludes regions, and `width:` accepts a constant
-brush width or a function of each path's normalized length in millimetres.
+brush width, a function of each path's normalized length in millimetres, or
+`"source"` for a cLine-inspired width based on local field variation.
 
 #let terrain(x, y) = calc.sin(x * 8deg) + calc.cos(y * 9deg)
 
