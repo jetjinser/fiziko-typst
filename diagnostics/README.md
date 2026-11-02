@@ -839,8 +839,15 @@ cp original/fiziko.mp diagnostics/m11_coast_endpoint_intersection.mp \
 nix develop path:./nix --command bash -c \
   'cd /tmp/m11-endpoint-probe && mpost -interaction=nonstopmode \
     -halt-on-error -jobname=probe m11_coast_endpoint_intersection.mp'
-rg '(EXACT|ABOVE|BELOW) ' /tmp/m11-endpoint-probe/probe.log
+rg '(EXACT|ABOVE|BELOW|SWEEP) ' /tmp/m11-endpoint-probe/probe.log
 ```
+
+The full ±8-unit sweep shows a non-monotone transition: −8 through −1 return
+no hit, 0 returns `0.95935`, +1 jumps to `0.99634`, +2 returns `0.99268`, and
+the remaining positive levels move gradually back along the shallow cubic
+root. This rules out a fixed endpoint margin and a monotone one-unit fallback;
+the low-level search order/state must be reproduced before changing coast
+recursion.
 
 The source transcript brackets each coast brush with `M11-COAST-BEGIN` and
 `M11-COAST-END`; count `S101 NODE` and `S101-CUBIC` markers only inside those

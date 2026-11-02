@@ -543,9 +543,9 @@ affected source-parity crops do not materially regress.
   `(0.999996, 0.999996)`, missing the source result. MetaPost 2.11 documents
   a best-pair fallback after 5000 unsuccessful bisection backtracks. An
   exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the early
-  `0.95935` hit at zero, and `0.99634` at +1; subsequent positive offsets
-  track the shallow cubic root. This rules out a constant endpoint margin but
-  does not yet identify the search state causing the discontinuity. Model the
+  `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
+  offsets track the shallow cubic root. The isolated +1 excursion shows that
+  even a local monotone endpoint rule would be wrong. Model the
   best-pair fallback against this probe and known S104 endpoint cases before
   changing production recursion. Continue pairing the Typst interpolation
   interval and source cut inputs on masses 2 and 4.
