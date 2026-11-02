@@ -97,7 +97,7 @@
     let wb = range(97).map(i => (86 + 32 * i / 96,
       22 - 6 * calc.sin(720 * i / 96 * 1deg)))
     (globe(30, rotation: (0,0), lands: upstream-landmasses,
-      shading: "latitude",
+      shading: "latitude", coast-step: 0,
       center: (19,22))
     + eye(at: (62,22), size: (18,10), look: (0,0), lashes: 7, seed: seed)
     + strand-knot((wa,wb), widths: (0.8,0.8),

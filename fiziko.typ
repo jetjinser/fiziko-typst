@@ -3438,7 +3438,7 @@
 }
 
 #let _globe-densify(coords, max-step: 5) = {
-  if coords.len() < 2 { return coords }
+  if coords.len() < 2 or max-step <= 0 { return coords }
   let dense = (coords.at(0),)
   for i in range(1, coords.len()) {
     let a = coords.at(i - 1)
@@ -3500,11 +3500,13 @@
 
 /// Orthographic globe with visible latitude/longitude graticules and optional
 /// coast polylines. `lands` is a tuple of polylines, each containing (lon,lat)
-/// vertices; segments are linearly interpolated and subdivided to at most 5°
-/// before hidden portions are clipped at the horizon.
+/// vertices; `coast-step:` controls geographic subdivision before hidden
+/// portions are clipped at the horizon. Set it to `0` to project and connect
+/// only the supplied vertices, matching MetaPost's polygonal land paths.
 #let globe(d, rotation: (0, 0), lands: (), parallels: 30, meridians: 30,
           shading: "graticule", shading-spacing: _source-spacing,
-          shading-width: _source-max-shading, shading-gamma: 0.0, seed: 1,
+          shading-width: _source-max-shading, shading-gamma: 0.0,
+          coast-step: 5, seed: 1,
           center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
   let radius = d / 2
   assert(shading == "graticule" or shading == "latitude",
@@ -3526,7 +3528,8 @@
   }
   let coast-lines = ()
   for land in lands {
-    coast-lines += _globe-visible-paths(_globe-densify(land), rotation, radius, center)
+    coast-lines += _globe-visible-paths(
+      _globe-densify(land, max-step: coast-step), rotation, radius, center)
   }
   let elements = graticule-lines.map(path => stroke-path(path, stroke: stroke, per: 0))
   let coast-elements = coast-lines.enumerate().map(((i, path)) => {
