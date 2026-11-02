@@ -508,7 +508,15 @@ cubic plus the original template's ray bounds: exact endpoint target gives
 `t=0.95935`; raising the target by one 16.16 unit moves the hit to `0.99634`,
 and lowering it by one unit returns no hit. This isolates the behavior to
 MetaPost's intersection routine and exact fixed-point inputs, independently of
-the rest of the coastline traversal. Mass 4 has 31 source nodes and five
+the rest of the coastline traversal. The raw forward pair is
+`(0.99014, 0.95935)` and the reverse-path pair is `(1, 0)`; Fiziko's wrapper
+chooses the forward result. The existing fixed-point packet replay predicts
+`(0.999996, 0.999996)` for this pair, so the case lands in the model's known
+endpoint/backtrack gap. MetaPost's 2.11 source uses recursive cubic bisection
+and falls back to its best approximate pair after 5000 unsuccessful
+backtracks ([pinned-version source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15053-L15102)).
+The next model step is to reproduce that patience and best-candidate path for
+this probe and the existing S104 endpoint cases. Mass 4 has 31 source nodes and five
 Typst nodes, with four of five paired decisions agreeing. The current trace
 also logs each source normal and its lightness. For source mass 4's first
 callback, the normal is
