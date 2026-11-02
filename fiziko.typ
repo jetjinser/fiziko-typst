@@ -4112,7 +4112,11 @@
     let repeated-close = run.len() > 2 and _dist(run.first(), run.last()) <= 1e-8
     let coast = if repeated-close { run.slice(0, run.len() - 1) } else { run }
     for (j, point) in coast.enumerate() {
-      if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
+      // Keep repeated source vertices inside a coast run: MetaPost's
+      // offsetPathTemplate emits a q knot for each path time, even when the
+      // centerline has a zero-length segment. Only merge the shared endpoint
+      // where a sampled horizon arc joins a coast run.
+      if j > 0 or outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
         outline.push(point)
         outline-times.push(path-time + j)
       }

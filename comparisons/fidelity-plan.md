@@ -746,6 +746,18 @@ affected source-parity crops do not materially regress.
   error; a uniform q.x translation cannot change the midpoint intersection.
   The remaining actionable gap is mapping each q cut time to the recursive
   centerline child.
+  The source trace also contains three identical consecutive q knots at one
+  M1 contour location (path times 108–110). Typst had collapsed the repeated
+  centerline vertex while advancing its source-time label from 108 to 110;
+  interpolation at time 109 then invented a segment. Preserving repeated
+  vertices within a coast run restores all three times. This changes only M1
+  (155→156 input points); all per-mass brush calls and thin-node counts remain
+  unchanged, while the first paired node endpoint error falls
+  `0.02247→0.00870 mm` and its starting width now equals the source threshold.
+  The same-checkout 600 ppi comparison is effectively unchanged: whole/globe
+  RMSE moves `0.11289878/0.18989608 → 0.11289888/0.18989648`; other M11 crops
+  are pixel-identical. Retain this source-path-time correction; it does not
+  yet resolve the recursion decision.
   The source closed-path seam was checked separately: its first point maps to
   Typst outline index 1 for masses 1, 2, and 4, and index 0 for masses 5, 7,
   and 8, all within 0.00014 mm. The first three outlines start at the horizon

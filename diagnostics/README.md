@@ -929,6 +929,19 @@ arc mapping, so it was removed from the production coast call. Preserve the
 source q cubics and their child parameter maps together before retrying this
 integration.
 
+The same trace exposed three identical consecutive source q knots at one
+M1 contour point. `_globe-land-outline-data` had deduplicated the matching
+centerline vertices but kept advancing path time, leaving a 108→110 gap; a
+time-109 lookup then interpolated between different points. It now preserves
+duplicate vertices inside a coast run and still merges shared coast/horizon
+joins. The M1 input path grows from 155 to 156 points, and the threshold-level
+width at the first paired depth-2 node now matches the source. M1's recursion
+counts and 10 modeled calls are unchanged; other visible landmasses' path and
+width traces are identical. At 600 ppi, whole/globe RMSE changes only from
+`0.11289878/0.18989608` to `0.11289888/0.18989648`, with the other M11 crops
+pixel-identical. Keep the time-label correction, while continuing to trace
+the remaining q cut and centerline child mapping.
+
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
 `S101-HIT1/2`, `S101-QCTRLPT-FIX`, and `S101-CUTFIX` records, alongside the
 separate decimal `S101-QX1/QY1` or `S101-QX2/QY2` ray-control records.
