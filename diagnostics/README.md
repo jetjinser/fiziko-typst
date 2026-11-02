@@ -862,6 +862,32 @@ hit, so local hit rounding is required even though the final selected path
 time is also rounded. The experiment was reverted because its tree is much
 less faithful and its raster gain is negligible.
 
+The thin-recursion endpoint guard had also compared the source's path-time
+margin (`t > 0.01` and `t < length(p) - 0.01`) against physical arc length.
+In source-rounded mode it now compares the quantized cut parameter in the
+same path-time units. A regenerated, endpoint-paired trace matches all 142
+source hatch rows to Typst rows within 0.0015 mm. Aggregate outer recursion
+decisions move from 942 to 1270 (source: 1340), and thin decisions from 1577
+to 1739 (source: 1696); all 142 rows pair by endpoints with maximum summed
+endpoint error 0.0015 mm, and 80 rows now have exact outer/thin node counts. The
+S104 PDF pixel hash and RMSE remain unchanged (`0.20702865` whole plate,
+`0.07528521` hatch). M4 and M6 render hashes also match their existing source-
+boundary candidates. M9 RMSE changes from 0.213280 to 0.213294; S105 changes
+from 0.103042 to 0.103137 (block 0.128378 to 0.128550, surface unchanged at
+0.078508). These are small raster regressions from applying the source's
+path-time guard consistently in the shared brush core. The source-aligned
+recursion decision counts improve in S104; the 142 hatch rows still consume
+1540 modeled random calls against 1516 in MetaPost.
+
+`instrument_flat_surface.py` now emits compact `S104-SEG` endpoint records and
+the actual requested `pathSubdivide` count in `FSSUB`, so rows can be paired
+independently of scanline order and subdivision count can be separated from
+downstream brush-call drift. On the first row whose random-call totals differ,
+both sides request three subdivisions and source/Typst cut positions agree to
+about 0.001 mm, but the source consumes 11 brush random calls and Typst 7. The
+remaining four-call gap therefore lies in thin-brush leaf/dash decisions, not
+the row's subdivision draw or outer cut geometry.
+
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches; 34
 mismatches, with per-row deltas up to ±20 calls). It slightly regressed the

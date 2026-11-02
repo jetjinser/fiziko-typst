@@ -55,6 +55,12 @@ def main() -> None:
         return "\n".join(lines)
     outer_trace = outer_brush + '''
     if traceFlatHatch:
+        message "S104-SEG " & decimal(traceHatchRow) & " "
+            & decimal(i) & " "
+            & decimal(xpart(point 0 of p)/mm) & " "
+            & decimal(ypart(point 0 of p)/mm) & " "
+            & decimal(xpart(point length(p) of p)/mm) & " "
+            & decimal(ypart(point length(p) of p)/mm);
         message "S104-OUTER " & decimal(traceHatchRow) & " "
             & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
             & " " & decimal(t) & " " & decimal(arclength(p))
@@ -108,7 +114,10 @@ def main() -> None:
         raise ValueError(f"expected one pathSubdivide hook, found {source.count(subdivide_anchor)}")
     source = source.replace(
         subdivide_anchor,
-        subdivide_anchor + "\n                message \"FSSUB \" & decimal(arclength(aHatch)) & \" \" & decimal(length(aHatch));",
+        "traceSubdivisions := 3+round(uniformdeviate(2));\n"
+        "                aHatch := pathSubdivide(aHatch,traceSubdivisions);\n"
+        "                message \"FSSUB \" & decimal(arclength(aHatch)) & \" \""
+        " & decimal(length(aHatch)) & \" \" & decimal(traceSubdivisions);",
     )
     end_anchor = "            fi;\n        endfor;\n    );\n    clip hatchImage to surfPath;"
     if source.count(end_anchor) != 1:
@@ -123,6 +132,8 @@ def main() -> None:
 
 numeric traceRngTotal;
 traceRngTotal := 0;
+numeric traceSubdivisions;
+traceSubdivisions := 0;
 boolean traceFlatHatch;
 numeric traceHatchRow;
 traceFlatHatch := false;
