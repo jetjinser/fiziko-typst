@@ -168,6 +168,12 @@ affected source-parity crops do not materially regress.
   production recursion. A diagnostic reconstruction from the original integer
   callback widths regressed to 14/18 because it ignored the q subpaths already
   sliced by the outer brush recursion; it was removed without a render trial.
+  Replacing the thin recursion's raw floating `step` gate with the already
+  source-rounded `thin-step` is behaviorally inert on the current evidence:
+  canonical recursion traces for all 18 source post-shadow lane inputs are
+  byte-identical, and the 142-row S104 trace is also byte-identical. The
+  candidate was reverted; this rules out that gate's final scalar rounding as
+  the cause of the three M11 call-vector mismatches.
   The source trace now stores raw 16.16 cut parameters. A dedicated analyzer
   verifies 18 parent/left-child and 18 parent/right-child two-dimensional q
   curves exactly using fixed-point de Casteljau subdivision with nearest-unit
