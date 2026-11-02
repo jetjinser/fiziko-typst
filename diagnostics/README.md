@@ -1994,7 +1994,11 @@ tested moving the packet-stack guard to the start of a candidate visit, before
 overlap and `max_t`: matches fell from 67/76 to 31/76. The level-to-stack-bound
 mapping is therefore wrong, and this guard-order change was reverted. The
 same fresh trace still replays source cut choices exactly (19/19). This is
-diagnostic work only;
+diagnostic work only. Sweeping effective guard depths 15 through 23 leaves the
+packet result fixed at 67/76; substituting floor, truncation, nearest-away or
+nearest-even halving does the same. The nine missed hits are therefore not
+explained by this depth bound or a simple negative-half convention. The next
+useful comparison is at packet overlap inputs and source control conversion;
 no production change is justified until the endpoint and interior cases are
 explained together. The instrumenter now emits
 `S104-FIRST-FIX`, preserving all four returned path times as signed 16.16

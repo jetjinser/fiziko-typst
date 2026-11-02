@@ -548,7 +548,12 @@ affected source-parity crops do not materially regress.
   reduced the fresh S104 target-row matches from 67/76 to 31/76. The assumed
   level-19-to-stack-bound mapping is therefore wrong; that edit was reverted.
   The updated source trace still independently replays all 19 cut choices,
-  while the fixed packet classification remains 67/76. An
+  while the fixed packet classification remains 67/76. A diagnostic sweep of
+  guard depths 15–23 stays flat at 67/76; truncation, floor, nearest-away and
+  nearest-even packet halving also all stay at 67/76. These results move the
+  remaining investigation toward packet overlap inputs/arithmetic and the
+  traced control-point conversion, rather than guard depth or half rounding.
+  An
   exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the early
   `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
   offsets track the shallow cubic root. The isolated +1 excursion shows that
