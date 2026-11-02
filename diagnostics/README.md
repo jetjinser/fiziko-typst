@@ -401,6 +401,28 @@ python3 diagnostics/extract_m4_tube_path.py \
   /tmp/m4-tube-source/trace.log comparisons/m4-tube-path.typ
 ```
 
+A matching M7 source-spline trace is kept as `diagnostics/m7-tube-path.typ`.
+At 1/8 path-time intervals (25 points), substituting that centerline into the
+transverse-tube comparison changed nominal 600 ppi RMSE from 0.12453 to
+0.12542, with near-identical ink coverage (3.934% vs 3.936%). The sampled
+centerline follows the source cubic geometry, but the complete transverse
+render did not improve, so the comparison still uses its original anchor
+polyline until the transverse spacing and random phase are better aligned.
+
+Regenerate the M7 candidate geometry from the pinned driver:
+
+```sh
+mkdir -p /tmp/m7-tube-source
+python3 diagnostics/instrument_m7_tube_path.py \
+  comparisons/reference/main.mp /tmp/m7-tube-source/main.mp 8
+cp "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m7-tube-source/fiziko.mp
+printf 'selected := 7; input main.mp;\n' > /tmp/m7-tube-source/trace.mp
+(cd /tmp/m7-tube-source && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+python3 diagnostics/extract_m7_tube_path.py \
+  /tmp/m7-tube-source/trace.log diagnostics/m7-tube-path.typ
+```
+
 The source lane trace uses the same 110 × 56 mm path as M4. The two Typst
 comparison documents render the calibrated M4 and variable-radius M6 samples:
 
