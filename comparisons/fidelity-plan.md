@@ -431,6 +431,15 @@ affected source-parity crops do not materially regress.
   minimum discrepancy. A diagnostic-only probe now reproduces the port's
   terms; no production field or contour-level change is justified until the
   knot-coordinate conversion and source `angleRad` rounding are matched.
+  Pairing the first five accepted `WKCAND` positions with the Typst knot
+  export shows 0.0001–0.0005 mm coordinate residuals. A candidate that rounded
+  source knot-bound, random-product, offset and coordinate operations to 16.16
+  changed M9 RMSE `0.21156032 → 0.21156152` and S105
+  `0.10213793 → 0.10213547`; S105 block improved `0.12790793 → 0.12790289`,
+  while its surface crop regressed `0.07693635 → 0.07693717`. It did not
+  consistently reduce the paired knot-coordinate residuals, so the candidate
+  was reverted. Trace the source random product and shifted grid coordinate
+  separately before another knot-generation change.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →
