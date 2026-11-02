@@ -124,6 +124,15 @@ affected source-parity crops do not materially regress.
   while source reads 0.07030/0.03394 mm; the candidate reduces parent-aware
   node pairs from 40 to 4 and dash leaves from 10 to 1. The width-template and
   path-time mapping must be aligned before this source formula can be applied.
+  A follow-up fixed-point trace isolates the first close branch: source
+  `(w0,w1,minWidth,step)` is `(10335,9248,4353,544)` scaled units, giving a
+  ratio of `5439/544 = 9.99816` and source level 9; the paired Typst widths
+  land at level 10. A one-scalar-unit downward bias fixes this branch, but
+  parent-aware tree pairs fall `40 → 36` and recurse/stop agreements fall
+  `35 → 31`. M9 RMSE improves `0.212740 → 0.212504`, but S105 regresses
+  `0.102443 → 0.102450` and M9 ink coverage moves farther below source. The
+  bias is reverted; investigate the width-template/path-time mapping rather
+  than lowering all near-integer levels.
   The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate

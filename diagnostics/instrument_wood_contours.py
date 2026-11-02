@@ -103,8 +103,19 @@ def main() -> None:
     source = replace_once(source, thin_anchor, thin_trace, "brush thin leaf")
 
     thin_split_anchor = "        brushPath2 := subpath (t, length(p)) of p;"
+    fixed_widths = ("w0", "w1", "w2", "minWidth", "dashStrokeWidthStep")
+    fixed_trace = [
+        '            message "WBTFIX " & decimal(traceThinCall) & " " & decimal(i) & " "'
+    ]
+    for index, width in enumerate(fixed_widths):
+        suffix = ';' if index == len(fixed_widths) - 1 else ' & " "'
+        fixed_trace.extend([
+            f'                & decimal(floor({width}*256)) & " "',
+            f'                & decimal(round(({width}*256-floor({width}*256))*256)){suffix}',
+        ])
     thin_split_trace = thin_split_anchor + """
         if traceWoodLine = 1:
+""" + "\n".join(fixed_trace) + """
             if (((w0 - w1) >= dashStrokeWidthStep) and (i < 15))
                 and ((arclength(brushPath1) > minLength)
                 or (arclength(brushPath2) > minLength))

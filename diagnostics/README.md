@@ -228,6 +228,18 @@ underlying brush trees correspond. These cases narrow the next source audit to
 width-level selection and endpoint/candidate validity; they do not yet justify
 a global threshold change.
 
+The source instrumenter now emits `WBTFIX`, recording `w0`, `w1`, `w2`,
+`minWidth`, and `dashStrokeWidthStep` in 16.16 MetaPost point units. At the
+first close divergence (source call 10), the source values are
+`10335, 9248, 9249, 4353, 544`; its midpoint-to-step ratio is `5439/544 =
+9.99816`, so the source floors to level 9 (`w2 = minWidth + 9*step`). The
+paired Typst widths land at level 10 and recurse. A one-scalar-unit downward
+bias fixes that branch, but the full M9 trace gets worse: parent-aware pairs
+fall from 40 to 36 and decision agreements from 35 to 31. At 600 ppi, M9
+RMSE improves `0.212740 → 0.212504`, while S105 regresses slightly
+`0.102443 → 0.102450`; the M9 ink-coverage deficit also grows. Revert the
+bias: one branch is explained, but aggregate tree fidelity does not improve.
+
 MetaPost computes each thin node's `w2` level from the average of its two
 endpoint widths. A direct Typst probe using the path endpoint widths was
 reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends
