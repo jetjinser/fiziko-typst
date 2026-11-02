@@ -173,32 +173,40 @@ enddef;''')
     if source.count(template_start) != 2:
         raise ValueError(f"expected two brush template anchors, found {source.count(template_start)}")
     before_template, after_template = source.rsplit(template_start, 1)
-    source = before_template + template_start + '''
+    q_trace = '''
     if traceKnotActive:
       if traceTubeCall = 4:
        if traceCurrentK = 2:
         if i <= 5:
+        save traceTemplatePoint;
+        pair traceTemplatePoint;
         for traceTemplateIndex := 0 step 1 until length(bt) - 1:
-            message "M11QSEG " & decimal(traceTubeCall) & " "
-                & decimal(traceCurrentK) & " " & decimal(i) & " "
-                & decimal(traceTemplateIndex) & " "
-                & decimal(floor(ypart(point traceTemplateIndex of bt)*256)) & " "
-                & decimal(round((ypart(point traceTemplateIndex of bt)*256-
-                    floor(ypart(point traceTemplateIndex of bt)*256))*256)) & " "
-                & decimal(floor(ypart(postcontrol traceTemplateIndex of bt)*256)) & " "
-                & decimal(round((ypart(postcontrol traceTemplateIndex of bt)*256-
-                    floor(ypart(postcontrol traceTemplateIndex of bt)*256))*256)) & " "
-                & decimal(floor(ypart(precontrol (traceTemplateIndex+1) of bt)*256)) & " "
-                & decimal(round((ypart(precontrol (traceTemplateIndex+1) of bt)*256-
-                    floor(ypart(precontrol (traceTemplateIndex+1) of bt)*256))*256)) & " "
-                & decimal(floor(ypart(point (traceTemplateIndex+1) of bt)*256)) & " "
-                & decimal(round((ypart(point (traceTemplateIndex+1) of bt)*256-
-                    floor(ypart(point (traceTemplateIndex+1) of bt)*256))*256));
+            for traceControlIndex := 0 step 1 until 3:
+                if traceControlIndex = 0:
+                    traceTemplatePoint := point traceTemplateIndex of bt;
+                elseif traceControlIndex = 1:
+                    traceTemplatePoint := postcontrol traceTemplateIndex of bt;
+                elseif traceControlIndex = 2:
+                    traceTemplatePoint := precontrol (traceTemplateIndex+1) of bt;
+                else:
+                    traceTemplatePoint := point (traceTemplateIndex+1) of bt;
+                fi;
+                message "M11QPT " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(traceTemplateIndex) & " " & decimal(traceControlIndex) & " "
+                    & decimal(floor(xpart(traceTemplatePoint)*256)) & " "
+                    & decimal(round((xpart(traceTemplatePoint)*256-
+                        floor(xpart(traceTemplatePoint)*256))*256)) & " "
+                    & decimal(floor(ypart(traceTemplatePoint)*256)) & " "
+                    & decimal(round((ypart(traceTemplatePoint)*256-
+                        floor(ypart(traceTemplatePoint)*256))*256));
+            endfor;
         endfor;
         fi;
        fi;
       fi;
-    fi;''' + after_template
+    fi;'''
+    source = before_template + template_start + q_trace + after_template
     thin_level = "            w2 := floor((1/2(w0 + w1) - minWidth)/dashStrokeWidthStep)*dashStrokeWidthStep + minWidth;"
     if source.count(thin_level) != 1:
         raise ValueError(f"expected one thin-brush width-level hook, found {source.count(thin_level)}")
