@@ -161,15 +161,28 @@ is unchanged at `0.127927`, while surface crop changes `0.077655 → 0.078106`.
 Ink coverage moves closer from `0.6960%` to `0.7004%` (source: `0.7405%`).
 The source traversal is retained because its path topology follows the pinned
 source and M9 improves, with the S105 crop tradeoff recorded. Recursive brush
-decisions remain 11 outer
-and 48 thin nodes versus source 37 and 65; the production renderer also still
-clips paths before brushing and derives widths from geometric midpoint cells.
-A trial that simply reversed each clipped path and its width profile, matching
-the source's `reverse(iL)` brush direction, worsened M9 RMSE
-`0.212436 → 0.213024` with effectively unchanged ink coverage; it was
-reverted. `_wood-source-width` still uses normalized arc fractions and inferred
-midpoint cells, while MetaPost indexes `v` from `offsetPathTime` and recursive
-`st`. These must be paired before another source-order brush trial.
+decisions remain 11 outer and 48 thin nodes versus source 37 and 65; production
+still clips paths before brushing.
+
+The replay's per-segment states establish the source width-time knots. `iL`
+segments descend `st=19…-1`; `reverse(iL)` consumes `st=-1…19`. Both exterior
+segments have zero range. `stroke-ink` now supports normalized path-time samples,
+and `_wood-source-width(..., source-time: true)` maps those ranges to width
+knots, including the two terminal samples set to 1. On the full first M9 path,
+all 22 Typst width samples match the MetaPost `CLWIDTH` callback within
+`2.93e-5 mm` mean and `9.91e-5 mm` maximum. Tree pairs within 0.1 mm improve
+from `33/42` to `36/42`, recurse/stop agreement remains `37/42`, and dash-leaf
+pairs improve from `7/12` to `8/12`.
+
+Applied to clipped production paths in the source brush direction, the
+path-time profile lowers 600 ppi M9 RMSE `0.212436 → 0.211560`; M9 ink coverage
+falls `3.7804% → 3.7120%` (source `4.2032%`). S105 RMSE improves
+`0.102628 → 0.102148`; block crop stays `0.127927`, surface crop improves
+`0.078106 → 0.076936`, and surface ink coverage moves `0.5518% → 0.5309%`
+toward `0.4892%` source. Retain the profile with its M9 coverage tradeoff.
+Because production clipping removes the two exterior source segments before
+brush recursion, it still lacks the full source `st` sequence. Full-path
+brushing followed by clipping the generated ink remains open.
 
 The pinned `isoLines` source confirms the exact width lookup: except for the
 terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`

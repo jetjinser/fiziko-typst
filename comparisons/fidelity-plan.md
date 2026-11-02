@@ -220,20 +220,29 @@ affected source-parity crops do not materially regress.
   `0.6960% → 0.7004%` toward `0.7405%`. Keep the source traversal because its
   path topology follows the pinned source and M9 improves, with the S105 crop
   tradeoff recorded.
-  A follow-up reversed each clipped path and its geometric-width profile to
-  mirror `brushGenerate(reverse(iL))`; M9 RMSE worsened
-  `0.212436 → 0.213024` and coverage was effectively unchanged. That direction-
-  only trial was reverted. The production profile still uses normalized arc
-  fractions and midpoint cell inference, so it does not implement source
-  `offsetPathTime`/`st` interpolation; fix that correspondence before retrying
-  source-order brushing. The cLine replay now maps every first-path segment to
-  its source state: `iL` descends `st=19…-1`, while `reverse(iL)` consumes
-  `st=-1…19`; both exterior segments have zero cell range. Use this mapping to
-  build the width knots at source path-time integers and preserve the terminal
-  unit's special width.
+  A direction-only reversal using the old arc-width profile regressed M9
+  `0.212436 → 0.213024` and was reverted. The cLine replay maps every first-path
+  segment to its source state: `iL` descends `st=19…-1`, while
+  `reverse(iL)` consumes `st=-1…19`; both exterior segments have zero range.
+  `stroke-ink` now optionally samples widths at normalized path time, and
+  `_wood-source-width(source-time: true)` builds the reversed profile with the
+  terminal two samples set to the source callback's special value 1. On the
+  full diagnostic path, its 22 width samples match MetaPost `CLWIDTH` to
+  `2.93e-5 mm` mean / `9.91e-5 mm` maximum. Source/Typst tree pairs within
+  0.1 mm rise `33/42 → 36/42`; paired recurse/stop decisions remain `37/42`,
+  while nearby dash leaves rise `7/12 → 8/12`.
+  Using that reversed path-time profile on the clipped production paths lowers
+  600 ppi M9 RMSE `0.212436 → 0.211560`, while ink coverage changes
+  `3.7804% → 3.7120%` (source `4.2032%`). S105 full RMSE improves
+  `0.102628 → 0.102148`; block crop remains `0.127927`, surface crop improves
+  `0.078106 → 0.076936`, and surface ink coverage moves `0.5518% → 0.5309%`
+  toward `0.4892%`. Keep this source-time profile with the M9 coverage tradeoff
+  recorded. Production still clips the centerline before brushing, so its
+  endpoint state sequence is shorter than the full source `st` range; full-path
+  brushing and final polygon clipping remain open.
   Brush recursion remains open (11 outer/48 thin nodes versus 37/65 source),
-  and the path is still clipped before brushing; width lookup must next follow
-  source `st` along the full path before changing that order.
+  and only the full diagnostic contour currently has the complete source-time
+  state mapping.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;

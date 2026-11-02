@@ -1093,18 +1093,21 @@
 
 /// Variable-width stroke ("brush"): band of width w(t) about the curve,
 /// optionally displaced by offset(t); both functions use normalized arc
-/// length. Ink-conserving below `min-w`;
+/// length unless `_path-time` requests uniform path time on open paths.
+/// Ink-conserving below `min-w`;
 /// `seed` controls deterministic dash-length variation and phase (default 0).
 #let stroke-ink(pts, w, offset: 0, closed: true, per: 12,
                 min-w: _source-min-stroke, period: _source-dash-length, seed: 0,
                 shift: (0, 0), fill: black,
                 _random-stream: none, _rng-offset: 0, _with-rng: false,
                 _source-rounding: false, _with-stats: false,
-                _trace-nodes: false) = {
+                _trace-nodes: false, _path-time: false) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
-  let ts = _path-fractions(fr0.map(e => e.at(0)), closed)
+  let ts = if _path-time and not closed {
+    range(n).map(i => if n > 1 { i / (n - 1) } else { 0.0 })
+  } else { _path-fractions(fr0.map(e => e.at(0)), closed) }
   let fr = fr0.enumerate().map(((i, e)) => {
     let t = ts.at(i)
     (_add(e.at(0), _mul(e.at(1), _val(offset, t))), e.at(1))
@@ -3149,26 +3152,35 @@
 }
 
 // Source wood uses brushGenerate(reverse(iL)) with a width template built on
-// iL. Rebuild that path-time profile from visible cell ranges in reverse.
-#let _wood-source-width(field, w, h, nx, ny, line) = {
+// iL. `source-time` expects the reversed path and samples cell ranges at path
+// time knots, including source's terminal unit of width 1.
+#let _wood-source-width(field, w, h, nx, ny, line, source-time: false) = {
   let dx = w / nx
   let dy = h / ny
-  let fractions = _path-fractions(line, false)
+  let fractions = if source-time {
+    range(line.len()).map(i => if line.len() > 1 { i / (line.len() - 1) } else { 0.0 })
+  } else { _path-fractions(line, false) }
   let cell-ranges = range(line.len() - 1).map(j => {
     let p = _mul(_add(line.at(j), line.at(j + 1)), 0.5)
-    let i = int(calc.clamp(calc.floor(p.at(0) / dx), 0, nx - 1))
-    let k = int(calc.clamp(calc.floor(p.at(1) / dy), 0, ny - 1))
-    // woodBlock stores the unscaled field on a 16.16 grid; this helper's
-    // field is scaled by 24 for contour-level enumeration. Quantize each
-    // corner before taking the range, then preserve source rounding through
-    // interpolation and the dimensional offset width below.
-    let a = _mp-scalar-rounded(field(i * dx, k * dy) / 24)
-    let b = _mp-scalar-rounded(field((i + 1) * dx, k * dy) / 24)
-    let c = _mp-scalar-rounded(field((i + 1) * dx, (k + 1) * dy) / 24)
-    let d = _mp-scalar-rounded(field(i * dx, (k + 1) * dy) / 24)
-    calc.max(a, b, c, d) - calc.min(a, b, c, d)
+    if source-time and (p.at(0) < 0 or p.at(0) > w or p.at(1) < 0 or p.at(1) > h) {
+      0.0
+    } else {
+      let i = int(calc.clamp(calc.floor(p.at(0) / dx), 0, nx - 1))
+      let k = int(calc.clamp(calc.floor(p.at(1) / dy), 0, ny - 1))
+      // woodBlock stores the unscaled field on a 16.16 grid; this helper's
+      // field is scaled by 24 for contour-level enumeration. Quantize each
+      // corner before taking the range, then preserve source rounding through
+      // interpolation and the dimensional offset width below.
+      let a = _mp-scalar-rounded(field(i * dx, k * dy) / 24)
+      let b = _mp-scalar-rounded(field((i + 1) * dx, k * dy) / 24)
+      let c = _mp-scalar-rounded(field((i + 1) * dx, (k + 1) * dy) / 24)
+      let d = _mp-scalar-rounded(field(i * dx, (k + 1) * dy) / 24)
+      calc.max(a, b, c, d) - calc.min(a, b, c, d)
+    }
   })
-  let width-values = (1.0,) + cell-ranges
+  let width-values = if source-time {
+    cell-ranges.slice(0, calc.max(0, line.len() - 2)) + (1.0, 1.0)
+  } else { (1.0,) + cell-ranges }
   (t) => {
     let j = range(line.len() - 1).find(i =>
       fractions.at(i) <= t and t <= fractions.at(i + 1))
@@ -3276,13 +3288,15 @@
     let clipped = _clip-polyline-paths(contour, (local-poly,))
     for path in clipped {
       if source-field and contour-brush == "cell-range" {
-        let width = _wood-source-width(field, w, h, nx, ny, path)
+        let brush-path = path.rev()
+        let width = _wood-source-width(field, w, h, nx, ny, brush-path,
+          source-time: true)
         let drawn = stroke-ink(
-          path.map(p => _add(p, (x0, y0))), width,
+          brush-path.map(p => _add(p, (x0, y0))), width,
           closed: false, min-w: _source-min-stroke,
           period: _source-dash-length, seed: seed, per: 0,
           _random-stream: contour-stream, _rng-offset: brush-cursor,
-          _with-rng: true, _source-rounding: true)
+          _with-rng: true, _source-rounding: true, _path-time: true)
         source-brushes.push(drawn.at(0))
         brush-cursor += drawn.at(1)
       } else { segments.push(path.map(p => _add(p, (x0, y0)))) }
