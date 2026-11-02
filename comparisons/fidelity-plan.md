@@ -238,8 +238,11 @@ affected source-parity crops do not materially regress.
   `0.078106 → 0.076936`, and surface ink coverage moves `0.5518% → 0.5309%`
   toward `0.4892%`. Keep this source-time profile with the M9 coverage tradeoff
   recorded. Production still clips the centerline before brushing, so its
-  endpoint state sequence is shorter than the full source `st` range; full-path
-  brushing and final polygon clipping remain open.
+  endpoint state sequence is shorter than the full source `st` range. A
+  rectangle-only full-path-brush-then-clip trial preserved S105 exactly but
+  regressed all four M9 panel crops (whole RMSE `0.211560 → 0.212807`); it was
+  reverted. The remaining gap is matching the source's endpoint state and
+  clipping order without changing the brush's recursive tree adversely.
   Brush recursion remains open (11 outer/48 thin nodes versus 37/65 source),
   and only the full diagnostic contour currently has the complete source-time
   state mapping.
