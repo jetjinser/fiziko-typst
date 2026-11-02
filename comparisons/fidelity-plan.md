@@ -133,6 +133,12 @@ affected source-parity crops do not materially regress.
   `0.102443 → 0.102450` and M9 ink coverage moves farther below source. The
   bias is reverted; investigate the width-template/path-time mapping rather
   than lowering all near-integer levels.
+  The source trace now also records the width-template cubic controls for each
+  thin call. On call 10, the first/last template widths agree with the logged
+  0.05563/0.04977 mm endpoints. The source builds this template on integer
+  `offsetPathTime` samples of `iL`, then recurses over `reverse(iL)`; Typst
+  currently interpolates widths by normalized arc fraction. Pair these time
+  domains and path orientations explicitly before changing the width law.
   The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate

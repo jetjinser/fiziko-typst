@@ -240,6 +240,18 @@ RMSE improves `0.212740 → 0.212504`, while S105 regresses slightly
 `0.102443 → 0.102450`; the M9 ink-coverage deficit also grows. Revert the
 bias: one branch is explained, but aggregate tree fidelity does not improve.
 
+The trace also emits `WBQCTRL`, the 16.16 control points of the source width
+template passed to `thinBrushGenerate`. For source call 10, its first and last
+template values correspond to the logged endpoint widths 0.05563 mm and
+0.04977 mm. This makes it possible to compare the actual recursive width
+curve, rather than only its extrema and selected level. The source constructs
+that template from `iL` using integer `offsetPathTime` samples and then calls
+`brushGenerate(reverse(iL), template, 0)`. Typst currently evaluates its width
+law along normalized arc fractions of the paired contour. The paths and
+sample-time domains therefore need an explicit point-by-point pairing before
+changing the width mapping; the new control trace is diagnostic evidence, not
+a production renderer change.
+
 MetaPost computes each thin node's `w2` level from the average of its two
 endpoint widths. A direct Typst probe using the path endpoint widths was
 reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends

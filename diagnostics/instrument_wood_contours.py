@@ -144,6 +144,25 @@ def main() -> None:
     source = replace_once(source, thin_split_anchor, thin_split_trace,
                            "thin brush split trace")
     thin_call_anchor = "    if (w0 > minWidth + 1/100):"
+    q_points = (
+        "point traceQSegment of bt",
+        "postcontrol traceQSegment of bt",
+        "precontrol (traceQSegment + 1) of bt",
+        "point (traceQSegment + 1) of bt",
+    )
+    q_trace = [
+        "        for traceQSegment := 0 step 1 until length(bt) - 1:",
+        '            message "WBQCTRL " & decimal(traceThinCall) & " " & decimal(i) & " "',
+        '                & decimal(traceQSegment) & " "',
+    ]
+    for point_index, point in enumerate(q_points):
+        for coordinate in (f"xpart({point})", f"ypart({point})"):
+            suffix = ';' if point_index == len(q_points) - 1 and coordinate.startswith("ypart") else ' & " "'
+            q_trace.extend([
+                f'                & decimal(floor({coordinate}*256)) & " "',
+                f'                & decimal(round(({coordinate}*256-floor({coordinate}*256))*256)){suffix}',
+            ])
+    q_trace.append("        endfor;")
     thin_call_trace = """    if traceWoodLine = 1:
         traceThinCall := traceThinCall + 1;
         message "WBTCALL " & decimal(traceThinCall) & " " & decimal(i) & " "
@@ -152,6 +171,7 @@ def main() -> None:
             & decimal(ypart(point 0 of p)/mm) & " "
             & decimal(xpart(point length(p) of p)/mm) & " "
             & decimal(ypart(point length(p) of p)/mm);
+""" + "\n".join(q_trace) + """
     fi;
 """ + thin_call_anchor
     source = replace_once(source, thin_call_anchor, thin_call_trace,
@@ -195,7 +215,7 @@ def main() -> None:
     source += """
 
 boolean traceWoodCells;
-numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall;
+numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall, traceQSegment;
 traceWoodCells := false;
 traceWoodLine := 0;
 traceWoodBlock := 0;
