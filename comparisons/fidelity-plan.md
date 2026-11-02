@@ -114,7 +114,12 @@ affected source-parity crops do not materially regress.
   approximate pair did not improve the 67/76 result or recover the M11 probe;
   that trial was discarded. The remaining error is in packet subdivision or
   fixed-point overlap behavior, not only the fallback selection. No production
-  change is justified yet. The trace replay is documented in
+  change is justified yet. A controlled depth-only check confirms that point:
+  changing the current replay from 18 to 19 levels leaves both saved rows
+  unchanged at 67/76 pairs (maximum time error 3.98924) and 15/20 pairs
+  (maximum error 2.96494), respectively. The source's 19th-level behavior is
+  gated by `max_t` and its saved approximation, so a larger terminal depth is
+  not an equivalent implementation. The trace replay is documented in
   `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
