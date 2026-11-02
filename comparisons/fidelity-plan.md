@@ -279,6 +279,14 @@ affected source-parity crops do not materially regress.
   was warranted. The candidate was removed. The remaining mismatch is
   downstream of that matched cut: recursive q-time and center-path subpath
   mapping still diverge on child branches.
+  Rebased each split child's q x controls to start at zero, as a source
+  `subpath` does. The full 142-row trace's ordered recursion decisions, dash
+  flags, cut parameters and cut points are identical to the carried-state
+  candidate (canonical trace SHA-256 `082f2a75addf435ce880d5975c77140da4cc257aa1db767f271edba8c4c3f689`);
+  aggregate counts remain `1004` outer nodes, `2615` thin nodes and `697`
+  dashes. A mere x-origin reset is translation-invariant in the intersection
+  search and cannot explain the child-tree divergence. This no-effect probe
+  was removed without a raster trial.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
