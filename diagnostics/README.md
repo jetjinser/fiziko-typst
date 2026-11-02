@@ -900,14 +900,16 @@ nix develop path:./nix --command python3 \
 ```
 
 The audit replays each q cubic split with fixed-point de Casteljau arithmetic,
-then compares the split point to both recursive child q endpoints. It checks
-all 7 mass-1 cuts and 28 mass-2 cuts with zero 16.16-unit error. This proves
-the pinned source carries the sliced q state exactly through recursion; the
-remaining production divergence is in Typst's q/path state, not source
-subpath construction.
+then compares both child endpoints and the complete child knot sequences to
+the corresponding parent subpaths. It checks all 7 mass-1 cuts and 28 mass-2
+cuts: every child knot sequence matches exactly, with zero 16.16-unit endpoint
+error. This proves the pinned source carries the sliced q state exactly
+through recursion; the remaining production divergence is in Typst's q/path
+state, not source subpath construction.
 
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
-`S101-HIT1/2`, `S101-QCTRL-FIX`, and `S101-QX1/QY1` or `S101-QX2/QY2` records.
+`S101-HIT1/2`, `S101-QCTRLPT-FIX`, and `S101-CUTFIX` records, alongside the
+separate decimal `S101-QX1/QY1` or `S101-QX2/QY2` ray-control records.
 They contain the exact 16.16 midpoint, target, selected hit, ray controls, and
 width-template cubic controls. The mass-1 start-width case is replayed in
 `metapost_intersection_sweep.typ`; the fixed-point solver returns the same

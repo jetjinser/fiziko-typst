@@ -23,22 +23,7 @@ def parse(path: str, landmass: int) -> list[dict]:
     pending = []
     nodes = []
     current = None
-    raw_lines = Path(path).read_text().splitlines()
-    lines = []
-    i = 0
-    while i < len(raw_lines):
-        line = raw_lines[i]
-        i += 1
-        if line.startswith("S101-QCTRL-FIX"):
-            while sum(token.count(":") in (0, 2) for token in line.split()[2:]) < 8:
-                if i >= len(raw_lines) or raw_lines[i].startswith("S101"):
-                    break
-                continuation = raw_lines[i].strip()
-                i += 1
-                last = line.split()[-1]
-                line += ("" if last.count(":") < 2 else " ") + continuation
-        lines.append(line)
-    for line in lines:
+    for line in Path(path).read_text().splitlines():
         fields = line.split()
         if fields[:1] == ["M11-COAST-BEGIN"]:
             active = int(fields[1]) == landmass
@@ -98,6 +83,7 @@ def main() -> None:
     nodes = parse(sys.argv[1], mass)
     checked = 0
     maximum = 0.0
+    exact_child_knot_pairs = 0
     for node in nodes:
         if (not node["recurse"] or len(node["children"]) != 2
                 or node["cut"] is None or any(p is None for p in node["controls"])):
@@ -113,8 +99,24 @@ def main() -> None:
                   f"parent cut {expected}, child endpoints "
                   f"{left['q'][-1]}/{right['q'][0]}, errors "
                   f"{errors[0]:.3f}/{errors[1]:.3f} fixed units")
+        whole = node["cut"] // SCALE
+        fraction = node["cut"] % SCALE
+        if fraction:
+            expected_left = node["q"][:whole + 1] + [expected]
+            expected_right = [expected] + node["q"][whole + 1:]
+        else:
+            expected_left = node["q"][:whole + 1]
+            expected_right = node["q"][whole:]
+        if left["q"] == expected_left and right["q"] == expected_right:
+            exact_child_knot_pairs += 1
+        else:
+            print(f"depth {node['depth']} t={node['cut'] / SCALE:.5f}: "
+                  f"child knot sequence differs (left {len(left['q'])}/"
+                  f"{len(expected_left)}, right {len(right['q'])}/"
+                  f"{len(expected_right)} knots)")
     print(f"landmass {mass}: checked {checked} recursive q cuts; "
-          f"maximum child-endpoint error {maximum:.3f} fixed units")
+          f"maximum child-endpoint error {maximum:.3f} fixed units; "
+          f"exact child knot sequences {exact_child_knot_pairs}/{checked}")
 
 
 if __name__ == "__main__":
