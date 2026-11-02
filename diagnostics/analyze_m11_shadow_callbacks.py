@@ -64,54 +64,93 @@ def analyze(path):
     print(f"expanded lanes: {expanded}; callback tails matching the endpoint "
           f"at trace precision: {expanded-mismatched}/{expanded}")
 
+    def source_time_at(segments, path_time):
+        index = min(int(path_time), len(segments) - 1)
+        fraction = path_time - index
+        start, end = segments[index]
+        return start + (end - start) * fraction
+
+    def splice_source_intervals(segments, cut_time):
+        start_time = cut_time - 0.05
+        end_time = cut_time + 0.05
+        start_index = int(start_time)
+        end_index = int(end_time)
+        start_fraction = start_time - start_index
+        end_fraction = end_time - end_index
+        source_start = source_time_at(segments, start_time)
+        source_end = source_time_at(segments, end_time)
+        result = segments[:start_index]
+        if start_fraction > 1e-9:
+            result.append((segments[start_index][0], source_start))
+        result.append((source_start, source_end))
+        if end_fraction > 1e-9:
+            result.append((source_end, segments[end_index][1]))
+        suffix = end_index + 1 if end_fraction > 1e-9 else end_index
+        result.extend(segments[suffix:])
+        return result
+
     splice_deltas = Counter()
     near_integer_deltas = Counter()
     splice_mismatches = []
-    predicted_deltas = defaultdict(int)
+    next_length_mismatches = []
+    terminal_length_mismatches = []
     recovered_times = []
+    predicted_deltas = defaultdict(int)
     for key, records in cuts.items():
-        accumulated_shift = 0
-        for current, following in zip(records, records[1:]):
-            cut_time, path_length = current
+        initial_length = int(round(before.get(key, records[0][1])))
+        segments = [(float(i), float(i + 1)) for i in range(initial_length)]
+        for index, (cut_time, path_length) in enumerate(records):
+            if abs(len(segments) - path_length) > 1e-6:
+                next_length_mismatches.append((key, index, len(segments), path_length))
             if cut_time <= 0.1 or cut_time >= path_length - 0.1:
                 continue
-            if accumulated_shift:
-                recovered_times.append((key, cut_time,
-                                        cut_time - accumulated_shift))
-            delta = following[1] - path_length
+            recovered_times.append((key, cut_time,
+                                    source_time_at(segments, cut_time)))
+            updated = splice_source_intervals(segments, cut_time)
+            delta = len(updated) - len(segments)
             splice_deltas[delta] += 1
             phase = cut_time % 1
             crosses_knot = min(phase, 1 - phase) < 0.05
             if crosses_knot:
                 near_integer_deltas[delta] += 1
             expected_delta = 1 if crosses_knot else 2
-            predicted_deltas[key] += expected_delta
-            accumulated_shift += expected_delta
-            if abs(delta - expected_delta) > 1e-6:
-                splice_mismatches.append((cut_time, delta, expected_delta))
+            if delta != expected_delta:
+                splice_mismatches.append((key, cut_time, delta, expected_delta))
+            predicted_deltas[key] += delta
+            segments = updated
+        if records and abs(len(segments) - records[-1][1]) > 1e-6:
+            terminal_length_mismatches.append((key, len(segments), records[-1][1]))
+
     if splice_deltas:
         total = sum(splice_deltas.values())
         summary = ", ".join(
             f"+{int(delta)} path-time: {count}"
             for delta, count in sorted(splice_deltas.items())
         )
-        print(f"successful shadow cuts: {total}; next-attempt path-length change: {summary}")
+        print(f"successful shadow cuts: {total}; path-time change: {summary}")
         near = ", ".join(
             f"+{int(delta)}: {count}"
             for delta, count in sorted(near_integer_deltas.items())
         ) or "none"
         print(f"cuts within 0.05 of an integer path time: {near}")
-        print(f"integer-knot splice model matches: "
+        print(f"per-segment splice model matches: "
               f"{total-len(splice_mismatches)}/{total}")
+        print(f"next-attempt path lengths match: "
+              f"{len(cuts)-len(next_length_mismatches)}/{len(cuts)} lanes")
+        print(f"terminal path lengths match: "
+              f"{len(cuts)-len(terminal_length_mismatches)}/{len(cuts)} lanes")
         if splice_mismatches:
             print(f"splice-model mismatches: {splice_mismatches}")
+        if next_length_mismatches or terminal_length_mismatches:
+            print(f"next-length mismatches: {next_length_mismatches}")
+            print(f"terminal-length mismatches: {terminal_length_mismatches}")
         expanded_keys = [key for key in before
                          if key in after and after[key] > before[key]]
         final_matches = sum(
             before[key] + predicted_deltas[key] == after[key]
             for key in expanded_keys
         )
-        print(f"predicted expanded path lengths: "
+        print(f"post-shadow expanded lengths match: "
               f"{final_matches}/{len(expanded_keys)}")
         example = next((item for item in recovered_times
                         if item[0] == (4, 2) and abs(item[1] - 28.06259) < 1e-4),
@@ -119,7 +158,7 @@ def analyze(path):
         if example:
             key, current_time, original_time = example
             print(f"call={key[0]} lane={key[1]} later cut time "
-                  f"{current_time:.5f} maps back to original path time "
+                  f"{current_time:.5f} maps to original path time "
                   f"{original_time:.5f}")
     if expanded == 0:
         raise SystemExit("no expanded M11 lanes with callback samples found")

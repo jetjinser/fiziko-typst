@@ -1143,17 +1143,15 @@ nix develop path:./nix --command python \
 ```
 
 The analyzer also follows each successful `M11CUT` record to the next
-intersection attempt and reports how `..` reparameterizes the current path.
-Across 60 successful cuts in the regenerated trace, 53 add two path-time
-units and seven add one. All seven one-unit changes occur when the cut is
-within 0.05 of an integer path time; the two-unit changes occur elsewhere.
-The model “add one if `[cut - 0.05, cut + 0.05]` crosses an integer path-time
-knot, otherwise add two” predicts all 60 next-attempt lengths and all nine
-expanded final path lengths in the trace. Thus the splice's time shift depends
-on which source cubic segments the removed interval crosses. A faithful Typst
-port must account for this per-cut change when mapping later intersections
-and callbacks, rather than assuming a fixed two-unit shift.
-Reversing those accumulated shifts maps call 4/lane 2's later cut at
+intersection attempt and models `..` as a one-segment connector between the
+surviving path pieces. It stores each current cubic segment's interval in the
+original path-time domain, splits those intervals at `cut ± 0.05`, and
+replaces the removed intervals with one connector. Across 60 successful cuts,
+53 add two path-time units and seven add one. The one-unit changes occur when
+the removed interval crosses an integer path-time knot, replacing two source
+cubic segments with a prefix, connector, and suffix. This per-segment model
+matches every next-attempt and terminal path length on all 27 traced lanes,
+and all nine `M11POSTPARAM` lengths. It also maps call 4/lane 2's later cut at
 `28.06259` back to original path time `26.06259`, agreeing with the
 independently reconstructed geometric hit at `26.0622` within trace rounding.
 
