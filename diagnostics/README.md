@@ -252,7 +252,9 @@ first close divergence (source call 10), the source values are
 9.99816`, so the source floors to level 9 (`w2 = minWidth + 9*step`). The
 paired Typst widths land at level 10 and recurse. A one-scalar-unit downward
 bias fixes that branch, but the full M9 trace gets worse: parent-aware pairs
-fall from 40 to 36 and decision agreements from 35 to 31. At 600 ppi, M9
+fall from 42 to 40, pairs within 0.1 mm fall from 34 to 30, and decision
+agreements fall from 37/42 to 36/40. Dash leaves fall from 12 to 11 (22 RNG
+calls). At 600 ppi, M9
 RMSE improves `0.212740 → 0.212504`, while S105 regresses slightly
 `0.102443 → 0.102450`; the M9 ink-coverage deficit also grows. Revert the
 bias: one branch is explained, but aggregate tree fidelity does not improve.

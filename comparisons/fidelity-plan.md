@@ -132,10 +132,12 @@ affected source-parity crops do not materially regress.
   thin-tree pairing (40 pairs, 34/40 decisions) and changed dash calls to 22;
   at 600 ppi M9 regressed `0.212742 → 0.214788`, so it was reverted. The source
   clip order is confirmed, but path extension alone does not fix recursion.
-  A one-scalar-unit level-bias raster candidate also improved M9 slightly while
-  regressing S105; its earlier tree comparison used the invalid resampled
-  diagnostic and must be repeated with `per: 0` before using that branch
-  result. Continue pairing exact width-template knots and endpoint candidates,
+  A one-scalar-unit level-bias candidate fixes the first close branch, but the
+  corrected `per: 0` trace worsens tree agreement: paired nodes fall 42 → 40,
+  pairs within 0.1 mm fall 34 → 30, decisions 37/42 → 36/40, and dash leaves
+  12 → 11. Its raster candidate improved M9 RMSE `0.212740 → 0.212504` but
+  regressed S105 `0.102443 → 0.102450` and increased M9 coverage error; keep it
+  reverted. Continue pairing exact width-template knots and endpoint candidates,
   without global threshold changes.
   The source trace now also records the width-template cubic controls for each
   thin call. On call 10, the first/last template widths agree with the logged
