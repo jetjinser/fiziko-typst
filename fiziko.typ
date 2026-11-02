@@ -3540,8 +3540,12 @@
           shading: "graticule", shading-spacing: _source-spacing,
           shading-width: _source-max-shading, shading-gamma: 0.0,
           coast-step: 5, seed: 1,
+          light: (-0.353553, 0.382683, 0.853553),
           center: (0, 0), stroke: 0.4pt + black, outline: 0.6pt + black) = {
   let radius = d / 2
+  let light-length = calc.sqrt(light.at(0) * light.at(0)
+    + light.at(1) * light.at(1) + light.at(2) * light.at(2))
+  let light-dir = light.map(v => v / light-length)
   assert(shading == "graticule" or shading == "latitude",
     message: "globe shading must be graticule or latitude")
   let graticule-lines = ()
@@ -3577,10 +3581,15 @@
         let span = fractions.at(j + 1) - fractions.at(j)
         let q = if span > 0 { (t - fractions.at(j)) / span } else { 0.0 }
         let point = _add(path.at(j), _mul(_sub(path.at(j + 1), path.at(j)), q))
-        // The source coast template uses arcsin(|point| / diameter) as a
-        // spherical latitude, then maps 1 - cos(latitude) to pen width.
-        let radial = _len(_sub(point, center)) / d
-        let lightness = 1 - calc.sqrt(calc.max(0.0, 1 - radial * radial))
+        let local = _sub(point, center)
+        let radial = calc.min(0.999999, 2 * _len(local) / (d + _mp-unit))
+        let angle = calc.atan2(-local.at(1), local.at(0)) / 1deg
+        // Match sphereAnglesToNormalVector and normalVectorToLightness for
+        // the coast point, including the source's azimuthal light direction.
+        let normal = (radial * _cos(angle), radial * _sin(angle),
+          calc.sqrt(calc.max(0.0, 1 - radial * radial)))
+        let lam = normal.at(0) * light-dir.at(0) + normal.at(1) * light-dir.at(1) + normal.at(2) * light-dir.at(2)
+        let lightness = calc.clamp(1 - lam, 0.0, 1.0)
         _source-min-stroke * (2 / 3 + lightness / 3)
       }
       stroke-ink(path, width, closed: false, per: 0,
@@ -3592,7 +3601,7 @@
     if lands.len() == 0 {
       let latitude-lines = sphere-latitude(d, latitude: rotation.at(1),
         spacing: shading-spacing, max-w: shading-width, gamma: shading-gamma,
-        center: center, outline: true)
+        light: light, center: center, outline: true)
       _join((latitude-lines, ..elements))
     } else {
       let is-land = _globe-land-mask(lands)
@@ -3600,13 +3609,13 @@
       // coast brushes, and the inverse-masked p1 in that visual order.
       let ocean = sphere-latitude(d, latitude: rotation.at(1),
         spacing: shading-spacing, max-w: 0.85 * shading-width,
-        gamma: shading-gamma, center: center, outline: false,
+        gamma: shading-gamma, light: light, center: center, outline: false,
         seed: seed, rng: "metapost",
         surface-mask: (lon, lat) => not is-land(lon, lat),
         mask-rotation: rotation, with-rng: true)
       let land = sphere-latitude(d, latitude: rotation.at(1),
         spacing: shading-spacing, max-w: 1.28 * shading-width,
-        gamma: shading-gamma, center: center, outline: false,
+        gamma: shading-gamma, light: light, center: center, outline: false,
         seed: seed, rng: "metapost", rng-offset: ocean.at(1),
         surface-mask: is-land, mask-rotation: rotation, with-rng: true)
       _join((land.at(0), ..elements, ..coast-elements, ocean.at(0),

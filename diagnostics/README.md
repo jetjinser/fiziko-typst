@@ -110,6 +110,17 @@ typst eval 'query(<m9-wood-knot-trace>).first().value' \
 `WKCAND` coordinates are MetaPost units; divide by `72/25.4` to convert them
 to millimetres. The final field reports output-space coordinates in millimetres.
 
+## M11 coastline lightness
+
+The coast brush now uses the upstream `sphereAnglesToNormalVector` and
+`normalVectorToLightness` law: it reconstructs the spherical normal from the
+projected point's azimuth and radius, then applies the normalized source light
+vector. At 600 ppi, globe ink coverage moves from 25.12% to 25.21% against
+25.94% source, while the globe crop RMSE changes from 0.19545 to 0.19720 and
+whole-plate RMSE from 0.12622 to 0.12662. This is a source-equation match with
+a small raster-score regression; the remaining latitude width law and coast
+random phase are still approximate.
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and
