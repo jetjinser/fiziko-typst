@@ -173,7 +173,12 @@ affected source-parity crops do not materially regress.
   (`0.21274033 → 0.22116264`) and S105 (`0.10244255 → 0.10595469`) because
   densification changes the brush's path-time grid; it was reverted. The
   continuous source width profile must reach recursion while preserving the
-  contour's original path-time parameterization.
+  contour's original path-time parameterization. A second attempt queried a
+  Hobby width curve directly at recursive cuts without densifying the path;
+  it lowered source-tree agreement (42 → 40 paired nodes, 34 → 24 close pairs,
+  37/42 → 31 decision matches) and regressed M9/S105 RMSE to
+  `0.21301552`/`0.10315715`. That generic spline and callback were reverted:
+  use the traced source cubic controls and their own parameter domain instead.
   A fresh source trace found a more basic brush-input difference: `woodBlock`
   clips its intermediate picture only after `isoLines` runs `brushGenerate`
   on the full `cLine` path. Typst currently clips the contour before width

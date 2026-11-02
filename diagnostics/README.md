@@ -293,6 +293,17 @@ candidate was reverted. A source-width spline must enter recursion without
 changing the original contour parameterization before it can be judged as a
 faithful port.
 
+A second probe added a continuous-width callback to `_ink-loops`, so recursive
+cuts could query the Hobby profile without adding contour vertices or changing
+their path-time grid. This improved neither source tree nor render: the M9
+trace fell from 42 to 40 paired thin nodes, from 34 to 24 pairs within 0.1 mm,
+and from 37/42 to 31 decision agreements; whole-plate RMSE regressed
+`0.21274033 → 0.21301552`. S105 regressed `0.10244255 → 0.10315715`. The
+continuous Hobby callback and its production hook were reverted. The generic
+Hobby fit over cumulative arc and output widths has not been shown to reproduce
+the traced source cubic controls; the next width-template attempt needs to
+pair those controls and source times directly.
+
 Thin-node metadata now records widths at both path endpoints. On the paired
 call-10 node, Typst's reversed endpoint widths are 0.04978701 and
 0.05564368 mm; they pair with the source's 0.04977 and 0.05563 mm within
