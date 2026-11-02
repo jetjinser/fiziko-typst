@@ -661,6 +661,16 @@ that call total unchanged. An earlier prototype applied the length quantizer
 to the scalar ratio; it regressed hatch RMSE to 0.07974 and was reverted. Brush
 leaf geometry and some local random calls still differ.
 
+`instrument_flat_surface.py` also emits `S104-OUTER` and `S104-THIN` records
+for each source brush recursion node on the hatch panel. The pinned source
+produces 1340 `brushGenerate` nodes and 1696 `thinBrushGenerate` nodes;
+the corresponding Typst trace has 780 outer and 1577 thin nodes. These counts
+do not have identical branch semantics, but confirm that matching total RNG
+calls masks substantial differences in the recursion trees. MetaPost decides
+from the control-point bounds of its cubic width path and uses `cutPathTime`;
+Typst currently decides from sampled width extrema and linear crossings. This
+is the concrete next S104 porting target.
+
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches; 34
 mismatches, with per-row deltas up to ±20 calls). It slightly regressed the
@@ -683,6 +693,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|THIN)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```

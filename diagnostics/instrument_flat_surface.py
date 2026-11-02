@@ -25,6 +25,53 @@ def main() -> None:
         ' & " " & decimal(surfLight) & " "'
         ' & decimal(2minStrokeWidth*(1/15+surfLight));',
     )
+
+    # Trace the recursive width-template decisions made by the hatch brush.
+    # The flag brackets only the S104 hatch draw, so unrelated plates remain
+    # silent even though brushGenerate is used throughout the source.
+    outer_brush = """    bt := q;
+    w0 := (ypart(urcorner(bt)));
+    w1 := (ypart(lrcorner(bt)));
+    t := cutPathTime(bt, minStrokeWidth);"""
+    outer_trace = outer_brush + '''
+    if traceFlatHatch:
+        message "S104-OUTER " & decimal(traceHatchRow) & " "
+            & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
+            & " " & decimal(t) & " " & decimal(arclength(p));
+    fi;'''
+    if source.count(outer_brush) != 1:
+        raise ValueError(f"expected one outer brush hook, found {source.count(outer_brush)}")
+    source = source.replace(outer_brush, outer_trace)
+
+    thin_brush = """        t := cutPathTime(bt, w2);
+        brushPath1 := subpath (0, t) of p;
+        brushPath2 := subpath (t, length(p)) of p;"""
+    thin_trace = thin_brush + '''
+        if traceFlatHatch:
+            message "S104-THIN " & decimal(traceHatchRow) & " "
+                & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
+                & " " & decimal(w2) & " " & decimal(t)
+                & " " & decimal(arclength(p))
+                & " " & decimal(arclength(brushPath1))
+                & " " & decimal(arclength(brushPath2));
+        fi;'''
+    if source.count(thin_brush) != 1:
+        raise ValueError(f"expected one thin brush hook, found {source.count(thin_brush)}")
+    source = source.replace(thin_brush, thin_trace)
+
+    hatch_draw = "                    draw brush(aHatch)("
+    if source.count(hatch_draw) != 1:
+        raise ValueError(f"expected one S104 hatch draw hook, found {source.count(hatch_draw)}")
+    source = source.replace(hatch_draw,
+        "                    traceFlatHatch := true;\n"
+        "                    traceHatchRow := i;\n" + hatch_draw)
+    draw_end = "                        );\n                elseif (str @# = \"stipples\"):"
+    if source.count(draw_end) != 1:
+        raise ValueError(f"expected one S104 hatch draw end, found {source.count(draw_end)}")
+    source = source.replace(draw_end,
+        "                        );\n"
+        "                    traceFlatHatch := false;\n"
+        "                elseif (str @# = \"stipples\"):")
     subdivide_anchor = "aHatch := pathSubdivide(aHatch,3+round(uniformdeviate(2)));"
     if source.count(subdivide_anchor) != 1:
         raise ValueError(f"expected one pathSubdivide hook, found {source.count(subdivide_anchor)}")
@@ -45,6 +92,10 @@ def main() -> None:
 
 numeric traceRngTotal;
 traceRngTotal := 0;
+boolean traceFlatHatch;
+numeric traceHatchRow;
+traceFlatHatch := false;
+traceHatchRow := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
     uniformdeviate(x)
