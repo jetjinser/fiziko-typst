@@ -38,7 +38,7 @@ included where a plate contains distinct drawing families.
 | M11 globe, eye, knot, refraction | 0.12622 | 4.917% → 4.776% | `coast-step: 0` connects projected source vertices directly; globe RMSE is 0.19545 with ink coverage 25.940% → 25.119%. Knot `occlusion: "mask"` draws continuous tubes then locally erases and redraws overpasses; knot RMSE is 0.14280 with ink coverage 2.279% (source 2.606%), a small improvement over gap mode (0.14316, 2.266%). Latitude-layer widths, coast RNG phase, curve-parameter crossing detection and exact tube-mask contours remain approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
-| S104 flat surfaces | 0.21054 | 10.630% → 10.287% | Mapping the source +30° hatch through the fixture's vertical-axis flip gives Typst angle −30°. Reversing the MetaPost RNG draw order to match its y-up scan gives hatch crop RMSE 0.09247 and ink coverage 14.066% → 13.333%. Stipple coverage is 7.079% → 7.138%. Hatch brush shape remains approximate. |
+| S104 flat surfaces | 0.20725 | 10.630% → 10.814% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650 (previously 0.09247), with ink 14.066% → 14.370%. Stipple coverage remains 7.079% → 7.138%. Brush recursion and local random details remain approximate. |
 | S105 wood block and surface | 0.09792 | 0.741% → 0.591% | Landscape-axis mapping rounds field extents to the source 1 mm grid; the source-traced 536-call offset puts the first surface knot within 0.001 mm of the source coordinate. The explicit `contour-brush: "cell-range"` mode uses cLine's per-cell width law after undoing the field's 1/24 normalization. At 600 ppi block RMSE is 0.12095 (ink 1.077% → 0.712%); surface RMSE is 0.07598 (ink 0.489% → 0.510%). Width interpolation, dash recursion and random-call order remain approximate. |
 | S106 weights | 0.07663 | 1.091% → 1.106% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile plus a 2 mm body offset and 2*shadingDensity auricle capsule reduces hanging crop RMSE to 0.06998; ink is 1.131% → 1.263%. Auricle interior shading and tube hatch remain approximate. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
@@ -85,9 +85,10 @@ strokes, while M10 contains mostly whitespace.
    coverages all close to source. S104's fixture now maps its source +30° hatch
    to −30° in Typst page coordinates because `P()` flips the vertical axis.
    Reversing the opt-in MetaPost stream traversal also matches the source's
-   y-up row order. These changes lower S104 whole-plate RMSE from 0.32805 to
-   0.21054 and hatch crop RMSE from 0.36479 to 0.09247; hatch ink coverage is
-   13.33% versus 14.07% in the source, while stipple coverage remains close
+   y-up row order. The brush now also uses MetaPost's randomized 3–5 segment
+   `pathSubdivide` count per hatch line. These changes lower S104 whole-plate
+   RMSE to 0.20725 and hatch crop RMSE to 0.07650; hatch ink coverage is
+   14.37% versus 14.07% in the source, while stipple coverage remains close
    (7.14% versus 7.08%). Prior S104 width and row-phase scans used the wrong
    hatch orientation and are superseded. Remaining hatch differences are
    concentrated in brush stroke shape and random details.

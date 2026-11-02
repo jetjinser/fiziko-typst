@@ -130,7 +130,7 @@
       "title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "The source +30° hatch maps to -30° on the Typst page because the source fixture flips its vertical axis. At 600 ppi hatch crop RMSE is 0.09247 with ink coverage 13.33% vs 14.07% source; stipple coverage remains close (7.14% vs 7.08%). Whole-plate RMSE is 0.21054 with ink coverage 10.29% vs 10.63%. Hatch stroke shapes and random brush details still differ.",
+      "notes": "The source +30° hatch maps to -30° on the Typst page because the fixture flips its vertical axis. The MetaPost RNG mode reverses row traversal and uses its random pathSubdivide count (3 + round(uniformdeviate(2))) for each hatch. At 600 ppi hatch crop RMSE is 0.07650 with ink coverage 14.37% vs 14.07% source; stipple coverage remains close (7.14% vs 7.08%). Whole-plate RMSE is 0.20725 with ink coverage 10.81% vs 10.63%. Brush recursion and local random details still differ.",
       "regions_mm": {"hatch_panel": [0,0,61,44], "stipple_panel": [61,0,59,44]}
     },
     "S105": {

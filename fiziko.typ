@@ -2287,9 +2287,12 @@
   let total-width = calc.max(..along-projections) - calc.min(..along-projections)
   let items = ()
   for s in draw-segs {
-    // The source subdivides every non-empty hatch path after drawing it; the
-    // subdivision count consumes one MetaPost uniform value, even though a
-    // straight path's visible geometry is unchanged by the subdivision.
+    // flatSurface calls pathSubdivide(aHatch, 3 + round(uniformdeviate(2))).
+    // Its random count changes the path-time knots seen by brushGenerate even
+    // though the hatch itself is geometrically straight.
+    let subdivisions = if rng == "metapost" {
+      3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
+    } else { 24 }
     if rng == "metapost" and style != "stipples" { cursor += 1 }
     let row-fraction = s.at(2) / calc.max(1, s.at(3))
     let line-length = _dist(s.at(0), s.at(1))
@@ -2301,8 +2304,8 @@
       )
       scale * _source-min-stroke * (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
     }
-    let pts = range(25).map(i => _add(s.at(0),
-      _mul(_sub(s.at(1), s.at(0)), i / 24)))
+    let pts = range(subdivisions + 1).map(i => _add(s.at(0),
+      _mul(_sub(s.at(1), s.at(0)), i / subdivisions)))
     if style == "stipples" {
       items.push(stroke-stipple-brush(pts,
         t => width(t, 5 / 6, dot-size / _source-min-stroke),

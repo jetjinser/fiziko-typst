@@ -22,6 +22,7 @@
 
 #for segment in draw-segments {
   let subdivision-rng = cursor
+  let subdivisions = 3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
   cursor += 1
   let row-fraction = segment.at(2) / calc.max(1, segment.at(3))
   let line-length = _dist(segment.at(0), segment.at(1))
@@ -29,8 +30,8 @@
     let envelope = calc.sin(180deg * t) * line-length / total-width * calc.sin(180deg * row-fraction)
     2 * _source-min-stroke * (1 / 15 + shade) * (1 - 6 / 7 * calc.sqrt(calc.max(0.0, envelope)))
   }
-  let points = range(25).map(i => _add(segment.at(0),
-    _mul(_sub(segment.at(1), segment.at(0)), i / 24)))
+  let points = range(subdivisions + 1).map(i => _add(segment.at(0),
+    _mul(_sub(segment.at(1), segment.at(0)), i / subdivisions)))
   let frames = _frame(points, false)
   let fractions = _path-fractions(frames.map(e => e.at(0)), false)
   let widths = fractions.map(width)
@@ -39,7 +40,7 @@
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true)
   rows.push((
-    row: segment.at(2), length: line-length,
+    row: segment.at(2), length: line-length, subdivisions: subdivisions,
     width-min: calc.min(..widths), width-max: calc.max(..widths),
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,

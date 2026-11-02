@@ -400,10 +400,12 @@ The corrected trace has 142 drawable rows; the instrumented source emits 143
 row records including one zero-length edge row. Their physical row-length
 ranges match (0.68–39.69 mm). MetaPost scans those rows in y-up order, so
 `flat-surface(rng: "metapost")` traverses the Typst rows in reverse when
-assigning its shared random stream. At 600 ppi this lowers the hatch crop RMSE
-to 0.09247 (ink coverage 13.33% versus 14.07% in the source) and S104 full-
-plate RMSE to 0.21054. Brush leaf geometry and local random consumption still
-approximate MetaPost.
+assigning its shared random stream. Each row now uses the same random
+`pathSubdivide` count as MetaPost (`3 + round(uniformdeviate(2))`), rather than
+using a fixed 24-segment path. At 600 ppi hatch crop RMSE falls from 0.09247 to
+0.07650; ink coverage is 14.37% versus 14.07% in the source. S104 full-plate
+RMSE falls from 0.21054 to 0.20725, with ink coverage 10.81% versus 10.63%.
+Brush leaf geometry and local random consumption still approximate MetaPost.
 
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
