@@ -243,9 +243,14 @@ affected source-parity crops do not materially regress.
   and four tested half-rounding rules all retain 76/76 on the focused S104 row;
   the old 31/76 guard-order result came from the incomplete tolerance model and
   is superseded. This identifies a concrete source-semantic gap and removes
-  the main low-level intersection uncertainty. Next, port the same packet and
-  `cutPathTime` selection into the Typst brush path, then compare the full S104
-  and M11 recursion trees and raster before retaining a production change.
+  the low-level intersection uncertainty. A standalone Typst implementation
+  in `intersection.typ` now matches the S104 node-172 direct/reverse pairs
+  (4/4) and all 17 M11 endpoint levels within one fixed-point unit. A
+  sampled-frame `split-path` integration trial lowered row-93 Typst nodes from
+  24 to 16 but moved farther from the source's 40 decisions and 5 dash leaves;
+  it was reverted. Keep the helper diagnostic-only until the exact source
+  width-template cubics and recursive parameter mapping are carried through
+  child paths, then compare complete S104 and M11 trees and rasters.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve

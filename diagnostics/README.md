@@ -1992,9 +1992,28 @@ and cut times. On the focused row, the depth sweep
 replay independently reproduces all 19/19 selected cut decisions. The reduced
 M11 coast endpoint probe also matches all 17 source sweep values. These are
 diagnostic results only: production `split-path` still finds crossings by
-linear interpolation and midpoint arc distance. The next task is to port the
-packet search and source `cutPathTime` pair selection into that production
-path, then compare full S104 and M11 trees and renders.
+linear interpolation and midpoint arc distance. The packet search and
+`firstIntersectionTimes` wrapper are now also implemented in Typst as the
+standalone internal module `intersection.typ`. A focused Typst fixture checks
+the four raw pairs from S104 node 172 and the 17 M11 endpoint levels against
+the source traces; all match within one fixed-point unit. Run it with:
+
+```sh
+nix develop path:./nix --command python3 \
+  diagnostics/check_typst_intersection_fixtures.py \
+  /tmp/m11-endpoint-probe/probe.log
+```
+
+An opt-in trial reconstructed width cubics from sampled frames and routed the
+row-93 `split-path` probe through this solver. Its tree had 16 decisions and 3
+dash leaves, compared with 24 decisions in the current Typst row probe and 40
+source decisions with 5 dash leaves. Since the recursive tree moved farther
+from the source, that `split-path` integration was reverted; the standalone
+solver and fixtures remain. The missing information is the exact source
+width-template subpath and its parameter mapping through repeated cuts. The
+next step is to carry those cubic controls alongside recursive path nodes,
+then validate the complete S104 and M11 trees and renders before enabling the
+solver in production.
 
 `S104-FIRST-FIX` preserves the raw source intersection times as signed 16.16
 chunks; older decimal-only logs remain supported. `audit_s104_fixed_encoding.py`
@@ -2037,11 +2056,13 @@ nix shell nixpkgs#python3 --command python3 \
   /tmp/s104-thin-ray-replay/trace.log -6.37912 --node 172 --verbose
 ```
 
-This narrows the source solver work but does not validate a Typst change. The
-rounded-cubic production candidates still regress the whole S104 render; keep
-the renderer unchanged until the packet model is ported, target-row endpoint
-cases pass, and a full-row Typst comparison improves both recursion decisions
-and the paired hatch image.
+This narrows the source solver work but does not validate a Typst rendering
+change. The low-level algorithm now exists in Typst, but the sampled-frame
+integration failed the row-tree comparison and was reverted. Rounded-cubic
+production candidates still regress the whole S104 render; keep the renderer
+unchanged until recursive width-template controls are carried exactly and a
+full-row comparison improves both recursion decisions and the paired hatch
+image.
 
 The source trace now also emits `S104-PCURVE` for the target row's recursive
 thin paths. At node 172, the path's page-space cubic is straight within each
