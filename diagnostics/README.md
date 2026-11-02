@@ -946,6 +946,15 @@ radial coordinate and sampled points, widths and lightness. Do not tune the
 shade law from raw width values: they also include source residual-width and
 lane-parity factors.
 
+A production probe rebuilt each `strand-knot` interval from its enclosing
+source cubic controls before passing the path to `tube`. For the six existing
+M11 intervals, the reconstructed samples differed from direct source-path
+slicing by at most `0.000021 mm`; all interval endpoints already align with
+the source cubic grid. The 600 ppi comparison regressed knot RMSE from
+`0.05823034` to `0.05949298` and whole-plate RMSE from `0.11289878` to
+`0.11300959`. The production hook and its temporary diagnostic were removed;
+the general source path-time splice replay remains separate from this trial.
+
 For source call 2, lane 6, 37 source lightness samples pair to Typst lane 1
 within 0.0021 mm mean distance (0.0188 mm maximum). The current Typst shade
 averages 0.220 absolute error against the source values; flipping the radial
