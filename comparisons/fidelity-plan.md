@@ -150,6 +150,9 @@ affected source-parity crops do not materially regress.
   errors are `1.23e-5/6.10e-5`; source cell `(3,16)` has range `0.033203125`
   versus Typst `0.033157349`. This supports investigating source arithmetic at
   field corners, with M9 and S105 renders required before retaining a change.
+  A field-operation 16.16 probe improved the 72 grid samples (mean/max
+  `8.48e-6/4.58e-5`, 37 exact matches versus 29), but regressed 600 ppi M9
+  `0.212742 → 0.212848` and S105 `0.102443 → 0.102495`; it was reverted.
   The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate

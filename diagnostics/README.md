@@ -272,6 +272,13 @@ close to a width-level boundary, but it does not establish that adjusting the
 field arithmetic will improve the full contour tree; measure such a change
 against both M9 and S105.
 
+A probe that rounded major field operations to 16.16 lowered the 72-point
+grid mean/max error from `1.23e-5/6.10e-5` to `8.48e-6/4.58e-5`, with exact
+source matches increasing from 29 to 37 samples. Its 600 ppi source-parity
+render regressed both plates: M9 RMSE `0.212742 → 0.212848` and S105
+`0.102443 → 0.102495`. Revert the field-arithmetic candidate; the lower grid
+sample error alone did not preserve the contour rendering.
+
 MetaPost computes each thin node's `w2` level from the average of its two
 endpoint widths. A direct Typst probe using the path endpoint widths was
 reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends
