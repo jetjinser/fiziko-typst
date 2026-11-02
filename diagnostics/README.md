@@ -919,10 +919,20 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|THIN)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|THIN|TNODE|TDASH)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
+
+The source instrumenter also emits unique `S104-TNODE` endpoint IDs and
+`S104-TDASH` markers. On row `-6.37912`, these pair all five source dash leaves
+with three Typst dash-eligible leaves. The first divergent width cut belongs
+to the same depth-4 path on both sides: source cuts at x=39.539 mm, Typst at
+x=44.895 mm. The selected width levels are close after unit conversion, so the
+remaining difference is in crossing placement or midpoint selection. A
+diagnostic-only `width-by-arc` trial left the 17-node tree unchanged and was
+discarded. Compare the source template's cumulative arc-length knots directly
+before changing production behavior.
 
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model

@@ -179,9 +179,16 @@ strokes, while M10 contains mostly whitespace.
    and has cut positions within 0.001 mm, but consumes 11 source calls versus
    7 in Typst. A terminal-leaf trace identifies the concrete split: source has
    19 thin recursion nodes and 5 dashed leaves on that row, while Typst has 17
-   nodes and 3 dash-eligible leaves. The extra four source calls are exactly
-   two missing dash leaves; the next step is to pair those terminal paths and
-   identify the source cut decision that Typst drops.
+   nodes and 3 dash-eligible leaves. Unique source leaf IDs now pair five
+   source dashes against three Typst dashes. The first tree divergence is a
+   shared depth-4 path: MetaPost cuts it at x=39.539 mm, while Typst cuts it at
+   x=44.895 mm. The selected levels are close after unit conversion
+   (0.15773 source points versus 0.05564 mm in Typst), so the remaining
+   discrepancy is in where the width curve crosses that level or how the
+   midpoint-nearest crossing is chosen. A diagnostic-only arc-length width
+   interpolation trial left this row's 17-node tree unchanged and was
+   discarded; the source template's cumulative arc-length knots need direct
+   comparison before changing production behavior.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to

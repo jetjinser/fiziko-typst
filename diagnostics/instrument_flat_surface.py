@@ -84,8 +84,16 @@ def main() -> None:
         brushPath2 := subpath (t, length(p)) of p;"""
     thin_trace = thin_brush + '''
         if traceFlatHatch:
+            traceThinSerial := traceThinSerial + 1;
+            traceThisThin := traceThinSerial;
+            message "S104-TNODE " & decimal(traceHatchRow) & " "
+                & decimal(traceThisThin) & " " & decimal(i) & " "
+                & decimal(xpart(point 0 of p)/mm) & " "
+                & decimal(ypart(point 0 of p)/mm) & " "
+                & decimal(xpart(point length(p) of p)/mm) & " "
+                & decimal(ypart(point length(p) of p)/mm);
             message "S104-THIN " & decimal(traceHatchRow) & " "
-                & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
+                & decimal(traceThisThin) & " " & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
                 & " " & decimal(w2) & " " & decimal(t)
                 & " " & decimal(arclength(p))
                 & " " & decimal(arclength(brushPath1))
@@ -95,6 +103,20 @@ def main() -> None:
     if source.count(thin_brush) != 1:
         raise ValueError(f"expected one thin brush hook, found {source.count(thin_brush)}")
     source = source.replace(thin_brush, thin_trace)
+
+    thin_function = "vardef thinBrushGenerate@#(expr p, q, i) =\nbegingroup\n"
+    if source.count(thin_function) != 1:
+        raise ValueError(f"expected one thin brush function, found {source.count(thin_function)}")
+    source = source.replace(thin_function, thin_function +
+        "    save traceThisThin;\n"
+        "    numeric traceThisThin;\n"
+        "    traceThisThin := 0;\n")
+    thin_dash = "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
+    if source.count(thin_dash) != 1:
+        raise ValueError(f"expected one thin dash draw hook, found {source.count(thin_dash)}")
+    source = source.replace(thin_dash,
+        "                        if traceFlatHatch: message \"S104-TDASH \" & decimal(traceHatchRow) & \" \" & decimal(traceThisThin); fi;\n"
+        + thin_dash)
 
     hatch_draw = "                    draw brush(aHatch)("
     if source.count(hatch_draw) != 1:
@@ -136,8 +158,10 @@ numeric traceSubdivisions;
 traceSubdivisions := 0;
 boolean traceFlatHatch;
 numeric traceHatchRow;
+numeric traceThinSerial;
 traceFlatHatch := false;
 traceHatchRow := 0;
+traceThinSerial := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
     uniformdeviate(x)
