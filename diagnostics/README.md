@@ -979,6 +979,15 @@ recursion, so hidden strokes still consume RNG before a later layer erases them.
 Use `M11POSTCURVEA/B` to compare source post-cut geometry when implementing this
 step; do not tune lighting from the earlier uncut path comparison alone.
 
+The projection orientation is independently checked on source call 4, lane
+k=2. Its pre-cut lane and the shifted high-layer outline at `(rank=1,
+segment=4)` intersect first at source path time `21.78946`; intersecting the
+recorded cubic/polyline geometry predicts `21.7896`. The next geometric hit is
+at pre-cut time `26.0622`. After the first `shadowCut` splice, the source
+reports it at `28.06259`, matching the splice's two-unit path-time advance.
+This pins both the y-axis sign and sequential reparameterization for a
+representative lane.
+
 The same instrumenter emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
 `m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
