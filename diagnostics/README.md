@@ -811,9 +811,25 @@ printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-paths/trace.mp
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'M11COAST' /tmp/m11-coast-paths/trace.log
 rg 'M11ARC' /tmp/m11-coast-paths/trace.log
-typst eval 'query(<m11-coast-geometry>).first().value' \
-  --in diagnostics/m11_coast_geometry_trace.typ --root .
+nix develop path:./nix --command typst eval \
+  'query(<m11-coast-geometry>).first().value' \
+  --in diagnostics/m11_coast_geometry_trace.typ --root . \
+  > /tmp/m11-coast-paths/typst.json
+nix develop path:./nix --command python3 \
+  diagnostics/compare_m11_coast_samples.py \
+  /tmp/m11-coast-paths/trace.log /tmp/m11-coast-paths/typst.json
 ```
+
+The sample pairing confirms that source and Typst use different cyclic start
+positions for the closed coastline, while their raw visible runs can still be
+paired in source traversal order. For mass 1, the first source sample maps to
+Typst run 1, point 1 within `0.000126 mm`; source samples first reach runs 1
+then 0. This supports treating the root endpoint difference as a cyclic seam
+choice, not as evidence that the projected coastline itself is displaced.
+Nearest-sample errors across all masses are not a shape score: source samples
+cover hidden coast portions too, and Typst's points are sparse run vertices.
+The analyzer is a seam/order diagnostic only. The brush still needs to carry
+the source q template and recursive subpath parameterization together.
 
 To compare source recursion nodes and random calls by landmass, layer the
 generic brush instrumenter with the M11 coast counter and evaluate the
