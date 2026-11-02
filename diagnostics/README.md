@@ -128,6 +128,24 @@ clipped Typst vertices produced M9 RMSE 0.214688, worse than the retained
 0.213280. That production prototype was reverted; it projected the cell
 profile onto vertices without preserving the source path-time orientation.
 
+The exterior `cLine` calls return their grid coordinates `(i,j)` directly;
+they are not cell midpoints. With M9's landscape transform the two endpoints
+become `(22,34)` and `(12,34)`. `replay_wood_cline.py` now replays the directed
+`cLine` recursion from the traced field values and starting cell, including
+its edge order, visited-cell state, and `st`-dependent path orientation. Run
+it on the saved MetaPost trace with:
+
+```sh
+nix develop path:./nix --command python diagnostics/replay_wood_cline.py \
+  /tmp/m9-cLine-trace/trace.log
+```
+
+On the current trace it reproduces all 22 vertices in order, visits the same
+19 in-bounds cells, and has maximum point error `0.000718 mm`. The residual is
+consistent with `CLVALUE` being printed to five decimal places. This validates
+the source traversal model independently of the Typst contour stitcher; it
+does not yet change the production contour path.
+
 The pinned `isoLines` source confirms the exact width lookup: except for the
 terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`
 and `v[ceiling(sqB + offsetPathTime)]`; `cLine` fills each `v[st]` with that

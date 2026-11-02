@@ -203,10 +203,11 @@ affected source-parity crops do not materially regress.
   the general boundary-cell stitching rule and measure its brush tree and both
   M9/S105 renders before retaining a fix. The source trace's final recursive
   cells are `(0,22) → (-1,22) → (-1,12)` in source grid coordinates; the last
-  two are out of bounds and return cell midpoints. This confirms the endpoint
-  order is produced by cLine's directed recursion through two boundary cells,
-  so the next diagnostic should preserve that traversal state while stitching
-  the in-bounds contour.
+  two are out of bounds and return their grid coordinates `(i,j)`, which
+  transform to `(22,34)` and `(12,34)`. This confirms the endpoint order is
+  produced by cLine's directed recursion through two boundary cells, so the
+  next diagnostic should preserve that traversal state while stitching the
+  in-bounds contour.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;
