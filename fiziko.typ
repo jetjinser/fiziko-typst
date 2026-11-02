@@ -3720,9 +3720,23 @@
   result
 }
 
-#let _polyline-range(points, lengths, start, finish) = {
-  _polyline-window(points, lengths, (start + finish) / 2,
-    (finish - start) / 2)
+#let _polyline-time-point(points, times, time) = {
+  let k = range(points.len() - 1).find(i => times.at(i + 1) >= time)
+  let i = if k == none { points.len() - 2 } else { k }
+  let span = times.at(i + 1) - times.at(i)
+  let f = if span > 0 { calc.clamp((time - times.at(i)) / span, 0.0, 1.0) } else { 0.0 }
+  _add(points.at(i), _mul(_sub(points.at(i + 1), points.at(i)), f))
+}
+
+#let _polyline-time-range(points, times, start, finish) = {
+  let out = (_polyline-time-point(points, times, start),)
+  for i in range(points.len()) {
+    if times.at(i) > start + 1e-8 and times.at(i) < finish - 1e-8 {
+      out.push(points.at(i))
+    }
+  }
+  if finish > start + 1e-8 { out.push(_polyline-time-point(points, times, finish)) }
+  out
 }
 
 #let _sort-crossings(events) = {
@@ -3786,10 +3800,11 @@
 /// width or diameter at an over-under crossing. In tube style, the hidden
 /// interval expands by the crossing angle to match the projection of the
 /// over-strand tube onto the under-strand path.
-/// Set `occlusion: "mask"` with tube style to draw continuous strands and
-/// approximate MetaPost's silhouette masking at each overpass. The default
-/// `"gap"` mode physically removes the under-strand interval.
-#let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
+/// Set `occlusion: "mask"` with tube style to split strands at crossing
+/// midpoints, order the segments by layer, and mask lower tubes with higher
+/// silhouettes. `path-times:` can map samples to source path parameters. The
+/// default `"gap"` mode physically removes the under-strand interval.
+#let strand-knot(strands, widths: 1.25, layers: auto, path-times: none, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke", occlusion: "gap") = {
   assert(style == "stroke" or style == "tube",
@@ -3798,6 +3813,15 @@
     message: "strand-knot occlusion must be gap or mask")
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
+  let path-times = if path-times == none {
+    strands.map(path => range(path.len()).map(i => float(i)))
+  } else { path-times }
+  assert(path-times.len() == n and range(n).all(i =>
+    path-times.at(i).len() == strands.at(i).len()),
+    message: "path-times must provide one parameter for every strand point")
+  assert(range(n).all(si => range(strands.at(si).len() - 1).all(pi =>
+    path-times.at(si).at(pi + 1) > path-times.at(si).at(pi))),
+    message: "path-times must increase strictly along each strand")
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
   let crossing-half-gap(width, crossing-sine: 1.0) = if style == "tube" {
     width / calc.max(0.1, crossing-sine) + gap / 2
@@ -3851,6 +3875,8 @@
             if ta >= -1e-6 and ta < 1 - 1e-6 and tb >= -1e-6 and tb < 1 - 1e-6 {
               let sa = lengths.at(i).at(ai) + ta * _dist(a.at(ai), a.at(ai + 1))
               let sb = lengths.at(j).at(bi) + tb * _dist(b.at(bi), b.at(bi + 1))
+              let ta-time = path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta
+              let tb-time = path-times.at(j).at(bi) * (1 - tb) + path-times.at(j).at(bi + 1) * tb
               let enda = lengths.at(i).at(lengths.at(i).len() - 1)
               let endb = lengths.at(j).at(lengths.at(j).len() - 1)
               if sa <= 1e-5 or sa >= enda - 1e-5 or sb <= 1e-5 or sb >= endb - 1e-5 {
@@ -3858,9 +3884,9 @@
               }
               let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
               let i-over = over-at(pair-count, i, j)
-              strand-crossings.at(i).push((sa,
+              strand-crossings.at(i).push((ta-time,
                 layer-rank(i, crossing-counts.at(i), i-over)))
-              strand-crossings.at(j).push((sb,
+              strand-crossings.at(j).push((tb-time,
                 layer-rank(j, crossing-counts.at(j), not i-over)))
               crossing-counts.at(i) += 1
               crossing-counts.at(j) += 1
@@ -3898,6 +3924,8 @@
             if ta >= -1e-6 and ta < 1 - 1e-6 and tb >= -1e-6 and tb < 1 - 1e-6 {
               let sa = lengths.at(i).at(ai) + ta * _dist(path.at(ai), path.at(ai + 1))
               let sb = lengths.at(i).at(bi) + tb * _dist(path.at(bi), path.at(bi + 1))
+              let ta-time = path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta
+              let tb-time = path-times.at(i).at(bi) * (1 - tb) + path-times.at(i).at(bi + 1) * tb
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
                 let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
@@ -3906,15 +3934,15 @@
                 let self-over = over-at(pair-count, i, i)
                 if self-over {
                   events.at(i).push((sb, half-gap))
-                  strand-crossings.at(i).push((sa,
+                  strand-crossings.at(i).push((ta-time,
                     layer-rank(i, crossing-counts.at(i), true)))
-                  strand-crossings.at(i).push((sb,
+                  strand-crossings.at(i).push((tb-time,
                     layer-rank(i, crossing-counts.at(i) + 1, false)))
                 } else {
                   events.at(i).push((sa, half-gap))
-                  strand-crossings.at(i).push((sb,
+                  strand-crossings.at(i).push((tb-time,
                     layer-rank(i, crossing-counts.at(i), true)))
-                  strand-crossings.at(i).push((sa,
+                  strand-crossings.at(i).push((ta-time,
                     layer-rank(i, crossing-counts.at(i) + 1, false)))
                 }
                 crossing-counts.at(i) += 2
@@ -3940,12 +3968,13 @@
       } else {
         for k in range(sorted.len()) {
           let crossing = sorted.at(k)
-          let start = if k == 0 { 0.0 }
+          let start = if k == 0 { path-times.at(i).first() }
             else { (sorted.at(k - 1).at(0) + crossing.at(0)) / 2 }
           let finish = if k + 1 == sorted.len() {
-            lengths.at(i).last()
+            path-times.at(i).last()
           } else { (crossing.at(0) + sorted.at(k + 1).at(0)) / 2 }
-          let part = _polyline-range(strands.at(i), lengths.at(i), start, finish)
+          let part = _polyline-time-range(
+            strands.at(i), path-times.at(i), start, finish)
           strand-segments.at(i).push((path: part, rank: crossing.at(1)))
           layer-ranks.push(crossing.at(1))
         }

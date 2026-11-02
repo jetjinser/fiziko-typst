@@ -126,11 +126,13 @@ random phase are still approximate.
 Tube mask mode now follows `knotFromStrands`' interval construction: each
 strand is split halfway between adjacent crossings, the supplied per-crossing
 layer value is assigned to that interval, and higher-layer tube silhouettes
-erase earlier ink before their own hatch is drawn. On the 600 ppi M11 crop this
-reduces RMSE from 0.14280 to 0.14230. Ink coverage is 2.242% versus 2.606% in
-the source. The current strand inputs are sampled polylines, so the midpoint
-uses arc length rather than the MetaPost curve parameter; the erasing silhouette
-also remains a width stroke approximation.
+erase earlier ink before their own hatch is drawn. `path-times:` lets callers
+map samples to source curve parameters; M11 maps its 97 samples onto the
+upstream path's 24 intervals. This yields the same 600 ppi crop RMSE of 0.14230
+as arc-length splitting, down from 0.14280 before midpoint segmentation. Ink
+coverage is 2.242% versus 2.606% in the source. Crossing positions still use
+sampled polylines, and the erasing silhouette remains a width-stroke
+approximation.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
