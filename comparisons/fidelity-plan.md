@@ -466,8 +466,11 @@ affected source-parity crops do not materially regress.
   contour interpolation currently do not preserve the raster gain; keep the
   exact RNG product as a diagnostic oracle until the field evaluator is paired
   at the same source grid points.
-  The diagnostic now uses those raw-fraction knot positions in the 16.16
-  `wField` evaluator and records the first block's source column jitter. Across
+  The diagnostic now derives those raw-fraction knot positions from the seed-1
+  subtractive stream and the traced 28-call brush consumption per accepted
+  knot, then feeds them to the 16.16 `wField` evaluator. Its first three
+  cumulative knot terms reproduce the source trace exactly. It also records
+  the first block's source column jitter. Across
   the 72 traced source samples, 58 field values match exactly after removing
   the corresponding column jitter; mean/max absolute field error is
   `3.60e-6/3.05e-5`. The fixed-point minimum and maximum cells also reproduce

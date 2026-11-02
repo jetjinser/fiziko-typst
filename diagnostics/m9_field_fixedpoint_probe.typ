@@ -1,14 +1,24 @@
 // Compare MetaPost 16.16 woodBlock field operations at the source minimum.
-#import "../fiziko.typ": _woodblock-field, _mp-scalar-rounded
+#import "../fiziko.typ": _woodblock-field, _mp-scalar-rounded, _metapost-rng-raw-sequence
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
-#let raw-rng-knots = (
-  (7.9966888427734375, 21.603240966796875),
-  (0.9630126953125, 45.08021545410156),
-  (33.3760986328125, 28.865753173828125),
-  (27.247940063476562, 1.2523345947265625),
-  (26.473419189453125, 51.92364501953125),
-)
+#let raw-rng-knots = {
+  let stream = _metapost-rng-raw-sequence(1, 4096)
+  let knots = ()
+  let cursor = 0
+  let rejected = 0
+  while rejected < 10 and knots.len() < 45 and cursor + 1 < 4096 {
+    let x = -1.25 / 2 + (33 + 1.25) * stream.at(cursor)
+    let y = -1.25 / 2 + (55 + 1.25) * stream.at(cursor + 1)
+    if knots.all(k => calc.sqrt(calc.pow(x - k.at(0), 2)
+        + calc.pow(y - k.at(1), 2)) >= 20) {
+      knots.push((x, y))
+      cursor += 28
+    } else { rejected += 1 }
+    cursor += 2
+  }
+  knots
+}
 #let s(x) = _mp-scalar-rounded(x)
 #let mul(a, b) = s(a * b)
 #let div(a, b) = s(a / b)
