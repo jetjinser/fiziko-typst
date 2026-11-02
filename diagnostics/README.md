@@ -941,6 +941,13 @@ width traces are identical. At 600 ppi, whole/globe RMSE changes only from
 `0.11289878/0.18989608` to `0.11289888/0.18989648`, with the other M11 crops
 pixel-identical. Keep the time-label correction, while continuing to trace
 the remaining q cut and centerline child mapping.
+Re-enabling the integer-time q-grid after this correction still leaves M1 at
+15/11 source/Typst nodes (9/11 paired decisions) and M2 at 57/97 nodes
+(29/35 paired decisions). The candidate's depth-2 q array remains one knot
+short (24 versus 25 source knots), so restoring the repeated centerline point
+does not by itself reconstruct the source q subpath. The q-grid hook was
+removed again; the remaining mismatch is in q-state generation/splitting,
+not just the omitted source-time label.
 
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
 `S101-HIT1/2`, `S101-QCTRLPT-FIX`, and `S101-CUTFIX` records, alongside the

@@ -757,7 +757,11 @@ affected source-parity crops do not materially regress.
   The same-checkout 600 ppi comparison is effectively unchanged: whole/globe
   RMSE moves `0.11289878/0.18989608 → 0.11289888/0.18989648`; other M11 crops
   are pixel-identical. Retain this source-path-time correction; it does not
-  yet resolve the recursion decision.
+  yet resolve the recursion decision. Repeating the integer-time q-grid trial
+  after preserving this vertex leaves M1/M2 trees unchanged at 11/97 Typst
+  nodes (source 15/57), with the M1 depth-2 candidate q array still one knot
+  short. The q-grid hook remains rejected; the source q subpath is not
+  recovered from integer-time width samples alone.
   The source closed-path seam was checked separately: its first point maps to
   Typst outline index 1 for masses 1, 2, and 4, and index 0 for masses 5, 7,
   and 8, all within 0.00014 mm. The first three outlines start at the horizon
