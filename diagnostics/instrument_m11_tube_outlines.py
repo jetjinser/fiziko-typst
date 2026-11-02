@@ -158,6 +158,46 @@ enddef;''')
                             & decimal(ypart(point length(p) of p)/mm);
                     fi;
                     draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));''')
+    current_path = "                currentPath := interpath (k/bw1, q, p);"
+    if source.count(current_path) != 1:
+        raise ValueError(f"expected one tube lane path hook, found {source.count(current_path)}")
+    source = source.replace(current_path, current_path + '''
+                if traceKnotActive:
+                    if traceTubeCall = 2:
+                        if k = 6:
+                            for traceCurveIndex := 0 step 1 until length(currentPath) - 1:
+                                message "M11CURVE " & decimal(traceCurveIndex) & " "
+                                    & decimal(xpart(point traceCurveIndex of currentPath)/mm) & " "
+                                    & decimal(ypart(point traceCurveIndex of currentPath)/mm) & " "
+                                    & decimal(xpart(postcontrol traceCurveIndex of currentPath)/mm) & " "
+                                    & decimal(ypart(postcontrol traceCurveIndex of currentPath)/mm) & " "
+                                    & decimal(xpart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                    & decimal(ypart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                    & decimal(xpart(point (traceCurveIndex+1) of currentPath)/mm) & " "
+                                    & decimal(ypart(point (traceCurveIndex+1) of currentPath)/mm);
+                            endfor;
+                        fi;
+                    fi;
+                fi;''')
+    current_tube_path = "            currentTubePath := interpath (1/2, q, p);"
+    if source.count(current_tube_path) != 1:
+        raise ValueError(f"expected one tube centerline hook, found {source.count(current_tube_path)}")
+    source = source.replace(current_tube_path, current_tube_path + '''
+            if traceKnotActive:
+                if traceTubeCall = 2:
+                    for traceCurveIndex := 0 step 1 until length(currentTubePath) - 1:
+                        message "M11CENTER " & decimal(traceCurveIndex) & " "
+                            & decimal(xpart(point traceCurveIndex of currentTubePath)/mm) & " "
+                            & decimal(ypart(point traceCurveIndex of currentTubePath)/mm) & " "
+                            & decimal(xpart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
+                            & decimal(ypart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
+                            & decimal(xpart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                            & decimal(ypart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                            & decimal(xpart(point (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                            & decimal(ypart(point (traceCurveIndex+1) of currentTubePath)/mm);
+                    endfor;
+                fi;
+            fi;''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
         raise ValueError(f"expected one knot start hook, found {source.count(knot_start)}")
@@ -175,7 +215,7 @@ enddef;''')
     # word character. Match any non-letter prefix instead.
     source = re.sub(r"(?<![A-Za-z])uniformdeviate\s*\(", "traceKnotDeviate(", source)
     source += """
-numeric traceMaskTime, traceBoundaryTime, traceBoundaryCall, traceKnotRng, traceLaneStart, traceTubeCall, traceCurrentK;
+numeric traceMaskTime, traceBoundaryTime, traceCurveIndex, traceBoundaryCall, traceKnotRng, traceLaneStart, traceTubeCall, traceCurrentK;
 numeric traceCallBlocks, traceCallRemainder;
 boolean traceKnotActive;
 traceKnotRng := 0;

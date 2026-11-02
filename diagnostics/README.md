@@ -420,6 +420,16 @@ share one candidate interval 11.976–13.069 mm; source intervals
 18.783–19.876 mm. The missing source gaps are only 0.064 and 0.054 mm. This
 narrows the remaining four random values on this lane to two short local width
 troughs and their dash-phase restart, rather than a broad width-scale error.
+At both troughs, the source normal trace gives width 0.026209 mm while the
+source-normal Typst candidate gives 0.026759 mm. The points themselves pair
+within 0.00011 mm, but source centerline angle is −0.77792 rad and Typst's is
+−0.79801 rad (0.02009 rad difference). This crosses the local thin-width
+level, removing the two source splits. The next implementation target is the
+source cubic tangent used for `currentTubePath`, rather than a global light or
+width scale. The instrumenter now emits the cubic control points of both the
+source `currentTubePath` and k=6 `currentPath` (36 segments each), so a
+follow-up can reconstruct and compare the tangent at the exact source width
+samples.
 
 ### M11 knot tube lanes and shared RNG
 
@@ -480,7 +490,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11CENTER|^M11CURVE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \

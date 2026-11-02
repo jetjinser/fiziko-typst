@@ -235,8 +235,12 @@ strokes, while M10 contains mostly whitespace.
    the render change was reverted. On paired k=6, source has 19 dash leaves,
    current Typst 5, and candidate Typst 17. Its quantized dash widths match
    within 0.00002 mm; two source pairs are merged across 0.064 and 0.054 mm
-   gaps. The next target is these local width troughs, dash-phase restarts and
-   the y-axis/light-direction transform. The latitude mode
+   gaps. At both troughs, the source normal trace gives 0.026209 mm width
+   versus candidate 0.026759 mm, despite point error below 0.00011 mm; the
+   centerline angle differs by 0.02009 rad. The source instrument now emits
+   the 36 cubic segments of `currentTubePath` and lane `currentPath`; use their
+   controls to recover the exact tangent at the narrow-width samples, then
+   reproduce the two dash-phase restarts. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the
