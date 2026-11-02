@@ -94,6 +94,13 @@ def main() -> None:
             & " " & decimal(ypart(point 0 of p)/mm)
             & " " & decimal(xpart(point length(p) of p)/mm)
             & " " & decimal(ypart(point length(p) of p)/mm);
+        message "S104-OFIX " & decimal(traceHatchRow) & " " & decimal(i)
+            & " " & decimal(floor(w0*256))
+            & " " & decimal(round((w0*256-floor(w0*256))*256))
+            & " " & decimal(floor(w1*256))
+            & " " & decimal(round((w1*256-floor(w1*256))*256))
+            & " " & decimal(floor(minStrokeWidth*256))
+            & " " & decimal(round((minStrokeWidth*256-floor(minStrokeWidth*256))*256));
         if (t > 0) and (t < length(p)):
             message "S104-CUT " & decimal(traceHatchRow) & " " & decimal(i)
                 & " " & decimal(xpart(point t of p)/mm)

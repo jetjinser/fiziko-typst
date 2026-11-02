@@ -1138,6 +1138,18 @@ source's 39 outer and 9 thin nodes; nearby rows still differ, so this improves
 the recursion model without claiming a complete port. The remaining mismatch
 is in cut selection/branch behavior around narrow residual crossings.
 
+`S104-OFIX` now records each outer node's endpoint widths and
+`minStrokeWidth` as two 8-bit chunks of the source 16.16 value. On row
+`-15.3487`, source outer node 2 starts one 16.16 unit above `minStrokeWidth`
+(`w0 = (51·256 + 3)/65536`, threshold `(51·256 + 2)/65536`) and cuts at local
+path time `0.0116`. A candidate that rounded Typst's outer threshold to the
+same source unit still left its paired endpoint width `3.4e-8 mm` below
+threshold, so the node stopped. The 600 ppi candidate also did not improve
+the raster: whole S104 RMSE was `0.207029` and hatch RMSE `0.075289`, versus
+the retained `0.20702865` and `0.07528521`. The renderer change was reverted. This narrows
+the remaining branch difference to width propagation at the recursive cut,
+not merely the outer threshold constant.
+
 The source outer-node and Typst recursion logs now include centerline
 endpoints and cut points, allowing exact row pairing. On one symmetric-width
 row, source `cutPathTime` chooses the left of two equidistant intersections;
@@ -1239,7 +1251,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
