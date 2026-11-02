@@ -5,7 +5,7 @@ Usage: analyze_m11_shadow_callbacks.py MPOST_LOG
 """
 
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 
@@ -14,6 +14,7 @@ def analyze(path):
     after = {}
     callback_time = {}
     callbacks = defaultdict(dict)
+    cuts = defaultdict(list)
     for line in Path(path).read_text().splitlines():
         fields = line.split()
         if not fields:
@@ -28,6 +29,9 @@ def analyze(path):
         elif tag == "M11WIDTHINPUT":
             key = (int(fields[1]), int(fields[2]))
             callback_time[key] = int(fields[4])
+        elif tag == "M11CUT":
+            key = (int(fields[1]), int(fields[2]))
+            cuts[key].append((float(fields[4]), float(fields[6])))
         elif tag == "M11LIGHT":
             key = (int(fields[1]), int(fields[2]))
             if key not in callback_time:
@@ -59,6 +63,31 @@ def analyze(path):
               f"missing={missing}")
     print(f"expanded lanes: {expanded}; callback tails matching the endpoint "
           f"at trace precision: {expanded-mismatched}/{expanded}")
+
+    splice_deltas = Counter()
+    near_integer_deltas = Counter()
+    for records in cuts.values():
+        for current, following in zip(records, records[1:]):
+            cut_time, path_length = current
+            if cut_time <= 0.1 or cut_time >= path_length - 0.1:
+                continue
+            delta = following[1] - path_length
+            splice_deltas[delta] += 1
+            phase = cut_time % 1
+            if min(phase, 1 - phase) < 0.05:
+                near_integer_deltas[delta] += 1
+    if splice_deltas:
+        total = sum(splice_deltas.values())
+        summary = ", ".join(
+            f"+{int(delta)} path-time: {count}"
+            for delta, count in sorted(splice_deltas.items())
+        )
+        print(f"successful shadow cuts: {total}; next-attempt path-length change: {summary}")
+        near = ", ".join(
+            f"+{int(delta)}: {count}"
+            for delta, count in sorted(near_integer_deltas.items())
+        ) or "none"
+        print(f"cuts within 0.05 of an integer path time: {near}")
     if expanded == 0:
         raise SystemExit("no expanded M11 lanes with callback samples found")
 

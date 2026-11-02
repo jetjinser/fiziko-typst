@@ -1142,6 +1142,16 @@ nix develop path:./nix --command python \
   /tmp/m11-tube-outline-trace/trace.log
 ```
 
+The analyzer also follows each successful `M11CUT` record to the next
+intersection attempt and reports how `..` reparameterizes the current path.
+Across 60 successful cuts in the regenerated trace, 53 add two path-time
+units and seven add one. All seven one-unit changes occur when the cut is
+within 0.05 of an integer path time; the two-unit changes occur elsewhere.
+Thus the splice's time shift depends on the cut's phase relative to an
+existing path-time knot. A faithful Typst port must account for this per-cut
+change when mapping later intersections and callbacks, rather than assuming a
+fixed two-unit shift.
+
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
 `maxShadingStrokeWidth * lightness`; the extractor converts it to millimetres
