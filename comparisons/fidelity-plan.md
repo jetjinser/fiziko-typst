@@ -1015,6 +1015,17 @@ contours with the sampled source rings (the measured render regressed).
    The source trace now emits q cubic controls (`S101-CUBIC`) around each cut.
    A fixed stream offset tested with the prior projection and again with
    closed contours was reverted.
+   For M11 coast recursion, the fresh MetaPost trace now exports the exact
+   outer q cubics for calls 4/lane 2, 4/lane 6 and 5/lane 2. Feeding those
+   controls into the isolated Typst replay matches source outer-node counts
+   on all three lanes and all 18 source random-call totals. Lane 4/6 also
+   matches its thin-node count exactly (20); lanes 4/2 and 5/2 retain two
+   extra Typst thin nodes each (42 vs 40 and 32 vs 30). This is diagnostic
+   evidence that q-curve geometry explains the prior outer-tree mismatch,
+   while thin recursion still has a small, localized residual. The controls
+   are trace fixtures only; no production render has changed or been shown
+   to improve. Next pair the two extra thin leaves to source width samples
+   and cut decisions before considering a production-path change.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived

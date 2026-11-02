@@ -35,6 +35,7 @@ def main():
     curves = defaultdict(lambda: defaultdict(dict))
     callback_time = {}
     callbacks = defaultdict(dict)
+    source_q = defaultdict(lambda: defaultdict(dict))
     lane_calls = {}
     lane_order = []
     for line_number, line in enumerate(Path(log_path).read_text().splitlines()):
@@ -68,6 +69,14 @@ def main():
             key = (int(f[1]), int(f[2]))
             time = int(f[3])
             callbacks[key][time]["width_fixed"] = int(f[4]) * 256 + int(f[5])
+        elif f[0] == "M11BQPT":
+            key = (int(f[1]), int(f[2]))
+            depth, index, control = map(int, f[3:6])
+            if depth == 0:
+                source_q[key][index][control] = (
+                    int(f[6]) * 256 + int(f[7]),
+                    int(f[8]) * 256 + int(f[9]),
+                )
         elif f[0] == "M11LANE":
             key = (int(f[1]), int(f[2]))
             lane_calls[key] = int(f[3])
@@ -126,6 +135,13 @@ def main():
             "rng_offset": rng_cursor,
             "source_path_segments": len(indices), "points": path_points,
             "widths": widths, "param_times": path_times,
+            "source_q_fixed": [
+                [source_q[key][index][control] for control in range(4)]
+                for index in sorted(source_q[key])
+            ] if source_q[key] and all(
+                set(source_q[key][index]) == {0, 1, 2, 3}
+                for index in source_q[key]
+            ) else None,
         })
         rng_cursor += source_calls
     def number(value):
@@ -140,11 +156,19 @@ def main():
                             for point in entry["points"])
         widths = tuple_expr(number(width) for width in entry["widths"])
         param_times = tuple_expr(number(time) for time in entry["param_times"])
+        source_q_fixed = (
+            "none" if entry["source_q_fixed"] is None else
+            tuple_expr(tuple_expr(
+                "(" + str(point[0]) + ", " + str(point[1]) + ")"
+                for point in curve
+            ) for curve in entry["source_q_fixed"])
+        )
         lines.append(
             f"  (call: {entry['call']}, lane: {entry['lane']}, "
             f"source-calls: {entry['source_calls']}, rng-offset: {entry['rng_offset']}, "
             f"source-path-segments: {entry['source_path_segments']}, "
-            f"points: {points}, widths: {widths}, param-times: {param_times}),"
+            f"points: {points}, widths: {widths}, param-times: {param_times}, "
+            f"source-q-fixed: {source_q_fixed}),"
         )
     lines.append(")")
     Path(output_path).write_text("\n".join(lines) + "\n")

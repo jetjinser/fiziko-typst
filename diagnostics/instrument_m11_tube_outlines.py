@@ -185,8 +185,8 @@ enddef;''')
     before_template, after_template = source.rsplit(template_start, 1)
     outer_q_trace = '''
     if traceKnotActive:
-      if traceTubeCall = 4:
-       if traceCurrentK = 2:
+      if ((traceTubeCall = 4) and ((traceCurrentK = 2) or (traceCurrentK = 6)))
+          or ((traceTubeCall = 5) and (traceCurrentK = 2)):
         save traceTemplatePoint;
         pair traceTemplatePoint;
         for traceTemplateIndex := 0 step 1 until length(bt) - 1:
@@ -211,7 +211,6 @@ enddef;''')
                         floor(ypart(traceTemplatePoint)*256))*256));
             endfor;
         endfor;
-       fi;
       fi;
     fi;'''
     before_template = before_template.replace(

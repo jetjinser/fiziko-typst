@@ -414,7 +414,7 @@
                 with-rng: false, with-stats: false,
                 param-times: none, param-end: none, trace-nodes: false,
                 source-rounding: false, width-by-arc: false,
-                source-width-fixed: none) = {
+                source-width-fixed: none, source-q-curves-fixed: none) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -924,7 +924,12 @@
   // minStrokeWidth crossing, choosing cutPathTime's midpoint-nearest crossing.
   let initial-path = if closed { range(n + 1).map(i => float(i)) } else { range(n).map(i => float(i)) }
   let source-time-start = if param-times == none { 0.0 } else { param-times.first() }
-  let initial-q = if source-width-fixed == none { none } else {
+  let initial-q = if source-q-curves-fixed != none {
+    source-q-curves-fixed.map(curve => curve.map(point => (
+      point.at(0) / 65536 * _mp-unit,
+      point.at(1) / 65536 * _mp-unit,
+    )))
+  } else if source-width-fixed == none { none } else {
     let qpoints = range(source-width-fixed.len()).map(i => {
       let source-time = source-time-start + i
       let path-time = source-path-at-time(initial-path, source-time)

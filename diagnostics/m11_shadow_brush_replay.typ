@@ -20,7 +20,8 @@
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-stats: true, source-rounding: true, trace-nodes: true,
     param-times: item.param-times, width-by-arc: false,
-    source-width-fixed: source-width-fixed)
+    source-width-fixed: source-width-fixed,
+    source-q-curves-fixed: item.source-q-fixed)
   (call: item.call, lane: item.lane,
     source-calls: item.source-calls,
     typst-calls: result.at(1), dashes: result.at(2).dashes,
