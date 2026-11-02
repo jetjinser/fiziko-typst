@@ -1,5 +1,5 @@
 // Typst's first M9 contour and the 1 mm cells crossed by each path segment.
-#import "../fiziko.typ": _woodblock-field, _wood-source-levels
+#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, stroke-ink
 #import "../contour.typ": marching-squares
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
@@ -10,10 +10,16 @@
   model.rng-count)
 #let grid = range(34).map(j => range(56).map(i => field(i, j)))
 #let values = grid.fold((), (all, row) => all + row)
-#let result = marching-squares(field, 0, 0, 55, 33, levels: levels,
-  nx: 55, ny: 33, with-count: true)
-#let contours = result.at(0)
-#let paths = contours.enumerate().map(((index, path)) => {
+#let groups = levels.enumerate().map(((level-index, level)) => {
+  let result = marching-squares(field, 0, 0, 55, 33, levels: (level,),
+    nx: 55, ny: 33, with-count: true)
+  result.at(0).enumerate().map(((path-index, path)) => {
+    (level-index: level-index, path-index: path-index, path: path)
+  })
+})
+#let entries = groups.fold((), (all, group) => all + group)
+#let paths = entries.enumerate().map(((index, entry)) => {
+  let path = entry.path
   let cells = ()
   for i in range(path.len() - 1) {
     let midpoint = ((path.at(i).at(0) + path.at(i + 1).at(0)) / 2,
@@ -21,19 +27,28 @@
     cells.push((int(calc.floor(midpoint.at(0))),
       int(calc.floor(midpoint.at(1)))))
   }
-  (index: index, start: path.first(), end: path.last(), points: path, cells: cells)
+  let cell-ranges = cells.map(cell => {
+    let i = cell.at(0)
+    let j = cell.at(1)
+    let corners = (
+      field(i, j), field(i + 1, j), field(i, j + 1), field(i + 1, j + 1),
+    )
+    (calc.max(..corners) - calc.min(..corners)) / 24
+  })
+  (index: index, level-index: entry.level-index,
+    path-index: entry.path-index, start: path.first(), end: path.last(),
+    points: path, cells: cells, cell-ranges: cell-ranges)
 })
-#let paired-path = paths.at(2)
-#let paired-cell-ranges = paired-path.cells.map(cell => {
-  let i = cell.at(0)
-  let j = cell.at(1)
-  let corners = (
-    field(i, j), field(i + 1, j), field(i, j + 1), field(i + 1, j + 1),
-  )
-  calc.max(..corners) - calc.min(..corners)
-})
-#metadata((contour-count: contours.len(), level-count: result.at(1),
+// `compare_wood_contours.py` independently verifies this pinned fixture by
+// matching its exact reversed cell sequence against the source CLSTEP trace.
+#let paired-path = paths.find(p => p.level-index == 0 and p.path-index == 2)
+#let width = _wood-source-width(field, 55, 33, 55, 33, paired-path.points)
+#let brush-trace = stroke-ink(paired-path.points, width, closed: false,
+  min-w: _source-min-stroke, period: _source-dash-length,
+  _source-rounding: true, _with-stats: true, _trace-nodes: true)
+#metadata((contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
-  sample-values: sample-values,
-  levels: levels, paths: paths, paired-path-index: paired-path.index,
-  paired-cell-ranges: paired-cell-ranges)) <m9-contour-walk>
+  sample-values: sample-values, levels: levels, paths: paths,
+  brush-widths: brush-trace.at(3).widths,
+  brush-nodes: brush-trace.at(2).nodes))
+<m9-contour-walk>

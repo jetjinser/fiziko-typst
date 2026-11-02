@@ -80,25 +80,24 @@ def main() -> None:
     brush_anchor = "    t := cutPathTime(bt, minStrokeWidth);"
     brush_trace = brush_anchor + """
     if traceWoodLine = 1:
-        message "WBNODE " & decimal(i) & " " & decimal(w0) & " "
-            & decimal(w1) & " " & decimal(t) & " " & decimal(arclength(p))
-            & " " & decimal(xpart(point 0 of p)/mm) & " "
-            & decimal(ypart(point 0 of p)/mm) & " "
-            & decimal(xpart(point length(p) of p)/mm) & " "
-            & decimal(ypart(point length(p) of p)/mm);
+        message "WBNODE " & decimal(i) & " " & decimal(w0/mm) & " "
+            & decimal(w1/mm) & " " & decimal(t) & " " & decimal(arclength(p)/mm);
+        message "WBCUT " & decimal(i) & " "
+            & decimal(xpart(point t of p)/mm) & " "
+            & decimal(ypart(point t of p)/mm);
     fi;"""
     source = replace_once(source, brush_anchor, brush_trace, "brush recursion node")
     fill_anchor = "            fill brushPath1 -- reverse(brushPath2) -- cycle;"
     fill_trace = """            if traceWoodLine = 1:
-                message "WBLEAF FILL " & decimal(i) & " " & decimal(w0) & " "
-                    & decimal(w1) & " " & decimal(arclength(p));
+                message "WBLEAF FILL " & decimal(i) & " " & decimal(w0/mm) & " "
+                    & decimal(w1/mm) & " " & decimal(arclength(p)/mm);
             fi;
 """ + fill_anchor
     source = replace_once(source, fill_anchor, fill_trace, "brush fill leaf")
     thin_anchor = "            thinBrushGenerate (p, q, 0)"
     thin_trace = """            if traceWoodLine = 1:
-                message "WBLEAF THIN " & decimal(i) & " " & decimal(w0) & " "
-                    & decimal(w1) & " " & decimal(arclength(p));
+                message "WBLEAF THIN " & decimal(i) & " " & decimal(w0/mm) & " "
+                    & decimal(w1/mm) & " " & decimal(arclength(p)/mm);
             fi;
 """ + thin_anchor
     source = replace_once(source, thin_anchor, thin_trace, "brush thin leaf")

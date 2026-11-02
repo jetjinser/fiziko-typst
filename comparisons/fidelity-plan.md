@@ -33,13 +33,13 @@ included where a plate contains distinct drawing families.
 | Plate | RMSE | Ink coverage | Component findings |
 | --- | ---: | ---: | --- |
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
-| M9 wood panels | 0.21275 | 4.203% → 3.749% | The comparison reproduces its source driver's 1 mm `woodBlockRes`, source-ordered fractional contour levels, and source-space knot field. A 72-point source/Typst grid probe differs by 0.00029 normalized units on average (0.00151 max); the paired contour's reverse-ordered cell ranges match source `v[st]` values within 0.00005 normalized units. Source `reverse(iL)` path-time width interpolation lowers matched 600 ppi RMSE from 0.21329 to 0.21275, while ink coverage falls slightly farther below source (3.749% vs 4.203%). |
+| M9 wood panels | 0.21274 | 4.203% → 3.750% | The comparison reproduces its source driver's 1 mm `woodBlockRes`, source-ordered fractional contour levels, and source-space knot field. The source/Typst contour pairing has an exact reversed 19-cell sequence; per-cell ranges differ by 1.54e-5 mean and 4.92e-5 max. Rounding source-scaled field corners, interpolated ranges and dimensional brush widths to 16.16 lowers the same-grid RMSE from 0.212745 to 0.212742 and moves ink coverage from 3.7490% to 3.7497%, still below 4.2032% source. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
 | M11 globe, eye, knot, refraction | 0.11295 | 4.917% → 5.056% | The source-equation coast normal and corrected `atan2` argument order move focused 600 ppi whole-plate RMSE from 0.11266 to 0.11295; globe crop RMSE is 0.18990 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.353% against 25.940% source. For mass 4, the root recursive cut now splits 14.296/13.938 mm, matching source 14.292/13.925 mm. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. Coast brush calls are 52 versus source 27 across visible masses; knot per-segment random calls remain 202 versus source 224. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. The thin-recursion endpoint guard now uses source path-time units: paired outer decisions move from 942 to 1270 (source 1340), thin decisions from 1577 to 1739 (source 1696), with no raster change. Brush-call totals remain 1540 vs 1516 source. |
-| S105 wood block and surface | 0.10245 | 0.741% → 0.696% | The source-derived field uses the 1/3 mm `woodBlockRes`, fractional source contour levels and source-space landscape knot transform. Source `reverse(iL)` path-time width interpolation lowers matched 600 ppi whole RMSE from 0.10314 to 0.10245; block/surface crops improve from 0.12855/0.07851 to 0.12794/0.07766. Ink coverage moves farther below source (0.696% vs 0.741%), so brush coverage and dash calls remain open. |
+| S105 wood block and surface | 0.10244 | 0.741% → 0.696% | The source-derived field uses the 1/3 mm `woodBlockRes`, fractional source contour levels and source-space landscape knot transform. Source-scaled 16.16 rounding lowers same-grid RMSE from 0.102450 to 0.102443; block/surface crops remain near 0.12794/0.07766. Ink coverage changes from 0.69618% to 0.69603%, slightly farther below 0.74053% source, so brush coverage and dash calls remain open. |
 | S106 weights | 0.07663 | 1.091% → 1.106% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile plus a 2 mm body offset and 2*shadingDensity auricle capsule reduces hanging crop RMSE to 0.06998; ink is 1.131% → 1.263%. Auricle interior shading and tube hatch remain approximate. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
@@ -82,16 +82,22 @@ affected source-parity crops do not materially regress.
   paired row decisions without the known flat-crossing node-count explosion
   or this all-row raster regression.
 - [ ] **Wood contour brush geometry and traversal.** M9's source cLine width
-  ranges now match to at most 4.91e-5 normalized units, but source contour
-  brush calls remain approximate. The source `fullcircle` cubic sampler now
-  matches within 3.1e-5 and reproduces ring counts; feeding those rings into
-  the current band renderer worsened RMSE, so geometry and width templates
-  must be paired before changing production strokes. The first M9 source
-  contour now has a `brushGenerate` baseline: 37 recursion nodes, 19 leaves,
-  with one thin branch reaching the source depth-10 limit. Pair this tree to
-  the matching Typst contour by transformed geometry, then trace the source
-  brush boundary and apply its recursive `(i,j,st)` traversal and path-time
-  width law.
+  ranges now match to at most 4.91e-5 source field units, but source contour
+  calls remain approximate. An automated source/Typst pairing now finds the
+  same contour level after accounting for `isoLines`' sign convention and
+  field scaling; its reversed 19-cell sequence is exact, its path mean/max
+  distance is 0.108/1.315 mm, and reversed per-cell width ranges differ by
+  1.54e-5 mean and 4.92e-5 max. A wood-only source fixed-point rounding
+  candidate lowers same-grid M9 RMSE `0.212745 → 0.212742` and S105 RMSE
+  `0.102450 → 0.102443`; its S105 coverage falls by 0.00015 percentage points,
+  so retain the small pixel-error improvement as a measured tradeoff. The
+  matched source brush has 37 outer nodes and 19 leaves, with one branch
+  reaching depth 10; Typst records 7 outer and 46 thin nodes, with the root
+  cut only 0.058 mm from source. Compare deeper splits and terminal band/dash
+  geometry before changing the renderer. The source `fullcircle` cubic
+  sampler matches within 3.1e-5 and reproduces ring counts; feeding those
+  rings into the current band renderer worsened RMSE, so keep that candidate
+  reverted.
   Acceptance: match per-contour leaf/call order and improve M9 contour crop
   without regressing S105's independently verified field/width behavior.
 - [ ] **M11 coast brush sampling.** The projected coast paths, seam merging,

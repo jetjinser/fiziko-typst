@@ -136,7 +136,7 @@ cell's scalar range. In the first traced M9 path, `sqB=-1`, `sqBm=19`, and
 paired Typst path has 20 visible vertices versus the source's 22; after the
 source landscape transform, its 19 segment cell ranges match the reverse
 source `v[st]` sequence. The mean absolute range error is `1.54e-5` and the
-maximum is `4.92e-5` in normalized field units. This follows from the source
+maximum is `4.92e-5` in source field units. This follows from the source
 passing `reverse(iL)` to `brushGenerate` while building the width template on
 forward `iL`: the visible path starts with the terminal fallback, then uses
 the reversed cell ranges. `_wood-source-width` now models that sequence and
@@ -150,6 +150,15 @@ the remaining under-coverage as an open difference. The `CLWIDTH` source
 records include the `offsetPathTime`, `sqB`, `sqBm`, path length, interpolated
 `v[st]` values, and terminal fallback.
 
+`_wood-source-width` now rounds each normalized corner back to the source
+field's 1/24 scale and 16.16 precision, then rounds the interpolated variation
+and dimensional brush width at their source arithmetic boundaries. Controlled
+600 ppi renders lower M9 RMSE from `0.212745278` to `0.212742096` and S105 from
+`0.102449940` to `0.102442922`. M9 ink coverage moves slightly toward source
+(`3.74904% → 3.74969%` vs `4.20316%`); S105 moves slightly away
+(`0.69618% → 0.69603%` vs `0.74053%`). Keep this small pixel-error improvement
+with the coverage tradeoff recorded.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh
@@ -162,21 +171,33 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
 rg 'CL(FIELD|VALUE|LEVEL|PATH|WIDTH)' /tmp/m9-cLine-trace/trace.log
-rg 'WB(NODE|LEAF)' /tmp/m9-cLine-trace/trace.log
+rg 'WB(NODE|CUT|LEAF)' /tmp/m9-cLine-trace/trace.log
 typst eval 'query(<m9-contour-walk>).first().value' \
-  --in diagnostics/m9_contour_walk_trace.typ --root .
+  --in diagnostics/m9_contour_walk_trace.typ --root . \
+  > /tmp/m9-cLine-trace/typst.json
+python3 diagnostics/compare_wood_contours.py \
+  /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/typst.json
 ```
 
 The same trace now instruments `brushGenerate` for the first accepted M9
-contour. `WBNODE` records recursion depth, endpoint widths, the source cut
-time, path length, and endpoints; `WBLEAF` records whether a node ends as a
-filled band or a thin brush. The pinned source trace has 37 nodes and 19
+contour. `WBNODE` records recursion depth, width extrema in millimetres, cut
+time and path length; `WBCUT` records the cut point; `WBLEAF` records whether
+a node ends as a filled band or a thin brush. The pinned source trace has 37
+outer nodes and 19
 leaves. Its first root splits at path time `4.7189`; an accepted fill leaf
 appears at depth 1, while a thin-brush branch reaches the recursion limit of
-10. This is a source-side baseline only: `m9_contour_walk_trace.typ` still
-selects a Typst contour by fixed index, so it is not yet paired to that source
-tree. Pairing by transformed geometry and comparing node decisions remains
-the next diagnostic step before changing the renderer.
+10. `compare_wood_contours.py` pairs the source log with Typst metadata. It
+accounts for `isoLines` adding the source level to the field, the source to
+Typst field scale of 24, and the reflected landscape axes. Source level
+`-0.16289` maps to Typst level `3.91015`; the matched path has an exact
+reversed 19-cell visit sequence. Its mean/max source-point distance is
+`0.108/1.315 mm` (the maximum is at the source's one-cell boundary
+extension), while reversed per-cell ranges differ by `1.54e-5` mean and
+`4.92e-5` max. The matched root cut point is `0.058 mm` from source, but its
+path length is `14.60 mm` versus `17.28 mm` in source. The source records 37
+outer nodes and 19 leaves; Typst records 7 outer and 46 thin nodes, so deeper
+cut and terminal band/dash geometry still needs work. The open wood gap is now
+brush recursion and the boundary it draws, not cLine cell discovery.
 
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`

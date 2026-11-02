@@ -3155,11 +3155,15 @@
     let p = _mul(_add(line.at(j), line.at(j + 1)), 0.5)
     let i = int(calc.clamp(calc.floor(p.at(0) / dx), 0, nx - 1))
     let k = int(calc.clamp(calc.floor(p.at(1) / dy), 0, ny - 1))
-    let a = field(i * dx, k * dy)
-    let b = field((i + 1) * dx, k * dy)
-    let c = field((i + 1) * dx, (k + 1) * dy)
-    let d = field(i * dx, (k + 1) * dy)
-    (calc.max(a, b, c, d) - calc.min(a, b, c, d)) / 24
+    // woodBlock stores the unscaled field on a 16.16 grid; this helper's
+    // field is scaled by 24 for contour-level enumeration. Quantize each
+    // corner before taking the range, then preserve source rounding through
+    // interpolation and the dimensional offset width below.
+    let a = _mp-scalar-rounded(field(i * dx, k * dy) / 24)
+    let b = _mp-scalar-rounded(field((i + 1) * dx, k * dy) / 24)
+    let c = _mp-scalar-rounded(field((i + 1) * dx, (k + 1) * dy) / 24)
+    let d = _mp-scalar-rounded(field(i * dx, (k + 1) * dy) / 24)
+    calc.max(a, b, c, d) - calc.min(a, b, c, d)
   })
   let width-values = (1.0,) + cell-ranges
   (t) => {
@@ -3169,7 +3173,8 @@
     let span = fractions.at(j + 1) - fractions.at(j)
     let q = if span > 0 { calc.clamp((t - fractions.at(j)) / span, 0.0, 1.0) } else { 0.0 }
     let variation = width-values.at(j) * (1 - q) + width-values.at(j + 1) * q
-    (_source-min-stroke / 16) / (1 / 64 + 2 * variation)
+    let variation = _mp-scalar-rounded(variation)
+    _mp-rounded((_source-min-stroke / 16) / (1 / 64 + 2 * variation))
   }
 }
 
