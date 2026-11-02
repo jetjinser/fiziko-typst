@@ -44,6 +44,14 @@ def main() -> None:
                                  if hit[0] == r) for r in range(len(runs))
                         if any(hit[0] == r for hit in nearest)}
         source_run_order = sorted(first_by_run, key=first_by_run.get)
+        outline_entry = next((item for item in trace["outline-arcs"]
+                              if item["landmass"] == mass), None)
+        outline_match = None
+        if outline_entry:
+            first_source = source[mass][0]
+            outline_match = min(
+                (math.dist(first_source, (p["x"], p["y"])), i)
+                for i, p in enumerate(outline_entry["outline-points"]))
         print(f"mass {mass}: source samples={len(errors)}, Typst runs="
               f"{[len(run) for run in runs]}, nearest error median/max="
               f"{statistics.median(errors):.6f}/{max(errors):.6f} mm")
@@ -51,6 +59,10 @@ def main() -> None:
               f"({start_error:.6f} mm); first source sample per run="
               f"{first_by_run}; run order by first nearest sample="
               f"{source_run_order}")
+        if outline_match:
+            print(f"  source path start maps to outline point {outline_match[1]} "
+                  f"of {len(outline_entry['outline-points'])} "
+                  f"({outline_match[0]:.6f} mm)")
 
 
 if __name__ == "__main__":

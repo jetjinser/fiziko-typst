@@ -606,6 +606,13 @@ affected source-parity crops do not materially regress.
   child's generated endpoints (nearest input-sample errors 1.082/0.434 mm),
   not widespread projection or callback drift. This points the next work at
   preserving the cut endpoints and q subpath parameter through recursion.
+  The source closed-path seam was checked separately: its first point maps to
+  Typst outline index 1 for masses 1, 2, and 4, and index 0 for masses 5, 7,
+  and 8, all within 0.00014 mm. The first three outlines start at the horizon
+  crossing. Rotating those paths to index 1 leaves all six Typst recursion
+  trees, widths, RNG call counts, and the 600 ppi M11 metrics unchanged, so the
+  candidate was reverted. The remaining gap is recursive q-template state,
+  not the closed path's cyclic starting index.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.

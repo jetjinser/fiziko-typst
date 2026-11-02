@@ -830,6 +830,15 @@ Nearest-sample errors across all masses are not a shape score: source samples
 cover hidden coast portions too, and Typst's points are sparse run vertices.
 The analyzer is a seam/order diagnostic only. The brush still needs to carry
 the source q template and recursive subpath parameterization together.
+Comparing the source path's first traced point with the assembled Typst outline
+locates it at outline index 1 for masses 1, 2, and 4 (within `0.000058` to
+`0.000126 mm`); for masses 5, 7, and 8 it maps to index 0 (within
+`0.000087` to `0.000140 mm`). In the first three cases outline index 0 is
+exactly on the 15 mm horizon. A production trial rotated those closed paths to
+index 1. The 600 ppi M11 metrics and all six per-mass recursion node arrays,
+width samples, and RNG call counts were unchanged, so the production rotation
+was reverted. The source seam is geometrically present already; this cyclic
+reindexing does not resolve the recursive q-template mismatch.
 
 To compare source recursion nodes and random calls by landmass, layer the
 generic brush instrumenter with the M11 coast counter and evaluate the
