@@ -129,6 +129,22 @@ def main() -> None:
                 & decimal(traceThisThin) & " " & decimal(i) & " "
                 & decimal(floor(w2*256)) & " "
                 & decimal(round((w2*256 - floor(w2*256))*256));
+            if traceHatchRow = -6.37912:
+                if traceThisThin >= 172:
+                    for tracePathControl := 0 step 1 until length(p) - 1:
+                        message "S104-PCURVE " & decimal(traceHatchRow) & " "
+                            & decimal(traceThisThin) & " " & decimal(tracePathControl) & " "
+                            & decimal(xpart(point tracePathControl of p)/mm) & " "
+                            & decimal(ypart(point tracePathControl of p)/mm) & " "
+                            & decimal(xpart(postcontrol tracePathControl of p)/mm) & " "
+                            & decimal(ypart(postcontrol tracePathControl of p)/mm) & " "
+                            & decimal(xpart(precontrol (tracePathControl+1) of p)/mm) & " "
+                            & decimal(ypart(precontrol (tracePathControl+1) of p)/mm) & " "
+                            & decimal(xpart(point (tracePathControl+1) of p)/mm) & " "
+                            & decimal(ypart(point (tracePathControl+1) of p)/mm);
+                    endfor;
+                fi;
+            fi;
 ''' + control_trace("thin", "            ") + '''
         fi;'''
     if source.count(thin_brush) != 1:
@@ -139,8 +155,8 @@ def main() -> None:
     if source.count(thin_function) != 1:
         raise ValueError(f"expected one thin brush function, found {source.count(thin_function)}")
     source = source.replace(thin_function, thin_function +
-        "    save traceThisThin;\n"
-        "    numeric traceThisThin;\n"
+        "    save traceThisThin, tracePathControl;\n"
+        "    numeric traceThisThin, tracePathControl;\n"
         "    traceThisThin := 0;\n")
 
     cut_anchor = "        d4 := xpart (point cutTime1 of p);\n        d5 := xpart (point cutTime2 of p);"

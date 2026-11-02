@@ -1081,6 +1081,19 @@ The specific behavior to port is the source width template's `--` cubic
 controls, 16.16 point evaluation, and intersection behavior through recursive
 subpaths. Arc-length interpolation alone cannot reproduce this branch.
 
+The source trace now also emits `S104-PCURVE` for the target row's recursive
+thin paths. At node 172, the path's page-space cubic is straight within each
+segment, but the node contains a short first segment, a long middle segment,
+and a short final segment. The middle segment runs from `(34.17966, 17.13503)`
+to `(44.89505, 23.32155)` mm with controls at its one-third and two-thirds
+points. Its associated width cubic has controls `0.15773, 0.15773, 0.15771,
+0.15771` mm. Source `cutPathTime` selects q time `1.50017`, which maps to the
+middle of this long segment at page x `39.539` mm. The current Typst tree
+reaches the same node endpoints but cuts at x `44.895` mm, the middle segment's
+end. This rules out a centerline curvature explanation for this mismatch and
+narrows the next implementation probe to preserving the source q cubic's
+parameterization and fixed-point intersection through recursive subpaths.
+
 A diagnostic-only port of that cubic model was tried after the trace above.
 It used the original global cubic controls with 64 subdivisions per Typst path
 segment, then bisected candidate threshold crossings. It did not reproduce the
