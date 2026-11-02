@@ -137,7 +137,7 @@
       "title": "Wood block and surface", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 105,
       "shared": {"wood_block_mm": [39,12], "source_grid_mm": 1, "source_seed": 1},
       "nominal": {"seed": 1, "surface_rng_offset": 536}, "calibrated": {"seed": 1, "surface_rng_offset": 536},
-      "notes": "The plank and wooden surface use the source knot-warped field at a 1 mm grid with source-sized per-contour level offsets, rounded field extents and landscape-axis mapping. Source woodenSurface consumes 536 global random calls through the plank; the first surface knot matches its traced source coordinate within 0.001 mm. At 600 ppi, whole-plate RMSE is 0.10553; block RMSE is 0.13244 and surface RMSE is 0.07909, with surface ink coverage 0.599% vs source 0.489%. Source contour-brush rendering and call counts remain approximate.",
+      "notes": "The plank and wooden surface use the source knot-warped field at a 1 mm grid with source-sized per-contour level offsets, rounded field extents and landscape-axis mapping. Source woodenSurface consumes 536 global random calls through the plank; the first surface knot matches its traced source coordinate within 0.001 mm. Both use the explicit contour-brush cell-range mode, which applies cLine's per-cell width law after undoing the field's 1/24 normalization. At 600 ppi, whole-plate RMSE is 0.09792; block RMSE is 0.12095 and surface RMSE is 0.07598, with surface ink coverage 0.510% vs source 0.489%. Width interpolation, dash recursion and call order remain approximate; the same mode worsens M9 and remains opt-in.",
       "regions_mm": {"block": [0,0,53,44], "surface": [55,0,65,44]}
     },
     "S106": {

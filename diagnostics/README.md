@@ -43,7 +43,7 @@ matches its source position within 0.1 mm. Exact source panel-end call counts
 are 1456, 2823, 4120 and 5416, so Typst now starts the four panels at offsets
 0, 1456, 2823 and 4120. M9's 600 ppi whole-plate RMSE falls from 0.22456 to
 0.22412, with 4.224% ink coverage (source 4.203%). Source contour-brush shapes
-remain approximate.
+remain approximate; see the measured per-cell brush mode below.
 
 S105's landscape transform and stream continuity now follow the pinned source
 trace; the contour-brush rendering and per-brush call count remain different.
@@ -53,8 +53,7 @@ internal candidate is (8.2726, 46.3121) mm; the Typst stream at offset 536
 produces (8.27285, 46.31245) mm. Rounding source-field extents to the source's
 1 mm grid and threading that offset lowers S105 600 ppi whole RMSE from
 0.10635 to 0.10553; block RMSE is 0.13244 and surface RMSE is 0.07909 (surface
-ink 0.599% vs 0.489% in the source). Source contour-brush rendering and its
-random call count still differ.
+ink 0.599% vs 0.489% in the source).
 
 Wood contours are now kept as connected paths through polygon clipping, so a
 stroke continues across marching-grid vertices instead of restarting at each
@@ -62,6 +61,17 @@ edge. The 600 ppi M9 score changes from 0.22412 to 0.22411; S105 changes from
 0.10553 to 0.10555. This makes path continuity match `cLine` more closely but
 does not materially reduce raster error; source brush width, dash recursion,
 and random-call behavior remain the larger gap.
+
+`contour-brush: "cell-range"` now applies the `cLine` width law on source-field
+wood. `_woodblock-field` stores the source field divided by `rho = 1/24` so
+levels are one unit apart; `cLine` computes its width from the unnormalized
+cell range, so the brush calculation multiplies that range back by `rho`.
+This is opt-in because the same law improves S105 but regresses M9: with the
+continuous path mode, 600 ppi S105 RMSE falls from 0.10555 to 0.09792 (block
+0.12095, surface 0.07598), while M9 rises from 0.22411 to 0.24644 and ink
+coverage rises from 4.224% to 4.432%. S105 surface ink is 0.510% versus 0.489%
+in the source. Width scaling alone is not enough; source `cLine` traversal
+order, width interpolation and global dash-call phase remain relevant.
 
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`

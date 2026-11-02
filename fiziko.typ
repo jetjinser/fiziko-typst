@@ -2848,7 +2848,8 @@
 
 // Approximate cLine's v[st] width profile: each traversed square contributes
 // its scalar range, and the brush is thinner where that range is larger.
-#let _contour-source-width(field, x, y, w, h, nx, ny, line) = {
+#let _contour-source-width(field, x, y, w, h, nx, ny, line,
+                          value-scale: 1) = {
   let dx = w / nx
   let dy = h / ny
   let fractions = _path-fractions(line, false)
@@ -2865,10 +2866,14 @@
     let b = field(x + (i + 1) * dx, y + k * dy)
     let c = field(x + (i + 1) * dx, y + (k + 1) * dy)
     let d = field(x + i * dx, y + (k + 1) * dy)
-    let variation = calc.max(a, b, c, d) - calc.min(a, b, c, d)
+    // WoodBlock normalizes wField by 1/24 for the contour levels, while
+    // cLine's brush width uses the unnormalized cell range.
+    let variation = (calc.max(a, b, c, d) - calc.min(a, b, c, d)) * value-scale
     (_source-min-stroke / 16) / (1 / 64 + 2 * variation)
   }
 }
+
+#let _wood-source-width(field, w, h, nx, ny, line) = _contour-source-width(field, 0, 0, w, h, nx, ny, line, value-scale: 1 / 24)
 
 /// Return sampled contour polylines for selected scalar-field levels.
 /// `field(x, y)` returns a number; bounds and grid dimensions are in mm and
@@ -2909,7 +2914,12 @@
 /// coordinates local to the polygon's bounding box.
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
                   stroke: 0.45pt + black, source-field: false, seed: 1,
-                  grain-stroke: none, rng-offset: 0, with-rng: false) = {
+                  grain-stroke: none, contour-brush: "uniform",
+                  rng-offset: 0, with-rng: false) = {
+  assert(contour-brush == "uniform" or contour-brush == "cell-range",
+    message: "contour-brush must be uniform or cell-range")
+  assert(contour-brush == "uniform" or source-field,
+    message: "cell-range contour brush requires source-field")
   if poly.len() < 3 {
     return if with-rng { (none, rng-offset) } else { none }
   }
@@ -2941,7 +2951,7 @@
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
   let contour-stream = if source-field {
-    _metapost-rng-sequence(seed, contour-offset + 4096)
+    _metapost-rng-sequence(seed, contour-offset + 32768)
   } else { none }
   let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
   let contour-result = if source-field {
@@ -2952,9 +2962,23 @@
   }
   let contours = contour-result.at(0)
   let segments = ()
+  let source-brushes = ()
+  let brush-cursor = contour-offset + contour-result.at(1)
   for contour in contours {
     let clipped = _clip-polyline-paths(contour, (local-poly,))
-    segments += clipped.map(path => path.map(p => _add(p, (x0, y0))))
+    for path in clipped {
+      if source-field and contour-brush == "cell-range" {
+        let width = _wood-source-width(field, w, h, nx, ny, path)
+        let drawn = stroke-ink(
+          path.map(p => _add(p, (x0, y0))), width,
+          closed: false, min-w: _source-min-stroke,
+          period: _source-dash-length, seed: seed, per: 0,
+          _random-stream: contour-stream, _rng-offset: brush-cursor,
+          _with-rng: true)
+        source-brushes.push(drawn.at(0))
+        brush-cursor += drawn.at(1)
+      } else { segments.push(path.map(p => _add(p, (x0, y0)))) }
+    }
   }
   let explicit-eyes = eyes.filter(e => _inside-poly((e.at(0), e.at(1)), local-poly))
   let source-knots = if source-field {
@@ -2977,7 +3001,7 @@
       knot-segments.push((loop.at(i), loop.at(_mod(i + 1, loop.len()))))
     }
   }
-  let els = (_stroke-paths(segments, texture-stroke),
+  let els = (_stroke-paths(segments, texture-stroke), ..source-brushes,
              stroke-path(poly, stroke: border-stroke, closed: true, per: 0))
   if eye-loops.len() > 0 { els.push(place(top + left, _fill(eye-loops, black))) }
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
@@ -2985,6 +3009,7 @@
   if with-rng {
     (drawing, rng-offset + if source-field {
       wood-model.rng-count + contour-result.at(1)
+        + brush-cursor - (contour-offset + contour-result.at(1))
     } else { 0 })
   } else { drawing }
 }
@@ -2997,7 +3022,12 @@
 /// In `source-field` mode, `rng-offset` on `wooden-thing` or
 /// `wooden-surface` resumes the seeded MetaPost stream after earlier objects.
 #let wood(x, y, w, h, angle: 0, spacing: 2.6, eyes: (),
-          stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1) = {
+          stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1,
+          contour-brush: "uniform") = {
+  assert(contour-brush == "uniform" or contour-brush == "cell-range",
+    message: "contour-brush must be uniform or cell-range")
+  assert(contour-brush == "uniform" or source-field,
+    message: "cell-range contour brush requires source-field")
   let nx = calc.max(8, int(calc.round(w / cell)))
   let ny = calc.max(8, int(calc.round(h / cell)))
   let swapped = source-field and w > h
@@ -3011,7 +3041,7 @@
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { model.rng-count } else { 0 }
   let contour-stream = if source-field {
-    _metapost-rng-sequence(seed, contour-offset + 4096)
+    _metapost-rng-sequence(seed, contour-offset + 32768)
   } else { none }
   let level-jitter(i, _) = contour-stream.at(contour-offset + i) / 8
   let contour-result = if source-field {
@@ -3023,6 +3053,19 @@
   let loops = contour-result.at(0)
   let rect = ((0, 0), (w, 0), (w, h), (0, h))
   let paths = loops.fold((), (acc, pl) => acc + _clip-polyline-paths(pl, (rect,)))
+  let source-brushes = ()
+  let brush-cursor = contour-offset + contour-result.at(1)
+  if source-field and contour-brush == "cell-range" {
+    for path in paths {
+      let width = _wood-source-width(f, w, h, nx, ny, path)
+      let drawn = stroke-ink(path, width, closed: false,
+        min-w: _source-min-stroke, period: _source-dash-length,
+        seed: seed, per: 0, _random-stream: contour-stream,
+        _rng-offset: brush-cursor, _with-rng: true)
+      source-brushes.push(drawn.at(0))
+      brush-cursor += drawn.at(1)
+    }
+  }
   let texture-stroke = if source-field { 0.1pt + black } else { stroke }
   let knot-segments = ()
   if source-field {
@@ -3033,7 +3076,8 @@
       }
     }
   }
-  let els = (_stroke-paths(paths, texture-stroke),)
+  let els = if source-field and contour-brush == "cell-range" { source-brushes }
+            else { (_stroke-paths(paths, texture-stroke),) }
   if knot-segments.len() > 0 { els.push(_stroke-segments(knot-segments, texture-stroke)) }
   els += eyes.map(e => place(top + left, _fill(
     (_ellipse-pts(e.at(2) * 0.6, e.at(2) * 0.38, rot: angle,
@@ -3049,14 +3093,16 @@
 /// In `source-field` mode, `rng-offset` resumes an earlier seeded draw stream.
 #let wooden-surface(path, thickness: 2.5, angle: 0, spacing: 0.7,
                     eyes: (), cell: 1.0, stroke: 0.45pt + black,
-                    source-field: true, seed: 1, rng-offset: 0) = {
+                    source-field: true, seed: 1, rng-offset: 0,
+                    contour-brush: "uniform") = {
   let outer = resample(path, per: 12, closed: false)
   let inset = offset-path(path, thickness, closed: false)
   let outline = outer + inset.rev()
   if source-field {
     return wooden-thing(outline, angle: angle, spacing: spacing, eyes: eyes,
       cell: cell, stroke: stroke, source-field: true, seed: seed,
-      grain-stroke: 0.1pt, rng-offset: rng-offset)
+      grain-stroke: 0.1pt, contour-brush: contour-brush,
+      rng-offset: rng-offset)
   }
   let quads = _band-quads(outer, inset, closed: false)
   let boundary = outer + inset

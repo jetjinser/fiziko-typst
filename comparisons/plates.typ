@@ -125,9 +125,10 @@
         style: "stipples")
     + stroke-path(((65,8),(114,13),(108,36),(62,31)), stroke: 0.35pt + black, closed: true, per: 0))
   } else if case == "S105" {
-    (wood(5,29,39,12, cell: 1, source-field: true, seed: seed)
+    (wood(5,29,39,12, cell: 1, source-field: true, seed: seed,
+        contour-brush: "cell-range")
     + wooden-surface(((60,18),(84,12),(112,18)), seed: seed,
-        rng-offset: i("surface_rng_offset")))
+        rng-offset: i("surface_rng_offset"), contour-brush: "cell-range"))
   } else if case == "S106" {
     (weight-standing(18, r: 7.2, at: (36,31), seed: seed)
     + weight(18, r: 6.4, neck: 0.25, at: (84,13), seed: seed)
