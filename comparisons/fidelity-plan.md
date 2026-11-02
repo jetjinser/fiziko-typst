@@ -405,6 +405,13 @@ affected source-parity crops do not materially regress.
   candidate regressed both wood plates. Reproduce the source maximum-field
   arithmetic for level selection without changing contour corner values, then
   test that level-only candidate on M9 and S105.
+  A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
+  `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
+  including both block/surface crops (`0.12790793/0.07693635 →
+  0.12790896/0.07693895`). M9 ink coverage was effectively unchanged, and its
+  first-path intersection moved farther from the source point. The production
+  candidate was reverted; reproduce the source `wField` maximum arithmetic
+  before trying another level adjustment.
   A narrower contour-only probe rounded edge parameters and physical crossing
   points to 16.16 while leaving field sampling untouched. It regressed same-
   checkout M9 RMSE `0.21155798 → 0.21162015`; S105 changed only

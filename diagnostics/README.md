@@ -266,6 +266,16 @@ Next, reproduce the source maximum-field arithmetic for level selection
 without changing contour corner values, then test that level-only candidate
 against both wood plates.
 
+A narrow candidate rounded only the sampled maximum to 16.16 before deriving
+the source contour levels, leaving all contour-corner samples untouched. On
+same-checkout 600 ppi reports, M9 RMSE changed `0.21156032 → 0.21154594`, but
+S105 changed `0.10213793 → 0.10213956`; its block/surface crops both regressed
+(`0.12790793/0.07693635 → 0.12790896/0.07693895`). The M9 ink coverage was
+effectively unchanged. Its first-path end intersection also moved from
+`(12.854379,33)` to `(12.854690,33)`, farther from source `(12.85017,33)`.
+The small M9 pixel gain is not a consistent fidelity improvement, so the
+production change was reverted.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh
