@@ -113,7 +113,16 @@ affected source-parity crops do not materially regress.
   crop RMSE `0.05881920 → 0.05958444`, so the production candidate was
   reverted. The next probe must preserve the source q-path width interpolation
   and exact hit parameterization; geometric knot insertion alone is not
-  sufficient.
+  sufficient. The source trace now establishes callback behavior for all nine
+  expanded call-4–6 lanes: post-cut path lengths exceed the original length by
+  3–5 units, but every callback's lightness and normal after the original
+  endpoint exactly repeats the endpoint sample. `offsetPathTemplate` therefore
+  advances across the inserted lane knots while its lookups on the uncut
+  centerline/width paths clamp at their endpoint. The new
+  `diagnostics/analyze_m11_shadow_callbacks.py` verifies this from
+  `M11PARAM`/`M11POSTPARAM` and `M11WIDTHINPUT`/`M11LIGHT`. Rebuild callback
+  knots at integer post-cut times, including the repeated endpoint tail,
+  before retrying brush recursion.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and

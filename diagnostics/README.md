@@ -990,6 +990,24 @@ does not insert these knots before brush recursion. Use `M11POSTCURVEA/B` to
 compare the reparameterized path; do not tune lighting from the uncut path
 comparison alone.
 
+`analyze_m11_shadow_callbacks.py` pairs each pre/post path length with the
+integer `offsetPathTime` callback samples (`M11WIDTHINPUT`/`M11LIGHT`). On all
+nine expanded call-4–6 lanes, the post-cut path extends 3–5 time units past
+the original centerline, but every extra lightness and normal sample exactly
+matches the sample at the original endpoint. This confirms that the brush
+path's callback time continues to advance while lookups on the original
+centerline and width paths clamp at their endpoints. Run it on the trace above:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_shadow_callbacks.py \
+  /tmp/m11-tube-outline-trace/trace.log
+```
+
+Future knot-insertion candidates should rebuild the source
+`offsetPathTemplate` width knots at integer post-cut times, including the
+repeated endpoint callback values, before evaluating brush recursion.
+
 A production trial inserted lane knots at shifted-outline intersections and
 resampled widths on the resulting time grid. It produced per-segment calls
 `14/54/54/34/34/16` (206 total) versus source `14/58/54/42/38/18`; the
