@@ -55,10 +55,10 @@ def analyze(path):
         if missing or expected is None or max_delta > 1e-7:
             mismatched += 1
         print(f"call={key[0]} lane={key[1]} pre={original_end} post={post_end} "
-              f"tail={post_end-original_end} max-endpoint-delta={max_delta:.9g} "
+              f"tail={post_end-original_end} max-trace-delta={max_delta:.9g} "
               f"missing={missing}")
-    print(f"expanded lanes: {expanded}; endpoint-clamped callback tails: "
-          f"{expanded-mismatched}/{expanded}")
+    print(f"expanded lanes: {expanded}; callback tails matching the endpoint "
+          f"at trace precision: {expanded-mismatched}/{expanded}")
     if expanded == 0:
         raise SystemExit("no expanded M11 lanes with callback samples found")
 

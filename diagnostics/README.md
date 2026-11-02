@@ -993,10 +993,11 @@ comparison alone.
 `analyze_m11_shadow_callbacks.py` pairs each pre/post path length with the
 integer `offsetPathTime` callback samples (`M11WIDTHINPUT`/`M11LIGHT`). On all
 nine expanded call-4–6 lanes, the post-cut path extends 3–5 time units past
-the original centerline, but every extra lightness and normal sample exactly
-matches the sample at the original endpoint. This confirms that the brush
-path's callback time continues to advance while lookups on the original
-centerline and width paths clamp at their endpoints. Run it on the trace above:
+the original centerline, and every extra lightness and normal sample matches
+the original endpoint at the trace's five-decimal precision. This is
+consistent with the callback lookups clamping on the original centerline and
+width paths, though the rounded trace cannot establish exact equality. Run it
+on the trace above:
 
 ```sh
 nix develop path:./nix --command python \

@@ -115,8 +115,9 @@ affected source-parity crops do not materially regress.
   and exact hit parameterization; geometric knot insertion alone is not
   sufficient. The source trace now establishes callback behavior for all nine
   expanded call-4–6 lanes: post-cut path lengths exceed the original length by
-  3–5 units, but every callback's lightness and normal after the original
-  endpoint exactly repeats the endpoint sample. `offsetPathTemplate` therefore
+  3–5 units, while callback lightness and normal after the original endpoint
+  match the endpoint sample at the trace's five-decimal precision.
+  `offsetPathTemplate` therefore
   advances across the inserted lane knots while its lookups on the uncut
   centerline/width paths clamp at their endpoint. The new
   `diagnostics/analyze_m11_shadow_callbacks.py` verifies this from
