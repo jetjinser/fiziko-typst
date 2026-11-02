@@ -169,6 +169,53 @@ enddef;''')
             & decimal(xpart(point length(p) of p)/mm) & " "
             & decimal(ypart(point length(p) of p)/mm);
     fi;''')
+    template_start = "    bt := q;"
+    if source.count(template_start) != 2:
+        raise ValueError(f"expected two brush template anchors, found {source.count(template_start)}")
+    before_template, after_template = source.rsplit(template_start, 1)
+    source = before_template + template_start + '''
+    if traceKnotActive:
+      if traceCurrentK = 2:
+       if (i = 2) or (i = 3):
+        for traceTemplateIndex := 0 step 1 until length(bt) - 1:
+            message "M11QSEG " & decimal(traceTubeCall) & " "
+                & decimal(traceCurrentK) & " " & decimal(i) & " "
+                & decimal(traceTemplateIndex) & " "
+                & decimal(floor(ypart(point traceTemplateIndex of bt)*256)) & " "
+                & decimal(round((ypart(point traceTemplateIndex of bt)*256-
+                    floor(ypart(point traceTemplateIndex of bt)*256))*256)) & " "
+                & decimal(floor(ypart(postcontrol traceTemplateIndex of bt)*256)) & " "
+                & decimal(round((ypart(postcontrol traceTemplateIndex of bt)*256-
+                    floor(ypart(postcontrol traceTemplateIndex of bt)*256))*256)) & " "
+                & decimal(floor(ypart(precontrol (traceTemplateIndex+1) of bt)*256)) & " "
+                & decimal(round((ypart(precontrol (traceTemplateIndex+1) of bt)*256-
+                    floor(ypart(precontrol (traceTemplateIndex+1) of bt)*256))*256)) & " "
+                & decimal(floor(ypart(point (traceTemplateIndex+1) of bt)*256)) & " "
+                & decimal(round((ypart(point (traceTemplateIndex+1) of bt)*256-
+                    floor(ypart(point (traceTemplateIndex+1) of bt)*256))*256));
+        endfor;
+       fi;
+      fi;
+    fi;''' + after_template
+    thin_level = "            w2 := floor((1/2(w0 + w1) - minWidth)/dashStrokeWidthStep)*dashStrokeWidthStep + minWidth;"
+    if source.count(thin_level) != 1:
+        raise ValueError(f"expected one thin-brush width-level hook, found {source.count(thin_level)}")
+    source = source.replace(thin_level, thin_level + '''
+            if traceKnotActive:
+                message "M11THINCALC " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(floor(w0*256)) & " "
+                    & decimal(round((w0*256-floor(w0*256))*256)) & " "
+                    & decimal(floor(w1*256)) & " "
+                    & decimal(round((w1*256-floor(w1*256))*256)) & " "
+                    & decimal(floor(minWidth*256)) & " "
+                    & decimal(round((minWidth*256-floor(minWidth*256))*256)) & " "
+                    & decimal(floor(dashStrokeWidthStep*256)) & " "
+                    & decimal(round((dashStrokeWidthStep*256-
+                        floor(dashStrokeWidthStep*256))*256)) & " "
+                    & decimal(floor(w2*256)) & " "
+                    & decimal(round((w2*256-floor(w2*256))*256));
+            fi;''')
     thin_cut = "        t := cutPathTime(bt, w2);"
     if source.count(thin_cut) != 1:
         raise ValueError(f"expected one thin-brush cut hook, found {source.count(thin_cut)}")

@@ -152,6 +152,14 @@ affected source-parity crops do not materially regress.
   width precision has not resolved the branch mismatch. The regenerated trace
   preserves all 15,963 shared M11 marker lines exactly; additional width and
   recursive-path markers improve diagnosis without changing rendering.
+  A focused `M11QSEG` trace now captures the source width-template cubic
+  controls for the divergent call-4/lane-2 recursion. `offsetPathTemplate`
+  stores callback widths in 16.16 `--` cubics, and recursive `subpath` calls
+  preserve their sliced controls. The replay currently reconstructs each
+  branch with linear width interpolation; quantizing its cut time or rebuilding
+  a fresh cubic per branch leaves the 15/18 call match unchanged. Model the
+  original q cubic controls and carry their exact subpaths before changing
+  production recursion.
   Source recursive nodes now include their geometric endpoints and cut points.
   In call 4 lane 2, the source chooses width `0.03807` and splits near
   `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm

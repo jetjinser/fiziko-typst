@@ -994,7 +994,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINPATH|^M11TCUT|^M11TCUTPATH|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11QSEG|^M11THINPATH|^M11TCUT|^M11TCUTPATH|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1073,6 +1073,19 @@ change is justified. Sampling at 16 and 32 points per cubic leaves the three
 known lane call totals unchanged. Supplying source cumulative arc positions
 also leaves those three totals unchanged and worsens other traced lanes, so
 that trial was removed.
+
+The latest source probe adds `M11THINCALC` fixed-point operands and
+`M11QSEG` control points for call 4/lane 2. For the split that produces the
+`0.03513` mm endpoint, source `cutPathTime` uses target `0.03514` at path time
+`3.99158`; the child begins at `0.03513` after the cut. The q-template is a
+sequence of MetaPost `--` cubics whose controls are quantized to 16.16 bp. For
+example, one segment records raw coordinates `(22:14, 23:53, 24:91, 25:130)`
+as integer:low-byte pairs. Recursive `subpath` operations preserve the sliced
+cubic controls. The current replay instead linearly interpolates callback
+widths again at each cut. Quantizing the replay's path-time cut and modeling a
+fresh cubic from each pair of widths both leave the 15/18 call match unchanged;
+the latter moves the endpoint farther from source. The next useful model must
+carry and split the original fixed-point q cubics through recursion.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
