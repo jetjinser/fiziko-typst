@@ -102,7 +102,7 @@
     + eye(at: (62,22), size: (18,10), look: (0,0), lashes: 7, seed: seed)
     + strand-knot((wa,wb), widths: (0.8,0.8),
       layers: ((-1,1,-1,1),(1,-1,1,-1)), gap: 0,
-      seed: seed, style: "tube")
+      seed: seed, style: "tube", occlusion: "mask")
     + stroke-path(circle-pts(10,128,center:(136,22)), stroke: 0.35pt + black, closed: true, per: 0)
     + refraction-path(((122,17),(128,17)), circle-pts(10,128,center:(136,22)), ior: 1.5))
   } else if case == "S102" {

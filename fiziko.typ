@@ -3558,6 +3558,20 @@
   _add(points.at(i), _mul(_sub(points.at(i + 1), points.at(i)), t))
 }
 
+#let _polyline-window(points, lengths, center, half-width) = {
+  let total = lengths.last()
+  let lo = calc.max(0.0, center - half-width)
+  let hi = calc.min(total, center + half-width)
+  let result = (_polyline-point(points, lengths, lo),)
+  for i in range(points.len()) {
+    if lengths.at(i) > lo + 1e-6 and lengths.at(i) < hi - 1e-6 {
+      result.push(points.at(i))
+    }
+  }
+  if hi > lo + 1e-6 { result.push(_polyline-point(points, lengths, hi)) }
+  result
+}
+
 #let _sort-crossings(events) = {
   let sorted = ()
   for e in events {
@@ -3619,11 +3633,16 @@
 /// width or diameter at an over-under crossing. In tube style, the hidden
 /// interval expands by the crossing angle to match the projection of the
 /// over-strand tube onto the under-strand path.
+/// Set `occlusion: "mask"` with tube style to draw continuous strands and
+/// approximate MetaPost's silhouette masking at each overpass. The default
+/// `"gap"` mode physically removes the under-strand interval.
 #let strand-knot(strands, widths: 1.25, layers: auto, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
-                 style: "stroke") = {
+                 style: "stroke", occlusion: "gap") = {
   assert(style == "stroke" or style == "tube",
     message: "strand-knot style must be stroke or tube")
+  assert(occlusion == "gap" or occlusion == "mask",
+    message: "strand-knot occlusion must be gap or mask")
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
@@ -3648,6 +3667,7 @@
     }
   }
   let events = range(n).map(_ => ())
+  let overpasses = ()
   for i in range(n) {
     for j in range(i + 1, n) {
       let pair-count = 0
@@ -3678,8 +3698,12 @@
               if i-over {
                 events.at(j).push((sb, crossing-half-gap(widths.at(i),
                   crossing-sine: crossing-sine)))
+                overpasses.push((i, sa, crossing-half-gap(widths.at(i),
+                  crossing-sine: crossing-sine)))
               } else {
                 events.at(i).push((sa, crossing-half-gap(widths.at(j),
+                  crossing-sine: crossing-sine)))
+                overpasses.push((j, sb, crossing-half-gap(widths.at(j),
                   crossing-sine: crossing-sine)))
               }
               pair-count += 1
@@ -3716,8 +3740,10 @@
                   crossing-sine: crossing-sine)
                 if over-at(pair-count, i, i) {
                   events.at(i).push((sb, half-gap))
+                  overpasses.push((i, sa, half-gap))
                 } else {
                   events.at(i).push((sa, half-gap))
+                  overpasses.push((i, sb, half-gap))
                 }
                 pair-count += 1
               }
@@ -3729,7 +3755,9 @@
   }
   let drawings = ()
   for i in range(n) {
-    let fragments = _strand-fragments(strands.at(i), lengths.at(i), events.at(i))
+    let fragments = if style == "tube" and occlusion == "mask" {
+      (strands.at(i),)
+    } else { _strand-fragments(strands.at(i), lengths.at(i), events.at(i)) }
     if style == "tube" {
       // The upstream knot stores the same radius consumed by tube.l; its
       // tube macro doubles that radius when constructing the diameter.
@@ -3739,6 +3767,20 @@
     } else {
       drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
         per: 0, fill: stroke, seed: seed))
+    }
+  }
+  // MetaPost's knot renderer masks each previously drawn tube by the
+  // silhouette of an over-passing tube. Recreate that local occlusion by
+  // erasing a tube-width corridor, then redraw the over-strand hatching.
+  if style == "tube" and occlusion == "mask" {
+    for (strand-index, distance, half-width) in overpasses {
+      let part = _polyline-window(strands.at(strand-index),
+        lengths.at(strand-index), distance, half-width + widths.at(strand-index))
+      drawings.push(stroke-path(part,
+        stroke: (paint: white, thickness: 2 * widths.at(strand-index) * 1mm),
+        per: 0))
+      drawings.push(tube(part, widths.at(strand-index), hatch: "l",
+        w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
     }
   }
   _join(drawings)
