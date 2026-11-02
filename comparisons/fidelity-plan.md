@@ -152,6 +152,16 @@ affected source-parity crops do not materially regress.
   `offsetPathTime` samples of `iL`, then recurses over `reverse(iL)`; Typst
   currently interpolates widths by normalized arc fraction. Pair these time
   domains and path orientations explicitly before changing the width law.
+  A fresh source trace found a more basic brush-input difference: `woodBlock`
+  clips its intermediate picture only after `isoLines` runs `brushGenerate`
+  on the full `cLine` path. Typst currently clips the contour before width
+  evaluation and recursion. On the first M9 contour, source has 22 path points
+  and a 17.28086 mm outer root, while the paired Typst path has 20 points and
+  a 14.59937 mm root; the source endpoint extensions transform beyond the
+  block's `y=33` edge. Implement post-brush polygon clipping before tuning
+  local width or endpoint thresholds, then gate the candidate on M9 and S105
+  traces and crops. The source ordering and measurements are recorded in
+  `diagnostics/README.md`; no renderer change is retained yet.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;

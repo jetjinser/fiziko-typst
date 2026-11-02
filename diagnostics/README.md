@@ -228,6 +228,23 @@ underlying brush trees correspond. These cases narrow the next source audit to
 width-level selection and endpoint/candidate validity; they do not yet justify
 a global threshold change.
 
+A fresh pinned-source trace identifies an earlier geometric mismatch that
+should be resolved before those local branch decisions. MetaPost's
+`woodBlock` draws `isoLines` into an intermediate picture, then clips that
+picture to the block polygon; therefore `brushGenerate(reverse(iL))` sees the
+full `cLine` path, including its one-cell boundary extensions. In the first
+M9 contour, the source trace has 22 path points, while the paired Typst contour
+has 20 after `_clip-polyline-paths` runs before `_wood-source-width` and
+`stroke-ink`. The source endpoints transform to `(22,34)` and `(12,34)` in the
+Typst landscape coordinates, beyond the block's `y=33` edge; the Typst path
+instead starts and ends on the clipped boundary. The source path length is
+17.28086 mm, versus 14.59937 mm at the paired Typst outer recursion root.
+This ordering explains why the root widths can be close while the recursive
+tree and endpoint branches diverge. The next renderer candidate should brush
+the untrimmed source contour and clip the resulting ink to the polygon, then
+compare M9 and S105 traces and crops before retention. This source-ordering
+change is not implemented yet.
+
 The source instrumenter now emits `WBTFIX`, recording `w0`, `w1`, `w2`,
 `minWidth`, and `dashStrokeWidthStep` in 16.16 MetaPost point units. At the
 first close divergence (source call 10), the source values are
