@@ -182,6 +182,16 @@ affected source-parity crops do not materially regress.
   subdivision primitive, and a paired replay matches all 18 left and 18 right
   child control arrays exactly after quantization. The primitive is not yet
   wired into `_ink-loops`, so no renderer change is claimed.
+  A fixed-width evaluator reconstructed the q width segment from its two
+  16.16 callback endpoints and evaluated it by fixed-point de Casteljau. All
+  76 traced call-4/lane-2 q cubics across the six recursive levels have
+  control points exactly equal to the nearest-unit linear controls derived
+  from their endpoints. The evaluator left the 15/18 lane call match unchanged
+  and added 10 recursion nodes across the three divergent lane traces, including
+  a spurious `9.25e-6 mm` endpoint branch; it was reverted. The source width
+  curve within each callback interval is already linear, so the remaining
+  mismatch is the q path's recursive subpath/time remapping, not missing
+  curvature between callback endpoints.
   An expanded source trace now covers the three divergent lanes: fixed-point
   subdivision verifies 19/9/14 parent-left and parent-right pairs for calls
   4/lane 2, 4/lane 6 and 5/lane 2, and the Typst primitive matches every
