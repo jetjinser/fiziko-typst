@@ -12,7 +12,8 @@
 /// `with-count` also returns the number of thresholds visited. The result is
 /// an array of polylines, each an array of (x, y) float points.
 #let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24,
-                      levels: none, level-jitter: none, with-count: false) = {
+                      levels: none, level-jitter: none, mask: none,
+                      with-count: false) = {
   let dx = w / nx
   let dy = h / ny
   let V = range(ny + 1).map(j => range(nx + 1).map(i => f(x0 + i * dx, y0 + j * dy)))
@@ -63,6 +64,9 @@
 
           let px = x0 + i * dx
           let py = y0 + j * dy
+          // Masks address grid cells by their physical center. This gives
+          // callers a stable analogue of cLine's per-cell isoLinesMask.
+          if mask != none and not mask(px + dx / 2, py + dy / 2) { continue }
           let eT = j * nx + i
           let eB = (j + 1) * nx + i
           let eL = hCount + j * (nx + 1) + i

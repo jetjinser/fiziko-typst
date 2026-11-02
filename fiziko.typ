@@ -2791,16 +2791,30 @@
 /// `field(x, y)` returns a number; bounds and grid dimensions are in mm and
 /// sample counts. The output groups all connected contour paths into one flat
 /// array, so it can be inspected, clipped, transformed, or drawn by the caller.
-#let contour-lines(field, x, y, w, h, levels, nx: 40, ny: 24) = {
-  marching-squares(field, x, y, w, h, levels: levels, nx: nx, ny: ny)
+/// Optional `mask(x, y)` excludes grid cells by their physical center.
+#let contour-lines(field, x, y, w, h, levels, nx: 40, ny: 24, mask: none) = {
+  marching-squares(field, x, y, w, h, levels: levels, nx: nx, ny: ny,
+    mask: mask)
 }
 
 /// Draw scalar-field isolines at explicit levels using a shared stroke style.
 /// Marching-squares segments are stitched into connected polylines first.
+/// `mask(x, y)` excludes grid cells by their physical center. Set `width:` to
+/// a width in mm or a function of normalized path position returning mm.
 #let iso-lines(field, x, y, w, h, levels, nx: 40, ny: 24,
-               stroke: 0.35pt + black, per: 0) = {
-  let lines = contour-lines(field, x, y, w, h, levels, nx: nx, ny: ny)
-  _join(lines.map(line => stroke-path(line, stroke: stroke, per: per)))
+               stroke: 0.35pt + black, width: none, min-w: _source-min-stroke,
+               period: _source-dash-length, seed: 0, fill: black,
+               per: 0, mask: none) = {
+  let lines = contour-lines(field, x, y, w, h, levels,
+    nx: nx, ny: ny, mask: mask)
+  _join(lines.enumerate().map(((i, line)) => {
+    if width == none { stroke-path(line, stroke: stroke, per: per) }
+    else {
+      let w = if type(width) == function { width } else { _ => width }
+      stroke-ink(line, w, closed: false, min-w: min-w, period: period,
+        seed: seed + i * 104729, per: per, fill: fill)
+    }
+  }))
 }
 
 /// Wood-grain contours clipped to an arbitrary simple polygon. `eyes` use
