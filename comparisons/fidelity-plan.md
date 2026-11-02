@@ -168,7 +168,12 @@ affected source-parity crops do not materially regress.
   Their endpoint widths still pair within 0.000018/0.000014 mm in reversed
   spatial order. This points to the interior width-template/path-time mapping
   on that branch, not an endpoint-width mismatch; it does not establish a
-  safe production width-law change.
+  safe production width-law change. A Hobby width curve sampled at four
+  points per contour edge regressed matched 600 ppi RMSE on M9
+  (`0.21274033 → 0.22116264`) and S105 (`0.10244255 → 0.10595469`) because
+  densification changes the brush's path-time grid; it was reverted. The
+  continuous source width profile must reach recursion while preserving the
+  contour's original path-time parameterization.
   A fresh source trace found a more basic brush-input difference: `woodBlock`
   clips its intermediate picture only after `isoLines` runs `brushGenerate`
   on the full `cLine` path. Typst currently clips the contour before width

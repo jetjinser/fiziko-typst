@@ -281,7 +281,17 @@ that template from `iL` using integer `offsetPathTime` samples and then calls
 law along normalized arc fractions of the paired contour. The paths and
 sample-time domains therefore need an explicit point-by-point pairing before
 changing the width mapping; the new control trace is diagnostic evidence, not
-a production renderer change.
+a production renderer change. A Hobby interpolation probe over cumulative
+arc/width samples confirmed that evaluating the curve only at the original
+contour vertices leaves the 37/11 outer-node and 65/48 thin-node trees
+unchanged. Sampling that profile at four subdivisions per contour edge made
+the recursion see its interior curvature, but also changed the brush's path-
+time grid: same-input 600 ppi RMSE regressed from `0.21274033` to
+`0.22116264` on M9 and from `0.10244255` to `0.10595469` on S105. M9 ink
+coverage moved closer to source, while S105 overshot it. The densified-path
+candidate was reverted. A source-width spline must enter recursion without
+changing the original contour parameterization before it can be judged as a
+faithful port.
 
 Thin-node metadata now records widths at both path endpoints. On the paired
 call-10 node, Typst's reversed endpoint widths are 0.04978701 and
