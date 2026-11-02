@@ -542,6 +542,13 @@ affected source-parity crops do not materially regress.
   Fiziko selects the forward pair. The current integer packet replay predicts
   `(0.999996, 0.999996)`, missing the source result. MetaPost 2.11 documents
   a best-pair fallback after 5000 unsuccessful bisection backtracks. An
+  attempted reordering of the replay's stack guard to the start of each
+  packet visit, based on the source's control flow
+  ([`mp_cubic_intersection`](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15047-L15103)),
+  reduced the fresh S104 target-row matches from 67/76 to 31/76. The assumed
+  level-19-to-stack-bound mapping is therefore wrong; that edit was reverted.
+  The updated source trace still independently replays all 19 cut choices,
+  while the fixed packet classification remains 67/76. An
   exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the early
   `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
   offsets track the shallow cubic root. The isolated +1 excursion shows that
