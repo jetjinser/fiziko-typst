@@ -85,12 +85,18 @@ affected source-parity crops do not materially regress.
   next issue to isolate. With source-rounded edges, the source-lighting
   candidate counts in source call order are `14/56/54/38/40/10` versus source
   `14/58/54/42/38/18`; the remaining mismatch is concentrated in calls 4–6.
-  On those later intervals, paired sample positions separate by up to
-  0.010–0.024 mm and source-normal L2 error remains 0.07–0.15. The corrected
-  tree trace shows the largest residuals on call 4's k=2 and k=6 inner lanes,
-  call 5's k=2 lane and call 6's k=2 lane; their dash-leaf counts do not match
-  despite the source-normal width law. This points back to segment-local
-  centerline/offset geometry or its parameter mapping.
+  On those later intervals, source lane callback positions do not align with
+  Typst sample indices under a direct linear-time mapping, and source-normal
+  L2 error remains 0.07–0.15. New MetaPost traces show that all six source
+  centerline cubics pair with the reconstructed Typst cubics: control-point
+  MAE is 0.000010–0.000013 mm and maximum error is below 0.000055 mm. Source
+  lane-path controls also fit the paired Typst sampled curves within 0.002 mm.
+  The traced current lane, centerline, and `tubeWidth` paths have matching
+  lengths within each source call (24 or 36); later callback times nevertheless
+  extend to 39–41. The unresolved issue is therefore the relationship between
+  brush width/lightness callback time and geometric sample time, rather than a
+  demonstrated centerline-shape error. Keep the recursive call mismatch open
+  until this time mapping is traced through brush generation.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and

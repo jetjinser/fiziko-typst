@@ -957,10 +957,22 @@ typst eval 'query(<m11-knot-tube-trace>).first().value' \
 
 The midpoint and boundary cubic controls are split into paired `A`/`B` log
 records (`M11CENTERA/B`, `M11EDGECURVEA/B`) so MetaPost does not wrap their
-coordinates across transcript lines. Join records by curve index before
-comparing controls.
+coordinates across transcript lines. Join records by call and curve index
+before comparing controls. `M11CURVEA/B` records do the same for source lanes
+k=2, 6, and 8; `M11PARAM` records list the current lane, centerline, and
+`tubeWidth` path lengths.
 
-The same instrumenter now emits source lane widths (`M11BW`) and random-call
+The six source midpoint paths pair to the reconstructed Typst cubics with
+control-point MAE of 0.000010–0.000013 mm and maximum error below 0.000055 mm.
+Source lane controls also fit the paired Typst sampled paths within 0.002 mm.
+Each traced lane, centerline, and `tubeWidth` path has 24 or 36 units in a
+given call. However, source brush callbacks reach `offsetPathTime` values 39–41
+on later calls. A direct linear conversion from that callback time to Typst's
+sample index does not preserve the source lightness sample positions. Treat
+this as an unresolved brush-time/geometry-time mapping; do not infer a
+centerline geometry defect or change production lighting from this trace alone.
+
+The same instrumenter emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
 `m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
 points, widths, and call count. Edge recursion now uses the same 16.16 source

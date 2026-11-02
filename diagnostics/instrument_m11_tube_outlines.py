@@ -185,20 +185,26 @@ enddef;''')
         raise ValueError(f"expected one tube lane path hook, found {source.count(current_path)}")
     source = source.replace(current_path, current_path + '''
                 if traceKnotActive:
-                    if traceTubeCall = 2:
-                        if k = 6:
-                            for traceCurveIndex := 0 step 1 until length(currentPath) - 1:
-                                message "M11CURVE " & decimal(traceCurveIndex) & " "
-                                    & decimal(xpart(point traceCurveIndex of currentPath)/mm) & " "
-                                    & decimal(ypart(point traceCurveIndex of currentPath)/mm) & " "
-                                    & decimal(xpart(postcontrol traceCurveIndex of currentPath)/mm) & " "
-                                    & decimal(ypart(postcontrol traceCurveIndex of currentPath)/mm) & " "
-                                    & decimal(xpart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
-                                    & decimal(ypart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
-                                    & decimal(xpart(point (traceCurveIndex+1) of currentPath)/mm) & " "
-                                    & decimal(ypart(point (traceCurveIndex+1) of currentPath)/mm);
-                            endfor;
-                        fi;
+                    if (k = 2) or (k = 6) or (k = 8):
+                        message "M11PARAM " & decimal(traceTubeCall) & " "
+                            & decimal(k) & " " & decimal(length(currentPath)) & " "
+                            & decimal(length(currentTubePath)) & " " & decimal(length(tubeWidth));
+                    fi;
+                    if (k = 2) or (k = 6) or (k = 8):
+                        for traceCurveIndex := 0 step 1 until length(currentPath) - 1:
+                            message "M11CURVEA " & decimal(traceTubeCall) & " "
+                                & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                & decimal(xpart(point traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(ypart(point traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(xpart(postcontrol traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(ypart(postcontrol traceCurveIndex of currentPath)/mm);
+                            message "M11CURVEB " & decimal(traceTubeCall) & " "
+                                & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                & decimal(xpart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(ypart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(xpart(point (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(ypart(point (traceCurveIndex+1) of currentPath)/mm);
+                        endfor;
                     fi;
                 fi;''')
     current_tube_path = "            currentTubePath := interpath (1/2, q, p);"
@@ -206,20 +212,20 @@ enddef;''')
         raise ValueError(f"expected one tube centerline hook, found {source.count(current_tube_path)}")
     source = source.replace(current_tube_path, current_tube_path + '''
             if traceKnotActive:
-                if traceTubeCall = 2:
-                    for traceCurveIndex := 0 step 1 until length(currentTubePath) - 1:
-                        message "M11CENTERA " & decimal(traceCurveIndex) & " "
-                            & decimal(xpart(point traceCurveIndex of currentTubePath)/mm) & " "
-                            & decimal(ypart(point traceCurveIndex of currentTubePath)/mm) & " "
-                            & decimal(xpart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
-                            & decimal(ypart(postcontrol traceCurveIndex of currentTubePath)/mm);
-                        message "M11CENTERB " & decimal(traceCurveIndex) & " "
-                            & decimal(xpart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
-                            & decimal(ypart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
-                            & decimal(xpart(point (traceCurveIndex+1) of currentTubePath)/mm) & " "
-                            & decimal(ypart(point (traceCurveIndex+1) of currentTubePath)/mm);
-                    endfor;
-                fi;
+                for traceCurveIndex := 0 step 1 until length(currentTubePath) - 1:
+                    message "M11CENTERA " & decimal(traceTubeCall) & " "
+                        & decimal(traceCurveIndex) & " "
+                        & decimal(xpart(point traceCurveIndex of currentTubePath)/mm) & " "
+                        & decimal(ypart(point traceCurveIndex of currentTubePath)/mm) & " "
+                        & decimal(xpart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
+                        & decimal(ypart(postcontrol traceCurveIndex of currentTubePath)/mm);
+                    message "M11CENTERB " & decimal(traceTubeCall) & " "
+                        & decimal(traceCurveIndex) & " "
+                        & decimal(xpart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                        & decimal(ypart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                        & decimal(xpart(point (traceCurveIndex+1) of currentTubePath)/mm) & " "
+                        & decimal(ypart(point (traceCurveIndex+1) of currentTubePath)/mm);
+                endfor;
             fi;''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
