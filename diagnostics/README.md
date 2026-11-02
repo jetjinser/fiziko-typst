@@ -981,6 +981,16 @@ does not insert these knots before brush recursion. Use `M11POSTCURVEA/B` to
 compare the reparameterized path; do not tune lighting from the uncut path
 comparison alone.
 
+A production trial inserted lane knots at shifted-outline intersections and
+resampled widths on the resulting time grid. It produced per-segment calls
+`14/54/54/34/34/16` (206 total) versus source `14/58/54/42/38/18`; the
+pre-trial baseline was `14/56/54/38/40/10` (212 total). Absolute segment
+error increased from 16 to 18. At 600 ppi whole M11 RMSE regressed
+`0.11295018 → 0.11301771` and the knot crop `0.05881920 → 0.05958444`; the
+production edit was reverted. The next candidate needs to match the source
+width-template interpolation and exact intersection timing as well as its
+inserted cubic knots.
+
 The projection orientation is independently checked on source call 4, lane
 k=2. Its pre-cut lane and the shifted high-layer outline at `(rank=1,
 segment=4)` intersect first at source path time `21.78946`; intersecting the

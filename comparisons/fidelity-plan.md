@@ -104,6 +104,16 @@ affected source-parity crops do not materially regress.
   compare per-call RNG vectors and renders. The source intersection uses
   `light.xy * (lane-depth - 1.5 * occluder-width) * light.z`; traces record
   both depths, the light vector, shadow index, and evolving lane time.
+  A first production candidate fitted lane cubics, inserted the traced
+  `±0.05` knots at shifted-outline intersections, and sampled widths on the
+  resulting path-time grid. Its call vector was `14/54/54/34/34/16` (206 total)
+  against source `14/58/54/42/38/18`; the retained baseline is
+  `14/56/54/38/40/10` (212 total). Absolute per-segment error rose from 16 to
+  18. At 600 ppi, whole M11 RMSE regressed `0.11295018 → 0.11301771` and knot
+  crop RMSE `0.05881920 → 0.05958444`, so the production candidate was
+  reverted. The next probe must preserve the source q-path width interpolation
+  and exact hit parameterization; geometric knot insertion alone is not
+  sufficient.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
