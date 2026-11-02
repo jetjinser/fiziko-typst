@@ -144,12 +144,14 @@ affected source-parity crops do not materially regress.
   sampling density from one to four or sixteen samples per source cubic does
   not change those call totals, so the remaining discrepancy is localized to
   recursive branching or low-level arithmetic rather than broad path density.
-  A source instrument now records callback widths exactly as 16.16 fixed-point
-  values (encoded in two base-256 digits to stay within MetaPost's numeric
-  range). Replaying those exact widths also leaves the 15/18 match and the same
-  three lane differences unchanged; five-decimal callback truncation is not
-  their cause. The existing source and new precision trace agree on all 6,409
-  post-curve, callback, lane-call and brush-node records.
+  A source instrument now records callback widths as raw MetaPost bp 16.16
+  values, encoded in two base-256 digits and converted to millimetres only
+  after decoding. Across 1,895 samples, these differ from products of the
+  five-decimal log values by at most `5.76e-6 mm` (mean `2.22e-6 mm`). Replay
+  still matches 15/18 lane totals with the same three differences, so greater
+  width precision has not resolved the branch mismatch. The regenerated trace
+  preserves all 15,963 shared M11 marker lines exactly; additional width and
+  recursive-path markers improve diagnosis without changing rendering.
   Source recursive nodes now include their geometric endpoints and cut points.
   In call 4 lane 2, the source chooses width `0.03807` and splits near
   `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm

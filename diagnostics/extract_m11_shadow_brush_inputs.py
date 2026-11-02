@@ -16,6 +16,9 @@ def cubic(points, t):
                  for a, b, c, d in zip(p0, p1, p2, p3))
 
 
+MP_UNIT_MM = 25.4 / 72
+
+
 def sampled_curve(points, steps):
     return [cubic(points, i / steps) for i in range(steps + 1)]
 
@@ -99,7 +102,10 @@ def main():
             integration_points = sampled_curve(control_points, 32)
             def width(sample):
                 if "width_fixed" in sample:
-                    return sample["width_fixed"] / 65536
+                    # M11WIDTHFIX records raw MetaPost bp coordinates. Convert
+                    # the source 16.16 grid to Typst millimetres only after
+                    # decoding it, preserving the finer source width lattice.
+                    return sample["width_fixed"] / 65536 * MP_UNIT_MM
                 return sample["max_width"] * sample["lightness"]
 
             w0 = width(width_samples[i])

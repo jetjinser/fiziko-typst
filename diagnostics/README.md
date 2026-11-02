@@ -1045,16 +1045,18 @@ nix develop path:./nix --command python \
   /tmp/m11-tube-outline-trace/trace.log
 ```
 
-The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. This records
-the source's 16.16 fixed-point result of `maxShadingStrokeWidth * lightness`
-without asking MetaPost to represent the overflowing intermediate
-`value * 65536`. Across 1,895 callback samples, the previous product of
-five-decimal log values differs from this exact width by at most
-0.00001039 mm. Replaying these exact widths leaves all 18 lane call totals
-unchanged, including the same three mismatches. The callback log precision is
-therefore not the cause of those brush-tree differences. The current source
-trace and replay result were cross-checked against the earlier trace: all
-6,409 post-curve, callback, lane-call and brush-node records match exactly.
+The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
+the raw source 16.16 MetaPost bp value of
+`maxShadingStrokeWidth * lightness`; the extractor converts it to millimetres
+only after decoding. This preserves the source fixed-point grid without asking
+MetaPost to represent the overflowing intermediate `value * 65536`. Across
+1,895 callback samples, the decoded width differs from the product of the
+five-decimal log values by at most `5.76e-6 mm` (mean `2.22e-6 mm`). Replaying
+these widths leaves the same 15/18 lane call totals and the same three
+mismatches. The width log precision therefore does not explain those brush-tree
+differences. In the regenerated trace, all 15,963 shared M11 marker lines match
+the earlier trace exactly; the new trace additionally contains the width and
+recursive-path markers.
 
 `M11THINPATH` and `M11TCUTPATH` now record source recursive-node endpoints and
 valid cut coordinates. Parent-aware pairing isolates the extra call-4/lane-2
