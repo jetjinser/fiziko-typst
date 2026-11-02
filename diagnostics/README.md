@@ -136,6 +136,14 @@ copying the source ring widths into `stroke-ink` made the M9 comparison worse.
 `wood_knot_ring_counts.typ` reproduces that Typst count. The ring shape and
 dash recursion need a curve-aware port before replacing the current knot mark.
 
+`wood_knot_resolution_counts.typ` probes `_ink-loops` with source-rounded width
+levels sampled from the eight `fullcircle` knots. Its eight-point polygon gets
+`[14, 10, 6, 2, 0]` calls, close to the source `[14, 6, 6, 2, 0]`; increasing
+the polygon resolution overshoots sharply. The eight-point centerline is only
+a call-count probe, not acceptable circle geometry. The remaining ring-2
+difference reinforces that the next port needs separate cubic path geometry
+and the source's eight-knot, arc-length width template.
+
 `wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
 coordinates. To record candidate positions and per-knot random-call counts
 from the pinned MetaPost source, run inside the Nix devshell:

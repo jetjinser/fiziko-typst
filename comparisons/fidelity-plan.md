@@ -78,8 +78,12 @@ strokes, while M10 contains mostly whitespace.
    interpolation should follow that sequence rather than geometric segment
    order. Landscape blocks now reproduce the source's
    internal axis swap, and a trace of the pinned source shows that each
-   accepted knot consumes 28 random draws in its nested brush rings. The first
-   M9 panel's first accepted knot now matches source coordinates to under
+   accepted knot consumes 28 random draws in its nested brush rings. Its first
+   ring calls are `[14, 6, 6, 2, 0]`; a source-width-knot probe
+   on an eight-point polygon gives `[14, 10, 6, 2, 0]`, while denser polygons
+   over-subdivide. That polygon is only a count diagnostic; a useful port must
+   separate the cubic `fullcircle` geometry from its eight-knot width template.
+   The first M9 panel knot now matches source coordinates to under
    0.1 mm; M9 whole-plate RMSE improves from 0.22688 to 0.22456, with ink
    coverage 4.272% versus 4.203%. Contour-brush random calls still leave later
    M9 panel streams approximate. S105 now rounds field bounds to the 1 mm
