@@ -77,8 +77,12 @@ affected source-parity crops do not materially regress.
   0.001 mm); current lightness MAE by lane is
   `0.32889/0.21929/0.10963/0/0.10963/0.21925/0.32890`, symmetric around k=4.
   This localizes the remaining discrepancy across the cross-section rather
-  than to path sampling and supports investigating the vertical-component sign
-  in the screen-to-world normal mapping. Acceptance remains matching the six
+  than to path sampling. Flipping the radial y component in the source-lighting
+  formula lowers each of those seven lightness MAEs to `0.00001–0.00003`, but
+  the M11 render regresses: whole-plate RMSE `0.112950 → 0.114784` and knot
+  crop `0.058819 → 0.077068`. The production candidate was reverted; this
+  points to recursive dash/call divergence after the width correction as the
+  next issue to isolate. Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
   Typst use the same subdivision request and matching width thresholds, yet
