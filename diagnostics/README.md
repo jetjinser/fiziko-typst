@@ -330,6 +330,27 @@ source 16.16 width rounding in the production coast trace increased Typst to
 source cut parameters and width-cubic ranges on masses 2 and 4 before changing
 the coast width law or RNG stream.
 
+The paired root cuts make that priority concrete. Upstream
+`offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the
+template's x coordinate and the width in y; `cutPathTime` chooses the width
+crossing nearest the half-length x midpoint. It is therefore an arc-length
+selection, not a screen-space x selection. On mass 4, the source and Typst
+targets already agree (`0.05563` and `0.05565` mm) and both root lengths are
+about 28.2 mm, but the source cuts into `14.292/13.925` mm children while the
+Typst linear-width trace cuts into `8.974/19.260` mm children. The source trace
+records a q cubic segment around its hit at cumulative arc `40.51292 bp`:
+`(40.37596, .15778)`, `(40.56644, .15770)`, `(40.75690, .15764)`,
+`(40.94737, .15756)`, with target `.15773 bp`. Mass 2 diverges earlier in the
+width profile: its source root target is `.05270` mm versus Typst `.06151` mm.
+`instrument_brush.py` now emits `S101-CUBIC`, `S101-Q0`, `S101-QPOST`,
+`S101-QPRE`, and `S101-Q1` records for the source q segment around each cut,
+which should be paired with the corresponding Typst node before implementing
+source fixed-point cubic intersection. A temporary screen-space x-midpoint
+selector reduced whole M11 RMSE from `0.11266070` to `0.11264450` and globe
+crop RMSE from `0.18874815` to `0.18868380`, but it interpreted q.x as page x;
+the upstream definition proves q.x is cumulative arc length. That selector
+was removed and its score is not evidence for a source-faithful change.
+
 To extract and inspect the source path samples and Typst run counts inside the
 Nix devshell:
 
@@ -367,9 +388,10 @@ typst eval 'query(<m11-coast-brush-trace>).first().value' \
 ```
 
 The source transcript brackets each coast brush with `M11-COAST-BEGIN` and
-`M11-COAST-END`; count `S101 NODE` markers only inside those brackets. Source
-RNG draws are the corresponding `M11-COAST` values. The Typst metadata stores
-`landmass`, `calls`, `outer`, `thin`, and the complete recursive `nodes`.
+`M11-COAST-END`; count `S101 NODE` and `S101-CUBIC` markers only inside those
+brackets. Source RNG draws are the corresponding `M11-COAST` values. The
+Typst metadata stores `landmass`, `calls`, `outer`, `thin`, and the complete
+recursive `nodes`.
 
 To reproduce the source stage counts and the Typst layer counts inside the
 Nix devshell:

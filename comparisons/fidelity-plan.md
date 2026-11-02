@@ -334,8 +334,17 @@ contours with the sampled source rings (the measured render regressed).
    nodes. Enabling 16.16 rounding in the Typst coast trace increases its total
    from 92 to 112 calls, so the change was reverted. Pair source cut parameters
    and width-cubic ranges on masses 2 and 4 before changing the coast width law
-   or stream. A fixed stream offset tested with the prior projection and again
-   with closed contours was reverted.
+   or stream. Source `offsetPathTemplate` uses cumulative arc length as q's x
+   coordinate, so `cutPathTime`'s midpoint is the arc-length midpoint; the
+   disagreement lies in width-cubic crossings, not screen-x versus arc
+   selection. A screen-x midpoint selector briefly improved the 600 ppi
+   scores, but was removed after the upstream coordinate definition showed
+   that selector used the wrong axis. On mass 4, source and Typst root targets
+   agree to 0.00002 mm, but source child lengths are 14.292/13.925 mm versus
+   Typst 8.974/19.260 mm.
+   The source trace now emits q cubic controls (`S101-CUBIC`) around each cut.
+   A fixed stream offset tested with the prior projection and again with
+   closed contours was reverted.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived

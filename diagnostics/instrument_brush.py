@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add compact S101 thinBrush.stipples trace messages to a fiziko.mp copy.
+"""Trace thin-brush recursion, RNG, and q cubic controls in a fiziko.mp copy.
 
 Usage: instrument_brush.py UPSTREAM_FIZIKO_MP OUTPUT_MP
 """
@@ -55,6 +55,21 @@ def main() -> None:
         "        t := cutPathTime(bt, w2);\n"
         "        brushPath1 := subpath (0, t) of p;\n"
         "        brushPath2 := subpath (t, length(p)) of p;\n"
+        '        traceCurveIndex := floor(t);\n'
+        '        message "S101-CUBIC " & decimal(i) & " "'
+        ' & decimal(traceCurveIndex) & " " & decimal(w2) & " " & decimal(t);\n'
+        '        message "S101-Q0 " & decimal(i) & " "'
+        ' & decimal(xpart(point traceCurveIndex of q)) & " "'
+        ' & decimal(ypart(point traceCurveIndex of q));\n'
+        '        message "S101-QPOST " & decimal(i) & " "'
+        ' & decimal(xpart(postcontrol traceCurveIndex of q)) & " "'
+        ' & decimal(ypart(postcontrol traceCurveIndex of q));\n'
+        '        message "S101-QPRE " & decimal(i) & " "'
+        ' & decimal(xpart(precontrol (traceCurveIndex+1) of q)) & " "'
+        ' & decimal(ypart(precontrol (traceCurveIndex+1) of q));\n'
+        '        message "S101-Q1 " & decimal(i) & " "'
+        ' & decimal(xpart(point (traceCurveIndex+1) of q)) & " "'
+        ' & decimal(ypart(point (traceCurveIndex+1) of q));\n'
         '        message "S101 CUT " & decimal(i) & " " & decimal(w2)'
         ' & " " & decimal(t) & " " & decimal(arclength(brushPath1))'
         ' & " " & decimal(arclength(brushPath2));',
