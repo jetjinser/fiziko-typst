@@ -70,6 +70,33 @@
   }
   (left: left, right: right)
 }
+#let _source-path-time-at(segments, path-time) = {
+  let i = calc.min(int(calc.floor(path-time)), segments.len() - 1)
+  let f = path-time - i
+  let interval = segments.at(i)
+  interval.at(0) + (interval.at(1) - interval.at(0)) * f
+}
+#let _source-path-time-splice(segments, cut-time, half-gap: 0.05) = {
+  let start-time = cut-time - half-gap
+  let end-time = cut-time + half-gap
+  let start-index = int(calc.floor(start-time))
+  let end-index = int(calc.floor(end-time))
+  let start-fraction = start-time - start-index
+  let end-fraction = end-time - end-index
+  let source-start = _source-path-time-at(segments, start-time)
+  let source-end = _source-path-time-at(segments, end-time)
+  let result = segments.slice(0, start-index)
+  if start-fraction > 1e-9 {
+    result.push((segments.at(start-index).at(0), source-start))
+  }
+  result.push((source-start, source-end))
+  if end-fraction > 1e-9 {
+    result.push((source-end, segments.at(end-index).at(1)))
+  }
+  let suffix = if end-fraction > 1e-9 { end-index + 1 } else { end-index }
+  result += segments.slice(suffix)
+  result
+}
 #let _mp-path-subdivision-times(n) = {
   let step = _mp-scalar-rounded(1 / n)
   let times = (0.0,)

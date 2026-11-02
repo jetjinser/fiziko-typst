@@ -1154,6 +1154,22 @@ matches every next-attempt and terminal path length on all 27 traced lanes,
 and all nine `M11POSTPARAM` lengths. It also maps call 4/lane 2's later cut at
 `28.06259` back to original path time `26.06259`, agreeing with the
 independently reconstructed geometric hit at `26.0622` within trace rounding.
+The interval splice and source-time lookup are ported to Typst as
+`_source-path-time-splice` and `_source-path-time-at`. Replay every cut and
+terminal path length from a fresh source trace with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_splice_cases.py \
+  /tmp/m11-tube-outline-trace/trace.log build/m11-shadow-splice-cases.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-shadow-splice-replay>).first().value' \
+  --in diagnostics/m11_shadow_splice_replay.typ --root .
+```
+
+The Typst replay matches 60/60 post-cut lengths and 27/27 terminal lengths.
+This ports the path-time structure only; it does not yet replace the connector
+geometry or alter production `strand-knot` rendering.
 
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
