@@ -320,8 +320,13 @@ contours with the sampled source rings (the measured render regressed).
    the source's five-step horizon crossing and arc-conflict rules, and brushes
    six closed outlines. Traced arc times agree with the pinned source within
    0.001 fullcircle units. Dash phase and recursive brush calls remain
-   approximate. A fixed stream offset tested with the prior projection was
-   reverted; re-evaluate it against the closed contours.
+   approximate. The source wrapper records coast RNG calls by landmass as
+   `[6, 15, 0, 3, 1, 0, 1, 1]`; the zero entries are empty fallback paths.
+   Typst's current 348/580 layer dash-call totals are not comparable because
+   they omit recursive brush draws and mix coastline work with the masked
+   latitude layers. Per-mass leaf and callback tracing is still needed before
+   a source stream offset can be inferred. A fixed stream offset tested with
+   the prior projection and again with closed contours was reverted.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
