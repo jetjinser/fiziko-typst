@@ -1154,6 +1154,20 @@ M4/M6/M11 renders, metrics are unchanged; M9 RMSE improves by `1.76e-6` and
 S105 by `3.76e-7`. Retain the source-exact threshold despite the negligible
 S104 pixelwise tradeoff; continue investigating the recursive cut width.
 
+The new `analyze_s104_cut_intersections.py` pairs each cut with its own exact
+source cubic controls and fixed-point time. For this row, source
+`firstIntersectionTimes` returns `1.65522766` while the exact cubic root is
+`1.65492377` (about 20 path-time units apart). On the one-unit child node it
+returns `0.01159668` even though the cubic has a threshold root at the endpoint
+`0`; the returned point is already below the threshold. This confirms that
+the remaining branch is sensitive to MetaPost's ray-intersection and endpoint
+handling, not only the ideal cubic crossing. Reproduce it with:
+
+```sh
+python3 diagnostics/analyze_s104_cut_intersections.py \
+  /tmp/s104-source-trace/trace.log -15.3487
+```
+
 The source outer-node and Typst recursion logs now include centerline
 endpoints and cut points, allowing exact row pairing. On one symmetric-width
 row, source `cutPathTime` chooses the left of two equidistant intersections;

@@ -88,7 +88,7 @@ def main() -> None:
                 parts = [
                     f'{indent}if length(bt) > {segment}:',
                     f'{indent}    message "S104-OCTRL " & decimal(traceHatchRow) & " "',
-                    f'{indent}        & decimal(i) & " {segment} "',
+                    f'{indent}        & decimal(traceCutSerial) & " " & decimal(i) & " {segment} "',
                 ]
                 for point_index, point in enumerate(points):
                     suffix = ';' if point_index == len(points) - 1 else ' & " "'
@@ -114,7 +114,8 @@ def main() -> None:
             & " " & decimal(ypart(point 0 of p)/mm)
             & " " & decimal(xpart(point length(p) of p)/mm)
             & " " & decimal(ypart(point length(p) of p)/mm);
-        message "S104-OFIX " & decimal(traceHatchRow) & " " & decimal(i)
+        message "S104-OFIX " & decimal(traceHatchRow) & " "
+            & decimal(traceCutSerial) & " " & decimal(i)
             & " " & decimal(floor(w0*256))
             & " " & decimal(round((w0*256-floor(w0*256))*256))
             & " " & decimal(floor(w1*256))
