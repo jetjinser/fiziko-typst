@@ -98,7 +98,13 @@ strokes, while M10 contains mostly whitespace.
    14.37% versus 14.07% in the source, while stipple coverage remains close
    (7.14% versus 7.08%). Prior S104 width and row-phase scans used the wrong
    hatch orientation and are superseded. Remaining hatch differences are
-   concentrated in brush stroke shape and random details.
+   concentrated in brush stroke shape and random details. A source row-level
+   RNG trace counts 1516 calls across 142 drawable rows versus 1322 in Typst.
+   Rounding width interpolation and thin-brush thresholds to MetaPost's 16.16
+   precision increased exact per-row call-count matches only from 87 to 89,
+   left the total unchanged, and regressed hatch RMSE to 0.07974; that prototype
+   was reverted. Further recursion changes should identify the missing calls
+   or branch gates before altering the width law.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to

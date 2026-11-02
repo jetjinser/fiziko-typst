@@ -18,10 +18,38 @@ def main() -> None:
     source = source.replace(
         anchor,
         anchor
-        + '\n                message "FSROW " & decimal(i) & " "'
+        + '\n                traceRngTotal := 0;'
+        '\n                message "FSROW " & decimal(i) & " "'
         ' & decimal(hatchLength) & " " & decimal(totalWidth)'
-        ' & " " & decimal(distFromEdge);',
+        ' & " " & decimal(distFromEdge) & " " & decimal(traceRngTotal)'
+        ' & " " & decimal(surfLight) & " "'
+        ' & decimal(2minStrokeWidth*(1/15+surfLight));',
     )
+    subdivide_anchor = "aHatch := pathSubdivide(aHatch,3+round(uniformdeviate(2)));"
+    if source.count(subdivide_anchor) != 1:
+        raise ValueError(f"expected one pathSubdivide hook, found {source.count(subdivide_anchor)}")
+    source = source.replace(
+        subdivide_anchor,
+        subdivide_anchor + "\n                message \"FSSUB \" & decimal(arclength(aHatch)) & \" \" & decimal(length(aHatch));",
+    )
+    end_anchor = "            fi;\n        endfor;\n    );\n    clip hatchImage to surfPath;"
+    if source.count(end_anchor) != 1:
+        raise ValueError(f"expected one flatSurface row end hook, found {source.count(end_anchor)}")
+    source = source.replace(end_anchor, """            fi;
+            message "FSEND " & decimal(i) & " " & decimal(traceRngTotal);
+        endfor;
+    );
+    clip hatchImage to surfPath;""")
+    source = source.replace("uniformdeviate(", "traceUniformdeviate(")
+    source += """
+
+numeric traceRngTotal;
+traceRngTotal := 0;
+vardef traceUniformdeviate (expr x) =
+    traceRngTotal := traceRngTotal + 1;
+    uniformdeviate(x)
+enddef;
+"""
     Path(sys.argv[2]).write_text(source)
 
 

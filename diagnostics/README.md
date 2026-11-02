@@ -492,6 +492,16 @@ using a fixed 24-segment path. At 600 ppi hatch crop RMSE falls from 0.09247 to
 0.07650; ink coverage is 14.37% versus 14.07% in the source. S104 full-plate
 RMSE falls from 0.21054 to 0.20725, with ink coverage 10.81% versus 10.63%.
 Brush leaf geometry and local random consumption still approximate MetaPost.
+The per-row source counter added to `instrument_flat_surface.py` now confirms
+1516 random calls across the 142 drawable hatch rows, versus 1322 in the
+Typst trace (including each row's randomized subdivision count). A prototype
+that rounded width interpolation and thin-brush thresholds to MetaPost's
+16.16 `scaled` precision improved exact per-row call-count matches only from
+87 to 89; total calls did not change, and the 600 ppi hatch RMSE regressed
+from 0.07650 to 0.07974. That rendering change was reverted. The remaining
+call deficit therefore needs a better identified branch or call-order cause;
+the source trace is useful for locating it but does not yet justify another
+width-quantization change.
 
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
