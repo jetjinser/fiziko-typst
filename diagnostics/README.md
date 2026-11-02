@@ -260,6 +260,14 @@ jitter is `226/65536`; Typst's first contour draw at RNG offset 204 is
 16.16 value. Thus the random-call position matches. The observed endpoint
 discrepancy (about `0.004–0.005 mm`) is already present in the maximum/level
 inputs; it is not a path-direction, boundary-stitching, or RNG-offset error.
+At the maximum cell `(6,42)`, the source decomposes its value into
+`wField = 13341/65536 = 0.20356750` and column offset
+`291/65536 = 0.00444031`, summing to the recorded maximum. Typst's diagnostic
+decomposition is `wField = 0.20359104` and offset `0.00444468`; its column RNG
+sample at index 176 is `0.85337830`, which rounds through
+`uniformdeviate(1/192)` to the same `291/65536`. The residual is therefore in
+the `wField` arithmetic, not the column RNG. The traced first accepted knot
+also agrees with Typst within 0.0003 mm after converting MetaPost bp to mm.
 Field-operation 16.16 rounding previously improved lattice samples but
 regressed both M9 and S105 renders, so do not apply a global field correction.
 Next, reproduce the source maximum-field arithmetic for level selection

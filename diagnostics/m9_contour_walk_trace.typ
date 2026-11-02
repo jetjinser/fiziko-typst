@@ -10,6 +10,10 @@
   model.rng-count)
 #let first-contour-random = _metapost-rng-sequence(1,
   model.rng-count + 1).last()
+#let maximum-column-random = _metapost-rng-sequence(1,
+  model.rng-count - 34 + 6 + 1).last()
+#let maximum-field-value = (model.field)(6, 42) / 24
+#let maximum-field-offset = maximum-column-random / 192
 #let grid = range(34).map(j => range(56).map(i => field(i, j)))
 #let values = grid.fold((), (all, row) => all + row)
 #let groups = levels.enumerate().map(((level-index, level)) => {
@@ -57,6 +61,9 @@
   sample-values: sample-values,
   target-values: ((6, 42, (model.field)(6, 42)),
     (0, 12, (model.field)(0, 12)), (0, 13, (model.field)(0, 13))),
+  maximum-components: (w-field: maximum-field-value - maximum-field-offset,
+    field-offset: maximum-field-offset, field-value: maximum-field-value,
+    column-random: maximum-column-random),
   field-rng-count: model.rng-count,
   first-contour-random: first-contour-random,
   levels: levels, paths: paths,

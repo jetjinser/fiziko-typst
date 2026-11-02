@@ -220,6 +220,23 @@ def main() -> None:
     max_anchor = "if wood[i][j] > maxWithinMask:"
     max_trace = max_anchor + "\n                            message \"CLMAX \" & decimal(i) & \" \" & decimal(j) & \" \" & decimal(wood[i][j]);"
     source = replace_once(source, max_anchor, max_trace, "wood field maximum")
+    field_value_anchor = "wood[i][j] := wField (wKnot)(i, j, (wS, lS), nwKnot) + k;"
+    field_value_trace = """traceWoodFieldValue := wField (wKnot)(i, j, (wS, lS), nwKnot);
+                wood[i][j] := traceWoodFieldValue + k;
+                if traceWoodBlock = 1:
+                    if (i = 6) and (j = 42):
+                        message "CLMAXCELL " & decimal(traceWoodFieldValue) & " " & decimal(k) & " " & decimal(wood[i][j]);
+                        message "CLMAXCELLFIX "
+                            & decimal(floor(traceWoodFieldValue*256)) & " "
+                            & decimal(round((traceWoodFieldValue*256-floor(traceWoodFieldValue*256))*256)) & " "
+                            & decimal(floor(k*256)) & " "
+                            & decimal(round((k*256-floor(k*256))*256)) & " "
+                            & decimal(floor(wood[i][j]*256)) & " "
+                            & decimal(round((wood[i][j]*256-floor(wood[i][j]*256))*256));
+                    fi;
+                fi;"""
+    source = replace_once(source, field_value_anchor, field_value_trace,
+                          "wood maximum field sample")
     level_anchor = "draw isoLines(wood)((wS, lS), woodBlockYRdensity*i + uniformdeviate(1/8woodBlockYRdensity), woodBlockRes);"
     level_trace = """if traceWoodBlock = 1:
                     traceWoodJitter := uniformdeviate(1/8woodBlockYRdensity);

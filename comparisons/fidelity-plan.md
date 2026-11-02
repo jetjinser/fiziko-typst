@@ -400,7 +400,12 @@ affected source-parity crops do not materially regress.
   (`0.6616821289`) rounds to that same value through `uniformdeviate(1/192)`,
   so the random-call position matches. This explains the approximately
   `0.004–0.005 mm` intersection offset without a path-order mismatch and
-  localizes the remaining level error to maximum-field arithmetic. Do not
+  localizes the remaining level error to maximum-field arithmetic. At the
+  maximum cell `(6,42)`, source `wField`/column offset are
+  `0.20356750/0.00444031`; Typst gives `0.20359104/0.00444468`. The column
+  random sample at index 176 rounds to the same `291/65536` source offset, and
+  the first accepted knot matches within `0.0003 mm`, so the residual is in
+  `wField` evaluation. Do not
   apply another global field correction: the prior fixed-point field-operation
   candidate regressed both wood plates. Reproduce the source maximum-field
   arithmetic for level selection without changing contour corner values, then
