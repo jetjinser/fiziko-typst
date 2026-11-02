@@ -86,6 +86,12 @@ strokes, while M10 contains mostly whitespace.
    An internal arc-length width interpolation probe leaves every tested call
    count unchanged, confirming that the polygon geometry/knot placement must be
    corrected before the remaining ring-2 recursion difference can be addressed.
+   The pinned cubic `fullcircle` is now sampled at 1/32 path-time intervals;
+   the existing cubic sampler matches it within `3.1e-5` normalized units and
+   reproduces the source ring counts exactly. Using those rings in the current
+   Typst band renderer worsens M9 RMSE from 0.22442 to 0.22843 and ink coverage
+   from 4.273% to 4.468% (source 4.203%), so that production candidate was
+   reverted. Brush offset/leaf geometry remains the next wood-knot gap.
    The first M9 panel knot now matches source coordinates to under
    0.1 mm; M9 whole-plate RMSE improves from 0.22688 to 0.22456, with ink
    coverage 4.272% versus 4.203%. Contour-brush random calls still leave later

@@ -153,6 +153,33 @@ must use the source cubic `fullcircle` geometry and its actual width-knot arc
 positions. The option is internal and is not enabled by the public wood
 renderers.
 
+The cubic path is now traced separately by `wood_fullcircle_trace.mp` and
+`extract_wood_fullcircle.py`. The renderer's existing eight-segment cubic
+sampler matches the pinned MetaPost points at 1/32 path-time spacing with a
+maximum normalized coordinate error of `0.0000309`. Feeding that geometry and
+its actual arc-positioned width knots into `_ink-loops` reproduces the source
+first-knot counts exactly: `[14, 6, 6, 2, 0]` (28 total). This only establishes
+the path and recursion-call model. Rendering those rings through the current
+Typst band builder raised M9 RMSE from `0.22442` to `0.22843` and ink coverage
+from `4.273%` to `4.468%` (source `4.203%`), so the production renderer was
+restored. The mismatch now points to brush offset geometry or leaf rendering,
+not the cubic centerline or call count.
+
+Regenerate the checked-in path trace in the locked Nix shell:
+
+```sh
+mkdir -p /tmp/wood-fullcircle-trace
+cp "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/wood-fullcircle-trace/fiziko.mp
+cp diagnostics/wood_fullcircle_trace.mp /tmp/wood-fullcircle-trace/
+(cd /tmp/wood-fullcircle-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace \
+    wood_fullcircle_trace.mp)
+python3 diagnostics/extract_wood_fullcircle.py \
+  /tmp/wood-fullcircle-trace/trace.log diagnostics/wood_fullcircle_path.typ
+typst eval 'query(<wood-knot-fullcircle-counts>).first().value' \
+  --in diagnostics/wood_knot_fullcircle_counts.typ --root .
+```
+
 `wood_knot_trace.typ` exports the first M9 plank's model and transformed knot
 coordinates. To record candidate positions and per-knot random-call counts
 from the pinned MetaPost source, run inside the Nix devshell:
