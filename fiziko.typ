@@ -636,7 +636,7 @@
     let rlen = total - llen
     (left-path, right-path, llen, rlen, arc, total, valid,
       source-path-time(path, cut), frame-index(cut).at(0),
-      qsplit.left, qsplit.right, mapsplit.left, mapsplit.right)
+      qsplit.left, qsplit.right, mapsplit.left, mapsplit.right, qtime)
   }
   let split-path(path, target, margin: 0.01, qcurves: none, qmap: none) = {
     if qcurves != none {
@@ -902,9 +902,11 @@
           has-cut: candidate != none,
           cut-distance: if candidate == none { none } else { candidate.at(4) },
           cut-param: if candidate == none { none } else { candidate.at(7) },
+          q-cut-time: if candidate == none or qcurves == none { none } else { candidate.at(13) },
           left-length: if candidate == none { 0.0 } else { candidate.at(2) },
           right-length: if candidate == none { 0.0 } else { candidate.at(3) },
           recurse: recurse,
+          q-curves-fixed: if qcurves == none { none } else { source-q-fixed(qcurves) },
           // A terminal thin node consumes two source RNG values only when it
           // reaches thinBrushPattern: it must be below minw and long enough
           // for dash placement. Keep this decision visible in trace mode.

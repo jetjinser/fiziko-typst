@@ -1033,7 +1033,13 @@ contours with the sampled source rings (the measured render regressed).
    nodes have endpoint widths 0.02344/0.01866 mm and no source cut record.
    Lane 4/6 has an exact 20-node tree. These two extra splits sit near the
    0.023432 mm width floor, so compare the source thin q template at those
-   leaves before changing the endpoint guard or width rounding.
+   leaves before changing the endpoint guard or width rounding. The replay
+   now records each thin q cubic in source 16.16 units; those controls exactly
+   equal the source at both first-divergence nodes. All 20 source q paths on
+   4/6 and all 30 on 5/2 match replay exactly, while 4/2's first two match
+   before its tree diverges. This rules out q control geometry as the cause
+   of these two extra splits and narrows the next probe to source width-level
+   selection, cut-time validation, and parameter mapping.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
