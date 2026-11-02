@@ -886,6 +886,26 @@ nix develop path:./nix --command python3 \
 The generated child endpoints need not coincide with original input samples;
 the diagnostic reports those separately from matched intermediate knots.
 
+For exact recursive-state verification, the same source trace now records the
+16.16 q-path knots, the four cubic controls around each selected cut, and its
+16.16 cut time. Run:
+
+```sh
+nix develop path:./nix --command python3 \
+  diagnostics/audit_m11_coast_q_children.py \
+  /tmp/m11-coast-brush/trace.log 1
+nix develop path:./nix --command python3 \
+  diagnostics/audit_m11_coast_q_children.py \
+  /tmp/m11-coast-brush/trace.log 2
+```
+
+The audit replays each q cubic split with fixed-point de Casteljau arithmetic,
+then compares the split point to both recursive child q endpoints. It checks
+all 7 mass-1 cuts and 28 mass-2 cuts with zero 16.16-unit error. This proves
+the pinned source carries the sliced q state exactly through recursion; the
+remaining production divergence is in Typst's q/path state, not source
+subpath construction.
+
 The instrumented source also emits `S101-CUTINPUT`, `S101-RAY1/2-FIX`,
 `S101-HIT1/2`, `S101-QCTRL-FIX`, and `S101-QX1/QY1` or `S101-QX2/QY2` records.
 They contain the exact 16.16 midpoint, target, selected hit, ray controls, and

@@ -613,6 +613,12 @@ affected source-parity crops do not materially regress.
   trees, widths, RNG call counts, and the 600 ppi M11 metrics unchanged, so the
   candidate was reverted. The remaining gap is recursive q-template state,
   not the closed path's cyclic starting index.
+  A new source-side audit captures exact 16.16 q knots, cut times, and the
+  selected q cubic controls. Fixed-point de Casteljau replay matches both
+  child q endpoints exactly for all 7 mass-1 and 28 mass-2 recursive cuts.
+  This confirms MetaPost preserves the sliced q state through recursion; the
+  missing behavior is carrying that state alongside Typst's recursive center
+  path. The audit is diagnostic and does not change production rendering.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.
