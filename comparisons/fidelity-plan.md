@@ -103,8 +103,12 @@ affected source-parity crops do not materially regress.
   additional pairs. The source precision guard permits two extra bits, but
   the model does not yet implement its packed `max_t` progression: depth 19
   collapses the M11 endpoint probe to no hit, while the source reports the
-  near-endpoint forward pair. Nine endpoint/no-hit cases still disagree. No
-  temporary model of packed `cur_t`/`cur_tt`, `max_t`, and the saved
+  near-endpoint forward pair. Nine raw pairs still disagree: eight source hits
+  lie within 1/64 path-time of a cubic endpoint, and one is an interior source
+  hit. The latter's logged times are only decimal-rounded, so the sub-scalar
+  residual estimated from those times is not precise enough to classify it as
+  an exact or approximate geometric intersection. No temporary model of packed
+  `cur_t`/`cur_tt`, `max_t`, and the saved
   approximate pair did not improve the 67/76 result or recover the M11 probe;
   that trial was discarded. The remaining error is in packet subdivision or
   fixed-point overlap behavior, not only the fallback selection. No production
