@@ -1,10 +1,12 @@
-#import "../fiziko.typ": _mp-fixed-cubic-arc-raw
+#import "../fiziko.typ": _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-quarter-samples-raw
 #import "../build/m11-fixed-arc-fixture.typ": m11-fixed-arc-fixture
 
 #let result = m11-fixed-arc-fixture.map(group => {
   let actual = group.segments.map(segment => _mp-fixed-cubic-arc-raw(segment.points))
-  let reconstructed = group.segments.map(segment =>
-    _mp-fixed-cubic-arc-raw(segment.reconstructed))
+  let reconstructed = group.segments.map(segment => {
+    let controls = _mp-fixed-cubic-from-quarter-samples-raw(segment.quarter-samples)
+    _mp-fixed-cubic-arc-raw(controls)
+  })
   let expected = group.segments.map(segment => segment.expected)
   (call: group.call, lane: group.lane, count: actual.len(),
     arcs: actual,

@@ -126,6 +126,21 @@
   let d2 = (p.at(3).at(0) - p.at(2).at(0), p.at(3).at(1) - p.at(2).at(1))
   _mp-fixed-arc-test(d0, d1, d2)
 }
+#let _mp-fixed-cubic-from-quarter-samples-raw(samples) = {
+  let p0 = samples.at(0)
+  let p25 = samples.at(1)
+  let p75 = samples.at(2)
+  let p3 = samples.at(3)
+  let a = (64 * p25.at(0) - 27 * p0.at(0) - p3.at(0),
+           64 * p25.at(1) - 27 * p0.at(1) - p3.at(1))
+  let b = (64 * p75.at(0) - p0.at(0) - 27 * p3.at(0),
+           64 * p75.at(1) - p0.at(1) - 27 * p3.at(1))
+  let p1 = ((3 * a.at(0) - b.at(0)) / 72,
+            (3 * a.at(1) - b.at(1)) / 72)
+  let p2 = ((-a.at(0) + 3 * b.at(0)) / 72,
+            (-a.at(1) + 3 * b.at(1)) / 72)
+  (p0, p1, p2, p3)
+}
 #let _mp-fixed-cubic-arc(points) = _mp-fixed-cubic-arc-raw(points.map(point =>
   point.map(axis => axis / 1mm / _mp-unit)))
 #let _mp-cubic-split(points, t) = {

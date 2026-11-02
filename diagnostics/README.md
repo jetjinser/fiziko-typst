@@ -1513,7 +1513,8 @@ from MetaPost's arc values by at most 21.337 fixed units (mean 9.371). A
 trees. Fixed-point implementations of MetaPost's recursive `arc_test` and
 `pyth_add` in both the audit script and `fiziko.typ` reproduce all 121 traced
 M11 segment arc lengths exactly (maximum and mean error 0 in 16.16 units).
-The Typst port is verified as a cubic helper and now feeds an isolated q
+The Typst diagnostic now reconstructs cubic controls directly from quarter
+and three-quarter sample points, computes the arc, and feeds an isolated q
 replay. Reconstructing center cubics from their quarter and three-quarter
 samples produces source arc lengths within 2 fixed units (maximum; mean
 0.587). Using these reconstructed cubics, Typst-computed arc knots, and the

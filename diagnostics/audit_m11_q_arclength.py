@@ -205,11 +205,15 @@ def typst_fixture(path, output):
             fixed = [tuple(int(round(axis * FIXED)) for axis in points[i])
                      for i in range(4)]
             reconstructed = reconstruct_from_quarters([points[i] for i in range(4)])
+            quarter_samples = [tuple(int(round(axis * FIXED)) for axis in bezier(
+                [points[i] for i in range(4)], t)) for t in (0, 0.25, 0.75, 1)]
             point_text = ", ".join(
                 f"({p[0]} / 65536, {p[1]} / 65536)" for p in fixed)
             reconstructed_text = ", ".join(
                 f"({p[0]} / 65536, {p[1]} / 65536)" for p in reconstructed)
-            parts.append(f"(points: ({point_text}), reconstructed: ({reconstructed_text}), expected: {arc})")
+            samples_text = ", ".join(
+                f"({p[0]} / 65536, {p[1]} / 65536)" for p in quarter_samples)
+            parts.append(f"(points: ({point_text}), reconstructed: ({reconstructed_text}), quarter-samples: ({samples_text}), expected: {arc})")
         items = ",\n    ".join(parts)
         lines.append(f"  (call: {key[0]}, lane: {key[1]}, segments: (\n    {items}\n  )),")
     lines.extend([")", ""])
