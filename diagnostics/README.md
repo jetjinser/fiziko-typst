@@ -352,8 +352,13 @@ before drawing any hatch in that layer, matching source `layerPicture`; this
 does not change the current M11 pixel hash. A filled polygon mask built from
 sampled offset frames was also compared; knot RMSE regressed from 0.05904 to
 0.06818 and whole M11 RMSE from 0.11268 to 0.11355, so it was reverted. The
-remaining mask gap is the source `tubeOutline` offset geometry, not crossing
-placement.
+source `tubeOutline` offset geometry was then traced directly. Replacing the
+white-stroke eraser with the six exact traced source outlines changed knot
+RMSE only from 0.05904362 to 0.05903513 and whole-plate RMSE from 0.11268047
+to 0.11267972; knot coverage changed from 2.29031% to 2.29052% (source:
+2.60589%). The oracle was removed. The offset geometry is a small part of
+this fixture's raster difference; hatch placement and coverage remain larger
+gaps.
 
 Regenerate the source crossing trace inside the Nix devshell:
 
@@ -368,6 +373,25 @@ printf 'selected := 11; input main.mp;\n' > /tmp/m11-knot-crossings/trace.mp
 rg 'M11X' /tmp/m11-knot-crossings/trace.log
 typst eval 'query(<m11-knot-crossings>).first().value' \
   --in diagnostics/m11_knot_crossing_trace.typ --root .
+```
+
+The source outlines are the closed paths `q3 -- reverse(q2) -- cycle` after
+`tube` applies `offsetPathGenerate` to an 1/8-subdivided centerline. Trace the
+six visible outlines and their centerline intervals with:
+
+```sh
+mkdir -p /tmp/m11-tube-outline-trace
+python3 diagnostics/instrument_m11_tube_outlines.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-tube-outline-trace/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m11-tube-outline-trace/main.mp
+printf 'selected := 11; input main.mp;\n' \
+  > /tmp/m11-tube-outline-trace/trace.mp
+(cd /tmp/m11-tube-outline-trace && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg '^M11TS|^M11TO' /tmp/m11-tube-outline-trace/trace.log
+python3 diagnostics/extract_m11_tube_outlines.py \
+  /tmp/m11-tube-outline-trace/trace.log \
+  /tmp/m11-tube-outline-trace/outlines.typ
 ```
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and

@@ -156,8 +156,10 @@ strokes, while M10 contains mostly whitespace.
    higher segment's silhouette before drawing its hatch. This lowers M11 knot
    crop RMSE from 0.14280 to 0.14230; ink is 2.242% versus 2.606% source.
    The current sampled paths reproduce source crossing times 6, 12, and 18
-   exactly; source curve intersection arithmetic remains unported, while tube
-   masks still use a white stroke approximation. The latitude mode
+   exactly; source curve intersection arithmetic remains unported. An exact
+   `tubeOutline` source-mask oracle changes current knot RMSE only from
+   0.05904362 to 0.05903513, so mask offset geometry is a small part of the
+   remaining raster gap; hatch placement and coverage remain larger. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the
