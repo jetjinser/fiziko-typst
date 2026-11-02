@@ -1083,9 +1083,16 @@ example, one segment records raw coordinates `(22:14, 23:53, 24:91, 25:130)`
 as integer:low-byte pairs. Recursive `subpath` operations preserve the sliced
 cubic controls. The current replay instead linearly interpolates callback
 widths again at each cut. Quantizing the replay's path-time cut and modeling a
-fresh cubic from each pair of widths both leave the 15/18 call match unchanged;
-the latter moves the endpoint farther from source. The next useful model must
-carry and split the original fixed-point q cubics through recursion.
+fresh cubic from each densified sample-width pair both leave the 15/18 call
+match unchanged; the latter moves the endpoint farther from source. The next
+useful model must carry and split the original fixed-point q cubics through
+recursion.
+An opt-in replay candidate evaluated a fresh cubic from the original integer
+callback widths at each source path time. It regressed the lane match from
+15/18 to 14/18, adding a call-6/lane-8 mismatch. This reconstruction ignores
+the q controls already sliced by `brushGenerate` before thin recursion, so the
+candidate was removed without a render trial. The control trace must include
+those outer-recursion subpaths before this approach can be evaluated fairly.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
