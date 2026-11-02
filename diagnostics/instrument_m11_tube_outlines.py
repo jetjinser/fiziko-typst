@@ -207,6 +207,30 @@ enddef;''')
                         endfor;
                     fi;
                 fi;''')
+    shadow_cut = "                    currentPath := shadowCut(currentPath, currentDepth);\n                fi;"
+    if source.count(shadow_cut) != 1:
+        raise ValueError(f"expected one tube shadow-cut hook, found {source.count(shadow_cut)}")
+    source = source.replace(shadow_cut, shadow_cut + '''
+                if traceKnotActive:
+                    if (k = 2) or (k = 6) or (k = 8):
+                        message "M11POSTPARAM " & decimal(traceTubeCall) & " "
+                            & decimal(k) & " " & decimal(length(currentPath));
+                        for traceCurveIndex := 0 step 1 until length(currentPath) - 1:
+                            message "M11POSTCURVEA " & decimal(traceTubeCall) & " "
+                                & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                & decimal(xpart(point traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(ypart(point traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(xpart(postcontrol traceCurveIndex of currentPath)/mm) & " "
+                                & decimal(ypart(postcontrol traceCurveIndex of currentPath)/mm);
+                            message "M11POSTCURVEB " & decimal(traceTubeCall) & " "
+                                & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                & decimal(xpart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(ypart(precontrol (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(xpart(point (traceCurveIndex+1) of currentPath)/mm) & " "
+                                & decimal(ypart(point (traceCurveIndex+1) of currentPath)/mm);
+                        endfor;
+                    fi;
+                fi;''')
     current_tube_path = "            currentTubePath := interpath (1/2, q, p);"
     if source.count(current_tube_path) != 1:
         raise ValueError(f"expected one tube centerline hook, found {source.count(current_tube_path)}")

@@ -945,7 +945,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -960,17 +960,21 @@ records (`M11CENTERA/B`, `M11EDGECURVEA/B`) so MetaPost does not wrap their
 coordinates across transcript lines. Join records by call and curve index
 before comparing controls. `M11CURVEA/B` records do the same for source lanes
 k=2, 6, and 8; `M11PARAM` records list the current lane, centerline, and
-`tubeWidth` path lengths.
+`tubeWidth` path lengths. `M11POSTPARAM` and `M11POSTCURVEA/B` capture each
+lane after `shadowCut`, immediately before `brushGenerate`.
 
 The six source midpoint paths pair to the reconstructed Typst cubics with
 control-point MAE of 0.000010–0.000013 mm and maximum error below 0.000055 mm.
 Source lane controls also fit the paired Typst sampled paths within 0.002 mm.
-Each traced lane, centerline, and `tubeWidth` path has 24 or 36 units in a
-given call. However, source brush callbacks reach `offsetPathTime` values 39–41
-on later calls. A direct linear conversion from that callback time to Typst's
-sample index does not preserve the source lightness sample positions. Treat
-this as an unresolved brush-time/geometry-time mapping; do not infer a
-centerline geometry defect or change production lighting from this trace alone.
+Before shadow clipping, each traced lane, centerline, and `tubeWidth` path has
+24 or 36 units in a given call. `shadowCut` then changes calls 4–6 lane lengths
+to 39–41, 39–40, and 28 units respectively; calls 1–3 remain unchanged. The
+brush callback times reach exactly these post-cut path ends. This explains why
+the callback samples do not align with uncut Typst lane samples. Typst currently
+masks finished layer drawings but does not clip lane paths before brush
+recursion, so hidden strokes still consume RNG before a later layer erases them.
+Use `M11POSTCURVEA/B` to compare source post-cut geometry when implementing this
+step; do not tune lighting from the earlier uncut path comparison alone.
 
 The same instrumenter emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in

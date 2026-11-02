@@ -86,17 +86,17 @@ affected source-parity crops do not materially regress.
   candidate counts in source call order are `14/56/54/38/40/10` versus source
   `14/58/54/42/38/18`; the remaining mismatch is concentrated in calls 4–6.
   On those later intervals, source lane callback positions do not align with
-  Typst sample indices under a direct linear-time mapping, and source-normal
-  L2 error remains 0.07–0.15. New MetaPost traces show that all six source
-  centerline cubics pair with the reconstructed Typst cubics: control-point
-  MAE is 0.000010–0.000013 mm and maximum error is below 0.000055 mm. Source
-  lane-path controls also fit the paired Typst sampled curves within 0.002 mm.
-  The traced current lane, centerline, and `tubeWidth` paths have matching
-  lengths within each source call (24 or 36); later callback times nevertheless
-  extend to 39–41. The unresolved issue is therefore the relationship between
-  brush width/lightness callback time and geometric sample time, rather than a
-  demonstrated centerline-shape error. Keep the recursive call mismatch open
-  until this time mapping is traced through brush generation.
+  the uncut Typst lane samples, and source-normal L2 error remains 0.07–0.15.
+  The source centerline cubics pair with Typst controls at 0.000010–0.000013 mm
+  MAE (maximum below 0.000055 mm), and source lane controls fit the paired
+  Typst sampled curves within 0.002 mm. The decisive difference is source
+  `shadowCut`: it removes crossings with previously drawn layer outlines
+  before `brushGenerate` samples the lane. Calls 1–3 keep their original path
+  lengths (24/36); calls 4–6 change from 36/36/24 to 39–41/39–40/28 units on
+  the traced lanes. Typst currently masks completed layer drawings but does
+  not cut hidden lane geometry before brush recursion, so it consumes random
+  calls for ink the next layer erases. Reproduce `shadowCut` on each tube lane
+  before brush recursion, then recheck per-call RNG vectors and renders.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
