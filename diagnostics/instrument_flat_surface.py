@@ -209,6 +209,19 @@ def main() -> None:
     source = source.replace(cut_header, cut_header + '''
     save traceRayA, traceRayB;
     path traceRayA, traceRayB;''')
+    intersection_anchor = "    t1 := p intersectiontimes q;\n    t2 := p intersectiontimes reverse(q);"
+    if source.count(intersection_anchor) != 1:
+        raise ValueError("expected one firstIntersectionTimes search hook")
+    source = source.replace(intersection_anchor, intersection_anchor + '''
+    if traceFlatHatch:
+        message "S104-RAW " & decimal(traceHatchRow) & " "
+            & decimal(traceCutSerial) & " "
+            & decimal(xpart(point 0 of p)) & " "
+            & decimal(xpart(point length(p) of p)) & " "
+            & decimal(xpart(t1)) & " " & decimal(ypart(t1)) & " "
+            & decimal(xpart(t2)) & " " & decimal(ypart(t2));
+    fi;
+''')
     ray_trace = []
     for ray_id, ray in ((1, "traceRayA"), (2, "traceRayB")):
         points = (

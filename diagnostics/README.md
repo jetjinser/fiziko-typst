@@ -1194,6 +1194,15 @@ yet emulate exactly. This is a useful localization diagnostic, not a validated
 production solver; keep the renderer unchanged until the outstanding cases
 are resolved. The production port still uses a sampled width crossing.
 
+The source instrumenter now emits `S104-RAW` with both unadjusted
+`intersectiontimes` results. For the endpoint child (serial 43), the ray to
+the left gives direct `(0.99610, 0.00390)` and reversed `(0.98839, 1.98840)`
+hits. Fiziko selects the reversed hit because its ray time is smaller, then
+maps its path time back to `2 - 1.98840 = 0.01160`. This confirms the large
+replay error is in MetaPost's low-level intersection choice, before
+Fiziko's midpoint-nearest selection. The diagnostic prints source raw hits
+alongside its own replay whenever `S104-RAW` records are present.
+
 The source outer-node and Typst recursion logs now include centerline
 endpoints and cut points, allowing exact row pairing. On one symmetric-width
 row, source `cutPathTime` chooses the left of two equidistant intersections;
@@ -1295,7 +1304,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```

@@ -110,7 +110,8 @@ def decode(log, row):
     for line in Path(log).read_text().splitlines():
         p = line.split()
         if not p or len(p) < 3 or p[0] not in {
-            "S104-ORAY", "S104-OXCTRL", "S104-OCTRL", "S104-OFIX", "S104-HIT"
+            "S104-ORAY", "S104-OXCTRL", "S104-OCTRL", "S104-OFIX",
+            "S104-HIT", "S104-RAW"
         }:
             continue
         if abs(float(p[1]) - row) > 0.00001:
@@ -130,6 +131,8 @@ def decode(log, row):
         elif p[0] == "S104-HIT":
             node["source_hits"] = tuple(map(float, p[7:9]))
             node["midpoint_x"] = float(p[6])
+        elif p[0] == "S104-RAW":
+            node.setdefault("raw_searches", []).append(tuple(map(float, p[3:9])))
     return nodes
 
 
@@ -171,11 +174,14 @@ def main():
     print(f"mean absolute time error: {sum(errors) / len(errors):.9g}")
     print(f"maximum absolute time error: {max(errors):.9g}")
     print(f"within 1/65536: {sum(e <= 1 / 65536 for e in errors)}")
-    print("serial source-time ray-times replayed-time error")
+    print("serial source-time source-hits replay-hits replayed-time error raw-searches")
     for item in compared[:20]:
         serial, source, hits, replayed, error = item
-        print(f"{serial:6d} {source:12.8f} {str(hits):>28s} "
-              f"{replayed:12.8f} {error:.8g}")
+        node = nodes[serial]
+        print(f"{serial:6d} {source:12.8f} "
+              f"{str(node.get('source_hits', ())):>24s} "
+              f"{str(hits):>26s} {replayed:12.8f} {error:.8g} "
+              f"{node.get('raw_searches', [])}")
 
 
 if __name__ == "__main__":
