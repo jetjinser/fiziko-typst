@@ -451,7 +451,10 @@ with exact endpoints. In source draw order, source/Typst calls are
 from different lane-width profiles, not missing tube intervals. For source
 call 2, lane 6 has a source maximum width of 0.04524 mm versus 0.03634 mm in
 the paired Typst lane. This points the next audit at the surface-normal and
-width calculation along offset boundaries.
+width calculation along offset boundaries. A trial that reduced the dense
+Typst width profile to quarter-path-time knots and interpolated by lane arc
+kept the 204 total calls but increased the six-segment absolute count error
+from 64 to 68; it was reverted.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.

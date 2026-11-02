@@ -84,6 +84,10 @@ strokes, while M10 contains mostly whitespace.
    (source 0.04524 mm, Typst 0.03634 mm on source call 2, lane 6), pointing to
    the local shading geometry as the next comparison. Knot ink coverage remains
    high (2.843% vs 2.606%).
+   A diagnostic that reduced dense Typst widths to quarter-path-time knots and
+   interpolated them by lane arc left the 204 total calls unchanged and raised
+   the six-segment absolute call-count error from 64 to 68; it was discarded.
+   The remaining gap requires matching the source's offset-boundary paths.
    Exact recursive subdivision, variable-radius boundary behavior, brush
    stipples and further wood call-order matching remain open.
 2. **Bring the wood field closer to `woodBlock`.** The field now uses source
