@@ -3145,8 +3145,22 @@
   }
   let body = tube((_add(at, (0, auricle-depth)), _add(at, (0, h))),
     body-radius, spacing: spacing, w: w, per: 12, seed: seed)
-  let auricle = stroke-path(_ellipse-pts(0.55, auricle-depth / 2,
-    center: _add(at, (0, auricle-depth / 2)), n: 32),
+  // Source auricle.d is 2 mm and auricle.t is 2*shadingDensity; the
+  // default shadingDensity is 3*(3/2*minStrokeWidth), i.e. 9 min pens.
+  let auricle-thickness = 9 * _source-min-stroke
+  let auricle-radius = auricle-thickness / 2
+  let auricle-length = 1.5 * auricle-thickness
+  let auricle-top = range(13).map(i => {
+    let a = 180 + 180 * i / 12
+    _add(at, (auricle-radius * _cos(a), auricle-radius * _sin(a)))
+  })
+  let auricle-bottom = range(1, 13).map(i => {
+    let a = 180 * i / 12
+    _add(at, (auricle-radius * _cos(a), auricle-length + auricle-radius * _sin(a)))
+  })
+  let auricle-outline = auricle-top + ((_add(at, (auricle-radius, auricle-length)),)
+    + auricle-bottom + (_add(at, (-auricle-radius, 0)),))
+  let auricle = stroke-path(auricle-outline,
     stroke: _source-min-stroke * 1mm + black, closed: true, per: 0)
   _join((body, auricle))
 }
