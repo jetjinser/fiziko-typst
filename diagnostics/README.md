@@ -1056,6 +1056,13 @@ nix develop path:./nix --command ./compare.sh --case M11 --mode nominal \
   --ppi 600 --output build/m11-shared-rng-dedup
 ```
 
+A mask-shape trial replaced the knot's white thick-centerline erasure with a
+closed polygon sampled from the centerline normals and radius. On the same
+600 ppi M11 comparison, whole-plate RMSE worsened from `0.112899` to
+`0.113991` and knot crop RMSE from `0.058230` to `0.069732`; the candidate was
+reverted. The source silhouette comes from `offsetPathGenerate` boundaries,
+so normal-offset samples do not preserve its joins and end geometry.
+
 Regenerate the source crossing trace inside the Nix devshell:
 
 ```sh

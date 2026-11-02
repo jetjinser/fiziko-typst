@@ -97,6 +97,12 @@ affected source-parity crops do not materially regress.
   next issue to isolate. With source-rounded edges, the source-lighting
   candidate counts in source call order are `14/56/54/38/40/10` versus source
   `14/58/54/42/38/18`; the remaining mismatch is concentrated in calls 4–6.
+  A mask-shape trial replaced the knot's white thick-centerline erasure with a
+  polygon sampled from centerline normals and radius. Same-run 600 ppi M11
+  whole-plate RMSE worsened `0.112899 → 0.113991` and knot crop RMSE
+  `0.058230 → 0.069732`; the candidate was reverted. The source silhouette is
+  built from `offsetPathGenerate` boundaries, so normal-offset samples do not
+  preserve its joins and end geometry.
   On those later intervals, source lane callback positions do not align with
   the uncut Typst lane samples, and source-normal L2 error remains 0.07–0.15.
   The source centerline cubics pair with Typst controls at 0.000010–0.000013 mm
