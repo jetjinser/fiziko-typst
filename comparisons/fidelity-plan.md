@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
 | M9 wood panels | 0.21156 | 4.203% → 3.712% | The comparison reproduces its source driver's 1 mm `woodBlockRes`, source-ordered fractional contour levels, and source-space knot field. The source/Typst contour pairing has an exact reversed 19-cell sequence; per-cell ranges differ by 1.54e-5 mean and 4.92e-5 max. Rounding source-scaled field corners, interpolated ranges and dimensional brush widths to 16.16, then using the reversed source-path-time width profile, lowers same-grid RMSE to 0.211560. Ink remains below source; full-path brushing regressed every panel crop and was reverted. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
-| M11 globe, eye, knot, refraction | 0.11295 | 4.917% → 5.056% | The source-equation coast normal and corrected `atan2` argument order move focused 600 ppi whole-plate RMSE from 0.11266 to 0.11295; globe crop RMSE is 0.18990 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.353% against 25.940% source. For mass 4, the root recursive cut now splits 14.296/13.938 mm, matching source 14.292/13.925 mm. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. Coast brush calls are 52 versus source 27 across visible masses; knot per-segment random calls remain 202 versus source 224. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.11295 | 4.917% → 5.056% | The source-equation coast normal and corrected `atan2` argument order move focused 600 ppi whole-plate RMSE from 0.11266 to 0.11295; globe crop RMSE is 0.18990 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.353% against 25.940% source. For mass 4, the root recursive cut now splits 14.296/13.938 mm, matching source 14.292/13.925 mm. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. Coast brush calls are 52 versus source 27 across visible masses; the corrected source-rounded lane diagnostic counts 212 knot calls versus 224 source. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. The thin-recursion endpoint guard now uses source path-time units: paired outer decisions move from 942 to 1270 (source 1340), thin decisions from 1577 to 1739 (source 1696), with no raster change. Brush-call totals remain 1540 vs 1516 source. |
@@ -64,7 +64,7 @@ affected source-parity crops do not materially regress.
   The retained 600 ppi candidate lowers knot RMSE from 0.058950 to 0.058819
   and whole M11 RMSE from 0.112672 to 0.112661.
 - [ ] **M11 knot dash-phase restarts.** The source-cubic geometry is now
-  retained, but Typst still consumes 202 calls against 224 source calls across
+  retained, but Typst still consumes 212 calls against 224 source calls across
   the six visible intervals. The rounded source-normal diagnostic now matches
   all 19 source dash leaves and 38 source calls on target lane k=6; projected
   leaf endpoints differ by 0.00364 mm mean and 0.01194 mm maximum arc length.
@@ -82,7 +82,16 @@ affected source-parity crops do not materially regress.
   the M11 render regresses: whole-plate RMSE `0.112950 → 0.114784` and knot
   crop `0.058819 → 0.077068`. The production candidate was reverted; this
   points to recursive dash/call divergence after the width correction as the
-  next issue to isolate. Acceptance remains matching the six
+  next issue to isolate. With source-rounded edges, the source-lighting
+  candidate counts in source call order are `14/56/54/38/40/10` versus source
+  `14/58/54/42/38/18`; the remaining mismatch is concentrated in calls 4–6.
+  On those later intervals, paired sample positions separate by up to
+  0.010–0.024 mm and source-normal L2 error remains 0.07–0.15. The corrected
+  tree trace shows the largest residuals on call 4's k=2 and k=6 inner lanes,
+  call 5's k=2 lane and call 6's k=2 lane; their dash-leaf counts do not match
+  despite the source-normal width law. This points back to segment-local
+  centerline/offset geometry or its parameter mapping.
+  Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
   Typst use the same subdivision request and matching width thresholds, yet
@@ -527,10 +536,10 @@ contours with the sampled source rings (the measured render regressed).
    from the fixture's five 1/16 samples now reproduces the traced source
    controls within 0.000049 mm and tangents within 0.000156 rad maximum. The
    production candidate lowers knot RMSE to 0.058819 and whole M11 RMSE to
-   0.112661. Source/Typst segment calls remain 224/202, so lane-width
-   recursion and the short dash-phase restarts still need path-paired leaf
-   traces. The latitude mode still approximates the source's two separately
-   masked shading layers and random width law.
+  0.112661. The corrected source-rounded lane diagnostic counts 224/212
+  source/Typst calls, so lane-width recursion and the short dash-phase restarts
+  still need path-paired leaf traces. The latitude mode still approximates the
+  source's two separately masked shading layers and random width law.
    A follow-up tested a three-point one-sided tangent on the sampled center
    path together with the radial-y sign change. The diagnostic initially
    reported 17 dash leaves, but its light vector was not normalized like the

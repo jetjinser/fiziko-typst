@@ -66,18 +66,23 @@
         let result = _ink-loops(_frame(points, false),
           lane-widths, false, _source-min-stroke,
           _source-dash-length, seed: 1 + 500000 + section-index * 2 + side-index,
-          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
+          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
+          source-rounding: true, trace-nodes: true)
         edge-calls += result.at(1)
         edge-dashes += result.at(2).dashes
         let candidate-widths = y-flipped-widths(layout, side, knots, lane-widths)
         let candidate-result = _ink-loops(_frame(points, false),
           candidate-widths, false, _source-min-stroke,
           _source-dash-length, seed: 1 + 500000 + section-index * 2 + side-index,
-          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
+          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
+          source-rounding: true, trace-nodes: true)
         candidate-edge-calls += candidate-result.at(1)
         edge-lanes.push((section: section-index, side: side,
           start: points.first(), end: points.last(),
-          points: points,
+          points: points, widths: lane-widths,
+          candidate-widths: candidate-widths,
+          nodes: result.at(2).nodes,
+          candidate-nodes: candidate-result.at(2).nodes,
           width-min: calc.min(..lane-widths), width-max: calc.max(..lane-widths),
           calls: result.at(1), candidate-calls: candidate-result.at(1)))
       }
@@ -90,7 +95,7 @@
           _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
           dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
           source-rounding: true,
-          trace-nodes: strand == 0 and segment == 0 and lane-index == 1
+          trace-nodes: (lane-index == 1 or lane-index == 5)
             and piece-index == 0)
         calls += result.at(1)
         dashes += result.at(2).dashes
@@ -99,7 +104,7 @@
           piece.closed, _source-min-stroke, _source-dash-length,
           seed: 1 + piece.seed-offset, dash-extra: 0.01 * _mp-unit,
           dash-cap: 1, with-stats: true, source-rounding: true,
-          trace-nodes: strand == 0 and segment == 0 and lane-index == 1
+          trace-nodes: (lane-index == 1 or lane-index == 5)
             and piece-index == 0)
         candidate-calls += candidate-result.at(1)
         inner-lanes.push((lane: lane-index, piece: piece-index,
@@ -111,9 +116,10 @@
           radius-slopes: piece.times.map(t => (layout.radius-slope)(t)),
           lightness: piece.times.map(t => (layout.shade)(piece.u, t)),
           candidate-calls: candidate-result.at(1),
-          nodes: if strand == 0 and segment == 0 and lane-index == 1
-            and piece-index == 0 { result.at(2).nodes } else { () },
-          candidate-nodes: if strand == 0 and segment == 0 and lane-index == 1
+          nodes: if (lane-index == 1 or lane-index == 5) and piece-index == 0 {
+            result.at(2).nodes
+          } else { () },
+          candidate-nodes: if (lane-index == 1 or lane-index == 5)
             and piece-index == 0 { candidate-result.at(2).nodes } else { () },
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))

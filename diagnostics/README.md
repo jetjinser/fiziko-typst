@@ -827,6 +827,8 @@ versus 224. Despite the closer call distribution, the candidate worsened the
 render, so keep it reverted until the y-axis/light-direction transform and
 thin-brush dash placement are reconciled. The diagnostic now reports
 `candidate-calls` and `candidate-edge-calls` without changing drawing output.
+Those call-count totals predate source-rounded edge paths; the corrected totals
+and lane-by-lane tree traces below supersede them.
 
 The target k=6 lane's source trace contains 19 thin-brush dash leaves; the
 current Typst lane has 5. An earlier source-normal width diagnostic produced
@@ -867,7 +869,8 @@ input intervals matches the traced midpoint controls within 0.000049 mm and
 the source tangent within 0.000156 rad maximum (0.000033 rad mean). Enabling
 `source-cubic-step: 4` for M11 lowers 600 ppi knot RMSE from 0.058950 to
 0.058819 and whole-plate RMSE from 0.112672 to 0.112661. Ink coverage remains
-2.843% against 2.606% source; segment calls are still 202 against 224, so the
+2.843% against 2.606% source; the corrected source-rounded lane diagnostic
+counts 212 calls against 224 source calls, so the
 two short dash-phase restarts remain open.
 
 The regenerated post-cubic trace pairs source call 2, lane k=6 to Typst's
@@ -888,8 +891,9 @@ visible tube segments draw in rank order `+1` then `-1`, with local brush-call
 counts 14, 58, 54, 42, 38 and 18 (224 total). Before enabling
 `source-cubic-step: 4`, the Typst source-derived tube renderer included both
 boundary lanes and drew hatch marks before the two thin outline paths; its
-modeled calls totaled 204. The current source-cubic candidate consumes 202
-calls, so the shared stream still differs. (The source draw-order vector is
+modeled calls totaled 204. The current source-cubic candidate consumes 212
+calls with source-rounded boundary recursion, so the shared stream still
+differs. (The source draw-order vector is
 `j2,j4,j6,j1,j3,j5`; the values above follow that order.)
 
 `strand-knot(..., rng: "metapost", rng-offset: 4639)` precomputes the tube
@@ -959,10 +963,12 @@ comparing controls.
 The same instrumenter now emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
 `m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
-points, widths, and call count. All six source tube intervals pair to Typst
-paths with exact endpoints. With the retained source-cubic centerline,
-aggregating each Typst path's inner and two boundary lanes gives 202 calls in
-source draw order (`36/50/14/10/38/54`); the source uses
+points, widths, and call count. Edge recursion now uses the same 16.16 source
+rounding as production `stroke-ink`; older 202-call totals omitted that edge
+rounding and are superseded. All six source tube intervals pair to Typst paths
+with exact endpoints. With the retained source-cubic centerline, aggregating
+each Typst path's inner and two boundary lanes gives 212 calls in source draw
+order (`38/56/14/10/40/54`); the source uses
 `14/58/54/42/38/18` (224 total). For source tube call 2, lane k=6 pairs
 geometrically with Typst inner lane 1 (mean point distance 0.000038 mm). Its
 source effective width peaks at 0.04525 mm, while the paired Typst profile
@@ -970,6 +976,20 @@ peaks at 0.05496 mm; the brush consumes 38 source calls and 10 Typst calls on
 this lane. The older 0.03634 mm figure came from comparing against Typst lane
 5 and is not a valid pairing. The radial-y shade formula trial moves this lane
 to 34 calls, but its full M11/M4/M6 renders regress, so it remains discarded.
+A rerun of that source-lighting width model with rounded boundary recursion
+gives 212 calls in source call order (`14/56/54/38/40/10`); source is
+`14/58/54/42/38/18`. Calls 1–3 are within two calls each, while calls 4–6
+account for the remaining 12-call deficit. The source-lighting render still
+regresses M11, so this remains a diagnostic lead rather than a retained
+render change.
+The refreshed JSON retains complete baseline and candidate recursion trees for
+inner lanes k=2 and k=6 plus both boundary sides, across all six intervals.
+On calls 4–6, source/Typst sample positions differ by up to 0.010–0.024 mm and
+candidate surface-normal L2 error remains 0.07–0.15; these intervals account
+for a net 10-call shortfall (call 5 has a 2-call surplus); call 2 contributes
+the remaining 2-call deficit. The earlier call-count probes in this
+section used unrounded boundary recursion and should be read as historical
+only.
 A separate trial that reduced the dense Typst width profile to quarter-path-
 time knots and interpolated by lane arc also regressed the six-segment
 call-count agreement and was reverted.
