@@ -1998,7 +1998,7 @@ diagnostic work only. Sweeping effective guard depths 15 through 23 leaves the
 packet result fixed at 67/76; substituting floor, truncation, nearest-away or
 nearest-even halving does the same. The nine missed hits are therefore not
 explained by this depth bound or a simple negative-half convention. The next
-useful comparison is at packet overlap inputs and source control conversion;
+useful comparison is the source packet overlap arithmetic;
 no production change is justified until the endpoint and interior cases are
 explained together. The instrumenter now emits
 `S104-FIRST-FIX`, preserving all four returned path times as signed 16.16
@@ -2007,13 +2007,30 @@ older decimal-only logs. For node 173's interior source pair
 `(0.05839539, 0.5)`, evaluating the logged cubic controls gives a residual of
 about `(2.16, 0.5)` raw 16.16 coordinate units. This is consistent with an
 approximate near-overlap result; reproducing MetaPost's intermediate
-fixed-point overlap evaluation is still required. Compare the remaining pairs
-with:
+fixed-point overlap evaluation is still required.
+
+`audit_s104_fixed_encoding.py` checks that the recorded base-256 controls,
+ray endpoints and raw intersection-time pairs decode consistently with their
+five-decimal source companions. On the fresh target-row trace it checks 132
+cubic controls, 76 ray endpoints and 38 raw-hit pairs; maximum differences are
+`7.28e-6`, `6.59e-6` and `6.81e-6`, respectively. This does not prove the
+packet overlap arithmetic, but rules out a large mismatch in trace decoding.
+Run it with:
 
 ```sh
-python3 diagnostics/replay_s104_thin_intersections.py \
+nix shell nixpkgs#python3 --command python3 \
+  diagnostics/audit_s104_fixed_encoding.py \
+  /tmp/s104-fresh/trace.log -6.37912
+```
+
+Compare the remaining pairs with:
+
+```sh
+nix shell nixpkgs#python3 --command python3 \
+  diagnostics/replay_s104_thin_intersections.py \
   /tmp/s104-thin-ray-replay/trace.log -6.37912
-python3 diagnostics/replay_s104_thin_intersections.py \
+nix shell nixpkgs#python3 --command python3 \
+  diagnostics/replay_s104_thin_intersections.py \
   /tmp/s104-thin-ray-replay/trace.log -6.37912 --node 172 --verbose
 ```
 

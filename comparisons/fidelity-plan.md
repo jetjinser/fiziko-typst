@@ -551,11 +551,15 @@ affected source-parity crops do not materially regress.
   while the fixed packet classification remains 67/76. A diagnostic sweep of
   guard depths 15–23 stays flat at 67/76; truncation, floor, nearest-away and
   nearest-even packet halving also all stay at 67/76. These results move the
-  remaining investigation toward packet overlap inputs/arithmetic and the
-  traced control-point conversion, rather than guard depth or half rounding.
-  An
-  exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the early
-  `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
+  remaining investigation toward packet overlap arithmetic rather than guard
+  depth or half rounding. `audit_s104_fixed_encoding.py` checks the fresh
+  source trace's 132 cubic controls, 76 ray endpoints and 38 fixed raw-hit
+  pairs against their decimal companions: maximum differences are
+  `7.28e-6`, `6.59e-6` and `6.81e-6` respectively, with no low-byte carry
+  anomalies. This rules out a large serialization mismatch; reproduce the
+  source overlap operations directly before changing the packet model.
+  The exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the
+  early `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
   offsets track the shallow cubic root. The isolated +1 excursion shows that
   even a local monotone endpoint rule would be wrong. Model the
   best-pair fallback against this probe and known S104 endpoint cases before
