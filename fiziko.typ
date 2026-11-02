@@ -694,7 +694,11 @@
           cut-param: if candidate == none { none } else { candidate.at(7) },
           left-length: if candidate == none { 0.0 } else { candidate.at(2) },
           right-length: if candidate == none { 0.0 } else { candidate.at(3) },
-          recurse: recurse))
+          recurse: recurse,
+          // A terminal thin node consumes two source RNG values only when it
+          // reaches thinBrushPattern: it must be below minw and long enough
+          // for dash placement. Keep this decision visible in trace mode.
+          dash: not recurse and hi > dash-floor and target < minw and total > minlen))
       }
       if recurse {
         pending.push((split.at(1), depth + 1))

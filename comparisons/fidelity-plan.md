@@ -177,7 +177,11 @@ strokes, while M10 contains mostly whitespace.
    pixel hashes match their prior retained tube candidates. The first row with
    a random-call mismatch requests the same three subdivisions on both sides
    and has cut positions within 0.001 mm, but consumes 11 source calls versus
-   7 in Typst; thin-leaf dash decisions remain the next specific gap.
+   7 in Typst. A terminal-leaf trace identifies the concrete split: source has
+   19 thin recursion nodes and 5 dashed leaves on that row, while Typst has 17
+   nodes and 3 dash-eligible leaves. The extra four source calls are exactly
+   two missing dash leaves; the next step is to pair those terminal paths and
+   identify the source cut decision that Typst drops.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to
