@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
 | M9 wood panels | 0.22407 | 4.203% → 4.224% | Landscape panels use the source's internal axis swap; accepted knots advance the 28 brush draws, and field offsets now consume once per source 1/3 mm column. Source-traced panel offsets (0, 1456, 2823, 4120) improve later-panel field placement and coverage. The 600 ppi RMSE falls from 0.22412 to 0.22407. Contour-brush shapes remain approximate. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
-| M11 globe, eye, knot, refraction | 0.11483 | 4.917% → 4.792% | `coast-step: 0` connects projected source vertices directly. Coast widths use the source sphere normal/light dot product; globe crop RMSE is 0.19720 and ink 25.940% → 25.213%. The knot fixture now uses 385 source-curve points per strand at 1/16 path-time intervals; knot crop RMSE is 0.05904, down from 0.05979 at 1/8 and 0.06233 at 1/4. Mask mode splits strands at crossing-interval midpoints, orders by source layer, erases prior ink with each higher tube silhouette, and redraws hatch. Crossing detection and tube silhouettes remain sampled/approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.11269 | 4.917% → 4.976% | The globe projection and mask longitude now follow the pinned source equations; globe crop RMSE falls from 0.19720 to 0.18877, with ink 25.940% → 26.439%. Typst now selects the same six visible landmasses as MetaPost, but still draws 12 open coastline runs where the source brushes six closed landmass outlines. The knot fixture uses 385 source-curve points per strand at 1/16 path-time intervals; knot crop RMSE is 0.05904. Mask mode splits strands at crossing-interval midpoints, orders by source layer, erases prior ink with each higher tube silhouette, and redraws hatch. Crossing detection and tube silhouettes remain sampled/approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. Some brush recursion and local random details still differ. |
@@ -152,14 +152,15 @@ strokes, while M10 contains mostly whitespace.
    time, and tube masks use a white stroke approximation. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
-   The coast brush now follows the source projected-radius pen-width law;
-   `coast-step: 0` also preserves the source's projected control-point chords;
-   together these give globe crop RMSE 0.19545. Globe ink coverage is 25.12%
-   versus 25.94% in the source, so dash phase and brush recursion remain
-   approximate. Starting the coast brush stream after the traced 3456 p1/p2
-   calls slightly regresses globe and whole-plate RMSE; that fixed-offset
-   candidate was reverted. Keep eye and refraction as independent component
-   gates.
+   The coast brush follows the source projected-radius pen-width law, and the
+   projection and geographic mask inverse now match the source longitude
+   convention. Globe crop RMSE falls to 0.18877 and ink coverage is 26.44%
+   versus 25.94% source. Typst selects the same six visible landmasses but
+   still draws 12 open visible runs; the source brushes six closed contours
+   sewn with horizon arcs. Dash phase and recursive brush calls remain
+   approximate. A fixed stream offset tested with the prior projection was
+   reverted; revisit it after closed contour paths and recursion are ported.
+   Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
    body radii; its whole-plate RMSE falls from 0.10910 to 0.07788, standing

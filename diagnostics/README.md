@@ -226,9 +226,48 @@ Using the known source prefix `780 + 2676 = 3456` as a shared Typst coast
 stream offset did not improve the M11 globe crop: RMSE moved from `0.197196`
 to `0.197208`, and ink coverage moved from `25.2125%` to `25.2113%` against
 `25.9400%` source. Whole-plate RMSE also moved from `0.114834` to `0.114837`.
-That candidate was reverted. Matching the stream start alone is insufficient;
-the coast brush must also reproduce the source recursion's per-coast call
-consumption before later coast phases can align.
+That candidate was reverted. It used the prior projection and open coastline
+segments; re-evaluate stream alignment after the closed source coastline paths
+and their recursive brush calls are ported.
+
+### M11 coastline projection and outline topology
+
+The pinned source's `pointOnGlobe` adds 90° to longitude, and
+`horizonOnGlobe` treats negative values as visible. After converting the
+upstream longitude sign, the previous Typst projection selected the opposite
+hemisphere and its surface-mask longitude inverse was rotated. Updating the
+projection and inverse to those source equations makes the visible landmass
+set match: source and Typst both show landmasses 1, 2, 4, 5, 7, and 8. At
+600 ppi, M11 whole RMSE falls from `0.114834` to `0.112687`; globe crop RMSE
+falls from `0.197196` to `0.188772`. Globe ink coverage is now `26.439%`
+against `25.940%` source, closer than the prior `25.213%`.
+
+The coastline topology still differs. Source calls `thinBrushGenerate` once
+for each of eight closed `drawLandMass` paths (landmasses 3 and 6 are empty
+fallback paths); Typst currently strokes 12 separate open visible runs across
+the six visible landmasses. The source paths join visible contour fragments
+with ordered horizon arcs before brushing. `instrument_m11_coast_paths.py`
+samples those projected closed paths at 1/16 path-time; its coordinates are
+millimetres relative to the globe origin, so overlay them at
+`(19 + x, 22 - y)` in the Typst fixture. The remaining geometry target is to
+sew the visible runs with source-ordered horizon arcs, then brush each closed
+outline once.
+
+To extract and inspect the source path samples and Typst run counts inside the
+Nix devshell:
+
+```sh
+mkdir -p /tmp/m11-coast-paths
+python3 diagnostics/instrument_m11_coast_paths.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-coast-paths/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m11-coast-paths/main.mp
+printf 'selected := 11; input main.mp;\n' > /tmp/m11-coast-paths/trace.mp
+(cd /tmp/m11-coast-paths && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'M11COAST' /tmp/m11-coast-paths/trace.log
+typst eval 'query(<m11-coast-geometry>).first().value' \
+  --in diagnostics/m11_coast_geometry_trace.typ --root .
+```
 
 To reproduce the source stage counts and the Typst layer counts inside the
 Nix devshell:

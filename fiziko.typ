@@ -1676,9 +1676,11 @@
       let mask-lat = calc.asin(calc.clamp(
         world-y / R * _cos(mask-rotation.at(1))
           + depth / R * _sin(mask-rotation.at(1)), -1.0, 1.0)) / 1deg
+      // Invert globe-project's source-oriented axes to recover the longitude
+      // used by the geographic land mask.
       let mask-lon = mask-rotation.at(0) + calc.atan2(
-        depth * _cos(mask-rotation.at(1))
-          - world-y * _sin(mask-rotation.at(1)), local-x) / 1deg
+        local-x, world-y * _sin(mask-rotation.at(1))
+          - depth * _cos(mask-rotation.at(1))) / 1deg
       let cast-shadow = _shadowed(_add(center, (local-x, local-y)),
         shadow-regions, center, depth: depth, plane-depth: depth - R, light: L, shadow-planes: shadow-planes,
         shadow-polygons: shadow-polygons)
@@ -3518,8 +3520,12 @@
   let u = lon - rotation.at(0)
   let lat0 = rotation.at(1)
   let x = _cos(lat) * _sin(u)
-  let y = _sin(lat) * _cos(lat0) - _cos(lat) * _cos(u) * _sin(lat0)
-  let depth = _sin(lat) * _sin(lat0) + _cos(lat) * _cos(lat0) * _cos(u)
+  // The pinned MetaPost globe calls pointOnGlobe with longitude + 90° and
+  // treats negative horizonOnGlobe values as visible. In this fixture's
+  // negated-longitude convention, that places the front hemisphere opposite
+  // the usual orthographic longitude-zero view.
+  let y = _sin(lat) * _cos(lat0) + _cos(lat) * _cos(u) * _sin(lat0)
+  let depth = _sin(lat) * _sin(lat0) - _cos(lat) * _cos(lat0) * _cos(u)
   // Suppress round-off at the exact horizon, so a point on the rim is not
   // alternately classified as visible by tiny trigonometric residuals.
   (x: x, y: y, visible: depth > 1e-10)
