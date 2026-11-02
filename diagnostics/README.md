@@ -1078,6 +1078,18 @@ The specific behavior to port is the source width template's `--` cubic
 controls, 16.16 point evaluation, and intersection behavior through recursive
 subpaths. Arc-length interpolation alone cannot reproduce this branch.
 
+A diagnostic-only port of that cubic model was tried after the trace above.
+It used the original global cubic controls with 64 subdivisions per Typst path
+segment, then bisected candidate threshold crossings. It did not reproduce the
+source cut: in the row-93 tree the source's depth-4 cut is at x=39.539 mm,
+while this candidate's nearby cut is x=44.502 mm. It yielded 15 thin nodes and
+13 dash-eligible leaves, versus 19 and 5 in the source. The candidate was
+removed before raster comparison, so these counts do not establish a visual
+regression; they show that dense sampling and bisection over the current
+Typst parameterization do not model MetaPost's recursive subpath intersection.
+Do not reintroduce this approximation without first pairing source and Typst
+parameter intervals and their cubic control points.
+
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model
 above. A separate test of per-dot independent phases was also worse than
