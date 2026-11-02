@@ -453,6 +453,16 @@ source `currentTubePath` and k=6 `currentPath` (36 segments each), so a
 follow-up can reconstruct and compare the tangent at the exact source width
 samples.
 
+Replaying that trace and differentiating the cubic controls of
+`currentTubePath` at the 37 k=6 width samples reproduces the source
+`tubeAnglesToNormalVector` path angle with `3.1e-5` rad mean error and
+`9.5e-5` rad maximum error. A fourth-order derivative of the unoffset 1/16
+strand samples is still off by `0.0134` rad at the known t=20 width trough.
+The target tangent is therefore the cubic midpoint path formed after the two
+offset boundaries are generated, not just a smoother derivative of the input
+strand. The next useful implementation must reconstruct those boundary cubics
+and their midpoint controls before changing lane shading or dash thresholds.
+
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
