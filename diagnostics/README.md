@@ -1075,7 +1075,8 @@ also leaves those three totals unchanged and worsens other traced lanes, so
 that trial was removed.
 
 The latest source probe adds `M11THINCALC` fixed-point operands and
-`M11QPT` two-dimensional control points for call 4/lane 2. For the split that
+`M11QPT` two-dimensional control points for the divergent call 4/lane 2,
+call 4/lane 6, and call 5/lane 2 knot lanes. For the split that
 produces the `0.03513` mm endpoint, source `cutPathTime` uses target `0.03514` at path time
 `3.99158`; the child begins at `0.03513` after the cut. The q-template is a
 sequence of MetaPost `--` cubics whose controls are quantized to 16.16 bp. For
@@ -1100,10 +1101,25 @@ nix develop path:./nix --command python \
   diagnostics/analyze_m11_q_splits.py /tmp/m11-calctrace/trace.log
 ```
 
-This verifies 18 left-child and 18 right-child two-dimensional q cubics
-exactly against fixed-point de Casteljau splits with nearest-unit rounding. It
-gives the exact split rule; a replay must still carry each parent q cubic and
-split it, rather than recreate it from callback widths.
+This verifies the source q-path subdivision for each target lane:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_splits.py /tmp/m11-tube-outline-trace/trace.log \
+  --call 4 --lane 2
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_splits.py /tmp/m11-tube-outline-trace/trace.log \
+  --call 4 --lane 6
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_splits.py /tmp/m11-tube-outline-trace/trace.log \
+  --call 5 --lane 2
+```
+
+The checked tree contains respectively 19, 9 and 14 left/right child pairs;
+all controls match fixed-point de Casteljau with nearest-unit rounding. This
+confirms the split operation across all three divergent lanes. The branch
+mismatch therefore remains in how Typst selects and parameterizes a cut or
+evaluates its width threshold, rather than in q-control subdivision itself.
 
 Typst now has `_mp-cubic-split` and `_mp-cubic-path-split` using the same
 dimensional and scalar 16.16 quantizers. Generate the paired controls and
@@ -1118,9 +1134,9 @@ nix develop path:./nix --command typst eval \
   --in diagnostics/m11_q_split_replay.typ --root .
 ```
 
-All 18 left and 18 right child control arrays match after 16.16 quantization.
-This validates the subdivision primitive; `_ink-loops` does not yet carry these
-q curves between recursive nodes, so production output is unchanged.
+All 19 left and 19 right child control arrays in the default lane match after
+16.16 quantization. `_ink-loops` does not yet carry these q curves between
+recursive nodes, so production output is unchanged.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the

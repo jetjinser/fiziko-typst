@@ -175,9 +175,6 @@ enddef;''')
     before_template, after_template = source.rsplit(template_start, 1)
     q_trace = '''
     if traceKnotActive:
-      if traceTubeCall = 4:
-       if traceCurrentK = 2:
-        if i <= 5:
         save traceTemplatePoint;
         pair traceTemplatePoint;
         for traceTemplateIndex := 0 step 1 until length(bt) - 1:
@@ -202,9 +199,6 @@ enddef;''')
                         floor(ypart(traceTemplatePoint)*256))*256));
             endfor;
         endfor;
-        fi;
-       fi;
-      fi;
     fi;'''
     source = before_template + template_start + q_trace + after_template
     thin_level = "            w2 := floor((1/2(w0 + w1) - minWidth)/dashStrokeWidthStep)*dashStrokeWidthStep + minWidth;"
