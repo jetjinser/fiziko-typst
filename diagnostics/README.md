@@ -35,9 +35,18 @@ section-major lane traversal. On M4 its nominal 600 ppi RMSE changes from
 0.07127 to 0.07109; unit-aware 16.16 thin-brush threshold rounding lowers it
 further to 0.07025. Dark coverage before that change was 1.8045% (source:
 1.8385%). The M7 transverse pilot worsened RMSE from 0.12453 to 0.12532, so
-the option is deliberately restricted to longitudinal tubes. Recursive
+the option is deliberately restricted to longitudinal tubes. Variable-radius
 boundary-lane calls and source-exact subdivision still need tracing before
 this can stand in for a complete tube RNG port.
+
+The pinned `tubeGenerate` loop includes both boundary lanes (`k=0` and
+`k=bw1`). A direct M4 pilot drew those tracks using the current sampled offset
+geometry; this raised ink coverage from 1.751% to 1.835% against 1.789% source
+and regressed RMSE from 0.07025 to 0.07031, so the added strokes were removed.
+Consuming their Typst brush results while suppressing the marks produced the
+same M4 pixel hash as before, so those boundary paths consume no dash calls in
+this constant-radius fixture. Matching the source marks requires better
+boundary geometry; variable-radius boundary-call behavior remains open.
 
 ## WoodBlock source-field pilot
 

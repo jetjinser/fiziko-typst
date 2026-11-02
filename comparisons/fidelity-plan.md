@@ -60,9 +60,10 @@ strokes, while M10 contains mostly whitespace.
    MetaPost-stream mode; source-unit-aware 16.16 thin-brush threshold rounding
    lowers M4 RMSE further from 0.07109 to 0.07025. The same
    transverse pilot worsens M7 from 0.12453 to 0.12532 and is not enabled.
-   Missing boundary-lane brush calls and exact recursive subdivision still
-   limit the tube stream. Brush stipples and further wood call-order matching
-   remain open.
+   Boundary-lane marks and exact recursive subdivision still limit the tube
+   renderer; a direct M4 boundary-stroke pilot regressed and was reverted
+   pending better offset geometry. Brush stipples and further wood call-order
+   matching remain open.
 2. **Bring the wood field closer to `woodBlock`.** The field uses the source's
    knot-warped scalar field at 0.2 mm detail; Typst contour sampling remains
    1 mm while field offsets now consume once per source 1/3 mm column. A
