@@ -35,18 +35,19 @@ section-major lane traversal. On M4 its nominal 600 ppi RMSE changes from
 0.07127 to 0.07109; unit-aware 16.16 thin-brush threshold rounding lowers it
 further to 0.07025. Dark coverage before that change was 1.8045% (source:
 1.8385%). The M7 transverse pilot worsened RMSE from 0.12453 to 0.12532, so
-the option is deliberately restricted to longitudinal tubes. Variable-radius
-boundary-lane calls and source-exact subdivision still need tracing before
-this can stand in for a complete tube RNG port.
+the option is deliberately restricted to longitudinal tubes. M11 boundary
+lane calls are now traced, but variable-radius boundary behavior and exact
+subdivision still differ, so this is not yet a complete tube RNG port.
 
 The pinned `tubeGenerate` loop includes both boundary lanes (`k=0` and
-`k=bw1`). A direct M4 pilot drew those tracks using the current sampled offset
-geometry; this raised ink coverage from 1.751% to 1.835% against 1.789% source
-and regressed RMSE from 0.07025 to 0.07031, so the added strokes were removed.
-Consuming their Typst brush results while suppressing the marks produced the
-same M4 pixel hash as before, so those boundary paths consume no dash calls in
-this constant-radius fixture. Matching the source marks requires better
-boundary geometry; variable-radius boundary-call behavior remains open.
+`k=bw1`). The first M4 pilot drew them with sampled offset geometry; it raised
+ink coverage from 1.751% to 1.835% against 1.789% source and slightly
+regressed RMSE (0.07025 to 0.07031), so it was removed. A later source-derived
+implementation now uses each recursive section's endpoint lane, width law,
+and source draw order. On M11 it improves the knot crop, but it still needs
+better geometry and has cross-plate coverage tradeoffs; see the M11 knot
+trace below. Constant-radius M4 boundary paths consume no dash calls, while
+variable-radius boundary-call behavior remains open.
 
 ## WoodBlock source-field pilot
 
@@ -359,6 +360,37 @@ to 0.11267972; knot coverage changed from 2.29031% to 2.29052% (source:
 2.60589%). The oracle was removed. The offset geometry is a small part of
 this fixture's raster difference; hatch placement and coverage remain larger
 gaps.
+
+### M11 knot tube lanes and shared RNG
+
+The source trace starts the knot at MetaPost random-call offset 4639. Its six
+visible tube segments draw in rank order `+1` then `-1`, with local brush-call
+counts 14, 58, 54, 42, 38 and 18 (224 total). The Typst source-derived tube
+renderer now includes both boundary lanes and draws hatch marks before the
+two thin outline paths. Its per-segment modeled lane calls total 204, so the
+shared stream still drifts by 20 calls across the six segments. (The source
+draw-order vector is `j2,j4,j6,j1,j3,j5`; the values above follow that order.)
+
+`strand-knot(..., rng: "metapost", rng-offset: 4639)` precomputes the tube
+segments in source draw order using one shared stream, then composites their
+cached drawings in the existing low-to-high mask order. On the exact 600 ppi
+M11 comparison, the corrected rank-deduplicated shared stream changes the
+boundary-lane candidate's whole-plate RMSE from `0.11267309` to `0.11267222`
+and knot crop RMSE from `0.05895999` to `0.05895004`. Knot ink coverage is
+`2.8427%` versus `2.6059%` in the source; the shared stream does not solve the
+remaining over-coverage. M11 globe crop is unchanged at `0.18874815`. The
+pixel gain is small, but the source draw order is now represented directly;
+the 20-call deficit and cross-plate lane tradeoffs remain open. With the
+source-order boundary lanes, M4 changes from 0.060190 to 0.060176 RMSE, while
+M6 changes from 0.089190 to 0.089493 and its ink rises from 2.3327% to
+2.4854% (source 2.3327%). This is a real variable-radius counterexample; the
+boundary model needs refinement before claiming a general tube improvement.
+The first uncorrected rank-duplicate run was discarded. Reproduce with:
+
+```sh
+nix develop path:./nix --command ./compare.sh --case M11 --mode nominal \
+  --ppi 600 --output build/m11-shared-rng-dedup
+```
 
 Regenerate the source crossing trace inside the Nix devshell:
 

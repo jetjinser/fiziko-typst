@@ -105,7 +105,8 @@
       layers: ((-1,1,-1,1),(1,-1,1,-1)), gap: 0,
       path-times: (range(upstream-m11-knot-paths.wa.len()).map(i => i / upstream-m11-knot-paths.path-step),
         range(upstream-m11-knot-paths.wb.len()).map(i => i / upstream-m11-knot-paths.path-step)),
-      seed: seed, style: "tube", occlusion: "mask")
+      seed: seed, style: "tube", occlusion: "mask",
+      rng: "metapost", rng-offset: 4639)
     + stroke-path(circle-pts(10,128,center:(136,22)), stroke: 0.35pt + black, closed: true, per: 0)
     + refraction-path(((122,17),(128,17)), circle-pts(10,128,center:(136,22)), ior: 1.5))
   } else if case == "S102" {

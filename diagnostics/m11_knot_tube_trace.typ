@@ -1,0 +1,75 @@
+// Compare modeled M11 tube lane/brush calls for the source's six crossing intervals.
+#import "../fiziko.typ": _add, _frame, _ink-loops, _mod, _mul, _polyline-time-range, _source-dash-length, _source-min-stroke, _source-max-shading, _source-spacing, _mp-unit, _tube-layout
+#import "../comparisons/m11-knot-paths.typ": upstream-m11-knot-paths
+
+#let paths = (upstream-m11-knot-paths.wa, upstream-m11-knot-paths.wb)
+#let times = paths.map(path => range(path.len()).map(i => i / upstream-m11-knot-paths.path-step))
+#let intervals = ((0, 9), (9, 15), (15, 24))
+#let traces = ()
+
+#for strand in range(2) {
+  for (segment, interval) in intervals.enumerate() {
+    let path = _polyline-time-range(paths.at(strand), times.at(strand),
+      interval.at(0), interval.at(1))
+    let layout = _tube-layout(path, 0.8, hatch: "l", spacing: _source-spacing,
+      coverage: auto, closed: false, per: 0, w: _source-min-stroke,
+      min-w: _source-min-stroke, max-w: _source-max-shading)
+    let calls = 0
+    let dashes = 0
+    let outer-nodes = 0
+    let thin-nodes = 0
+    let lane-count = 0
+    let edge-calls = 0
+    let edge-dashes = 0
+    let edge-lanes = ()
+    for (section-index, section) in layout.division-sections.enumerate() {
+      let knots = (section.from,)
+      for t in layout.times {
+        if t > section.from + 1e-8 and t < section.to - 1e-8 {
+          knots.push(t)
+        }
+      }
+      knots.push(section.to)
+      for (side-index, side) in ((0, 1.0), (1, -1.0)) {
+        let points = knots.map(t => _add((layout.center-at)(t),
+          _mul((layout.normal-at)(t), side * (layout.rfun)(t))))
+        let width(t) = {
+          let residual = if side-index == 1 and _mod(section.divisions, 2) == 1 {
+            calc.abs(2 * (layout.rfun)(t) / section.divisions
+              - _source-spacing / 2) / _mp-unit
+          } else { 1.0 }
+          calc.min(_source-max-shading, _source-max-shading
+            * (layout.shade)(side, t) * residual)
+        }
+        let result = _ink-loops(_frame(points, false),
+          knots.map(t => width(t)), false, _source-min-stroke,
+          _source-dash-length, seed: 1 + 500000 + section-index * 2 + side-index,
+          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
+        edge-calls += result.at(1)
+        edge-dashes += result.at(2).dashes
+        edge-lanes.push((section: section-index, side: side, calls: result.at(1)))
+      }
+    }
+    for lane in layout.inner {
+      for piece in lane.pieces {
+        lane-count += 1
+        let result = _ink-loops(piece.frames, piece.widths, piece.closed,
+          _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
+          dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
+          source-rounding: false)
+        calls += result.at(1)
+        dashes += result.at(2).dashes
+        outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()
+        thin-nodes += result.at(2).nodes.filter(node => node.stage == "thin").len()
+      }
+    }
+    traces.push((strand: strand, segment: segment, start: interval.at(0),
+      finish: interval.at(1), divisions: layout.inner-n + 1,
+      lanes: lane-count, random-calls: calls, dash-patterns: dashes,
+      edge-random-calls: edge-calls, edge-dash-patterns: edge-dashes,
+      edge-lanes: edge-lanes, outer-nodes: outer-nodes,
+      thin-nodes: thin-nodes))
+  }
+}
+
+#metadata(traces) <m11-knot-tube-trace>

@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
 | M9 wood panels | 0.22407 | 4.203% → 4.224% | Landscape panels use the source's internal axis swap; accepted knots advance the 28 brush draws, and field offsets now consume once per source 1/3 mm column. Source-traced panel offsets (0, 1456, 2823, 4120) improve later-panel field placement and coverage. The 600 ppi RMSE falls from 0.22412 to 0.22407. Contour-brush shapes remain approximate. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
-| M11 globe, eye, knot, refraction | 0.11268 | 4.917% → 4.977% | The globe projection and mask longitude follow the pinned source equations. Source-ordered horizon arcs now close one outline per visible landmass; globe crop RMSE falls from 0.18877 to 0.18875, with ink 25.940% → 26.443%. The knot fixture uses 385 source-curve points per strand at 1/16 path-time intervals; knot crop RMSE is 0.05904. Mask mode splits strands at crossing-interval midpoints, orders by source layer, erases prior ink with each higher tube silhouette, and redraws hatch. Its three crossing times match the source's 6, 12, and 18; tube mask geometry remains approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.11267 | 4.917% → 5.070% | Focused 600 ppi rerun after source-ordered boundary lanes and shared knot RNG: globe crop RMSE 0.18875; knot crop RMSE 0.05895 (lane-only candidate 0.05896), with knot ink 2.606% → 2.843%. The globe projection and source-ordered horizon arcs remain close. The knot fixture uses 385 source-curve points per strand; mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot coverage remains high and modeled tube calls remain 20 below source. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. Some brush recursion and local random details still differ. |
@@ -68,10 +68,18 @@ strokes, while M10 contains mostly whitespace.
    0.06019 (the 1/8 result was 0.06050). A 1/32 sample was killed before
    producing metrics, so retain 1/16 as the best completed source-path sample;
    extraction remains reproducible from the pinned driver.
-   Boundary-lane marks and exact recursive subdivision still limit the tube
-   renderer; a direct M4 boundary-stroke pilot regressed and was reverted
-   pending better offset geometry. Brush stipples and further wood call-order
-   matching remain open.
+   The source includes two boundary lanes in addition to the interior tube
+   lanes. A source-derived section-boundary implementation is now retained;
+   its M11 tube mask and hatch ordering lower knot RMSE, although M4/M6 show
+   coverage tradeoffs. For M11, source tube hatches begin at global RNG offset
+   4639. Precomputing the six visible segments in source layer order with a
+   shared stream lowers the 600 ppi knot crop RMSE from 0.058960 to 0.058950
+   and whole M11 RMSE from 0.112673 to 0.112672. This is a small raster gain;
+   it is retained as the more faithful source call-order implementation.
+   Modeled lane calls remain 20 short of the source, and knot ink coverage
+   remains high (2.843% vs 2.606%).
+   Exact recursive subdivision, variable-radius boundary behavior, brush
+   stipples and further wood call-order matching remain open.
 2. **Bring the wood field closer to `woodBlock`.** The field uses the source's
    knot-warped scalar field at 0.2 mm detail; Typst contour sampling remains
    1 mm while field offsets now consume once per source 1/3 mm column. A

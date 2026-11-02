@@ -2094,8 +2094,13 @@
 
   (
     frames: fr,
+    times: ts,
     rfun: rfun,
     rmax: rmax,
+    max-w: max-w,
+    center-at: center-at,
+    normal-at: normal-at,
+    shade: shade,
     path-length: total-length,
     cov: cov,
     inner-n: inner-n,
@@ -2125,7 +2130,8 @@
           max-w: _source-max-shading, light: (-0.353553, 0.382683, 0.853553),
           gamma: 1.0, seed: 0, rng: "keyed", shift: (0, 0),
           dot-size: _source-max-shading, dot-step: _source-max-shading,
-          dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true) = {
+          dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true,
+          _random-stream: none, _rng-offset: 0, _with-rng: false) = {
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
   assert(rng != "metapost" or hatch == "l",
@@ -2135,22 +2141,44 @@
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
                        gamma: gamma, shift: shift)
-  let random-stream = if rng == "metapost" {
+  let random-stream = if _random-stream != none { _random-stream } else if rng == "metapost" {
     _metapost-rng-sequence(seed,
       calc.max(1024, L.frames.len() * calc.max(1, L.inner.len()) * 16))
   } else { none }
-  let rng-cursor = 0
+  let rng-cursor = _rng-offset
   let center-cum = (0.0,)
   for i in range(L.frames.len() - 1) {
     center-cum.push(center-cum.last() + _dist(L.frames.at(i).at(0), L.frames.at(i + 1).at(0)))
   }
   let src = pts.map(p => _add(p, shift))
-  let els = (
+  let outlines = (
     stroke-ink(src, w, offset: L.rfun, closed: closed, per: per,
                min-w: min-w, period: period, seed: seed),
     stroke-ink(src, w, offset: t => -(L.rfun)(t), closed: closed, per: per,
                min-w: min-w, period: period, seed: seed),
   )
+  let els = ()
+  let end-cap-elements = ()
+  let tube-edge-points(section, side) = {
+    let knots = (section.from,)
+    for t in L.times {
+      if t > section.from + 1e-8 and t < section.to - 1e-8 {
+        knots.push(t)
+      }
+    }
+    knots.push(section.to)
+    knots.map(t => _add((L.center-at)(t),
+      _mul((L.normal-at)(t), side * (L.rfun)(t))))
+  }
+  let tube-edge-width(section, side) = t => {
+    let d = section.divisions
+    let endpoint-lane = if side > 0 { 0 } else { d }
+    let residual = if _mod(endpoint-lane, 2) == 1 {
+      calc.abs(2 * (L.rfun)(t) / d - spacing / 2) / _mp-unit
+    } else { 1.0 }
+    calc.min(max-w, calc.max(0.0,
+      max-w * (L.shade)(side, t) * residual))
+  }
   // MetaPost closes open tube outlines across both ends. Connect the two
   // offset boundaries here as well; closed centerlines have no end caps.
   if not closed and end-caps {
@@ -2160,7 +2188,8 @@
       if rad > 0.000001 {
         let a = _add(frame.at(0), _mul(frame.at(1), rad))
         let b = _add(frame.at(0), _mul(frame.at(1), -rad))
-        els.push(stroke-path((a, b), stroke: w * 1mm + black, closed: false, per: 0))
+        end-cap-elements.push(stroke-path((a, b),
+          stroke: w * 1mm + black, closed: false, per: 0))
       }
     }
   }
@@ -2170,6 +2199,14 @@
       // advances that section's lane index. Preserve that section-major draw
       // order while carrying the global random cursor between brush paths.
       for section-index in range(L.division-sections.len()) {
+        let section = L.division-sections.at(section-index)
+        let edge = stroke-ink(tube-edge-points(section, 1),
+          tube-edge-width(section, 1), closed: false, per: 0,
+          min-w: min-w, period: period, seed: seed,
+          _random-stream: random-stream, _rng-offset: rng-cursor,
+          _with-rng: true, _source-rounding: true)
+        els.push(edge.at(0))
+        rng-cursor += edge.at(1)
         for it in L.inner {
           for piece in it.pieces {
             if piece.section-index != section-index { continue }
@@ -2182,16 +2219,34 @@
             rng-cursor += result.at(1)
           }
         }
+        let edge = stroke-ink(tube-edge-points(section, -1),
+          tube-edge-width(section, -1), closed: false, per: 0,
+          min-w: min-w, period: period, seed: seed,
+          _random-stream: random-stream, _rng-offset: rng-cursor,
+          _with-rng: true, _source-rounding: true)
+        els.push(edge.at(0))
+        rng-cursor += edge.at(1)
       }
     } else {
-      for it in L.inner {
-        for piece in it.pieces {
-          let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
-            min-w, period, seed: seed + piece.seed-offset,
-            dash-extra: 0.01 * _mp-unit,
-            dash-cap: 1)
-          els.push(place(top + left, _fill(loops, black)))
+      for (section-index, section) in L.division-sections.enumerate() {
+        els.push(stroke-ink(tube-edge-points(section, 1),
+          tube-edge-width(section, 1), closed: false, per: 0,
+          min-w: min-w, period: period,
+          seed: seed + 500000 + section-index * 2))
+        for it in L.inner {
+          for piece in it.pieces {
+            if piece.section-index != section-index { continue }
+            let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
+              min-w, period, seed: seed + piece.seed-offset,
+              dash-extra: 0.01 * _mp-unit,
+              dash-cap: 1)
+            els.push(place(top + left, _fill(loops, black)))
+          }
         }
+        els.push(stroke-ink(tube-edge-points(section, -1),
+          tube-edge-width(section, -1), closed: false, per: 0,
+          min-w: min-w, period: period,
+          seed: seed + 500001 + section-index * 2))
       }
     }
   } else if hatch == "s" {
@@ -2250,7 +2305,9 @@
     els += L.trans.map(tr => stroke-ink(tr.pts, tr.profile, closed: false, per: 0,
       min-w: min-w, period: period, seed: seed))
   }
-  _join(els)
+  // MetaPost draws the tube hatches first, then its two thin boundary paths.
+  let drawing = _join((..els, ..outlines, ..end-cap-elements))
+  if _with-rng { (drawing, rng-cursor) } else { drawing }
 }
 
 // Intersect evenly spaced scanlines with a closed polygon. Each line returns
@@ -3987,14 +4044,20 @@
 /// Set `occlusion: "mask"` with tube style to split strands at crossing
 /// midpoints, order the segments by layer, and mask lower tubes with higher
 /// silhouettes. `path-times:` can map samples to source path parameters. The
-/// default `"gap"` mode physically removes the under-strand interval.
+/// default `"gap"` mode physically removes the under-strand interval. In tube
+/// mask mode, `rng: "metapost"` and `rng-offset:` opt into one shared stream
+/// across the source-ordered segment renders; keyed randomness remains default.
 #let strand-knot(strands, widths: 1.25, layers: auto, path-times: none, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
-                 style: "stroke", occlusion: "gap") = {
+                 style: "stroke", occlusion: "gap", rng: "keyed", rng-offset: 0) = {
   assert(style == "stroke" or style == "tube",
     message: "strand-knot style must be stroke or tube")
   assert(occlusion == "gap" or occlusion == "mask",
     message: "strand-knot occlusion must be gap or mask")
+  assert(rng == "keyed" or rng == "metapost",
+    message: "strand-knot rng must be keyed or metapost")
+  assert(rng != "metapost" or (style == "tube" and occlusion == "mask"),
+    message: "strand-knot rng: metapost currently requires tube mask mode")
   let n = strands.len()
   let lengths = strands.map(_polyline-lengths)
   let path-times = if path-times == none {
@@ -4165,6 +4228,33 @@
       }
     }
     let sorted-ranks = layer-ranks.sorted()
+    let shared-stream = if rng == "metapost" {
+      _metapost-rng-sequence(seed, rng-offset + 16384)
+    } else { none }
+    let rng-cursor = rng-offset
+    let cached-drawings = ()
+    // Source layer pictures are evaluated from the highest rank down. Cache
+    // their tube renders in that order, while the final compositing below
+    // still erases and paints from low rank to high rank.
+    if rng == "metapost" {
+      let draw-ranks = sorted-ranks.rev()
+      for (rank-index, rank) in draw-ranks.enumerate() {
+        if rank-index > 0 and rank == draw-ranks.at(rank-index - 1) { continue }
+        for i in range(n) {
+          for segment-index in range(strand-segments.at(i).len()) {
+            let segment = strand-segments.at(i).at(segment-index)
+            if segment.rank != rank { continue }
+            let result = tube(segment.path, widths.at(i), hatch: "l",
+              w: _source-min-stroke, per: 0, seed: seed,
+              end-caps: false, rng: "metapost", _random-stream: shared-stream,
+              _rng-offset: rng-cursor, _with-rng: true)
+            cached-drawings.push((strand: i, segment: segment-index,
+              drawing: result.at(0)))
+            rng-cursor = result.at(1)
+          }
+        }
+      }
+    }
     for (rank-index, rank) in sorted-ranks.enumerate() {
       if rank-index > 0 and rank == sorted-ranks.at(rank-index - 1) { continue }
       // Mask the accumulated lower layer with every silhouette in this layer
@@ -4177,10 +4267,16 @@
         }
       }
       for i in range(n) {
-        for segment in strand-segments.at(i) {
+        for (segment-index, segment) in strand-segments.at(i).enumerate() {
           if segment.rank != rank { continue }
-          drawings.push(tube(segment.path, widths.at(i), hatch: "l",
-            w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
+          if rng == "metapost" {
+            let cached = cached-drawings.filter(item =>
+              item.strand == i and item.segment == segment-index).first()
+            drawings.push(cached.drawing)
+          } else {
+            drawings.push(tube(segment.path, widths.at(i), hatch: "l",
+              w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
+          }
         }
       }
     }
