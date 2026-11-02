@@ -311,24 +311,32 @@ fixture, source versus Typst counts are:
 
 | Landmass | Source RNG calls | Source thin nodes | Typst RNG calls | Typst thin nodes |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 6 | 15 | 36 | 37 |
-| 2 | 15 | 57 | 42 | 41 |
-| 3 (empty) | 0 | 1 | 0 | 0 |
-| 4 | 3 | 31 | 8 | 7 |
-| 5 | 1 | 1 | 0 | 0 |
-| 6 (empty) | 0 | 1 | 0 | 0 |
-| 7 | 1 | 1 | 4 | 3 |
+| 1 | 6 | 15 | 12 | 6 |
+| 2 | 15 | 57 | 30 | 15 |
+| 3 (empty) | 0 | 1 | — | — |
+| 4 | 3 | 31 | 2 | 1 |
+| 5 | 1 | 1 | 2 | 1 |
+| 6 (empty) | 0 | 1 | — | — |
+| 7 | 1 | 1 | 2 | 1 |
 | 8 | 1 | 1 | 2 | 1 |
 
 The source trace counts all `uniformdeviate` calls inside each coast brush;
-Typst's RNG cursor counts the two values consumed per modeled dash. The totals
-are 27 versus 92, and the per-mass differences show that aggregate stream
-offsets cannot fix the phase. Mass 4 is the largest tree-shape gap: 31 source
-thin nodes versus 7 Typst nodes, while mass 2 has 57 versus 41. A trial enabling
-source 16.16 width rounding in the production coast trace increased Typst to
-112 calls and 109 thin nodes, so it was reverted. The next port should pair
-source cut parameters and width-cubic ranges on masses 2 and 4 before changing
-the coast width law or RNG stream.
+Typst's RNG cursor counts modeled dash draws. The six visible coast paths total
+27 source calls versus 50 Typst calls; source fallback paths 3 and 6 are empty,
+so Typst omits them. Their recursive node totals are 106 and 25 respectively.
+Mass 4 has 31 source nodes versus 1 Typst thin node, and mass 2 has 57 versus
+15. The current trace also logs each source normal and its lightness. For
+source mass 4's first callback, the normal is
+`(0.19894, -0.45815, 0.86633)` at `(16.91675, -38.96030)` MetaPost units;
+the corresponding Typst coast sample uses the globe center `(19, 22)` mm and
+diameter `30` mm, yielding a normalized vector within 0.001 per component.
+This confirms the corrected radial factor `|point - center| / d`: `d` is the
+diameter, matching the source's `abs(point) / 2s`. The focused 600 ppi render
+changes globe RMSE from `0.188748` to `0.189414`, while ink coverage moves
+closer from `26.443%` to `26.372%` against `25.940%` source; whole M11 RMSE
+changes from `0.112661` to `0.112829`. Keep the source-equation match and
+record this small raster tradeoff. Next, pair source cut parameters and
+width-cubic ranges on masses 2 and 4 before changing dash phase or recursion.
 
 The paired root cuts make that priority concrete. Upstream
 `offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the

@@ -22,6 +22,20 @@ def main() -> None:
     source = Path(sys.argv[1]).read_text()
     source = replace_once(
         source,
+        "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"
+        "    returnValue\nenddef;\n\nvardef lightnessPP",
+        "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"
+        "    if traceCoastWidth:\n"
+        '        message "M11-NORMAL " & decimal(redpart(normalVector)) & " "'
+        '            & decimal(greenpart(normalVector)) & " "'
+        '            & decimal(bluepart(normalVector)) & " "'
+        '            & decimal(xpart(q)) & " " & decimal(ypart(q)) & " "'
+        '            & decimal(returnValue);\n'
+        "    fi;\n"
+        "    returnValue\nenddef;\n\nvardef lightnessPP",
+    )
+    source = replace_once(
+        source,
         "                    w2 := 1/3w2;\n"
         "                    if (w2 >= minWidth) and (arclength(p) > 0):",
         "                    w2 := 1/3w2;\n"
@@ -40,6 +54,14 @@ def main() -> None:
         "    w1 := ypart(lrcorner(bt));",
         "    w0 := ypart(urcorner(bt));\n"
         "    w1 := ypart(lrcorner(bt));\n"
+        "    for traceKnotIndex := 0 upto length(bt):\n"
+        '        message "S101-QKNOT " & decimal(i) & " "'
+        ' & decimal(traceKnotIndex) & " "'
+        ' & decimal(xpart(point traceKnotIndex of bt)) & " "'
+        ' & decimal(ypart(point traceKnotIndex of bt)) & " "'
+        ' & decimal(xpart(point traceKnotIndex of p)) & " "'
+        ' & decimal(ypart(point traceKnotIndex of p));\n'
+        "    endfor;\n"
         '    message "S101 NODE " & decimal(i) & " " & decimal(w0)'
         ' & " " & decimal(w1) & " " & decimal(arclength(p))'
         ' & " " & decimal(length(p)) & " "'
@@ -135,6 +157,7 @@ def main() -> None:
         "            rv := image();\n"
         "        fi;",
     )
+    source += "\nboolean traceCoastWidth;\ntraceCoastWidth := false;\n"
     Path(sys.argv[2]).write_text(source)
 
 

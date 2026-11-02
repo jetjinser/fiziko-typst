@@ -47,8 +47,10 @@ def main() -> None:
         source,
         coast,
         '            message "M11-COAST-BEGIN " & decimal(i);\n'
+        "            traceCoastWidth := true;\n"
         "            traceCoastRng := 0;\n"
         + coast
+        + "            traceCoastWidth := false;\n"
         + '            message "M11-COAST " & decimal(i) & " " & decimal(traceCoastRng);\n'
         + '            message "M11-COAST-END " & decimal(i);\n',
         "coast brush",

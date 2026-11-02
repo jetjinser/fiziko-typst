@@ -1116,7 +1116,10 @@
     trace-nodes: _trace-nodes, source-rounding: _source-rounding)
   let drawing = place(top + left,
     _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
-  if _with-stats { (drawing, ink.at(1), ink.at(2)) }
+  if _with-stats {
+    (drawing, ink.at(1), ink.at(2),
+      (times: ts, points: fr.map(e => e.at(0)), widths: ws))
+  }
   else if _with-rng { (drawing, ink.at(1)) } else { drawing }
 }
 
@@ -3951,7 +3954,9 @@
         let q = if span > 0 { (t - fractions.at(j)) / span } else { 0.0 }
         let point = _add(path.at(j), _mul(_sub(path.at(next), path.at(j)), q))
         let local = _sub(point, center)
-        let radial = calc.min(0.999999, 2 * _len(local) / (d + _mp-unit))
+        // source sphereAnglesToNormalVector uses asin(abs(point) / 2s);
+        // here d == 2s, so the normal's horizontal radius is |point| / d.
+        let radial = calc.min(0.999999, _len(local) / d)
         let angle = calc.atan2(-local.at(1), local.at(0)) / 1deg
         // Match sphereAnglesToNormalVector and normalVectorToLightness for
         // the coast point, including the source's azimuthal light direction.
@@ -3967,11 +3972,14 @@
         _with-rng: _trace-coasts, _with-stats: _trace-coasts,
         _trace-nodes: _trace-coasts, _source-rounding: false)
       if _trace-coasts {
+        let trace-samples = range(result.at(3).times.len()).map(j => (
+          arc: result.at(3).times.at(j) * result.at(2).nodes.at(0).length,
+          point: result.at(3).points.at(j), width: result.at(3).widths.at(j)))
         (drawing: result.at(0), trace: (
           landmass: coast-landmass-ids.at(i), points: path.len(),
           calls: result.at(1), outer: result.at(2).outer,
           thin: result.at(2).thin, dashes: result.at(2).dashes,
-          nodes: result.at(2).nodes))
+          nodes: result.at(2).nodes, width-samples: trace-samples))
       } else { (drawing: result, trace: none) }
     }
   })
