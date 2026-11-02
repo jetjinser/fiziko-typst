@@ -1532,10 +1532,12 @@ from 62/76 to 67/76 raw forward/reverse pairs within one 16.16 path-time unit;
 node 172 still matches all four ray results. At depth 19 the current integer
 packet model collapses this row to 67/76 and returns no hit for the reduced
 M11 endpoint probe, so it does not yet reproduce MetaPost's packed `max_t`
-precision guard. The M11 probe remains a miss at depth 18 too. This is a
-diagnostic model improvement only; the 9 unmatched S104 pairs remain
-concentrated around endpoint and no-hit cases, and no production change is
-justified. Compare the remaining pairs with:
+precision guard. The M11 probe remains a miss at depth 18 too. A replay
+classification now separates the 76 pairs into 43 matched hits, 24 matching
+misses, eight missed source hits within 1/64 path-time of a cubic endpoint,
+and one missed interior source hit. This is a diagnostic model improvement
+only; no production change is justified until the endpoint cases and the
+interior case are explained together. Compare the remaining pairs with:
 
 The source's packed-time flow was then modeled temporarily: `cur_t` and
 `cur_tt` advance as `2^l + 2^l*t`; an overlapping box advances `max_t` and

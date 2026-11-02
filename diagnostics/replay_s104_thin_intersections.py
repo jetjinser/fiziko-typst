@@ -250,6 +250,28 @@ def fixed_replay(node):
     return raw_hits, expected_raw
 
 
+def endpoint_distance(time: float) -> float:
+    """Distance to the nearest integer path knot (cubic endpoint)."""
+    return abs(time - round(time))
+
+
+def classify_raw_pair(actual, source):
+    actual_hit = actual[0] >= 0 and actual[1] >= 0
+    source_hit = source[0] >= 0 and source[1] >= 0
+    if actual_hit and not source_hit:
+        return "model-only hit"
+    if source_hit and not actual_hit:
+        near_endpoint = min(endpoint_distance(time) for time in source) <= 1 / 64
+        return "missed source hit near cubic endpoint" if near_endpoint else "missed interior source hit"
+    if not actual_hit:
+        return "matching miss"
+    error = max(abs(actual[0] - source[0]), abs(actual[1] - source[1]))
+    if error <= 1 / 65536:
+        return "matched hit"
+    near_endpoint = min(endpoint_distance(time) for time in source) <= 1 / 64
+    return "near-endpoint hit differs" if near_endpoint else "interior hit differs"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log")
@@ -306,6 +328,13 @@ def main():
               "within one 16.16 time unit")
         print(f"fixed packet replay mean/max time error: "
               f"{sum(errors) / len(errors):.8g}/{max(errors):.8g}")
+        categories = {}
+        for _, _, _, actual, source in fixed_results:
+            category = classify_raw_pair(actual, source)
+            categories[category] = categories.get(category, 0) + 1
+        print("raw pair classification:", "; ".join(
+            f"{category} {count}" for category, count in sorted(categories.items())
+        ))
         for serial, ray_id, reverse, actual, source in fixed_results:
             error = max(abs(actual[0] - source[0]), abs(actual[1] - source[1]))
             if not args.verbose and error <= 1 / 65536:
