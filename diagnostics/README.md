@@ -329,6 +329,37 @@ the mask boundaries in the same parameter space. Knot ink coverage is 2.253%
 versus 2.606% in the source. Crossing positions still use sampled line
 segments, and the erasing silhouette remains a width-stroke approximation.
 
+An intersection audit of the pinned `knotFromStrands` source found three
+unique M11 crossings at path times 6, 12, and 18 on both strands. The source
+logs duplicate each crossing while scanning overlapping 1/4-time windows, then
+`appendList` deduplicates the rounded 0.1-time values. The current 1/16 Typst
+polyline detector finds the same three rounded times and positions at
+(94,22), (102,22), and (110,22) mm. The unrounded source intersections differ
+from those points by at most 0.0006 mm, so additional time quantization or
+denser path sampling would not improve these crossings. Mask drawing now
+erases the accumulated lower layer with all silhouettes in the next layer
+before drawing any hatch in that layer, matching source `layerPicture`; this
+does not change the current M11 pixel hash. A filled polygon mask built from
+sampled offset frames was also compared; knot RMSE regressed from 0.05904 to
+0.06818 and whole M11 RMSE from 0.11268 to 0.11355, so it was reverted. The
+remaining mask gap is the source `tubeOutline` offset geometry, not crossing
+placement.
+
+Regenerate the source crossing trace inside the Nix devshell:
+
+```sh
+mkdir -p /tmp/m11-knot-crossings
+python3 diagnostics/instrument_m11_knot_crossings.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-knot-crossings/fiziko.mp
+cp comparisons/reference/main.mp /tmp/m11-knot-crossings/main.mp
+printf 'selected := 11; input main.mp;\n' > /tmp/m11-knot-crossings/trace.mp
+(cd /tmp/m11-knot-crossings && \
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+rg 'M11X' /tmp/m11-knot-crossings/trace.log
+typst eval 'query(<m11-knot-crossings>).first().value' \
+  --in diagnostics/m11_knot_crossing_trace.typ --root .
+```
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and

@@ -4167,13 +4167,18 @@
     let sorted-ranks = layer-ranks.sorted()
     for (rank-index, rank) in sorted-ranks.enumerate() {
       if rank-index > 0 and rank == sorted-ranks.at(rank-index - 1) { continue }
+      // Mask the accumulated lower layer with every silhouette in this layer
+      // before drawing any same-layer hatch, matching source layerPicture.
       for i in range(n) {
         for segment in strand-segments.at(i) {
           if segment.rank != rank { continue }
-          // A higher layer first erases lower-layer ink with its tube silhouette,
-          // then draws its own hatching, matching the source mask order.
           drawings.push(stroke-path(segment.path,
             stroke: (paint: white, thickness: 2 * widths.at(i) * 1mm), per: 0))
+        }
+      }
+      for i in range(n) {
+        for segment in strand-segments.at(i) {
+          if segment.rank != rank { continue }
           drawings.push(tube(segment.path, widths.at(i), hatch: "l",
             w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
         }
