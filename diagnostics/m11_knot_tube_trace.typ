@@ -88,14 +88,18 @@
         let result = _ink-loops(piece.frames, piece.widths, piece.closed,
           _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
           dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
-          source-rounding: false)
+          source-rounding: false,
+          trace-nodes: strand == 0 and segment == 0 and lane-index == 1
+            and piece-index == 0)
         calls += result.at(1)
         dashes += result.at(2).dashes
         let candidate-widths = y-flipped-widths(layout, piece.u, piece.times, piece.widths)
         let candidate-result = _ink-loops(piece.frames, candidate-widths,
           piece.closed, _source-min-stroke, _source-dash-length,
           seed: 1 + piece.seed-offset, dash-extra: 0.01 * _mp-unit,
-          dash-cap: 1, with-stats: true, source-rounding: false)
+          dash-cap: 1, with-stats: true, source-rounding: false,
+          trace-nodes: strand == 0 and segment == 0 and lane-index == 1
+            and piece-index == 0)
         candidate-calls += candidate-result.at(1)
         inner-lanes.push((lane: lane-index, piece: piece-index,
           u: piece.u,
@@ -106,6 +110,10 @@
           radius-slopes: piece.times.map(t => (layout.radius-slope)(t)),
           lightness: piece.times.map(t => (layout.shade)(piece.u, t)),
           candidate-calls: candidate-result.at(1),
+          nodes: if strand == 0 and segment == 0 and lane-index == 1
+            and piece-index == 0 { result.at(2).nodes } else { () },
+          candidate-nodes: if strand == 0 and segment == 0 and lane-index == 1
+            and piece-index == 0 { candidate-result.at(2).nodes } else { () },
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()

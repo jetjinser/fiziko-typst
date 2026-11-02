@@ -232,9 +232,11 @@ strokes, while M10 contains mostly whitespace.
    (source calls 14/58/54/42/38/18; candidate 14/52/50/40/38/10), while the
    total remains 204 versus 224. It nevertheless worsens 600 ppi RMSE for M11
    knot (0.05895→0.07697), M4 (0.07109→0.12625) and M6 (0.08919→0.11594), so
-   the render change was reverted. The next evidence target is how source thin
-   widths map to dash lengths and random calls, plus the y-axis/light-direction
-   transform. The latitude mode
+   the render change was reverted. On paired k=6, source has 19 dash leaves,
+   current Typst 5, and candidate Typst 17. Its quantized dash widths match
+   within 0.00002 mm; two source pairs are merged across 0.064 and 0.054 mm
+   gaps. The next target is these local width troughs, dash-phase restarts and
+   the y-axis/light-direction transform. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the

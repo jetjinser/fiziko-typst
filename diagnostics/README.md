@@ -410,6 +410,17 @@ render, so keep it reverted until the y-axis/light-direction transform and
 thin-brush dash placement are reconciled. The diagnostic now reports
 `candidate-calls` and `candidate-edge-calls` without changing drawing output.
 
+The target k=6 lane's source trace contains 19 thin-brush dash leaves; the
+current Typst lane has 5 and the source-normal width candidate has 17. The
+candidate's quantized dash widths match the source levels within 0.00002 mm.
+Projecting both leaf sets onto the same sampled lane shows two specific source
+splits that Typst merges: source intervals 11.976–12.483 and 12.547–13.073 mm
+share one candidate interval 11.976–13.069 mm; source intervals
+18.780–19.219 and 19.273–19.876 mm share candidate interval
+18.783–19.876 mm. The missing source gaps are only 0.064 and 0.054 mm. This
+narrows the remaining four random values on this lane to two short local width
+troughs and their dash-phase restart, rather than a broad width-scale error.
+
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
@@ -469,7 +480,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \

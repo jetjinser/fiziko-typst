@@ -126,6 +126,38 @@ vardef lightnessPP''')
     fi;
     normalVector
 enddef;''')
+    thin_start = "    w1 := ypart(lrcorner(bt));"
+    if source.count(thin_start) != 1:
+        raise ValueError(f"expected one thin-brush width hook, found {source.count(thin_start)}")
+    source = source.replace(thin_start, thin_start + '''
+    if traceKnotActive:
+        message "M11THIN " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(i) & " "
+            & decimal(w0/mm) & " " & decimal(w1/mm) & " "
+            & decimal(arclength(p)/mm);
+    fi;''')
+    thin_cut = "        t := cutPathTime(bt, w2);"
+    if source.count(thin_cut) != 1:
+        raise ValueError(f"expected one thin-brush cut hook, found {source.count(thin_cut)}")
+    source = source.replace(thin_cut, thin_cut + '''
+        if traceKnotActive:
+            message "M11TCUT " & decimal(traceTubeCall) & " "
+                & decimal(traceCurrentK) & " " & decimal(i) & " "
+                & decimal(w2/mm) & " " & decimal(t);
+        fi;''')
+    thin_dash = "                    draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
+    if source.count(thin_dash) != 1:
+        raise ValueError(f"expected one thin-brush dash hook, found {source.count(thin_dash)}")
+    source = source.replace(thin_dash, '''                    if traceKnotActive:
+                        message "M11DASH " & decimal(traceTubeCall) & " "
+                            & decimal(traceCurrentK) & " " & decimal(i) & " "
+                            & decimal(w2/mm) & " " & decimal(arclength(p)/mm) & " "
+                            & decimal(xpart(point 0 of p)/mm) & " "
+                            & decimal(ypart(point 0 of p)/mm) & " "
+                            & decimal(xpart(point length(p) of p)/mm) & " "
+                            & decimal(ypart(point length(p) of p)/mm);
+                    fi;
+                    draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
         raise ValueError(f"expected one knot start hook, found {source.count(knot_start)}")
