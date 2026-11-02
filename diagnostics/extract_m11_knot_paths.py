@@ -22,6 +22,10 @@ def main() -> None:
         raise ValueError(f"expected equal nonempty strand samples, got {len(paths['A'])} and {len(paths['B'])}")
     if times["A"] != times["B"]:
         raise ValueError("source strand samples do not share identical path times")
+    step_denominator = round(1 / (times["A"][1] - times["A"][0]))
+    if any(abs(t - i / step_denominator) > 1e-8
+           for i, t in enumerate(times["A"])):
+        raise ValueError("source samples are not on a uniform path-time grid")
 
     def array(points: list[tuple[float, float]]) -> str:
         values = [f"({x:.5f}, {y:.5f})" for x, y in points]
@@ -30,6 +34,7 @@ def main() -> None:
     output = (
         f"// M11 knot paths sampled from the pinned MetaPost 2.11 source at {times['A'][1] - times['A'][0]:g} path-time intervals.\n"
         "#let upstream-m11-knot-paths = (\n"
+        f"  path-step: {step_denominator},\n"
         f"  wa: {array(paths['A'])},\n"
         f"  wb: {array(paths['B'])},\n"
         ")\n"
