@@ -97,10 +97,13 @@ affected source-parity crops do not materially regress.
   row, including node 172 (`1.50017` at x `52.61568` versus the other hit at
   x `35.07321`). This isolates the remaining mismatch to low-level
   `intersectiontimes` behavior and Typst's recursive subpath parameterization.
-  An integer 16.16 packet-search model now reproduces 62/76 raw
+  An integer 16.16 packet-search model now reproduces 67/76 raw
   forward/reverse hit pairs within one path-time unit on this row, including
-  all four for node 172. Fourteen endpoint/no-hit cases still disagree; the
-  source's approximate 5000-backtrack return is not fully modeled. No
+  all four for node 172. Raising its depth from 17 to 18 accounts for five
+  additional pairs. The source precision guard permits two extra bits, but
+  the model does not yet implement its packed `max_t` progression: depth 19
+  collapses the M11 endpoint probe to no hit, while the source reports the
+  near-endpoint forward pair. Nine endpoint/no-hit cases still disagree. No
   production change is justified yet. The trace replay is documented in
   `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.

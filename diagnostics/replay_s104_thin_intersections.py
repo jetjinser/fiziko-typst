@@ -16,6 +16,13 @@ from collections import defaultdict
 from pathlib import Path
 
 
+# MetaPost's cubic_intersection keeps two extra bits after the nominal
+# 17-level parameter search. This packet model improves its S104 pairing at
+# depth 18, but does not yet model the packed max_t guard that safely handles
+# the final extra level; depth 19 can collapse integer packets to no hit.
+MAX_INTERSECTION_DEPTH = 18
+
+
 def load(log_path: str, row: float):
     nodes = defaultdict(lambda: {
         "first": [], "controls": defaultdict(dict), "thin": None,
@@ -155,8 +162,8 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
             best_level = level
             scale = 1 << level
             best = (ai / scale, bi / scale)
-        if level == 17:
-            scale = 1 << 17
+        if level == MAX_INTERSECTION_DEPTH:
+            scale = 1 << MAX_INTERSECTION_DEPTH
             return ((ai + 0.5) / scale, (bi + 0.5) / scale)
 
         a_left, a_right = split_packet(a)

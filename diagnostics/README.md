@@ -1509,16 +1509,21 @@ x `44.895` mm. Do not infer a production change from the source replay alone;
 the next comparison must pair recursive subpath controls and reproduce the
 low-level hit choice across the full row before a render candidate is judged.
 
-The thin replay now also includes an integer first-difference packet model of
+The thin replay also includes an integer first-difference packet model of
 MetaPost's cubic search. It uses 16.16 controls, integer `half` operations,
-the four ordered child pairs, source-style tolerance updates, and a 17-level
-search. Against the 38 forward/reverse results from the 19 cuts, it reproduces
-62/76 raw pairs within one 16.16 path-time unit. Node 172 matches all four
-logged ray results within that tolerance, including the near-flat hit
-`(0, 1.50017)`. The other 14 pairs remain mismatched, concentrated around
-endpoint and no-hit cases; the source's 5000-backtrack approximate return and
-remaining fixed-point details are not modeled fully. Compare the incomplete
-pairs with:
+the four ordered child pairs, and source-style tolerance updates. MetaPost 2.11
+sets a precision guard from 17 nominal bisections plus two extra bits, and
+returns the saved approximate pair after 5000 backtracks
+([source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15000-L15101)).
+Raising this model's terminal depth from 17 to 18 improves the target S104 row
+from 62/76 to 67/76 raw forward/reverse pairs within one 16.16 path-time unit;
+node 172 still matches all four ray results. At depth 19 the current integer
+packet model collapses this row to 67/76 and returns no hit for the reduced
+M11 endpoint probe, so it does not yet reproduce MetaPost's packed `max_t`
+precision guard. The M11 probe remains a miss at depth 18 too. This is a
+diagnostic model improvement only; the 9 unmatched S104 pairs remain
+concentrated around endpoint and no-hit cases, and no production change is
+justified. Compare the remaining pairs with:
 
 ```sh
 python3 diagnostics/replay_s104_thin_intersections.py \
