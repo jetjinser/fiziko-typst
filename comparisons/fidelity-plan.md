@@ -257,6 +257,17 @@ affected source-parity crops do not materially regress.
   it was reverted. Keep the helper diagnostic-only until the exact source
   width-template cubics and recursive parameter mapping are carried through
   child paths, then compare complete S104 and M11 trees and rasters.
+  A thin-only prototype then rebuilt straight 16.16 q cubics from each
+  recursive node's sampled widths and routed those cuts through the fixed
+  intersection solver. On row 93, its formerly divergent cut moved from
+  `x=44.89566` to `x=39.54028 mm`, within `0.0013 mm` of source `39.539 mm`.
+  The full 142-row trace did not improve: source/baseline/prototype dash leaves
+  total `687/699/699`; summed per-row absolute dash-count error changed
+  `166 → 168`, with 1 row better, 139 tied and 2 worse. Thin-node count rose
+  `1613 → 1843` against source `1696`. Rebuilding q from each sampled child
+  recovers this local hit but loses source q state across recursion, so the
+  production prototype was removed. Preserve the cut as a local oracle; the
+  next integration must carry and split q controls with the child paths.
   The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
