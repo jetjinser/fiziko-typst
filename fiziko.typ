@@ -3261,7 +3261,7 @@
   let contour-result = if source-field {
     let levels = _wood-source-levels(field, w, h, nx, ny, seed, contour-offset)
     marching-squares(field, 0, 0, w, h, levels: levels,
-      nx: nx, ny: ny, with-count: true)
+      nx: nx, ny: ny, with-count: true, source-walk: true)
   } else {
     (marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
   }

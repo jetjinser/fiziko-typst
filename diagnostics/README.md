@@ -144,7 +144,23 @@ On the current trace it reproduces all 22 vertices in order, visits the same
 19 in-bounds cells, and has maximum point error `0.000718 mm`. The residual is
 consistent with `CLVALUE` being printed to five decimal places. This validates
 the source traversal model independently of the Typst contour stitcher; it
-does not yet change the production contour path.
+does not by itself validate renderer output.
+
+`contour.typ` now also implements this traversal iteratively as
+`marching-squares(..., source-walk: true)`, avoiding deep recursive Typst calls.
+`wooden-thing` uses it for source-field contours; the grid contour path in
+`wood` retains marching-squares. The first M9 path has 22 points in the source
+order and an outer brush length of 17.2651 mm versus 17.2808 mm source. Its
+600 ppi full-plate RMSE changes `0.212742 → 0.212436`, with ink coverage
+`3.7497% → 3.7804%` (source: `4.2032%`). Against a matching same-checkout
+baseline, S105 whole-plate RMSE changes `0.102443 → 0.102628`; its block crop
+is unchanged at `0.127927`, while surface crop changes `0.077655 → 0.078106`.
+Ink coverage moves closer from `0.6960%` to `0.7004%` (source: `0.7405%`).
+The source traversal is retained because its path topology follows the pinned
+source and M9 improves, with the S105 crop tradeoff recorded. Recursive brush
+decisions remain 11 outer
+and 48 thin nodes versus source 37 and 65; the production renderer also still
+clips paths before brushing and derives widths from geometric midpoint cells.
 
 The pinned `isoLines` source confirms the exact width lookup: except for the
 terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`

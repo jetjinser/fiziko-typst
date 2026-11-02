@@ -12,7 +12,7 @@
 #let values = grid.fold((), (all, row) => all + row)
 #let groups = levels.enumerate().map(((level-index, level)) => {
   let result = marching-squares(field, 0, 0, 55, 33, levels: (level,),
-    nx: 55, ny: 33, with-count: true)
+    nx: 55, ny: 33, with-count: true, source-walk: true)
   result.at(0).enumerate().map(((path-index, path)) => {
     (level-index: level-index, path-index: path-index, path: path)
   })
@@ -39,9 +39,9 @@
     path-index: entry.path-index, start: path.first(), end: path.last(),
     points: path, cells: cells, cell-ranges: cell-ranges)
 })
-// `compare_wood_contours.py` independently verifies this pinned fixture by
-// matching its exact reversed cell sequence against the source CLSTEP trace.
-#let paired-path = paths.find(p => p.level-index == 0 and p.path-index == 2)
+// Path zero is seeded by the first source cLine cell, with traversal order
+// checked against the pinned MetaPost CLPATH/CLSTEP trace.
+#let paired-path = paths.find(p => p.level-index == 0 and p.path-index == 0)
 #let width = _wood-source-width(field, 55, 33, 55, 33, paired-path.points)
 #let brush-trace = stroke-ink(paired-path.points, width, closed: false,
   per: 0,

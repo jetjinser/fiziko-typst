@@ -207,7 +207,22 @@ affected source-parity crops do not materially regress.
   transform to `(22,34)` and `(12,34)`. This confirms the endpoint order is
   produced by cLine's directed recursion through two boundary cells, so the
   next diagnostic should preserve that traversal state while stitching the
-  in-bounds contour.
+  in-bounds contour. `contour.typ` now has an iterative `source-walk` mode that
+  follows cLine's source scan, edge order, visited-cell choice and directed
+  branches without recursive Typst calls; `wooden-thing` uses it for source
+  fields. On the first M9 path it emits 22 points in source order, with mean/
+  max point-to-source distances `0.00197/0.00465 mm`; the brush root is
+  `17.2651 mm` versus `17.2808 mm` source. At 600 ppi, M9 RMSE improves
+  `0.212742 → 0.212436`, and ink coverage moves `3.7497% → 3.7804%` toward the
+  source's `4.2032%`. A matching same-checkout S105 baseline gives whole-page
+  RMSE `0.102443 → 0.102628`; block crop is unchanged at `0.127927`, while
+  surface crop changes `0.077655 → 0.078106`. Ink coverage moves
+  `0.6960% → 0.7004%` toward `0.7405%`. Keep the source traversal because its
+  path topology follows the pinned source and M9 improves, with the S105 crop
+  tradeoff recorded.
+  Brush recursion remains open (11 outer/48 thin nodes versus 37/65 source),
+  and the path is still clipped before brushing; width lookup must next follow
+  source `st` along the full path before changing that order.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;

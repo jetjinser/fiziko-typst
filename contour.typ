@@ -5,15 +5,134 @@
 // exactly one horizontal and one vertical edge), so chaining is a graph walk
 // with integer keys — no floating-point endpoint matching.
 
+// Iterative port of Fiziko's cLine for unmasked grids. Source grid cell (i,j)
+// maps to local Typst coordinates (x0+j*dx, y0+h-i*dy). The two directed
+// branches are evaluated with loops so long contours do not consume Typst call
+// depth.
+#let _source-c-line(f, x0, y0, w, h, nx, ny, level) = {
+  let visited = (:)
+  let dx = w / nx
+  let dy = h / ny
+  let sign(v) = if v > 0 { 1 } else if v < 0 { -1 } else { 0 }
+  let join(a, b) = {
+    if a.len() == 0 { b } else if b.len() == 0 { a } else {
+      let p = a.last()
+      let q = b.first()
+      let d = calc.sqrt((p.at(0) - q.at(0)) * (p.at(0) - q.at(0))
+        + (p.at(1) - q.at(1)) * (p.at(1) - q.at(1)))
+      a + if d < 1e-7 { b.slice(1) } else { b }
+    }
+  }
+  let hits(i, j) = {
+    let x = x0 + j * dx
+    let y = y0 + h - i * dy
+    let c = (f(x, y), f(x + dx, y), f(x, y - dy), f(x + dx, y - dy))
+    let edges = (
+      (c.at(0), c.at(1), (x, y), (x + dx, y), (-1, 0)),
+      (c.at(0), c.at(2), (x, y), (x, y - dy), (0, -1)),
+      (c.at(1), c.at(3), (x + dx, y), (x + dx, y - dy), (0, 1)),
+      (c.at(2), c.at(3), (x, y - dy), (x + dx, y - dy), (1, 0)),
+    )
+    let out = ()
+    for e in edges {
+      let a = e.at(0) - level
+      let b = e.at(1) - level
+      if sign(a) != sign(b) {
+        let t = calc.abs(-a / (b - a))
+        let p = e.at(2)
+        let q = e.at(3)
+        out.push(((p.at(0) + t * (q.at(0) - p.at(0)),
+          p.at(1) + t * (q.at(1) - p.at(1))), e.at(4)))
+      }
+    }
+    out
+  }
+  let branch(i, j, state, seen) = {
+    let ci = i
+    let cj = j
+    let points = ()
+    let endpoint = (x0 + cj * dx, y0 + h - ci * dy)
+    let done = false
+    while not done {
+      let key = str(ci) + "," + str(cj)
+      if ci < 0 or ci >= ny or cj < 0 or cj >= nx {
+        seen.insert(key, true)
+        endpoint = (x0 + cj * dx, y0 + h - ci * dy)
+        done = true
+      } else {
+        let ps = hits(ci, cj)
+        if ps.len() < 2 {
+          endpoint = (x0 + cj * dx, y0 + h - ci * dy)
+          done = true
+        } else {
+          let p1 = ps.at(0).at(0)
+          let p2 = ps.at(1).at(0)
+          let d1 = ps.at(0).at(1)
+          let d2 = ps.at(1).at(1)
+          if seen.at(key, default: false) {
+            endpoint = ((p1.at(0) + p2.at(0)) / 2,
+              (p1.at(1) + p2.at(1)) / 2)
+            done = true
+          } else {
+            seen.insert(key, true)
+            let k1 = str(ci + d1.at(0)) + "," + str(cj + d1.at(1))
+            let k2 = str(ci + d2.at(0)) + "," + str(cj + d2.at(1))
+            let next = if not seen.at(k1, default: false) {
+              (d1, p1)
+            } else if not seen.at(k2, default: false) {
+              (d2, p2)
+            } else { ((0, 0), none) }
+            if next.at(1) == none {
+              endpoint = ((p1.at(0) + p2.at(0)) / 2,
+                (p1.at(1) + p2.at(1)) / 2)
+              done = true
+            } else {
+              points.push(next.at(1))
+              ci += next.at(0).at(0)
+              cj += next.at(0).at(1)
+            }
+          }
+        }
+      }
+    }
+    let path = if state > 0 { (endpoint,) + points.rev() }
+      else { points + (endpoint,) }
+    (path, seen)
+  }
+  let paths = ()
+  for i in range(ny) {
+    for j in range(nx) {
+      let key = str(i) + "," + str(j)
+      if not visited.at(key, default: false) {
+        let ps = hits(i, j)
+        if ps.len() >= 2 {
+          visited.insert(key, true)
+          let p1 = ps.at(0).at(0)
+          let p2 = ps.at(1).at(0)
+          let d1 = ps.at(0).at(1)
+          let d2 = ps.at(1).at(1)
+          let first = branch(i + d2.at(0), j + d2.at(1), 1, visited)
+          let second = branch(i + d1.at(0), j + d1.at(1), -1, first.at(1))
+          visited = second.at(1)
+          let path = join(join(first.at(0), (p1, p2)), second.at(0))
+          if path.len() >= 2 { paths.push(path) }
+        }
+      }
+    }
+  }
+  paths
+}
+
 /// Iso-lines of `f` over the rectangle (x0, y0, w, h).
 /// By default, levels are multiples of `step` spanning the sampled range;
 /// `levels` may instead provide an explicit array of scalar values.
 /// `level-jitter(index, level)` can offset each successive threshold, and
 /// `with-count` also returns the number of thresholds visited. The result is
-/// an array of polylines, each an array of (x, y) float points.
+/// an array of polylines, each an array of (x, y) float points. `source-walk`
+/// selects the unmasked, source-grid cLine traversal instead of edge stitching.
 #let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24,
                       levels: none, level-jitter: none, mask: none,
-                      with-count: false) = {
+                      with-count: false, source-walk: false) = {
   let dx = w / nx
   let dy = h / ny
   let V = range(ny + 1).map(j => range(nx + 1).map(i => f(x0 + i * dx, y0 + j * dy)))
@@ -44,6 +163,12 @@
     for li in range(level-count) {
       let level = level-values.at(li)
       let L = level + if level-jitter == none { 0.0 } else { level-jitter(li, level) }
+      if source-walk {
+        assert(mask == none,
+          message: "source-walk currently requires an unmasked grid")
+        polylines += _source-c-line(f, x0, y0, w, h, nx, ny, L)
+        continue
+      }
       let segs = ()   // (edgeA, pointA, edgeB, pointB)
 
       for j in range(ny) {
