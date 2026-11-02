@@ -243,6 +243,16 @@ strokes, while M10 contains mostly whitespace.
    reproduce the two dash-phase restarts. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
+   A follow-up tested a three-point one-sided tangent on the sampled center
+   path together with the radial-y sign change. The diagnostic initially
+   reported 17 dash leaves, but its light vector was not normalized like the
+   production renderer; after correcting the diagnostic, production and
+   helper widths agree to 1.4e-17 mm and both produce 16 leaves. The combined
+   render scores 0.11447 whole-plate RMSE and 0.07677 knot-crop RMSE, worse
+   than the retained 0.11267/0.05895 baseline. The production change was
+   reverted. This does not isolate the tangent estimator from the radial-y
+   sign change; do not treat the apparent 17-leaf match as evidence for
+   either change.
    The coast brush follows the source projected-radius pen-width law, and the
    projection and geographic mask inverse now match the source longitude
    convention. Globe crop RMSE falls from 0.18877 to 0.18875 and ink coverage
