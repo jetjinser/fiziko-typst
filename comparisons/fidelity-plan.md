@@ -123,7 +123,18 @@ affected source-parity crops do not materially regress.
   `diagnostics/analyze_m11_shadow_callbacks.py` verifies this from
   `M11PARAM`/`M11POSTPARAM` and `M11WIDTHINPUT`/`M11LIGHT`. Rebuild callback
   knots at integer post-cut times, including the repeated endpoint tail,
-  before retrying brush recursion.
+  before retrying brush recursion. A direct replay now feeds traced
+  post-shadow cubics, callback widths, path times and source RNG offsets into
+  the production `_ink-loops` routine. It matches source call totals on 15 of
+  18 traced lane inputs; the only differences are call 4 lanes 2/6
+  (`18/8` versus source `16/6`) and call 5 lane 2 (`12` versus source `14`).
+  Calls 1–3 and 6 match across all three lanes. Increasing the geometric
+  sampling density from one to four or sixteen samples per source cubic does
+  not change those call totals, so the remaining discrepancy is localized to
+  recursive branching or low-level arithmetic rather than broad path density.
+  This replay is diagnostic only; no production rendering change is justified
+  until the three divergent branch trees are paired and a render improves.
+  Reproduction is documented in `diagnostics/README.md`.
   Acceptance remains matching the six
   per-interval call distribution and improving the rendered plates together.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and

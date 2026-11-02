@@ -1009,6 +1009,34 @@ Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
 repeated endpoint callback values, before evaluating brush recursion.
 
+`extract_m11_shadow_brush_inputs.py` exports the traced post-shadow cubic
+paths, their integer callback widths and source-order RNG offsets as a Typst
+module. `m11_shadow_brush_replay.typ` feeds these inputs directly to the
+production `_ink-loops` recursion with source rounding and path-time width
+interpolation. This removes lane reconstruction and callback evaluation from
+the comparison, so remaining call-count differences are in brush recursion
+or its low-level arithmetic. Reproduce the four-sample-per-cubic replay with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_brush_inputs.py \
+  /tmp/m11-center-all/trace.log build/m11-shadow-brush-inputs.typ \
+  --samples-per-cubic 4
+nix develop path:./nix --command typst eval \
+  'query(<m11-shadow-brush-replay>).first().value' \
+  --in diagnostics/m11_shadow_brush_replay.typ --root . \
+  > build/m11-shadow-brush-replay.json
+```
+
+On the current pinned trace, 15 of 18 lane call totals match exactly. The
+remaining differences are call 4 lane 2 (`18` vs source `16`), call 4 lane 6
+(`8` vs `6`), and call 5 lane 2 (`12` vs `14`). Calls 1–3 and 6 match on all
+three traced lanes; the other call-4–6 lanes also match. Increasing path
+sampling from one to four or sixteen samples per source cubic leaves these
+call totals unchanged. This narrows the three mismatches beyond path density,
+but does not yet identify a production-safe recursive change. No renderer
+change is implied by this diagnostic.
+
 A production trial inserted lane knots at shifted-outline intersections and
 resampled widths on the resulting time grid. It produced per-segment calls
 `14/54/54/34/34/16` (206 total) versus source `14/58/54/42/38/18`; the
