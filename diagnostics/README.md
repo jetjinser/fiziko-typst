@@ -1462,7 +1462,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -1537,7 +1537,15 @@ classification now separates the 76 pairs into 43 matched hits, 24 matching
 misses, eight missed source hits within 1/64 path-time of a cubic endpoint,
 and one missed interior source hit. This is a diagnostic model improvement
 only; no production change is justified until the endpoint cases and the
-interior case are explained together. Compare the remaining pairs with:
+interior case are explained together. The instrumenter now emits
+`S104-FIRST-FIX`, preserving all four returned path times as signed 16.16
+integers; the replay uses these exact values when present and still accepts
+older decimal-only logs. For node 173's interior source pair
+`(0.05839539, 0.5)`, evaluating the logged cubic controls gives a residual of
+about `(2.16, 0.5)` raw 16.16 coordinate units. This is consistent with an
+approximate near-overlap result, but reproducing MetaPost's intermediate
+fixed-point evaluation and precision fallback is still required. Compare the
+remaining pairs with:
 
 The source's packed-time flow was then modeled temporarily: `cur_t` and
 `cur_tt` advance as `2^l + 2^l*t`; an overlapping box advances `max_t` and

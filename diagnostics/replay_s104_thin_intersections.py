@@ -25,14 +25,15 @@ MAX_INTERSECTION_DEPTH = 18
 
 def load(log_path: str, row: float):
     nodes = defaultdict(lambda: {
-        "first": [], "controls": defaultdict(dict), "thin": None,
+        "first": [], "first-fixed": [], "controls": defaultdict(dict), "thin": None,
         "rays": defaultdict(dict), "y_controls": defaultdict(dict),
         "hit": None, "hit_x": None,
     })
     for line in Path(log_path).read_text().splitlines():
         p = line.split()
         if len(p) < 3 or p[0] not in {
-            "S104-FIRST", "S104-TXCTRL", "S104-TCTRL", "S104-TRAY", "S104-THIN",
+            "S104-FIRST", "S104-FIRST-FIX", "S104-TXCTRL", "S104-TCTRL",
+            "S104-TRAY", "S104-THIN",
             "S104-THIN-HIT-T", "S104-THIN-HIT-X",
         }:
             continue
@@ -41,6 +42,12 @@ def load(log_path: str, row: float):
         node = nodes[int(p[2])]
         if p[0] == "S104-FIRST":
             node["first"].append(tuple(map(float, p[3:7])))
+        elif p[0] == "S104-FIRST-FIX":
+            chunks = [int(value) for value in p[3:11]]
+            node["first-fixed"].append(tuple(
+                (chunks[i] * 256 + chunks[i + 1]) / 65536
+                for i in (0, 2, 4, 6)
+            ))
         elif p[0] == "S104-TXCTRL":
             segment, control = int(p[4]), int(p[5])
             node["controls"][segment][control] = int(p[6]) * 256 + int(p[7])
@@ -242,7 +249,7 @@ def fixed_replay(node):
             fixed_path_intersection(ray, path),
             fixed_path_intersection(ray, reverse_path),
         ))
-    source_raw = node["first"][-2:]
+    source_raw = node["first-fixed"][-2:] or node["first"][-2:]
     expected_raw = []
     for raw in source_raw:
         expected_raw.append((raw[0], raw[1]))

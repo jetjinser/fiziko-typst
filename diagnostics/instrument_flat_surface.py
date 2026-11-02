@@ -318,6 +318,16 @@ def main() -> None:
             & decimal(traceThinSerial) & " " & decimal(xpart(t1)) & " "
             & decimal(ypart(t1)) & " " & decimal(xpart(t2)) & " "
             & decimal(ypart(t2));
+        message "S104-FIRST-FIX " & decimal(traceHatchRow) & " "
+            & decimal(traceThinSerial) & " "
+            & decimal(floor(xpart(t1)*256)) & " "
+            & decimal(round((xpart(t1)*256-floor(xpart(t1)*256))*256)) & " "
+            & decimal(floor(ypart(t1)*256)) & " "
+            & decimal(round((ypart(t1)*256-floor(ypart(t1)*256))*256)) & " "
+            & decimal(floor(xpart(t2)*256)) & " "
+            & decimal(round((xpart(t2)*256-floor(xpart(t2)*256))*256)) & " "
+            & decimal(floor(ypart(t2)*256)) & " "
+            & decimal(round((ypart(t2)*256-floor(ypart(t2)*256))*256));
     fi;
 ''')
     source = source.replace(

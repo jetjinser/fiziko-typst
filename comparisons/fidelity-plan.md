@@ -105,9 +105,11 @@ affected source-parity crops do not materially regress.
   collapses the M11 endpoint probe to no hit, while the source reports the
   near-endpoint forward pair. Nine raw pairs still disagree: eight source hits
   lie within 1/64 path-time of a cubic endpoint, and one is an interior source
-  hit. The latter's logged times are only decimal-rounded, so the sub-scalar
-  residual estimated from those times is not precise enough to classify it as
-  an exact or approximate geometric intersection. No temporary model of packed
+  hit. A new trace records exact 16.16 intersection times; evaluating node
+  173's recorded cubics at its source pair leaves an estimated residual of
+  about 2.16/0.5 raw coordinate units. This supports a near-overlap/precision
+  fallback explanation, but the fixed-point evaluation order still needs to
+  be reproduced before a production change. No temporary model of packed
   `cur_t`/`cur_tt`, `max_t`, and the saved
   approximate pair did not improve the 67/76 result or recover the M11 probe;
   that trial was discarded. The remaining error is in packet subdivision or
