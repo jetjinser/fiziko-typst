@@ -194,7 +194,14 @@ affected source-parity crops do not materially regress.
   source. The renderer candidate was reverted. Source-order clipping remains
   established; a future attempt must also match the source width-template and
   recursive cut behavior and pass both plate gates. Detailed measurements are
-  in `diagnostics/README.md`.
+  in `diagnostics/README.md`. A closer vertex comparison now localizes one
+  topology difference beyond the missing boundary extensions: the final two
+  in-bounds source vertices are `(12.85017,33)` then `(13,32.86281)`, while
+  Typst emits the same pair in reverse order as `(13,32.86746)` then
+  `(12.85438,33)`. The reversed 19-cell traversal sequence alone hid this
+  endpoint ordering difference. Do not swap vertices as a local patch; trace
+  the general boundary-cell stitching rule and measure its brush tree and both
+  M9/S105 renders before retaining a fix.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;
