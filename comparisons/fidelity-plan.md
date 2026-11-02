@@ -77,6 +77,14 @@ affected source-parity crops do not materially regress.
 - [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
   Typst use the same subdivision request and matching width thresholds, yet
   the first divergent shared depth-4 cut is x=39.539 mm versus x=44.895 mm.
+  Outer `minStrokeWidth` now uses the source's dimensional 16.16 rounding.
+  On a separate 29.696 mm row this moves the root cut from 0.000998 mm to
+  0.000323 mm from the source point, with source cut time 1.65522766 versus
+  Typst 1.65519714. The matched M4/M6/M11 renders are unchanged; M9 and S105
+  improve slightly. S104 hatch RMSE rises only 0.00000344, while its depth-2
+  endpoint remains 0.000000034 mm below threshold and still misses a source
+  split. Keep the source threshold rounding and trace width propagation at
+  the recursive cut before claiming the row tree is matched.
   Pair the source cubic/template knots with the exact Typst sample intervals
   used by `cutPathTime`; derive the selected crossing and midpoint from that
   paired geometry. A thin-only rounded-cubic probe matched the cut within

@@ -732,13 +732,14 @@
         total += _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
       }
     }
+    let outer-min = if source-rounding { _mp-rounded(minw) } else { minw }
     // brushGenerate accepts any strictly interior cut; thinBrushGenerate
     // below has its separate 0.01 path-parameter endpoint guard.
-    let crossing = split-path(path, minw, margin: 0.0)
-    let recurse = hi > minw and lo < minw and depth < 10 and total > minlen and crossing != none
+    let crossing = split-path(path, outer-min, margin: 0.0)
+    let recurse = hi > outer-min and lo < outer-min and depth < 10 and total > minlen and crossing != none
     if trace-nodes {
       nodes.push((stage: "outer", depth: depth, width-min: lo, width-max: hi,
-        target: minw, length: total,
+        target: outer-min, length: total,
         path-start: frame-index(path.first()).at(0),
         path-end: frame-index(path.last()).at(0),
         cut-point: if crossing == none { none } else { crossing.at(8) },
@@ -752,9 +753,9 @@
     if recurse {
       pending.push((crossing.at(1), depth + 1))
       pending.push((crossing.at(0), depth + 1))
-    } else if lo > 0.99 * minw {
+    } else if lo > 0.99 * outer-min {
       leaves.push((path, 2))
-    } else if hi < 1.01 * minw {
+    } else if hi < 1.01 * outer-min {
       leaves.push((path, 1))
     }
   }

@@ -78,6 +78,26 @@ def main() -> None:
                 f'{indent}        & decimal(ypart(point {segment + 1} of bt));',
                 f"{indent}fi;",
             ])
+            if stage == "outer":
+                points = (
+                    f"point {segment} of bt",
+                    f"postcontrol {segment} of bt",
+                    f"precontrol {segment + 1} of bt",
+                    f"point {segment + 1} of bt",
+                )
+                parts = [
+                    f'{indent}if length(bt) > {segment}:',
+                    f'{indent}    message "S104-OCTRL " & decimal(traceHatchRow) & " "',
+                    f'{indent}        & decimal(i) & " {segment} "',
+                ]
+                for point_index, point in enumerate(points):
+                    suffix = ';' if point_index == len(points) - 1 else ' & " "'
+                    parts.extend([
+                        f'{indent}        & decimal(floor(ypart({point})*256)) & " "',
+                        f'{indent}        & decimal(round((ypart({point})*256 - floor(ypart({point})*256))*256)){suffix}',
+                    ])
+                parts.append(f"{indent}fi;")
+                lines.extend(parts)
         return "\n".join(lines)
     outer_trace = outer_brush + '''
     if traceFlatHatch:
@@ -100,7 +120,9 @@ def main() -> None:
             & " " & decimal(floor(w1*256))
             & " " & decimal(round((w1*256-floor(w1*256))*256))
             & " " & decimal(floor(minStrokeWidth*256))
-            & " " & decimal(round((minStrokeWidth*256-floor(minStrokeWidth*256))*256));
+            & " " & decimal(round((minStrokeWidth*256-floor(minStrokeWidth*256))*256))
+            & " " & decimal(floor(t*256))
+            & " " & decimal(round((t*256-floor(t*256))*256));
         if (t > 0) and (t < length(p)):
             message "S104-CUT " & decimal(traceHatchRow) & " " & decimal(i)
                 & " " & decimal(xpart(point t of p)/mm)
