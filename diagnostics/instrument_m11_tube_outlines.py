@@ -43,6 +43,28 @@ def main() -> None:
     boundary_trace = boundary_anchor + '''
     if traceKnotActive:
         traceBoundaryCall := traceBoundaryCall + 1;
+        for traceCurveIndex := 0 step 1 until length(q2) - 1:
+            message "M11EDGECURVEA " & decimal(traceCurveIndex) & " 2 "
+                & decimal(xpart(point traceCurveIndex of q2)/mm) & " "
+                & decimal(ypart(point traceCurveIndex of q2)/mm) & " "
+                & decimal(xpart(postcontrol traceCurveIndex of q2)/mm) & " "
+                & decimal(ypart(postcontrol traceCurveIndex of q2)/mm);
+            message "M11EDGECURVEB " & decimal(traceCurveIndex) & " 2 "
+                & decimal(xpart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
+                & decimal(ypart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
+                & decimal(xpart(point (traceCurveIndex+1) of q2)/mm) & " "
+                & decimal(ypart(point (traceCurveIndex+1) of q2)/mm);
+            message "M11EDGECURVEA " & decimal(traceCurveIndex) & " 3 "
+                & decimal(xpart(point traceCurveIndex of q3)/mm) & " "
+                & decimal(ypart(point traceCurveIndex of q3)/mm) & " "
+                & decimal(xpart(postcontrol traceCurveIndex of q3)/mm) & " "
+                & decimal(ypart(postcontrol traceCurveIndex of q3)/mm);
+            message "M11EDGECURVEB " & decimal(traceCurveIndex) & " 3 "
+                & decimal(xpart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
+                & decimal(ypart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
+                & decimal(xpart(point (traceCurveIndex+1) of q3)/mm) & " "
+                & decimal(ypart(point (traceCurveIndex+1) of q3)/mm);
+        endfor;
         for traceBoundaryTime := 0 step 1/4 until length(q2):
             message "M11EDGE " & decimal(traceBoundaryCall) & " 2 "
                 & decimal(traceBoundaryTime/4) & " "
@@ -186,11 +208,12 @@ enddef;''')
             if traceKnotActive:
                 if traceTubeCall = 2:
                     for traceCurveIndex := 0 step 1 until length(currentTubePath) - 1:
-                        message "M11CENTER " & decimal(traceCurveIndex) & " "
+                        message "M11CENTERA " & decimal(traceCurveIndex) & " "
                             & decimal(xpart(point traceCurveIndex of currentTubePath)/mm) & " "
                             & decimal(ypart(point traceCurveIndex of currentTubePath)/mm) & " "
                             & decimal(xpart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
-                            & decimal(ypart(postcontrol traceCurveIndex of currentTubePath)/mm) & " "
+                            & decimal(ypart(postcontrol traceCurveIndex of currentTubePath)/mm);
+                        message "M11CENTERB " & decimal(traceCurveIndex) & " "
                             & decimal(xpart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
                             & decimal(ypart(precontrol (traceCurveIndex+1) of currentTubePath)/mm) & " "
                             & decimal(xpart(point (traceCurveIndex+1) of currentTubePath)/mm) & " "

@@ -1830,7 +1830,7 @@
                   closed: false, per: 12, w: 0.5 * pt, min-w: _source-min-stroke,
                   max-w: _source-max-shading,
                   light: (-0.353553, 0.382683, 0.853553), gamma: 1.0,
-                  shift: (0, 0)) = {
+                  shift: (0, 0), source-cubic-step: 0) = {
   let src = pts.map(p => _add(p, shift))
   let fr = _frame(_prepare(src, per, closed), closed)
   let n = fr.len()
@@ -1845,6 +1845,33 @@
   let rmax = calc.max(..rs)
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
   let L = (light.at(0) / ln, light.at(1) / ln, light.at(2) / ln)
+  // Recover a source cubic from equally spaced samples. This is useful when
+  // the input retains four subdivisions per original cubic segment.
+  let source-cubic-at(i, f) = {
+    let step = int(source-cubic-step)
+    if step >= 4 and _mod(step, 4) == 0 and _mod(n - 1, step) == 0 {
+      let start = int(calc.floor(i / step)) * step
+      let finish = start + step
+      if finish < n {
+        let p0 = fr.at(start).at(0)
+        let p25 = fr.at(start + int(step / 4)).at(0)
+        let p75 = fr.at(start + int(3 * step / 4)).at(0)
+        let p3 = fr.at(finish).at(0)
+        let a = _sub(_sub(_mul(p25, 64), _mul(p0, 27)), p3)
+        let b = _sub(_sub(_mul(p75, 64), p0), _mul(p3, 27))
+        let p1 = _mul(_sub(_mul(a, 3), b), 1 / 72)
+        let p2 = _mul(_add(_mul(a, -1), _mul(b, 3)), 1 / 72)
+        let u = calc.clamp((i - start + f) / step, 0.0, 1.0)
+        let v = 1 - u
+        let point = _add(_add(_mul(p0, v * v * v),
+          _mul(p1, 3 * v * v * u)), _add(_mul(p2, 3 * v * u * u),
+          _mul(p3, u * u * u)))
+        let tangent = _unit(_mul(_add(_add(_mul(_sub(p1, p0), 3 * v * v),
+          _mul(_sub(p2, p1), 6 * v * u)), _mul(_sub(p3, p2), 3 * u * u)), 1))
+        (point, tangent)
+      } else { none }
+    } else { none }
+  }
   let normal-at(t) = {
     let i = if closed and t >= ts.last() { n - 1 } else {
       let found = range(n - 1).find(k => ts.at(k + 1) >= t)
@@ -1854,10 +1881,16 @@
     let lo = ts.at(i)
     let hi = if closed and i == n - 1 { 1.0 } else { ts.at(j) }
     let f = if hi > lo { calc.clamp((t - lo) / (hi - lo), 0.0, 1.0) } else { 0.0 }
-    _unit((
-      fr.at(i).at(1).at(0) * (1 - f) + fr.at(j).at(1).at(0) * f,
-      fr.at(i).at(1).at(1) * (1 - f) + fr.at(j).at(1).at(1) * f,
-    ))
+    let cubic = source-cubic-at(i, f)
+    if cubic != none {
+      let tangent = cubic.at(1)
+      (-tangent.at(1), tangent.at(0))
+    } else {
+      _unit((
+        fr.at(i).at(1).at(0) * (1 - f) + fr.at(j).at(1).at(0) * f,
+        fr.at(i).at(1).at(1) * (1 - f) + fr.at(j).at(1).at(1) * f,
+      ))
+    }
   }
   let center-at(t) = {
     let i = if closed and t >= ts.last() { n - 1 } else {
@@ -1868,7 +1901,9 @@
     let lo = ts.at(i)
     let hi = if closed and i == n - 1 { 1.0 } else { ts.at(j) }
     let f = if hi > lo { calc.clamp((t - lo) / (hi - lo), 0.0, 1.0) } else { 0.0 }
-    _add(fr.at(i).at(0), _mul(_sub(fr.at(j).at(0), fr.at(i).at(0)), f))
+    let cubic = source-cubic-at(i, f)
+    if cubic != none { cubic.at(0) }
+    else { _add(fr.at(i).at(0), _mul(_sub(fr.at(j).at(0), fr.at(i).at(0)), f)) }
   }
   let radius-slope(t) = {
     let eps = 0.0001
@@ -2151,22 +2186,31 @@
 ///     longitudinal lanes; local ink width controls dot density and
 ///     `dot-density` adjusts the source-segment compensation
 ///   * `hatch: none` — outline only
+///   * `source-cubic-step` — reconstruct centerline cubics from input samples
+///     when each source cubic has this many equal parameter intervals; use 0
+///     to retain the default polyline frame
 #let tube(pts, radius, hatch: "l", spacing: 3 * _source-max-shading, coverage: auto, closed: false,
           w: _source-min-stroke, per: 12, min-w: _source-min-stroke, period: _source-dash-length,
           max-w: _source-max-shading, light: (-0.353553, 0.382683, 0.853553),
           gamma: 1.0, seed: 0, rng: "keyed", shift: (0, 0),
           dot-size: _source-max-shading, dot-step: _source-max-shading,
           dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true,
+          source-cubic-step: 0,
           _random-stream: none, _rng-offset: 0, _with-rng: false) = {
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
+  assert(source-cubic-step == 0 or (source-cubic-step >= 4
+    and source-cubic-step == int(source-cubic-step)
+    and _mod(int(source-cubic-step), 4) == 0),
+    message: "source-cubic-step must be 0 or a positive multiple of 4")
   assert(rng != "metapost" or hatch == "l",
     message: "rng: \"metapost\" is currently supported for longitudinal tube hatches")
   let hatch-spacing = if hatch == "s" { calc.min(spacing, 1.5 * dot-size) } else { spacing }
   let L = _tube-layout(pts, radius, hatch: hatch, spacing: hatch-spacing,
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
-                       gamma: gamma, shift: shift)
+                       gamma: gamma, shift: shift,
+                       source-cubic-step: source-cubic-step)
   let random-stream = if _random-stream != none { _random-stream } else if rng == "metapost" {
     _metapost-rng-sequence(seed,
       calc.max(1024, L.frames.len() * calc.max(1, L.inner.len()) * 16))
@@ -4123,9 +4167,12 @@
 /// default `"gap"` mode physically removes the under-strand interval. In tube
 /// mask mode, `rng: "metapost"` and `rng-offset:` opt into one shared stream
 /// across the source-ordered segment renders; keyed randomness remains default.
+/// `source-cubic-step:` optionally reconstructs centerline cubics from
+/// equally spaced samples, using the same interval meaning as `tube`.
 #let strand-knot(strands, widths: 1.25, layers: auto, path-times: none, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
-                 style: "stroke", occlusion: "gap", rng: "keyed", rng-offset: 0) = {
+                 style: "stroke", occlusion: "gap", rng: "keyed", rng-offset: 0,
+                 source-cubic-step: 0) = {
   assert(style == "stroke" or style == "tube",
     message: "strand-knot style must be stroke or tube")
   assert(occlusion == "gap" or occlusion == "mask",
@@ -4323,7 +4370,8 @@
             let result = tube(segment.path, widths.at(i), hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed,
               end-caps: false, rng: "metapost", _random-stream: shared-stream,
-              _rng-offset: rng-cursor, _with-rng: true)
+              _rng-offset: rng-cursor, _with-rng: true,
+              source-cubic-step: source-cubic-step)
             cached-drawings.push((strand: i, segment: segment-index,
               drawing: result.at(0)))
             rng-cursor = result.at(1)
@@ -4351,7 +4399,8 @@
             drawings.push(cached.drawing)
           } else {
             drawings.push(tube(segment.path, widths.at(i), hatch: "l",
-              w: _source-min-stroke, per: 0, seed: seed, end-caps: false))
+              w: _source-min-stroke, per: 0, seed: seed, end-caps: false,
+              source-cubic-step: source-cubic-step))
           }
         }
       }
@@ -4362,6 +4411,7 @@
       if style == "tube" {
         drawings += fragments.map(part => tube(part, widths.at(i),
           hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
+          source-cubic-step: source-cubic-step,
           end-caps: false))
       } else {
         drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,

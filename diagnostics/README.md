@@ -460,18 +460,24 @@ Replaying that trace and differentiating the cubic controls of
 strand samples is still off by `0.0134` rad at the known t=20 width trough.
 The target tangent is therefore the cubic midpoint path formed after the two
 offset boundaries are generated, not just a smoother derivative of the input
-strand. The next useful implementation must reconstruct those boundary cubics
-and their midpoint controls before changing lane shading or dash thresholds.
+strand. Reconstructing each cubic from five equally spaced samples over four
+input intervals matches the traced midpoint controls within 0.000049 mm and
+the source tangent within 0.000156 rad maximum (0.000033 rad mean). Enabling
+`source-cubic-step: 4` for M11 lowers 600 ppi knot RMSE from 0.058950 to
+0.058819 and whole-plate RMSE from 0.112672 to 0.112661. Ink coverage remains
+2.843% against 2.606% source; segment calls are still 202 against 224, so the
+two short dash-phase restarts remain open.
 
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
 visible tube segments draw in rank order `+1` then `-1`, with local brush-call
-counts 14, 58, 54, 42, 38 and 18 (224 total). The Typst source-derived tube
-renderer now includes both boundary lanes and draws hatch marks before the
-two thin outline paths. Its per-segment modeled lane calls total 204, so the
-shared stream still drifts by 20 calls across the six segments. (The source
-draw-order vector is `j2,j4,j6,j1,j3,j5`; the values above follow that order.)
+counts 14, 58, 54, 42, 38 and 18 (224 total). Before enabling
+`source-cubic-step: 4`, the Typst source-derived tube renderer included both
+boundary lanes and drew hatch marks before the two thin outline paths; its
+modeled calls totaled 204. The current source-cubic candidate consumes 202
+calls, so the shared stream still differs. (The source draw-order vector is
+`j2,j4,j6,j1,j3,j5`; the values above follow that order.)
 
 `strand-knot(..., rng: "metapost", rng-offset: 4639)` precomputes the tube
 segments in source draw order using one shared stream, then composites their
@@ -522,7 +528,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11CENTER|^M11CURVE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -532,13 +538,19 @@ typst eval 'query(<m11-knot-tube-trace>).first().value' \
   > /tmp/m11-knot-tube-trace.json
 ```
 
+The midpoint and boundary cubic controls are split into paired `A`/`B` log
+records (`M11CENTERA/B`, `M11EDGECURVEA/B`) so MetaPost does not wrap their
+coordinates across transcript lines. Join records by curve index before
+comparing controls.
+
 The same instrumenter now emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
 `m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
 points, widths, and call count. All six source tube intervals pair to Typst paths
 with exact endpoints. In source draw order, source/Typst calls are
-14/10, 58/38, 54/40, 42/52, 38/50, and 18/14. Thus the 20-call deficit comes
-from different lane-width profiles, not missing tube intervals. For source
+14/10, 58/38, 54/40, 42/52, 38/50, and 18/14 before source-cubic
+reconstruction. Thus the prior 20-call deficit came from different lane-width
+profiles, not missing tube intervals. For source
 call 2, lane 6 has a source maximum width of 0.04524 mm versus 0.03634 mm in
 the paired Typst lane. This points the next audit at the surface-normal and
 width calculation along offset boundaries. A trial that reduced the dense
