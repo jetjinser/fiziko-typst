@@ -68,11 +68,16 @@ def analyze(path):
     near_integer_deltas = Counter()
     splice_mismatches = []
     predicted_deltas = defaultdict(int)
+    recovered_times = []
     for key, records in cuts.items():
+        accumulated_shift = 0
         for current, following in zip(records, records[1:]):
             cut_time, path_length = current
             if cut_time <= 0.1 or cut_time >= path_length - 0.1:
                 continue
+            if accumulated_shift:
+                recovered_times.append((key, cut_time,
+                                        cut_time - accumulated_shift))
             delta = following[1] - path_length
             splice_deltas[delta] += 1
             phase = cut_time % 1
@@ -81,6 +86,7 @@ def analyze(path):
                 near_integer_deltas[delta] += 1
             expected_delta = 1 if crosses_knot else 2
             predicted_deltas[key] += expected_delta
+            accumulated_shift += expected_delta
             if abs(delta - expected_delta) > 1e-6:
                 splice_mismatches.append((cut_time, delta, expected_delta))
     if splice_deltas:
@@ -107,6 +113,14 @@ def analyze(path):
         )
         print(f"predicted expanded path lengths: "
               f"{final_matches}/{len(expanded_keys)}")
+        example = next((item for item in recovered_times
+                        if item[0] == (4, 2) and abs(item[1] - 28.06259) < 1e-4),
+                       None)
+        if example:
+            key, current_time, original_time = example
+            print(f"call={key[0]} lane={key[1]} later cut time "
+                  f"{current_time:.5f} maps back to original path time "
+                  f"{original_time:.5f}")
     if expanded == 0:
         raise SystemExit("no expanded M11 lanes with callback samples found")
 

@@ -1153,6 +1153,9 @@ expanded final path lengths in the trace. Thus the splice's time shift depends
 on which source cubic segments the removed interval crosses. A faithful Typst
 port must account for this per-cut change when mapping later intersections
 and callbacks, rather than assuming a fixed two-unit shift.
+Reversing those accumulated shifts maps call 4/lane 2's later cut at
+`28.06259` back to original path time `26.06259`, agreeing with the
+independently reconstructed geometric hit at `26.0622` within trace rounding.
 
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
