@@ -208,6 +208,10 @@ fidelity gain. Globe, eye, and refraction crops are unchanged. `comparisons/run.
 includes this data file in the isolated input snapshot so the comparison
 remains reproducible.
 
+A 1/32-step (769-point) candidate regressed knot RMSE to 0.05925 and whole-plate
+RMSE to 0.11485 while increasing Typst render time from 36.3 s to 96.3 s. The
+denser sample was discarded; 1/16 remains the best measured source-curve grid.
+
 Regenerate the sample data from the pinned driver inside the Nix devshell:
 
 ```sh
