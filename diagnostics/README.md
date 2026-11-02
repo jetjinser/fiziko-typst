@@ -1613,6 +1613,28 @@ path-time interpolation, the replay still matches 15/18 lane totals and leaves
 the same three differences. This rules out arc-length resampling as their
 cause; production rendering is unchanged.
 
+The production-lane arc audit compares straight accumulation over the four
+Typst samples per segment with a MetaPost-fixed cubic fitted from the quarter
+samples. The cubic fit reduces mean absolute 16.16 arc error from
+`14.175/12.805/14.075` to `9.350/8.902/9.325` units for source call/lane
+`4/2`, `4/6`, and `5/2`; maximum errors fall from `52/61/52` to `24/26/24`.
+That is a better arc estimate, but it is not a universal tree correction:
+the generated q replay has `38/20/28` nodes against source `40/20/30`.
+Fitting with the fifth sample restores call `5/2` to 30 nodes but changes
+call `4/6` to 22. Keep the quarter-fit as the measured geometric estimate,
+not a renderer change. Reproduce the audit with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/make_m11_production_arc_fixture.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json \
+  build/m11-production-arc-fixture.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-production-arc-check>).first().value' \
+  --in diagnostics/m11_production_arc_check.typ --root . \
+  > build/m11-production-arc-check.json
+```
+
 Rounding `param-at` results onto the source 16.16 path-time grid also left the
 same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
 whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
