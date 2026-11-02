@@ -228,6 +228,14 @@ underlying brush trees correspond. These cases narrow the next source audit to
 width-level selection and endpoint/candidate validity; they do not yet justify
 a global threshold change.
 
+MetaPost computes each thin node's `w2` level from the average of its two
+endpoint widths. A direct Typst probe using the path endpoint widths was
+reverted: on the paired M9 root, Typst reads about 0.07029 mm at both ends
+while source has 0.07030/0.03394 mm. The candidate therefore selects the
+maximum width level, collapsing tree pairing from 40 nodes to 4 and dash
+leaves from 10 to 1. The probe confirms that source's endpoint formula cannot
+be transplanted until the width template and path-time mapping are aligned.
+
 The instrumented M9 source now also records the random calls made by each
 accepted knot's five brush rings. The first knot consumes `[14, 6, 6, 2, 0]`
 calls, 28 total, between its candidate-position draws and the next knot. A

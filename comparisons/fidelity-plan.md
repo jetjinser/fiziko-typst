@@ -106,7 +106,12 @@ affected source-parity crops do not materially regress.
   mm endpoint error. The roots and siblings are paired geometrically, so this
   trace narrows the source audit to width-level selection and endpoint/candidate
   validity but does not establish tree identity or justify a global threshold
-  patch. The source `fullcircle` cubic
+  patch. A direct port of MetaPost's endpoint-averaged `w2` level was tested
+  and reverted: the paired Typst root reads about 0.07029 mm at both ends,
+  while source reads 0.07030/0.03394 mm; the candidate reduces parent-aware
+  node pairs from 40 to 4 and dash leaves from 10 to 1. The width-template and
+  path-time mapping must be aligned before this source formula can be applied.
+  The source `fullcircle` cubic
   sampler matches within 3.1e-5 and reproduces ring counts; feeding those
   rings into the current band renderer worsened RMSE, so keep that candidate
   reverted.
