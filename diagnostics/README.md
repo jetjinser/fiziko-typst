@@ -1562,6 +1562,9 @@ confirming the geometry pairing and splice map. With arcs calculated from the
 Typst samples, call 4/lane 6 still matches its 20-node tree; calls 4/lane 2
 and 5/lane 2 each stop two nodes early (38/40 and 28/30). Their segment arc
 errors peak at 24–26 fixed units, with about 9.2 units mean absolute error.
+Mapped post-shadow lane points differ from traced source cubics by at most
+0.00147 mm (mean 0.00028 mm); largest residuals cluster around segments
+18–31 depending on lane, rather than only at inserted connectors.
 A fifth-sample least-squares cubic fit shifts the error but is not a universal
 fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
 the quarter-sample implementation as the measured baseline; no production

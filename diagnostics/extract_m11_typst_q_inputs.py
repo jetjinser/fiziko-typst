@@ -2,6 +2,7 @@
 """Build post-shadow M11 q-replay inputs from actual Typst lane samples."""
 
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -47,6 +48,7 @@ def read_source(path):
     lane_order = []
     post_lengths = {}
     source_arcs = defaultdict(dict)
+    post_curves = defaultdict(lambda: defaultdict(dict))
     for line_index, line in enumerate(path.read_text().splitlines()):
         f = line.split()
         if not f:
@@ -68,12 +70,24 @@ def read_source(path):
             key = (int(f[1]), int(f[2]))
             source_arcs[key][int(f[3]) + 1] = (
                 int(f[4]) * 65536 + int(f[5]) * 256 + int(f[6]))
+        elif f[0] == "M11POSTFIX":
+            key = (int(f[1]), int(f[2]))
+            curve, control = int(f[3]), int(f[4])
+            post_curves[key][curve][control] = (
+                (int(f[5]) + int(f[6]) / 256 + int(f[7]) / 65536)
+                * 25.4 / 72,
+                (int(f[8]) + int(f[9]) / 256 + int(f[10]) / 65536)
+                * 25.4 / 72,
+            )
     offsets = {}
     cursor = 4639
     for _, key in lane_order:
         offsets[key] = cursor
         cursor += lane_calls[key]
-    return cuts, widths, lane_calls, offsets, post_lengths, source_arcs
+    curves = {key: [tuple(post_curves[key][i][j] for j in range(4))
+                    for i in sorted(post_curves[key])]
+              for key in post_curves}
+    return cuts, widths, lane_calls, offsets, post_lengths, source_arcs, curves
 
 
 def typst_lane_map(path):
@@ -96,8 +110,15 @@ def sample(points, source_time):
                  for axis in (0, 1))
 
 
+def cubic(points, t):
+    p0, p1, p2, p3 = points
+    u = 1 - t
+    return tuple(u**3 * a + 3 * u*u*t*b + 3*u*t*t*c + t**3*d
+                 for a, b, c, d in zip(p0, p1, p2, p3))
+
+
 def export(source_log, typst_trace, output):
-    cuts, widths, calls, offsets, post_lengths, source_arcs = read_source(source_log)
+    cuts, widths, calls, offsets, post_lengths, source_arcs, source_curves = read_source(source_log)
     lanes = typst_lane_map(typst_trace)
     records = []
     for key, pair in PAIRS.items():
@@ -120,23 +141,39 @@ def export(source_log, typst_trace, output):
         if len(segments) != post_lengths[key]:
             raise ValueError(f"source splice map for {key} has {len(segments)} segments, "
                              f"expected {post_lengths[key]}")
+        if len(source_curves.get(key, ())) != post_lengths[key]:
+            raise ValueError(f"source post-shadow cubic count mismatch for {key}")
         path = []
         path_times = []
         ws = []
+        point_errors = []
+        segment_errors = defaultdict(list)
         for i in range(post_lengths[key]):
             for q in range(SAMPLES_PER_CUBIC):
                 post_time = i + q / SAMPLES_PER_CUBIC
                 source_time = source_time_at(segments, post_time)
-                path.append(sample(center, source_time))
+                point = sample(center, source_time)
+                reference = cubic(source_curves[key][i], q / SAMPLES_PER_CUBIC)
+                error = math.dist(point, reference)
+                point_errors.append(error)
+                segment_errors[i].append(error)
+                path.append(point)
                 path_times.append(post_time)
                 w0, w1 = widths[key][i], widths[key][i + 1]
                 ws.append((w0 * (1 - q / SAMPLES_PER_CUBIC)
                            + w1 * (q / SAMPLES_PER_CUBIC)) / 65536
                           * 25.4 / 72)
         end_time = float(post_lengths[key])
-        path.append(sample(center, source_time_at(segments, end_time)))
+        endpoint = sample(center, source_time_at(segments, end_time))
+        endpoint_error = math.dist(endpoint, source_curves[key][-1][-1])
+        point_errors.append(endpoint_error)
+        segment_errors[post_lengths[key] - 1].append(endpoint_error)
+        path.append(endpoint)
         path_times.append(end_time)
         ws.append(widths[key][post_lengths[key]] / 65536 * 25.4 / 72)
+        segment_maxima = sorted(
+            ((max(values), index) for index, values in segment_errors.items()),
+            reverse=True)[:4]
         records.append({
             "call": key[0], "lane": key[1], "source-calls": calls[key],
             "rng-offset": offsets[key], "segments": post_lengths[key],
@@ -145,6 +182,9 @@ def export(source_log, typst_trace, output):
                                     for i in range(post_lengths[key] + 1)],
             "source-arc-fixed": [0] + [source_arcs[key][i]
                                         for i in range(1, post_lengths[key] + 1)],
+            "geometry-error-max": max(point_errors),
+            "geometry-error-mean": sum(point_errors) / len(point_errors),
+            "geometry-error-segments": segment_maxima,
         })
 
     def scalar(value):
@@ -169,7 +209,9 @@ def export(source_log, typst_trace, output):
     print(f"exported {len(records)} geometry-paired production lane inputs")
     for r in records:
         print(f"call={r['call']} lane={r['lane']} segments={r['segments']} "
-              f"source-calls={r['source-calls']} rng-offset={r['rng-offset']}")
+              f"source-calls={r['source-calls']} rng-offset={r['rng-offset']} "
+              f"geometry-error-max/mean={r['geometry-error-max']:.6f}/"
+              f"{r['geometry-error-mean']:.6f}mm top={r['geometry-error-segments']}")
 
 
 if __name__ == "__main__":
