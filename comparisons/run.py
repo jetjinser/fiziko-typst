@@ -21,7 +21,8 @@ from metrics import crop, measure, read_gray, rectangle_pixels
 ROOT = Path(__file__).resolve().parent.parent
 MODES = ("nominal", "calibrated")
 INPUTS = (
-    "fiziko.typ", "contour.typ", "solve.typ", "nix/flake.nix", "nix/flake.lock",
+    "fiziko.typ", "contour.typ", "solve.typ", "intersection.typ",
+    "nix/flake.nix", "nix/flake.lock",
     "comparisons/manifest.json", "comparisons/plates.typ", "comparisons/run.py",
     "comparisons/metrics.py", "comparisons/globe-coasts.typ",
     "comparisons/m4-tube-path.typ",

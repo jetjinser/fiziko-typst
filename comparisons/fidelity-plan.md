@@ -421,6 +421,17 @@ affected source-parity crops do not materially regress.
   37/42 → 31 decision matches) and regressed M9/S105 RMSE to
   `0.21301552`/`0.10315715`. That generic spline and callback were reverted:
   use the traced source cubic controls and their own parameter domain instead.
+  A local candidate rounded each intermediate operation in the wood width
+  formula to MetaPost's 16.16 grid. The M9 diagnostic outer-node count moved
+  `7 → 9` (source 37), while thin nodes, dash leaves and RNG calls stayed
+  `48/12/24`; call 10 retained the same wrong recurse decision. Same-checkout
+  600 ppi full RMSE regressed slightly on M9 (`0.21156032 → 0.21157157`) and
+  S105 (`0.10213793 → 0.10215037`). Ink coverage moved closer on both; S105
+  surface crop improved `0.07693635 → 0.07692555`, but block crop regressed
+  `0.12790793 → 0.12793839`. Since the brush tree and call-10 mismatch did not
+  improve and whole-plate error rose on both plates, revert this arithmetic
+  candidate; do not infer source parity from operation-by-operation rounding
+  alone.
   A fresh source trace found a more basic brush-input difference: `woodBlock`
   clips its intermediate picture only after `isoLines` runs `brushGenerate`
   on the full `cLine` path. Typst currently clips the contour before width
