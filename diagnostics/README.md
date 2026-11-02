@@ -1168,6 +1168,16 @@ python3 diagnostics/analyze_s104_cut_intersections.py \
   /tmp/s104-source-trace/trace.log -15.3487
 ```
 
+The instrumenter also records exact x controls (`S104-OXCTRL`) and both
+horizontal ray cubics (`S104-ORAY`). These are the inputs needed to port the
+source solver: MetaPost's published algorithm recursively bisects overlapping
+control-point boxes, tries the four child pairs in order, and returns the
+midpoint times after 17 bisections. Its returned times therefore need not equal
+the mathematical cubic roots. See sections 524 and 531–537 of
+[Knuth's MetaPost source manual](https://mirror.gutenberg-asso.fr/tex.loria.fr/prod-graph/mp.pdf#page=190).
+The production port still uses a sampled width crossing; these exact controls
+make a source-algorithm comparison possible before changing it.
+
 The source outer-node and Typst recursion logs now include centerline
 endpoints and cut points, allowing exact row pairing. On one symmetric-width
 row, source `cutPathTime` chooses the left of two equidistant intersections;
@@ -1269,7 +1279,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```

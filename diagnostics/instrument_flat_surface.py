@@ -98,6 +98,19 @@ def main() -> None:
                     ])
                 parts.append(f"{indent}fi;")
                 lines.extend(parts)
+                xparts = [
+                    f'{indent}if length(bt) > {segment}:',
+                    f'{indent}    message "S104-OXCTRL " & decimal(traceHatchRow) & " "',
+                    f'{indent}        & decimal(traceCutSerial) & " " & decimal(i) & " {segment} "',
+                ]
+                for point_index, point in enumerate(points):
+                    suffix = ';' if point_index == len(points) - 1 else ' & " "'
+                    xparts.extend([
+                        f'{indent}        & decimal(floor(xpart({point})*256)) & " "',
+                        f'{indent}        & decimal(round((xpart({point})*256 - floor(xpart({point})*256))*256)){suffix}',
+                    ])
+                xparts.append(f"{indent}fi;")
+                lines.extend(xparts)
         return "\n".join(lines)
     outer_trace = outer_brush + '''
     if traceFlatHatch:
@@ -190,9 +203,38 @@ def main() -> None:
     cut_anchor = "        d4 := xpart (point cutTime1 of p);\n        d5 := xpart (point cutTime2 of p);"
     if source.count(cut_anchor) != 1:
         raise ValueError(f"expected one cutPathTime hit hook, found {source.count(cut_anchor)}")
-    source = source.replace(cut_anchor, cut_anchor + '''
+    cut_header = "vardef cutPathTime (expr p, h) =\n    save cutTime, d;"
+    if source.count(cut_header) != 1:
+        raise ValueError("expected one cutPathTime declaration")
+    source = source.replace(cut_header, cut_header + '''
+    save traceRayA, traceRayB;
+    path traceRayA, traceRayB;''')
+    ray_trace = []
+    for ray_id, ray in ((1, "traceRayA"), (2, "traceRayB")):
+        points = (
+            f"point 0 of {ray}", f"postcontrol 0 of {ray}",
+            f"precontrol 1 of {ray}", f"point 1 of {ray}",
+        )
+        for control, point in enumerate(points):
+            ray_trace.append(
+                f'            message "S104-ORAY " & decimal(traceHatchRow) & " "'
+                f' & decimal(traceCutSerial) & " {ray_id} {control} "'
+                f' & decimal(floor(xpart({point})*256)) & " "'
+                f' & decimal(round((xpart({point})*256 - floor(xpart({point})*256))*256));'
+            )
+    midpoint_anchor = "        d3 := 1/2(d1 + d2);"
+    if source.count(midpoint_anchor) != 1:
+        raise ValueError("expected one cutPathTime midpoint assignment")
+    source = source.replace(midpoint_anchor, midpoint_anchor + '''
         if traceFlatHatch:
             traceCutSerial := traceCutSerial + 1;
+            traceRayA := (d3, h) -- (d1, h);
+            traceRayB := (d3, h) -- (d2, h);
+''' + "\n".join(ray_trace) + '''
+        fi;
+''')
+    source = source.replace(cut_anchor, cut_anchor + '''
+        if traceFlatHatch:
             message "S104-HIT " & decimal(traceHatchRow) & " "
                 & decimal(traceCutSerial) & " " & decimal(h) & " "
                 & decimal(d1) & " " & decimal(d2) & " " & decimal(d3) & " "
