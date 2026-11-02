@@ -1001,12 +1001,17 @@ The source instrumenter also emits unique `S104-TNODE` endpoint IDs and
 with three Typst dash-eligible leaves. The first divergent width cut belongs
 to the same depth-4 path on both sides: source cuts at x=39.539 mm, Typst at
 x=44.895 mm. The source width base/step/target (0.06642/0.00830/0.15773 in
-MetaPost units) match Typst after unit conversion. A diagnostic-only
-`width-by-arc` trial left the 17-node tree unchanged. Treating quantized flat
-segments as crossing intervals increased total Typst thin nodes from 1739 to
-3259 (source: 1696), so that candidate was reverted. Pair the source template
-knots with the corresponding Typst sample intervals before changing production
-behavior.
+MetaPost units) match Typst after unit conversion. A fresh row-93 probe now
+records both ordinary and `width-by-arc` recursion trees. Both Typst modes
+produce 17 thin nodes and 3 dash leaves; the source trace has 19 thin nodes and
+5 dash leaves. The first divergent cut remains x=39.539 mm in MetaPost versus
+x=44.895 mm in Typst, so arc-length interpolation does not explain this
+branch. The diagnostic's `arc-width-nodes` and `arc-width-calls` fields are
+populated only for row 93. Treating quantized flat segments as crossing
+intervals increased total Typst thin nodes from 1739 to 3259 (source: 1696),
+so that candidate was reverted. The remaining investigation should pair the
+source template's actual crossing hits with corresponding Typst sample
+intervals before changing production behavior.
 
 An earlier prototype split at every sampled width threshold and did not
 reproduce the source's recursive branch gates. It was superseded by the model

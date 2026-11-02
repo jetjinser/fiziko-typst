@@ -41,6 +41,13 @@
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true)
+  let arc-width-ink = if segment.at(2) == 93 {
+    _ink-loops(frames, widths, false, _source-min-stroke,
+      _source-dash-length, random-stream: stream, rng-offset: cursor,
+      dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+      with-rng: true, with-stats: true, trace-nodes: true,
+      source-rounding: true, width-by-arc: true)
+  } else { none }
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
@@ -51,6 +58,8 @@
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,
     rng-used: ink.at(1), nodes: ink.at(2).nodes,
+    arc-width-nodes: if arc-width-ink == none { () } else { arc-width-ink.at(2).nodes },
+    arc-width-calls: if arc-width-ink == none { none } else { arc-width-ink.at(1) },
   ))
   cursor += ink.at(1)
 }
