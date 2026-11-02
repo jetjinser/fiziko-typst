@@ -1355,7 +1355,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -1387,6 +1387,32 @@ time 1.469 at x=43.3005. That child cut is separate from the parent cut above.
 The specific behavior to port is the source width template's `--` cubic
 controls, 16.16 point evaluation, and intersection behavior through recursive
 subpaths. Arc-length interpolation alone cannot reproduce this branch.
+
+The thin trace now captures the exact ray cubics (`S104-TRAY`) and the two
+raw MetaPost `intersectiontimes` pairs (`S104-FIRST`) used by
+`firstIntersectionTimes`. The trace records `cutPathTime`'s hit times and x
+coordinates separately to avoid MetaPost transcript line truncation. On node
+172, the first ray's raw pair is `(0, 1.50017)` and `(0.9411, 0.99817)`; the
+source macro selects the first pair because its ray time is smaller. The
+second ray's pair is `(0.9416, 1)` and `(0.9416, 2)`; its tie selects the
+reversed-path result, mapped back to path time 1. The midpoint-distance test
+then selects `1.50017`, at x `52.61568`, over x `35.07321`. The new replay
+script reproduces both source stages for all 19 recorded cuts on this row:
+
+```sh
+python3 diagnostics/replay_s104_thin_intersections.py \
+  /tmp/s104-thin-ray-replay/trace.log -6.37912
+python3 diagnostics/replay_s104_thin_intersections.py \
+  /tmp/s104-thin-ray-replay/trace.log -6.37912 --node 172
+```
+
+This closes the source-side decision trace, but not the port. The raw
+`intersectiontimes` pairs come from MetaPost's low-level fixed-point search;
+the existing Python bisection model does not reproduce all thin hits when
+applied to these curves. Typst still selects the other midpoint-side cut at
+x `44.895` mm. Do not infer a production change from the source replay alone;
+the next comparison must pair recursive subpath controls and reproduce the
+low-level hit choice across the full row before a render candidate is judged.
 
 The source trace now also emits `S104-PCURVE` for the target row's recursive
 thin paths. At node 172, the path's page-space cubic is straight within each

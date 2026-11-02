@@ -64,6 +64,15 @@ def main() -> None:
                         f'{indent}        & decimal(round((ypart({point})*256 - floor(ypart({point})*256))*256));',
                         f"{indent}fi;",
                     ])
+                    if stage == "thin":
+                        lines.extend([
+                            f"{indent}if length(bt) > {segment}:",
+                            f'{indent}    message "S104-TXCTRL " & decimal(traceHatchRow) & " "',
+                            f'{indent}        & decimal(traceThisThin) & " " & decimal(i) & " {segment} {index} "',
+                            f'{indent}        & decimal(floor(xpart({point})*256)) & " "',
+                            f'{indent}        & decimal(round((xpart({point})*256 - floor(xpart({point})*256))*256));',
+                            f"{indent}fi;",
+                        ])
             lines.extend([
                 f"{indent}if length(bt) > {segment}:",
                 f'{indent}    message "S104-CTRL {stage} " & decimal(traceHatchRow) & " "',
@@ -151,10 +160,15 @@ def main() -> None:
     thin_brush = """        t := cutPathTime(bt, w2);
         brushPath1 := subpath (0, t) of p;
         brushPath2 := subpath (t, length(p)) of p;"""
-    thin_trace = thin_brush + '''
+    thin_trace = '''
         if traceFlatHatch:
             traceThinSerial := traceThinSerial + 1;
             traceThisThin := traceThinSerial;
+            traceThinCutActive := true;
+        fi;
+''' + thin_brush + '''
+        traceThinCutActive := false;
+        if traceFlatHatch:
             message "S104-TNODE " & decimal(traceHatchRow) & " "
                 & decimal(traceThisThin) & " " & decimal(i) & " "
                 & decimal(xpart(point 0 of p)/mm) & " "
@@ -238,8 +252,42 @@ def main() -> None:
     midpoint_anchor = "        d3 := 1/2(d1 + d2);"
     if source.count(midpoint_anchor) != 1:
         raise ValueError("expected one cutPathTime midpoint assignment")
+    entry_anchor = "    d2 := xpart(ulcorner(p));"
+    if source.count(entry_anchor) != 1:
+        raise ValueError("expected one cutPathTime bounds assignment")
+    source = source.replace(entry_anchor, entry_anchor + '''
+    if traceFlatHatch:
+        if traceThinCutActive:
+            message "S104-TENTRY " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " 1 "
+                & decimal(d1) & " " & decimal(d2) & " " & decimal(length(p));
+        else:
+            message "S104-TENTRY " & decimal(traceHatchRow) & " 0 0 "
+                & decimal(d1) & " " & decimal(d2) & " " & decimal(length(p));
+        fi;
+    fi;
+''')
+    thin_ray_trace = []
+    for ray_id, ray in ((1, "traceRayA"), (2, "traceRayB")):
+        points = (
+            f"point 0 of {ray}", f"postcontrol 0 of {ray}",
+            f"precontrol 1 of {ray}", f"point 1 of {ray}",
+        )
+        for control, point in enumerate(points):
+            thin_ray_trace.extend([
+                '            message "S104-TRAY " & decimal(traceHatchRow) & " "',
+                f'                & decimal(traceThisThin) & " {ray_id} {control} "',
+                f'                & decimal(floor(xpart({point})*256)) & " "',
+                f'                & decimal(round((xpart({point})*256-floor(xpart({point})*256))*256)) & " "',
+                f'                & decimal(floor(ypart({point})*256)) & " "',
+                f'                & decimal(round((ypart({point})*256-floor(ypart({point})*256))*256));',
+            ])
     source = source.replace(midpoint_anchor, midpoint_anchor + '''
-        if traceFlatHatch:
+        if traceThinCutActive:
+            traceRayA := (d3, h) -- (d1, h);
+            traceRayB := (d3, h) -- (d2, h);
+''' + "\n".join(thin_ray_trace) + '''
+        elseif traceFlatHatch:
             traceCutSerial := traceCutSerial + 1;
             traceRayA := (d3, h) -- (d1, h);
             traceRayB := (d3, h) -- (d2, h);
@@ -247,13 +295,30 @@ def main() -> None:
         fi;
 ''')
     source = source.replace(cut_anchor, cut_anchor + '''
-        if traceFlatHatch:
+        if traceThinCutActive:
+            message "S104-THIN-HIT-T " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " " & decimal(h) & " "
+                & decimal(d3) & " " & decimal(cutTime1) & " " & decimal(cutTime2);
+            message "S104-THIN-HIT-X " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " " & decimal(d4) & " " & decimal(d5);
+        elseif traceFlatHatch:
             message "S104-HIT " & decimal(traceHatchRow) & " "
                 & decimal(traceCutSerial) & " " & decimal(h) & " "
                 & decimal(d1) & " " & decimal(d2) & " " & decimal(d3) & " "
                 & decimal(cutTime1) & " " & decimal(cutTime2) & " "
                 & decimal(d4) & " " & decimal(d5);
         fi;
+''')
+    first_intersection_anchor = "    t1 := p intersectiontimes q;\n    t2 := p intersectiontimes reverse(q);"
+    if source.count(first_intersection_anchor) != 1:
+        raise ValueError("expected one firstIntersectionTimes implementation")
+    source = source.replace(first_intersection_anchor, first_intersection_anchor + '''
+    if traceThinCutActive:
+        message "S104-FIRST " & decimal(traceHatchRow) & " "
+            & decimal(traceThinSerial) & " " & decimal(xpart(t1)) & " "
+            & decimal(ypart(t1)) & " " & decimal(xpart(t2)) & " "
+            & decimal(ypart(t2));
+    fi;
 ''')
     source = source.replace(
         '        message "S104-OUTER " & decimal(traceHatchRow) & " "',
@@ -312,10 +377,12 @@ traceRngTotal := 0;
 numeric traceSubdivisions;
 traceSubdivisions := 0;
 boolean traceFlatHatch;
+boolean traceThinCutActive;
 numeric traceHatchRow;
 numeric traceThinSerial;
 numeric traceCutSerial;
 traceFlatHatch := false;
+traceThinCutActive := false;
 traceHatchRow := 0;
 traceThinSerial := 0;
 traceCutSerial := 0;

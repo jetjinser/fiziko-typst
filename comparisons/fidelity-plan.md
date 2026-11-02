@@ -91,6 +91,15 @@ affected source-parity crops do not materially regress.
   0.0017 mm but regressed whole S104 RMSE (`0.207029 → 0.207733`) and hatch
   crop RMSE (`0.075285 → 0.079011`), while moving all-row thin-node count
   farther from source (`1577 → 1490`, source `1696`); it was reverted.
+  The source trace now records both ray cubics and raw MetaPost
+  `intersectiontimes` pairs. Replaying Fiziko's forward/reverse preference
+  and midpoint-nearest selection reproduces all 19 source cuts on the target
+  row, including node 172 (`1.50017` at x `52.61568` versus the other hit at
+  x `35.07321`). This isolates the remaining mismatch to low-level
+  `intersectiontimes` behavior and Typst's recursive subpath parameterization;
+  no production change is justified yet. The trace replay is documented in
+  `diagnostics/README.md` and implemented by
+  `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
   paired row decisions without the known flat-crossing node-count explosion
   or this all-row raster regression.
