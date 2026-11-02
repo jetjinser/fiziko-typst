@@ -162,6 +162,12 @@ enddef;''')
             & decimal(traceCurrentK) & " " & decimal(i) & " "
             & decimal(w0/mm) & " " & decimal(w1/mm) & " "
             & decimal(arclength(p)/mm);
+        message "M11THINPATH " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(i) & " "
+            & decimal(xpart(point 0 of p)/mm) & " "
+            & decimal(ypart(point 0 of p)/mm) & " "
+            & decimal(xpart(point length(p) of p)/mm) & " "
+            & decimal(ypart(point length(p) of p)/mm);
     fi;''')
     thin_cut = "        t := cutPathTime(bt, w2);"
     if source.count(thin_cut) != 1:
@@ -171,6 +177,12 @@ enddef;''')
             message "M11TCUT " & decimal(traceTubeCall) & " "
                 & decimal(traceCurrentK) & " " & decimal(i) & " "
                 & decimal(w2/mm) & " " & decimal(t);
+            if (t >= 0) and (t <= length(p)):
+                message "M11TCUTPATH " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(xpart(point t of p)/mm) & " "
+                    & decimal(ypart(point t of p)/mm);
+            fi;
         fi;''')
     thin_dash = "                    draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
     if source.count(thin_dash) != 1:

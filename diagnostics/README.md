@@ -954,7 +954,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINPATH|^M11TCUT|^M11TCUTPATH|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1015,6 +1015,22 @@ unchanged, including the same three mismatches. The callback log precision is
 therefore not the cause of those brush-tree differences. The current source
 trace and replay result were cross-checked against the earlier trace: all
 6,409 post-curve, callback, lane-call and brush-node records match exactly.
+
+`M11THINPATH` and `M11TCUTPATH` now record source recursive-node endpoints and
+valid cut coordinates. Parent-aware pairing isolates the extra call-4/lane-2
+dash to a branch boundary. Source splits the segment from `(89.05132,15.94174)`
+to `(90.18163,15.57985)` at width `0.03807`, near `(89.32121,15.79910)`.
+That leaves two adjacent source pieces of `0.30544` and `0.31416` mm, both
+below the minimum dash length. Typst chooses width `0.041` and cuts near
+`(89.615,15.686)`, leaving one `0.61732` mm dash and consuming two extra RNG
+values. The enclosing geometry endpoints pair within about `0.004` mm, but a
+small width-range difference (`0.03513` vs `0.03515`) moves the midpoint over
+a source dash-width step. This is the first concrete branch-level cause; it
+still needs a source-equivalent width-template/cut rule before a production
+change is justified. Sampling at 16 and 32 points per cubic leaves the three
+known lane call totals unchanged. Supplying source cumulative arc positions
+also leaves those three totals unchanged and worsens other traced lanes, so
+that trial was removed.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the

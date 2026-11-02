@@ -138,6 +138,16 @@ affected source-parity crops do not materially regress.
   three lane differences unchanged; five-decimal callback truncation is not
   their cause. The existing source and new precision trace agree on all 6,409
   post-curve, callback, lane-call and brush-node records.
+  Source recursive nodes now include their geometric endpoints and cut points.
+  In call 4 lane 2, the source chooses width `0.03807` and splits near
+  `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm
+  stay below the dash-length gate. Typst chooses `0.041`, cuts near
+  `(89.615,15.686)`, and emits a `0.61732` mm dash, accounting for two extra
+  random calls. The enclosing path endpoints differ by only a few micrometres,
+  while the branch minimum width differs by `0.00002` mm and crosses a source
+  width-step boundary. This is now localized to recursive width-template
+  splitting; keep production unchanged until that source rule is reproduced
+  and the render is rechecked.
   This replay is diagnostic only; no production rendering change is justified
   until the three divergent branch trees are paired and a render improves.
   Reproduction is documented in `diagnostics/README.md`.
