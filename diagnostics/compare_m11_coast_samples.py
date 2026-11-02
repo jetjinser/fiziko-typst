@@ -16,6 +16,7 @@ def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
     source: dict[int, list[tuple[float, float]]] = defaultdict(list)
+    source_times: dict[int, list[float]] = defaultdict(list)
     for line in Path(sys.argv[1]).read_text().splitlines():
         fields = line.split()
         if len(fields) == 5 and fields[0] == "M11COAST":
@@ -23,6 +24,7 @@ def main() -> None:
             # Source coordinates are local to the globe; map them to the
             # comparison's center and account for MetaPost's upward y axis.
             source[mass].append((19 + float(fields[3]), 22 - float(fields[4])))
+            source_times[mass].append(float(fields[2]))
 
     trace = json.loads(Path(sys.argv[2]).read_text())
     for entry in trace["landmasses"]:
@@ -52,6 +54,31 @@ def main() -> None:
             outline_match = min(
                 (math.dist(first_source, (p["x"], p["y"])), i)
                 for i, p in enumerate(outline_entry["outline-points"]))
+            source_length = source_times[mass][-1]
+            points = outline_entry["outline-points"]
+            times = outline_entry["source-times"]
+            start_index = outline_match[1]
+            points = points[start_index:] + points[:start_index]
+            times = (times[start_index:]
+                     + [t + outline_entry["source-time-end"]
+                        for t in times[:start_index]])
+            offset = source_times[mass][0] - times[0]
+            paired_indices = []
+            previous = 0
+            for point in points:
+                end = min(len(source[mass]), previous + 512)
+                _, matched_index = min(
+                    (math.dist((point["x"], point["y"]), source[mass][j]), j)
+                    for j in range(previous, end))
+                paired_indices.append(matched_index)
+                previous = matched_index
+            spatial_errors = [math.dist((point["x"], point["y"]),
+                                        source[mass][j])
+                              for point, j in zip(points, paired_indices)]
+            time_errors = [abs(source_times[mass][j] - t - offset)
+                           for t, j in zip(times, paired_indices)]
+            close = [error for error, distance in zip(time_errors, spatial_errors)
+                     if distance <= 0.001]
         print(f"mass {mass}: source samples={len(errors)}, Typst runs="
               f"{[len(run) for run in runs]}, nearest error median/max="
               f"{statistics.median(errors):.6f}/{max(errors):.6f} mm")
@@ -63,6 +90,18 @@ def main() -> None:
             print(f"  source path start maps to outline point {outline_match[1]} "
                   f"of {len(outline_entry['outline-points'])} "
                   f"({outline_match[0]:.6f} mm)")
+            print(f"  source-time offset at first mapped point={offset:.5f}; "
+                  "after offset, "
+                  f"time error median/max="
+                  f"{statistics.median(time_errors):.5f}/"
+                  f"{max(time_errors):.5f}; spatial error median/max="
+                  f"{statistics.median(spatial_errors):.6f}/"
+                  f"{max(spatial_errors):.6f} mm; source/Typst path-time "
+                  f"length={source_length:.5f}/{outline_entry['source-time-end']:.5f}")
+            if close:
+                print(f"  for {len(close)}/{len(time_errors)} points within "
+                      f"0.001 mm spatial error, path-time error median/max="
+                      f"{statistics.median(close):.5f}/{max(close):.5f}")
 
 
 if __name__ == "__main__":

@@ -1171,7 +1171,8 @@
                 shift: (0, 0), fill: black,
                 _random-stream: none, _rng-offset: 0, _with-rng: false,
                 _source-rounding: false, _with-stats: false,
-                _trace-nodes: false, _path-time: false) = {
+                _trace-nodes: false, _path-time: false,
+                _param-times: none, _param-end: none) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1189,7 +1190,8 @@
     seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     random-stream: _random-stream, rng-offset: _rng-offset,
     with-rng: _with-rng, with-stats: _with-stats,
-    trace-nodes: _trace-nodes, source-rounding: _source-rounding)
+    trace-nodes: _trace-nodes, source-rounding: _source-rounding,
+    param-times: _param-times, param-end: _param-end)
   let drawing = place(top + left,
     _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
   if _with-stats {
@@ -3935,33 +3937,66 @@
     }
   }
   let outline = ()
+  let outline-times = ()
+  let path-time = 0.0
   for i in range(runs.len()) {
     let run = runs.at(i)
     let repeated-close = run.len() > 2 and _dist(run.first(), run.last()) <= 1e-8
     let coast = if repeated-close { run.slice(0, run.len() - 1) } else { run }
-    for point in coast {
+    for (j, point) in coast.enumerate() {
       if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
         outline.push(point)
+        outline-times.push(path-time + j)
       }
     }
+    path-time += calc.max(0, coast.len() - 1)
     let arc = arcs.at(i)
     if arc != none {
       let from = arc.at(0)
       let to = arc.at(1)
+      let arc-boundaries = (from,)
+      if to > from {
+        let boundary = calc.floor(from) + 1
+        while boundary < to {
+          arc-boundaries.push(boundary)
+          boundary += 1
+        }
+      } else {
+        let boundary = calc.ceil(from) - 1
+        while boundary > to {
+          arc-boundaries.push(boundary)
+          boundary -= 1
+        }
+      }
+      arc-boundaries.push(to)
       let steps = int(calc.ceil(calc.abs(to - from) * 16))
       for j in range(steps + 1) {
         if steps == 0 { continue }
         let t = from + (to - from) * j / steps
+        let arc-segment = if t == to { arc-boundaries.len() - 2 } else {
+          range(arc-boundaries.len() - 1).find(k =>
+            calc.min(arc-boundaries.at(k), arc-boundaries.at(k + 1)) - 1e-10
+              <= t and t <= calc.max(arc-boundaries.at(k),
+                arc-boundaries.at(k + 1)) + 1e-10)
+        }
+        let arc-segment = if arc-segment == none { 0 } else { arc-segment }
+        let segment-fraction = (calc.abs(t - arc-boundaries.at(arc-segment)) /
+          calc.abs(arc-boundaries.at(arc-segment + 1) -
+            arc-boundaries.at(arc-segment)))
+        let arc-time = arc-segment + segment-fraction
         // _mp-circle-point is the source cubic fullcircle rotated by 90°.
         let p = _mp-circle-point(t - 2)
         let point = _add(center, (2 * radius * p.at(0), -2 * radius * p.at(1)))
         if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
           outline.push(point)
+          outline-times.push(path-time + arc-time)
         }
       }
+      path-time += arc-boundaries.len() - 1
     }
   }
-  (points: outline, runs: runs, arcs: arcs)
+  (points: outline, source-times: outline-times, source-time-end: path-time,
+    runs: runs, arcs: arcs)
 }
 
 #let _globe-land-outline(coords, rotation, radius, center) = {
@@ -4015,6 +4050,8 @@
   }
   let coast-lines = ()
   let coast-landmass-ids = ()
+  let coast-param-times = ()
+  let coast-param-ends = ()
   for (land-index, land) in lands.enumerate() {
     if shading == "latitude" {
       let data = _globe-land-outline-data(
@@ -4022,6 +4059,8 @@
       if data != none {
         coast-lines += (data.points,)
         coast-landmass-ids.push(land-index + 1)
+        coast-param-times.push(data.source-times)
+        coast-param-ends.push(data.source-time-end)
       }
     } else {
       coast-lines += _globe-visible-paths(
@@ -4063,7 +4102,9 @@
         min-w: _source-min-stroke, period: _source-dash-length,
         seed: seed + i * 104729,
         _with-rng: _trace-coasts, _with-stats: _trace-coasts,
-        _trace-nodes: _trace-coasts, _source-rounding: false)
+        _trace-nodes: _trace-coasts, _source-rounding: false,
+        _param-times: coast-param-times.at(i),
+        _param-end: coast-param-ends.at(i))
       if _trace-coasts {
         let trace-samples = range(result.at(3).times.len()).map(j => (
           arc: result.at(3).times.at(j) * result.at(2).nodes.at(0).length,

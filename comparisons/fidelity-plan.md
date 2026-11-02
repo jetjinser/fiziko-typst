@@ -613,6 +613,15 @@ affected source-parity crops do not materially regress.
   trees, widths, RNG call counts, and the 600 ppi M11 metrics unchanged, so the
   candidate was reverted. The remaining gap is recursive q-template state,
   not the closed path's cyclic starting index.
+  A follow-up rotated both the outline and its path-time labels to the first
+  projected input coordinate. That coordinate is not the traced source
+  `drawLandMass` seam: the M1 source start maps to outline index 1, while the
+  projected input start maps to a different visible run. The candidate moved
+  M1 coast calls from 10 to 16 (source: 27 across all visible masses) and its
+  root thin cut from path time 98.70260 to 44.48785; other visible-mass call
+  counts were unchanged. It was reverted without a render trial. Future
+  parameter rebasing must use the traced source seam, not assume the first
+  input coordinate is the contour origin.
   A new source-side audit captures exact 16.16 q knots, cut times, and the
   selected q cubic controls. Fixed-point de Casteljau replay matches the full
   child q-knot sequences, not only their endpoints, for all 7 mass-1 and 28
