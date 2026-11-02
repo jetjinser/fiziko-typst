@@ -69,6 +69,18 @@ affected source-parity crops do not materially regress.
   resolve the remaining M11 call-vector difference (`224` source, `226`
   Typst).
 
+- [x] **Thin-brush entry width guard.** The pinned upstream
+  [`thinBrushGenerate`](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L445-L487)
+  only searches for a cut when the upper width corner exceeds
+  `minWidth + 0.01 bp`. `_ink-loops` now applies the equivalent strict
+  `hi > dash-floor` condition before thin recursion. On the exact M11 q replay,
+  this resolves both formerly extra splits and produces exact source trees and
+  q controls on all three traced lanes (40/40, 20/20, 30/30 nodes); random-call
+  totals now match 16/16, 6/6 and 14/14. Same-checkout 600 ppi comparisons of
+  M4, M6, M11, M9 and S104 are pixel-identical to the no-guard baseline, so
+  this is a source-recursion correction with no measured raster change on
+  those plates.
+
 - [x] **M11 knot centerline tangent.** Reconstruct the source cubic from
   five equally spaced input samples over each four-interval source segment.
   The fitted controls match the traced MetaPost midpoint cubic within
@@ -1019,27 +1031,24 @@ contours with the sampled source rings (the measured render regressed).
    outer q cubics for calls 4/lane 2, 4/lane 6 and 5/lane 2. Feeding those
    controls into the isolated Typst replay matches source outer-node counts
    on all three lanes and all 18 source random-call totals. Lane 4/6 also
-   matches its thin-node count exactly (20); lanes 4/2 and 5/2 retain two
-   extra Typst thin nodes each (42 vs 40 and 32 vs 30). This is diagnostic
-   evidence that q-curve geometry explains the prior outer-tree mismatch,
-   while thin recursion still has a small, localized residual. The controls
-   are trace fixtures only; no production render has changed or been shown
-   to improve. Next pair the two extra thin leaves to source width samples
-   and cut decisions before considering a production-path change. The new
-   `diagnostics/compare_m11_thin_trees.py` pins the first decisions: on 4/2,
+   matches its thin-node count exactly (20); before the thin-entry guard,
+   lanes 4/2 and 5/2 had two extra Typst thin nodes each (42 vs 40 and 32 vs
+   30). The replay q controls exactly match source controls at the first
+   divergent nodes, ruling out curve geometry as the cause. The source gate
+   `w0 > minWidth + 1/100` explains both stops; applying it makes all three
+   thin trees and their random-call totals exact. The source q controls remain
+   trace fixtures; the production guard leaves the five measured renders
+   pixel-identical. The new `diagnostics/compare_m11_thin_trees.py` pins the
+   former first decisions: on 4/2,
    source stops at depth 1, while replay cuts at path time 6.77946 and creates
    a 0.02238 mm child; on 5/2, the first 29 decisions agree, then replay cuts
    the final source leaf at 0.04147 and creates a 0.01092 mm child. Both source
    nodes have endpoint widths 0.02344/0.01866 mm and no source cut record.
-   Lane 4/6 has an exact 20-node tree. These two extra splits sit near the
-   0.023432 mm width floor, so compare the source thin q template at those
-   leaves before changing the endpoint guard or width rounding. The replay
+   Lane 4/6 had an exact 20-node tree already. The two removed splits sat near
+   the 0.023432 mm width floor. The replay
    now records each thin q cubic in source 16.16 units; those controls exactly
-   equal the source at both first-divergence nodes. All 20 source q paths on
-   4/6 and all 30 on 5/2 match replay exactly, while 4/2's first two match
-   before its tree diverges. This rules out q control geometry as the cause
-   of these two extra splits and narrows the next probe to source width-level
-   selection, cut-time validation, and parameter mapping.
+   equal the source at both former first-divergence nodes. All source q paths
+   match replay on 4/6 and 5/2, and all controls match through the 4/2 tree.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived

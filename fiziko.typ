@@ -890,7 +890,9 @@
           if qcurves == none { none } else { candidate.at(11) },
           if qcurves == none { none } else { candidate.at(12) })
       } else { none }
-      let recurse = hi - lo >= step and depth < 15 and split != none
+      // thinBrushGenerate only attempts a width cut when its upper corner
+      // exceeds the dash floor by the source's 0.01 bp guard.
+      let recurse = hi > dash-floor and hi - lo >= step and depth < 15 and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
           width-start: width-index(path.first()),
