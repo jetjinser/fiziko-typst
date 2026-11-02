@@ -736,7 +736,14 @@ affected source-parity crops do not materially regress.
   promising diagnostic result, not sufficient evidence to change production;
   next compare cut positions and paired tree decisions on all three lanes,
   then render the production knot/coast paths and retain only a non-regressing
-  result.
+  result. The first call-4/lane-6 tree divergence is now localized: on a
+  5.913 mm branch the source continues splitting around a width maximum of
+  `0.19926 bp`, while the replay's reconstructed q cubic peaks at
+  `0.07029610 mm`, only `0.00000538 mm` above its `0.07029071 mm` threshold,
+  and its intersection query returns no cut. The source trace contains eight
+  repeated node pairs at this near-threshold boundary. This supports a
+  fixed-point endpoint/control comparison and source hit-selection audit at
+  that branch; it does not support a broad tolerance adjustment.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.
