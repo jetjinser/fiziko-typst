@@ -377,6 +377,17 @@ to 0.11267972; knot coverage changed from 2.29031% to 2.29052% (source:
 this fixture's raster difference; hatch placement and coverage remain larger
 gaps.
 
+The pinned source's `q2` and `q3` tube boundaries are now sampled at 1/16
+path-time intervals and paired against the corresponding Typst boundary lanes.
+Across the six segments, mean point error is 0.00051–0.00117 mm (maximum
+0.0179–0.0374 mm); mean tangent error is 0.041–0.104 degrees. Their centerline
+endpoints match exactly. These measurements rule out a broad offset-boundary
+error as the cause of the remaining brush-call mismatch. The source trace now
+also records surface normal/lightness values and shadow hits, while the Typst
+trace retains lane sample points and widths for a subsequent normalized
+lighting comparison. Do not tune the shade law from raw width values: they also
+include source residual-width and lane-parity factors.
+
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
@@ -436,7 +447,8 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO' /tmp/m11-tube-outline-trace/trace.log
+rg '^M11TS|^M11TO|^M11EDGE|^M11LIGHT|^M11SHADOW' \
+  /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
   /tmp/m11-tube-outline-trace/outlines.typ
@@ -444,8 +456,8 @@ python3 diagnostics/extract_m11_tube_outlines.py \
 
 The same instrumenter now emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
-`m11_knot_tube_trace.typ` records each inner and boundary lane's endpoint,
-width range, and call count. All six source tube intervals pair to Typst paths
+`m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
+points, widths, and call count. All six source tube intervals pair to Typst paths
 with exact endpoints. In source draw order, source/Typst calls are
 14/10, 58/38, 54/40, 42/52, 38/50, and 18/14. Thus the 20-call deficit comes
 from different lane-width profiles, not missing tube intervals. For source

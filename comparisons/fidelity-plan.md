@@ -216,7 +216,14 @@ strokes, while M10 contains mostly whitespace.
    exactly; source curve intersection arithmetic remains unported. An exact
    `tubeOutline` source-mask oracle changes current knot RMSE only from
    0.05904362 to 0.05903513, so mask offset geometry is a small part of the
-   remaining raster gap; hatch placement and coverage remain larger. The latitude mode
+   remaining raster gap; hatch placement and coverage remain larger. A new
+   source trace pairs the six offset boundaries with the corresponding Typst
+   lanes: mean point error is 0.0005–0.0012 mm, with mean tangent error
+   0.04–0.10 degrees. This makes boundary geometry an unlikely source of the
+   remaining 20-call deficit. Source normal/lightness samples are now recorded
+   alongside shadow hits; the Typst diagnostic also retains lane points and
+   widths, but a width-normalized, point-paired lighting comparison is still
+   needed before changing the shading law. The latitude mode
    still approximates the source's two separately masked shading layers and
    random width law.
    The coast brush follows the source projected-radius pen-width law, and the

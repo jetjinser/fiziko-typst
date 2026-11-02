@@ -23,7 +23,8 @@ def main() -> None:
     trace = anchor + '''
                     message "M11TN " & decimal(i) & " " & decimal(j)
                         & " " & decimal(traceKnotRng) & " " & decimal(traceTubeCall);
-                    message "M11TS " & decimal(i) & " " & decimal(j)
+                    message "M11TS " & decimal(traceBoundaryCall) & " "
+                        & decimal(i) & " " & decimal(j)
                         & " " & decimal(length(pathSegments[j])) & " "
                         & decimal(xpart(point 0 of pathSegments[j])/mm) & " "
                         & decimal(ypart(point 0 of pathSegments[j])/mm) & " "
@@ -36,6 +37,26 @@ def main() -> None:
                             & " " & decimal(ypart(point traceMaskTime of tubeOutline)/mm);
                     endfor;'''
     source = source.replace(anchor, trace)
+    boundary_anchor = "    tubeOutline := q3--reverse(q2)--cycle;"
+    if source.count(boundary_anchor) != 1:
+        raise ValueError(f"expected one tube boundary hook, found {source.count(boundary_anchor)}")
+    boundary_trace = boundary_anchor + '''
+    if traceKnotActive:
+        traceBoundaryCall := traceBoundaryCall + 1;
+        for traceBoundaryTime := 0 step 1/4 until length(q2):
+            message "M11EDGE " & decimal(traceBoundaryCall) & " 2 "
+                & decimal(traceBoundaryTime/4) & " "
+                & decimal(xpart(point traceBoundaryTime of q2)/mm) & " "
+                & decimal(ypart(point traceBoundaryTime of q2)/mm) & " "
+                & decimal(angle(direction traceBoundaryTime of q2));
+            message "M11EDGE " & decimal(traceBoundaryCall) & " 3 "
+                & decimal(traceBoundaryTime/4) & " "
+                & decimal(xpart(point traceBoundaryTime of q3)/mm) & " "
+                & decimal(ypart(point traceBoundaryTime of q3)/mm) & " "
+                & decimal(angle(direction traceBoundaryTime of q3));
+        endfor;
+    fi;'''
+    source = source.replace(boundary_anchor, boundary_trace)
     tube_start = "vardef tubeGenerate@#(expr p, q, d, i) ="
     if source.count(tube_start) != 1:
         raise ValueError(f"expected one tubeGenerate hook, found {source.count(tube_start)}")
@@ -64,6 +85,29 @@ def main() -> None:
         message "M11BW " & decimal(traceTubeCall) & " " & decimal(traceCurrentK)
             & " " & decimal(w0) & " " & decimal(w1) & " " & decimal(arclength(p)/mm);
     fi;''')
+    shadow_hit = "            if q isInside shiftedShadowPath:"
+    if source.count(shadow_hit) != 1:
+        raise ValueError(f"expected one lighting shadow test, found {source.count(shadow_hit)}")
+    source = source.replace(shadow_hit, shadow_hit + '''
+                if traceKnotActive:
+                    message "M11SHADOW " & decimal(traceTubeCall) & " "
+                        & decimal(traceCurrentK) & " "
+                        & decimal(xpart(q)/mm) & " " & decimal(ypart(q)/mm);
+                fi;''')
+    light_return = "    returnValue\nenddef;\n\nvardef lightnessPP"
+    if source.count(light_return) != 1:
+        raise ValueError(f"expected one lightness return hook, found {source.count(light_return)}")
+    source = source.replace(light_return, '''    if traceKnotActive:
+        message "M11LIGHT " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(xpart(q)/mm) & " "
+            & decimal(ypart(q)/mm) & " " & decimal(redpart(normalVector)) & " "
+            & decimal(greenpart(normalVector)) & " " & decimal(bluepart(normalVector))
+            & " " & decimal(returnValue);
+    fi;
+    returnValue
+enddef;
+
+vardef lightnessPP''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
         raise ValueError(f"expected one knot start hook, found {source.count(knot_start)}")
@@ -71,6 +115,7 @@ def main() -> None:
         "    totalNumberOfSegments := 0;\n"
         "    traceKnotRng := 0;\n"
         "    traceTubeCall := 0;\n"
+        "    traceBoundaryCall := 0;\n"
         "    traceKnotActive := true;\n"
         '    message "M11TSTART " & decimal(traceCallBlocks) & " "'
         ' & decimal(traceCallRemainder);\n'
@@ -80,7 +125,7 @@ def main() -> None:
     # word character. Match any non-letter prefix instead.
     source = re.sub(r"(?<![A-Za-z])uniformdeviate\s*\(", "traceKnotDeviate(", source)
     source += """
-numeric traceMaskTime, traceKnotRng, traceLaneStart, traceTubeCall, traceCurrentK;
+numeric traceMaskTime, traceBoundaryTime, traceBoundaryCall, traceKnotRng, traceLaneStart, traceTubeCall, traceCurrentK;
 numeric traceCallBlocks, traceCallRemainder;
 boolean traceKnotActive;
 traceKnotRng := 0;

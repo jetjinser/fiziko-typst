@@ -51,6 +51,7 @@
         edge-dashes += result.at(2).dashes
         edge-lanes.push((section: section-index, side: side,
           start: points.first(), end: points.last(),
+          points: points,
           width-min: calc.min(..lane-widths), width-max: calc.max(..lane-widths),
           calls: result.at(1)))
       }
@@ -66,6 +67,7 @@
         dashes += result.at(2).dashes
         inner-lanes.push((lane: lane-index, piece: piece-index,
           start: piece.frames.first().at(0), end: piece.frames.last().at(0),
+          points: piece.frames.map(frame => frame.at(0)), widths: piece.widths,
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()
