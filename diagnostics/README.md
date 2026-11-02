@@ -1092,7 +1092,12 @@ middle of this long segment at page x `39.539` mm. The current Typst tree
 reaches the same node endpoints but cuts at x `44.895` mm, the middle segment's
 end. This rules out a centerline curvature explanation for this mismatch and
 narrows the next implementation probe to preserving the source q cubic's
-parameterization and fixed-point intersection through recursive subpaths.
+parameterization and fixed-point intersection through recursive subpaths. The
+upstream hatch width law explicitly uses `offsetPathLength`; the Typst trace
+evaluates the same law over normalized cumulative path length with
+`_path-fractions`. Their row-knot widths agree after unit conversion, so
+replacing arc-length width interpolation with path-time interpolation would
+not address this cut.
 
 A diagnostic-only port of that cubic model was tried after the trace above.
 It used the original global cubic controls with 64 subdivisions per Typst path
