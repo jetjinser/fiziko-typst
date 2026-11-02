@@ -40,7 +40,7 @@
       "shared": {"arc_center_mm": [55,68], "arc_radius_mm": 42, "arc_degrees": [205,335], "arc_segments": 40, "tube_radius_mm": 6, "source_seed": 1},
       "nominal": {"seed": 1, "per": 4, "max_width": 0.30},
       "calibrated": {"seed": 1, "per": 4, "max_width": 0.308},
-      "notes": "Calibrated mode slightly increases maximum hatch width (TeX pt)."
+      "notes": "The nominal Typst renderer opts into rng: metapost for longitudinal hatch dashes; at 600 ppi its RMSE is 0.07109 (keyed baseline 0.07127), with dark coverage 1.8045% vs 1.8385% source (keyed baseline 1.8049%). Calibrated mode slightly increases maximum hatch width (TeX pt)."
     },
     "M5": {
       "title": "Suspended sphere composite",

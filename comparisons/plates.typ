@@ -33,7 +33,8 @@
     small + large
   } else if case == "M4" {
     tube(arc-pts(42,205,335,n: 40,center: (55,68)), 6,
-      per: i("per"), seed: seed, max-w: n("max_width") * pt)
+      per: i("per"), seed: seed, rng: "metapost",
+      max-w: n("max_width") * pt)
   } else if case == "M5" {
     (stroke-ink(((14,6),(78,6)), 0.6 * pt, closed: false, per: 8, seed: seed)
     + combine(range(9).map(j => stroke-path(((20+6.5*j,6),(16.5+6.5*j,1.5)),

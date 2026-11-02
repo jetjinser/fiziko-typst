@@ -56,9 +56,12 @@ strokes, while M10 contains mostly whitespace.
    `sphere-latitude`. The M3 nominal RMSE fell from 0.07233 to 0.07143, while
    dark coverage moved from 0.01% above the source to 0.69% below it; rendering
    took 47.6 s versus 40.3 s. The improvement is real but modest, so the
-   library default remains keyed. Continue by threading the stream through a
-   brush, one stipple family and wood, checking their source call order before
-   considering broader defaults.
+   library default remains keyed. Longitudinal tubes now have an explicit
+   MetaPost-stream mode; M4 RMSE improves from 0.07127 to 0.07109. The same
+   transverse pilot worsens M7 from 0.12453 to 0.12532 and is not enabled.
+   Missing boundary-lane brush calls and exact recursive subdivision still
+   limit the tube stream. Brush stipples and further wood call-order matching
+   remain open.
 2. **Bring the wood field closer to `woodBlock`.** The field uses the source's
    knot-warped scalar field, 1 mm sample grid, per-column offset, and
    per-contour level jitter. Landscape blocks now reproduce the source's

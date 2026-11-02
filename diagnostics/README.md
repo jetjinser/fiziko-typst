@@ -30,6 +30,14 @@ explicit while other drawing families still use keyed randomness and their
 MetaPost call order has not been ported. See the paired artifacts under
 `build/source-parity-rng/` and the [fidelity plan](../comparisons/fidelity-plan.md).
 
+Longitudinal `tube(..., rng: "metapost")` now carries the same cursor through
+section-major lane traversal. On M4 its nominal 600 ppi RMSE changes from
+0.07127 to 0.07109; dark coverage changes from 1.8049% to 1.8045% (source:
+1.8385%). The M7 transverse pilot worsened RMSE from 0.12453 to 0.12532, so the
+option is deliberately restricted to longitudinal tubes. Recursive boundary
+lane calls and source-exact subdivision still need tracing before this can
+stand in for a complete tube RNG port.
+
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`

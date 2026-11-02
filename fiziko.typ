@@ -1913,6 +1913,7 @@
           })
           pieces.push((frames: lane-frames, widths: lane-widths,
             closed: closed and division-sections.len() == 1,
+            section-index: section-index,
             seed-offset: k * 7919 + section-index * 104729))
         }
       }
@@ -2036,6 +2037,7 @@
 
 /// Tube: two offset outlines plus hatching.
 /// `seed` controls any thin-brush dashes used by the outlines and hatches.
+/// `rng: "metapost"` replays the scaled source stream in longitudinal mode.
 ///   * `radius` — a number or a function of t (normalized arc length 0..1);
 ///     varying radius gives cones, waisted tubes, fisiko's fig. 8 ring, …
 ///   * `hatch: "l"` — longitudinal lines follow the local power-of-two lane
@@ -2049,14 +2051,23 @@
 #let tube(pts, radius, hatch: "l", spacing: 3 * _source-max-shading, coverage: auto, closed: false,
           w: _source-min-stroke, per: 12, min-w: _source-min-stroke, period: _source-dash-length,
           max-w: _source-max-shading, light: (-0.353553, 0.382683, 0.853553),
-          gamma: 1.0, seed: 0, shift: (0, 0),
+          gamma: 1.0, seed: 0, rng: "keyed", shift: (0, 0),
           dot-size: _source-max-shading, dot-step: _source-max-shading,
           dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true) = {
+  assert(rng == "keyed" or rng == "metapost",
+    message: "rng must be \"keyed\" or \"metapost\"")
+  assert(rng != "metapost" or hatch == "l",
+    message: "rng: \"metapost\" is currently supported for longitudinal tube hatches")
   let hatch-spacing = if hatch == "s" { calc.min(spacing, 1.5 * dot-size) } else { spacing }
   let L = _tube-layout(pts, radius, hatch: hatch, spacing: hatch-spacing,
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
                        gamma: gamma, shift: shift)
+  let random-stream = if rng == "metapost" {
+    _metapost-rng-sequence(seed,
+      calc.max(1024, L.frames.len() * calc.max(1, L.inner.len()) * 16))
+  } else { none }
+  let rng-cursor = 0
   let center-cum = (0.0,)
   for i in range(L.frames.len() - 1) {
     center-cum.push(center-cum.last() + _dist(L.frames.at(i).at(0), L.frames.at(i + 1).at(0)))
@@ -2082,13 +2093,32 @@
     }
   }
   if hatch == "l" {
-    for it in L.inner {
-      for piece in it.pieces {
-        let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
-          min-w, period, seed: seed + piece.seed-offset,
-          dash-extra: 0.01 * _mp-unit,
-          dash-cap: 1)
-        els.push(place(top + left, _fill(loops, black)))
+    if rng == "metapost" {
+      // The source recurses into a narrower longitudinal section before it
+      // advances that section's lane index. Preserve that section-major draw
+      // order while carrying the global random cursor between brush paths.
+      for section-index in range(L.division-sections.len()) {
+        for it in L.inner {
+          for piece in it.pieces {
+            if piece.section-index != section-index { continue }
+            let result = _ink-loops(piece.frames, piece.widths, piece.closed,
+              min-w, period, random-stream: random-stream,
+              rng-offset: rng-cursor, with-rng: true,
+              dash-extra: 0.01 * _mp-unit, dash-cap: 1)
+            els.push(place(top + left, _fill(result.at(0), black)))
+            rng-cursor += result.at(1)
+          }
+        }
+      }
+    } else {
+      for it in L.inner {
+        for piece in it.pieces {
+          let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
+            min-w, period, seed: seed + piece.seed-offset,
+            dash-extra: 0.01 * _mp-unit,
+            dash-cap: 1)
+          els.push(place(top + left, _fill(loops, black)))
+        }
       }
     }
   } else if hatch == "s" {
