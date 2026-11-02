@@ -33,13 +33,13 @@ included where a plate contains distinct drawing families.
 | Plate | RMSE | Ink coverage | Component findings |
 | --- | ---: | ---: | --- |
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
-| M9 wood panels | 0.22412 | 4.203% → 4.224% | Landscape panels use the source's internal axis swap; accepted knots advance the 28 brush draws. Source-traced panel offsets (0, 1456, 2823, 4120) improve later-panel field placement and coverage. The 600 ppi RMSE falls from 0.22456 to 0.22412. Contour-brush shapes remain approximate. |
+| M9 wood panels | 0.22407 | 4.203% → 4.224% | Landscape panels use the source's internal axis swap; accepted knots advance the 28 brush draws, and field offsets now consume once per source 1/3 mm column. Source-traced panel offsets (0, 1456, 2823, 4120) improve later-panel field placement and coverage. The 600 ppi RMSE falls from 0.22412 to 0.22407. Contour-brush shapes remain approximate. |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
 | M11 globe, eye, knot, refraction | 0.11513 | 4.917% → 4.785% | `coast-step: 0` connects projected source vertices directly. Coast widths use the source sphere normal/light dot product; globe crop RMSE is 0.19720 and ink 25.940% → 25.213%. The knot fixture now uses 97 quarter-parameter points exported from the pinned MetaPost curves instead of a sine approximation; knot crop RMSE falls from 0.14230 to 0.06233. Mask mode splits strands at crossing-interval midpoints, orders by source layer, erases prior ink with each higher tube silhouette, and redraws hatch. Crossing detection and tube silhouettes remain sampled/approximate. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20725 | 10.630% → 10.814% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650 (previously 0.09247), with ink 14.066% → 14.370%. Stipple coverage remains 7.079% → 7.138%. Brush recursion and local random details remain approximate. |
-| S105 wood block and surface | 0.09792 | 0.741% → 0.591% | Landscape-axis mapping rounds field extents to the source 1 mm grid; the source-traced 536-call offset puts the first surface knot within 0.001 mm of the source coordinate. The explicit `contour-brush: "cell-range"` mode uses cLine's per-cell width law after undoing the field's 1/24 normalization. At 600 ppi block RMSE is 0.12095 (ink 1.077% → 0.712%); surface RMSE is 0.07598 (ink 0.489% → 0.510%). Width interpolation, dash recursion and random-call order remain approximate. |
+| S105 wood block and surface | 0.09852 | 0.741% → 0.606% | Landscape-axis mapping rounds field extents to integer-mm fixture bounds; the source-traced 536-call offset puts the first surface knot within 0.001 mm of the source coordinate. `contour-brush: "cell-range"` uses cLine's per-cell width law; field offsets now consume once per source 1/3 mm column. At 600 ppi block RMSE is 0.12161 (ink 1.077% → 0.733%); surface RMSE is 0.07655 (ink 0.489% → 0.521%). The source-column correction slightly regresses this plate from 0.09792; width interpolation and dash calls remain approximate. |
 | S106 weights | 0.07663 | 1.091% → 1.106% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile plus a 2 mm body offset and 2*shadingDensity auricle capsule reduces hanging crop RMSE to 0.06998; ink is 1.131% → 1.263%. Auricle interior shading and tube hatch remain approximate. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
 | S108 lenses and annotations | 0.10093 | 0.476% → 0.890% | Lens crop RMSE 0.12716; arrow/angle annotation crop 0.08729. |
@@ -63,8 +63,12 @@ strokes, while M10 contains mostly whitespace.
    limit the tube stream. Brush stipples and further wood call-order matching
    remain open.
 2. **Bring the wood field closer to `woodBlock`.** The field uses the source's
-   knot-warped scalar field, 1 mm sample grid, per-column offset, and
-   per-contour level jitter. Landscape blocks now reproduce the source's
+   knot-warped scalar field at 0.2 mm detail; Typst contour sampling remains
+   1 mm while field offsets now consume once per source 1/3 mm column. A
+   1/3 mm contour-grid pilot regressed M9 and S105, so it was reverted. A
+   source `cLine` trace now records the recursive `(i,j,st)` traversal; width
+   interpolation should follow that sequence rather than geometric segment
+   order. Landscape blocks now reproduce the source's
    internal axis swap, and a trace of the pinned source shows that each
    accepted knot consumes 28 random draws in its nested brush rings. The first
    M9 panel's first accepted knot now matches source coordinates to under

@@ -2707,13 +2707,17 @@
 }
 
 // Source `wField` used by woodBlock, expressed in physical millimetres.
-// The source samples at 0.2 mm detail steps over a 1 mm wood grid.
+// The field uses 0.2 mm detail. The comparison fixture samples contours on
+// a 1 mm grid; the source woodBlockRes is 1/3 mm.
 #let _woodblock-field(w, h, seed, rng-offset: 0) = {
   let detail = 0.2
+  let source-res = 1 / 3
   let knot-radius = 1.25
   let knot-angle = 60
   let rho = 1 / 24
-  let columns = int(calc.ceil(w)) + 1
+  // woodBlockRes is 1/3 mm: source draws one vertical offset for each of
+  // those columns, not once per whole millimetre.
+  let columns = int(calc.round(w / source-res)) + 1
   let max-knots = calc.max(1, int(calc.ceil(w * h / (2 * 20))))
   let candidate-cap = calc.max(256, (max-knots + 10) * 30)
   let stream = _metapost-rng-sequence(seed,
@@ -2740,7 +2744,7 @@
   let field = (px, py) => {
     let i = px / detail
     let j = py / detail
-    let column = int(calc.clamp(calc.round(px), 0, columns - 1))
+    let column = int(calc.clamp(calc.round(px / source-res), 0, columns - 1))
     let result = 0.0
     for knot in knots {
       let dx = (px - knot.at(0)) / detail

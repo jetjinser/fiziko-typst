@@ -41,25 +41,30 @@ stand in for a complete tube RNG port.
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`
-sample the upstream knot-warped `wField` at the source's 1 mm grid and 0.2 mm
-detail scale. The field includes the source's elliptic knot distance, radial
-well, far-field decay, per-column offset and low-frequency perturbation.
+sample the upstream knot-warped `wField` at the 0.2 mm detail scale. The
+current Typst contour grid is 1 mm; source `woodBlockRes` is 1/3 mm. The field
+includes the source's elliptic knot distance, radial well, far-field decay,
+per-column offset and low-frequency perturbation. Field offsets now consume
+one random value per 1/3 mm source column rather than once per millimetre.
 Landscape blocks use the source's internal axis swap. A pinned-source trace
 shows that each accepted knot's five brush rings consume 28 random values;
 the Typst stream now advances by that amount. In M9, the first accepted knot
 matches its source position within 0.1 mm. Exact source panel-end call counts
 are 1456, 2823, 4120 and 5416, so Typst now starts the four panels at offsets
 0, 1456, 2823 and 4120. M9's 600 ppi whole-plate RMSE falls from 0.22456 to
-0.22412, with 4.224% ink coverage (source 4.203%). Source contour-brush shapes
-remain approximate; see the measured per-cell brush mode below.
+0.22407, with 4.224% ink coverage (source 4.203%). The 1/3 mm random-column
+correction changes M9 from 0.22412 to 0.22407; S105 moves from 0.09792 to
+0.09852 (block 0.12161, surface 0.07655). Source contour-brush shapes remain
+approximate; see the measured per-cell brush mode below.
 
 S105's landscape transform and stream continuity now follow the pinned source
 trace; the contour-brush rendering and per-brush call count remain different.
 The instrumented S105 source reports a 52 × 8 mm rounded `woodBlock` extent
 and 536 global random calls before its first surface knot. The source's first
 internal candidate is (8.2726, 46.3121) mm; the Typst stream at offset 536
-produces (8.27285, 46.31245) mm. Rounding source-field extents to the source's
-1 mm grid and threading that offset lowers S105 600 ppi whole RMSE from
+produces (8.27285, 46.31245) mm. The fixture extents are integer millimetres
+(and therefore exact multiples of the 1/3 mm source resolution); threading
+that offset lowers S105 600 ppi whole RMSE from
 0.10635 to 0.10553; block RMSE is 0.13244 and surface RMSE is 0.07909 (surface
 ink 0.599% vs 0.489% in the source).
 
@@ -92,10 +97,10 @@ sequence, so the next width-law change needs a source traversal trace.
 `(i, j, st, cell-range, direction)` values. For M9 the first visits begin
 `(0,12,0)`, `(0,13,1)`, `(1,13,2)`, `(1,14,3)` and continue for 19 cells;
 `st` rises and falls according to the recursive walk, rather than a simple
-row or geometric-segment order. A separate 1/3 mm grid pilot, matching the
-source's `woodBlockRes`, increased ink coverage and regressed M9 from 0.22412
-to 0.22527 and S105 from 0.09792 to 0.13003. That pilot was reverted; field
-sampling, level selection and contour stitching need to be aligned together.
+row or geometric-segment order. A 1/3 mm contour-grid pilot, combined with the
+source-rate random-column offsets, increased ink coverage and regressed M9 to
+0.22506 and S105 to 0.13050. That pilot was reverted; field sampling, level
+selection and contour stitching need to be aligned together.
 
 To capture the source traversal from the pinned M9 driver:
 
