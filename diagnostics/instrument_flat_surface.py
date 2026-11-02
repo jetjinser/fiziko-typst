@@ -33,11 +33,32 @@ def main() -> None:
     w0 := (ypart(urcorner(bt)));
     w1 := (ypart(lrcorner(bt)));
     t := cutPathTime(bt, minStrokeWidth);"""
+    def control_trace(stage: str, indent: str) -> str:
+        # S104 subdivision asks for 3 or 5 pieces; fixed-point accumulation
+        # may add a short terminal piece, so eight covers all observed paths.
+        lines = []
+        for segment in range(8):
+            lines.extend([
+                f"{indent}if length(bt) > {segment}:",
+                f'{indent}    message "S104-CTRL {stage} " & decimal(traceHatchRow) & " "',
+                f'{indent}        & decimal(i) & " {segment} "',
+                f'{indent}        & decimal(xpart(point {segment} of bt)) & " "',
+                f'{indent}        & decimal(ypart(point {segment} of bt)) & " "',
+                f'{indent}        & decimal(xpart(postcontrol {segment} of bt)) & " "',
+                f'{indent}        & decimal(ypart(postcontrol {segment} of bt)) & " "',
+                f'{indent}        & decimal(xpart(precontrol {segment + 1} of bt)) & " "',
+                f'{indent}        & decimal(ypart(precontrol {segment + 1} of bt)) & " "',
+                f'{indent}        & decimal(xpart(point {segment + 1} of bt)) & " "',
+                f'{indent}        & decimal(ypart(point {segment + 1} of bt));',
+                f"{indent}fi;",
+            ])
+        return "\n".join(lines)
     outer_trace = outer_brush + '''
     if traceFlatHatch:
         message "S104-OUTER " & decimal(traceHatchRow) & " "
             & decimal(i) & " " & decimal(w0) & " " & decimal(w1)
             & " " & decimal(t) & " " & decimal(arclength(p));
+''' + control_trace("outer", "        ") + '''
     fi;'''
     if source.count(outer_brush) != 1:
         raise ValueError(f"expected one outer brush hook, found {source.count(outer_brush)}")
@@ -54,6 +75,7 @@ def main() -> None:
                 & " " & decimal(arclength(p))
                 & " " & decimal(arclength(brushPath1))
                 & " " & decimal(arclength(brushPath2));
+''' + control_trace("thin", "            ") + '''
         fi;'''
     if source.count(thin_brush) != 1:
         raise ValueError(f"expected one thin brush hook, found {source.count(thin_brush)}")

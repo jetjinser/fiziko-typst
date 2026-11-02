@@ -134,9 +134,16 @@ strokes, while M10 contains mostly whitespace.
    are superseded. A follow-up found 34 mismatched row counts, concentrated in
    the variable-width interior and reaching ±20 calls per row. Rounding width
    samples to 16.16 leaves those calls unchanged and slightly regresses hatch
-   RMSE (0.075286 to 0.075353), so it was reverted. The next useful trace is
-   source width-template knot values and recursive cut positions; remaining
-   hatch image differences also include brush stroke shape and random details.
+   RMSE (0.075286 to 0.075353), so it was reverted. A fresh source trace shows
+   that the S104 fixture's sampled width knots already match Typst after unit
+   conversion. Quantizing recursive cut parameters to the source 16.16 path
+   grid raises Typst outer recursion nodes from 780 to 942 (source: 1340),
+   while thin nodes remain 1577 (source: 1696); one traced 31.180 mm row now
+   matches the source's 39 outer and 9 thin nodes. Hatch crop RMSE is
+   effectively unchanged at 0.075285 (previously 0.075286), so this is a
+   recursion-fidelity improvement, not a material raster improvement. Other
+   rows still differ around narrow residual crossings; brush shape and random
+   details remain open.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to

@@ -46,6 +46,7 @@
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,
     width-min: calc.min(..widths), width-max: calc.max(..widths),
+    sample-times: fractions, sample-widths: widths,
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,
     rng-used: ink.at(1), nodes: ink.at(2).nodes,

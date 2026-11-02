@@ -460,7 +460,12 @@
       let b = width-index(path.at(q + 1))
       let span = _dist(frame-index(path.at(q)).at(0), frame-index(path.at(q + 1)).at(0))
       if a != b and ((a <= target and b >= target) or (a >= target and b <= target)) {
-        let f = calc.clamp((target - a) / (b - a), 0.0, 1.0)
+        let raw-f = calc.clamp((target - a) / (b - a), 0.0, 1.0)
+        // MetaPost's firstIntersectionTimes returns a fixed-point path time.
+        // Quantizing recursive cuts (not only the width knots) can affect
+        // near-endpoint recursion where a tiny residual width crossing is
+        // repeatedly revisited.
+        let f = if source-rounding { _mp-scalar-rounded(raw-f) } else { raw-f }
         let at = arc + f * span
         let distance = calc.abs(at - total / 2)
         if distance < best-distance {
@@ -474,7 +479,10 @@
       let q = crossing.at(0)
       let f = crossing.at(1)
       let at = crossing.at(2)
-      let cut = path.at(q) + (path.at(q + 1) - path.at(q)) * f
+      let raw-cut = path.at(q) + (path.at(q + 1) - path.at(q)) * f
+      let cut = if source-rounding and param-times == none {
+        _mp-scalar-rounded(raw-cut)
+      } else { raw-cut }
       let valid = if param-times == none { at > margin and total - at > margin }
         else { source-cut-valid(path, cut, margin) }
       if not valid { none } else {

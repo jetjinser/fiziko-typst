@@ -701,22 +701,30 @@ to the scalar ratio; it regressed hatch RMSE to 0.07974 and was reverted. Brush
 leaf geometry and some local random calls still differ.
 
 `instrument_flat_surface.py` also emits `S104-OUTER` and `S104-THIN` records
-for each source brush recursion node on the hatch panel. The pinned source
-produces 1340 `brushGenerate` nodes and 1696 `thinBrushGenerate` nodes;
-the corresponding Typst trace has 780 outer and 1577 thin nodes. These counts
-do not have identical branch semantics, but confirm that matching total RNG
-calls masks substantial differences in the recursion trees. MetaPost decides
-from the control-point bounds of its cubic width path and uses `cutPathTime`;
-Typst currently decides from sampled width extrema and linear crossings. This
-is the concrete next S104 porting target.
+for each source brush recursion node on the hatch panel. `S104-CTRL` now also
+records each width-path segment's knots and Bézier controls. The source
+`offsetPathTemplate` connects sampled width knots with straight segments, and
+the traced source knot widths match Typst after converting MetaPost points to
+millimetres. This rules out an initial-knot interpolation mismatch for the
+fixture. The pinned source produces 1340 `brushGenerate` nodes and 1696
+`thinBrushGenerate` nodes; before cut-time rounding, Typst had 780 outer and
+1577 thin nodes. Typst now rounds each recursive crossing parameter to the
+source 16.16 path-time grid when `source-rounding: true`. At 600 ppi S104 hatch
+RMSE is effectively unchanged (0.075286 to 0.075285), while outer nodes rise
+to 942 and thin nodes remain 1577. One traced 31.180 mm row now matches the
+source's 39 outer and 9 thin nodes; nearby rows still differ, so this improves
+the recursion model without claiming a complete port. The remaining mismatch
+is in cut selection/branch behavior around narrow residual crossings.
 
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
 left the 142 row call counts unchanged (108 exact source-row matches; 34
 mismatches, with per-row deltas up to ±20 calls). It slightly regressed the
 600 ppi whole/hatch RMSE from 0.207029/0.075286 to 0.207041/0.075353. That
-prototype was reverted; the call-count differences cluster in the
-variable-width middle rows, so the next useful trace is the source width
-template's knot values and recursive cut positions.
+prototype was reverted. The follow-up trace shows that source and Typst width
+knots already agree for the fixture after unit conversion; the more useful
+numerical difference is the recursive crossing parameter. Quantizing that
+parameter improved aggregate outer-node counts, but remaining mismatches are
+concentrated around narrow residual crossings and in cut selection.
 
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside
