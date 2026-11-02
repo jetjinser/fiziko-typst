@@ -49,6 +49,56 @@ ranking unlike subjects as if the scores were a universal similarity scale.
 M11's globe crop, for example, combines a large shaded region with coastline
 strokes, while M10 contains mostly whitespace.
 
+## Confirmed actionable gaps
+
+These are follow-ups with a pinned-source trace or a concrete source/Typst
+divergence. “Confirmed” means the behavior to reproduce is evidenced by the
+source; it does not promise that every implementation attempt improves raster
+RMSE. Keep each change only when source-level agreement improves and the
+affected source-parity crops do not materially regress.
+
+- [ ] **M11 knot tangent and dash phase.** The traced source midpoint cubic
+  derivative reproduces `pathAngle` (mean error about 3.1e-5 rad; maximum
+  9.5e-5 rad), while a finite-difference tangent from original strand samples
+  is off by 0.0134 rad at the first width trough. Reconstruct the midpoint
+  cubic from the two traced offset-boundary cubics, then use its derivative
+  for the lane normal. Acceptance: reproduce source trough width and the two
+  source dash-phase restarts, with paired leaf/call traces and no regression
+  to the retained M11/M4/M6 crops.
+- [ ] **S104 recursive cut geometry.** On the first mismatched row, source and
+  Typst use the same subdivision request and matching width thresholds, yet
+  the first divergent shared depth-4 cut is x=39.539 mm versus x=44.895 mm.
+  Pair the source cubic/template knots with the exact Typst sample intervals
+  used by `cutPathTime`; derive the selected crossing and midpoint from that
+  paired geometry. Acceptance: match that cut and its terminal leaf/dash tree,
+  then improve paired row decisions without the known flat-crossing node-count
+  explosion.
+- [ ] **Wood contour brush geometry and traversal.** M9's source cLine width
+  ranges now match to at most 4.91e-5 normalized units, but source contour
+  brush calls remain approximate. The source `fullcircle` cubic sampler now
+  matches within 3.1e-5 and reproduces ring counts; feeding those rings into
+  the current band renderer worsened RMSE, so geometry and width templates
+  must be paired before changing production strokes. Trace source brush
+  boundary/leaf geometry separately from its eight-knot width template, then
+  apply the source recursive `(i,j,st)` traversal and path-time width law.
+  Acceptance: match per-contour leaf/call order and improve M9 contour crop
+  without regressing S105's independently verified field/width behavior.
+- [ ] **M11 coast brush sampling.** The projected coast paths, seam merging,
+  source five-step horizon crossing, and closed contours already agree in arc
+  time within 0.001 fullcircle units. Dash phase and recursive brush calls are
+  still approximate. Trace the source closed-contour subdivision, width
+  samples, and random-call start for those exact contours, then reproduce
+  source call order. Acceptance: paired contour leaf/call traces agree and
+  globe-crop ink coverage moves toward the source without worsening globe
+  RMSE.
+
+The following are deliberately not implementation tasks until new evidence
+changes their status: the M11 radial-y shading candidate (it moves lane call
+counts closer but worsens M11/M4/M6 crops); S104 flat-interval crossing (it
+nearly doubles thin-recursion nodes); density-only brush tuning (it trades
+RMSE against ink coverage without improving both); and replacing M9's connected
+contours with the sampled source rings (the measured render regressed).
+
 ## Recommended implementation order
 
 1. **Reproduce MetaPost's seeded random stream and draw-call order.** The
