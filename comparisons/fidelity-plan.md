@@ -158,10 +158,16 @@ affected source-parity crops do not materially regress.
   evaluation and recursion. On the first M9 contour, source has 22 path points
   and a 17.28086 mm outer root, while the paired Typst path has 20 points and
   a 14.59937 mm root; the source endpoint extensions transform beyond the
-  block's `y=33` edge. Implement post-brush polygon clipping before tuning
-  local width or endpoint thresholds, then gate the candidate on M9 and S105
-  traces and crops. The source ordering and measurements are recorded in
-  `diagnostics/README.md`; no renderer change is retained yet.
+  block's `y=33` edge. A candidate appended these boundary cells, brushed the
+  extended path, and clipped final ink to the rectangle. It moved the Typst
+  root length to 16.92824 mm and RNG calls to 22 versus 24 source calls, but
+  parent-aware decisions remained 35/40 and the root cut moved slightly
+  farther from source. At 600 ppi, M9 regressed `0.212742 → 0.214788`; S105
+  improved `0.102443 → 0.102240` while ink coverage moved farther below
+  source. The renderer candidate was reverted. Source-order clipping remains
+  established; a future attempt must also match the source width-template and
+  recursive cut behavior and pass both plate gates. Detailed measurements are
+  in `diagnostics/README.md`.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;

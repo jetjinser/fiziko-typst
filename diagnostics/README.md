@@ -238,12 +238,20 @@ has 20 after `_clip-polyline-paths` runs before `_wood-source-width` and
 `stroke-ink`. The source endpoints transform to `(22,34)` and `(12,34)` in the
 Typst landscape coordinates, beyond the block's `y=33` edge; the Typst path
 instead starts and ends on the clipped boundary. The source path length is
-17.28086 mm, versus 14.59937 mm at the paired Typst outer recursion root.
-This ordering explains why the root widths can be close while the recursive
-tree and endpoint branches diverge. The next renderer candidate should brush
-the untrimmed source contour and clip the resulting ink to the polygon, then
-compare M9 and S105 traces and crops before retention. This source-ordering
-change is not implemented yet.
+17.28086 mm, versus 14.59937 mm at the original paired Typst outer recursion
+root. A renderer candidate appended the source boundary-cell points, brushed
+the extended path, and clipped the final ink to the rectangle. It moved the
+Typst root length to 16.92824 mm and dash RNG calls to 22 versus 24 source
+calls, but the root cut point moved slightly farther from source (0.061 mm
+versus 0.058 mm). Parent-aware pairing remained 40 nodes with 33 within
+0.1 mm and 35/40 recurse/stop agreements; the candidate did not improve the
+recursive decisions. At 600 ppi, M9 RMSE regressed from 0.212742 to 0.214788
+and ink coverage moved from 3.7497% to 3.7935% against 4.2032% source. S105
+RMSE improved from 0.102443 to 0.102240, but its ink coverage fell from
+0.6960% to 0.6912% against 0.7405% source. The renderer candidate was
+reverted. The source clip ordering remains confirmed; reproducing the full
+path alone is insufficient without matching its width-template and recursive
+cut behavior.
 
 The source instrumenter now emits `WBTFIX`, recording `w0`, `w1`, `w2`,
 `minWidth`, and `dashStrokeWidthStep` in 16.16 MetaPost point units. At the
