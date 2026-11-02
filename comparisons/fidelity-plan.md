@@ -314,6 +314,17 @@ affected source-parity crops do not materially regress.
   dashes. A mere x-origin reset is translation-invariant in the intersection
   search and cannot explain the child-tree divergence. This no-effect probe
   was removed without a raster trial.
+  The recursive 2D q-state prototype developed for M11 was also replayed on
+  S104 row `-15.3487` (Typst row 103), using the row's five rounded width
+  samples. It grows the outer tree from 5 nodes to 23, close to the source's 21,
+  while preserving the same 5 thin nodes and 6 RNG calls as baseline. However,
+  it selects the opposite root crossing (`2.34457` versus source `1.65523`),
+  then recovers a near-source cut only in the child (`1.65501`). An explicit
+  left/right tie-preference switch leaves that trace unchanged, so this is not
+  a tie-policy-only issue. The probe was removed from the S104 diagnostic; do
+  not generalize the M11 q reconstruction to S104 without source q controls and
+  local-time mapping. This isolates source q geometry/parameterization as
+  necessary even when node totals move closer.
   A separate boundary probe changed the thin-recursion span test from raw
   floating subtraction to a 16.16-rounded width span. Using the already
   rounded `thin-step` alone leaves all 142 row traces identical; rounding the
