@@ -192,6 +192,17 @@ affected source-parity crops do not materially regress.
   curve within each callback interval is already linear, so the remaining
   mismatch is the q path's recursive subpath/time remapping, not missing
   curvature between callback endpoints.
+  A full diagnostic `_ink-loops` prototype then carried fixed-point q cubics
+  and source-time interval maps through both outer and thin recursion, splitting
+  each q path with de Casteljau alongside the sampled center path. It still
+  matched only 15/18 lane call totals. On the three divergent lanes, outer
+  nodes grew from baseline `5/7/5` to `39/39/39`; thin nodes were
+  `76/20/70` versus baseline `34/20/32`. The first root cut was about
+  `0.00004` source-time units from the source cut, then a near-endpoint q
+  crossing repeatedly split the child. This prototype used fixed-point
+  bisection for q crossings, so the result narrows the remaining gap to source
+  intersection selection and its mapping onto the center samples; the q-state
+  plumbing was reverted without a raster trial.
   An expanded source trace now covers the three divergent lanes: fixed-point
   subdivision verifies 19/9/14 parent-left and parent-right pairs for calls
   4/lane 2, 4/lane 6 and 5/lane 2, and the Typst primitive matches every
