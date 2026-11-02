@@ -342,7 +342,11 @@ while globe RMSE changes from `0.188748` to `0.189896` and whole M11 RMSE from
 `0.112661` to `0.112950`. Keep the source-equation match and record the raster
 tradeoff. Mass 2 still has 57 source nodes versus 15 Typst thin nodes; pair
 its source cut parameters and width-cubic ranges before changing dash phase
-or recursion further.
+or recursion further. A diagnostic-only variant reevaluated the analytic width
+callback at recursive cut parameters instead of linearly interpolating sampled
+widths. It changed thin nodes from 27 to 30 without changing the 52 modeled
+calls, and regressed whole M11 RMSE `0.112950` → `0.113000` and globe RMSE
+`0.189896` → `0.190092`; it was reverted.
 
 The paired root cuts make that priority concrete. Upstream
 `offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the
