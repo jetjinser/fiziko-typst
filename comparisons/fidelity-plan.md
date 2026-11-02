@@ -327,20 +327,17 @@ affected source-parity crops do not materially regress.
   source. The renderer candidate was reverted. Source-order clipping remains
   established; a future attempt must also match the source width-template and
   recursive cut behavior and pass both plate gates. Detailed measurements are
-  in `diagnostics/README.md`. A closer vertex comparison now localizes one
-  topology difference beyond the missing boundary extensions: the final two
-  in-bounds source vertices are `(12.85017,33)` then `(13,32.86281)`, while
-  Typst emits the same pair in reverse order as `(13,32.86746)` then
-  `(12.85438,33)`. The reversed 19-cell traversal sequence alone hid this
-  endpoint ordering difference. Do not swap vertices as a local patch; trace
-  the general boundary-cell stitching rule and measure its brush tree and both
-  M9/S105 renders before retaining a fix. The source trace's final recursive
+  in `diagnostics/README.md`. An earlier vertex comparison claimed the final
+  two in-bounds source vertices were reversed in Typst. That claim is
+  superseded by the current source-walk trace: its first M9 path ends
+  `(12.85438,33) → (13,32.86746) → (12,34)`, in the same order as the source
+  trace's `(12.85017,33) → (13,32.86281) → (12,34)`. The two contour
+  intersections still differ by about 0.004–0.005 mm, but this is a position
+  residual, not a direction reversal. The source trace's final recursive
   cells are `(0,22) → (-1,22) → (-1,12)` in source grid coordinates; the last
   two are out of bounds and return their grid coordinates `(i,j)`, which
-  transform to `(22,34)` and `(12,34)`. This confirms the endpoint order is
-  produced by cLine's directed recursion through two boundary cells, so the
-  next diagnostic should preserve that traversal state while stitching the
-  in-bounds contour. `contour.typ` now has an iterative `source-walk` mode that
+  transform to `(22,34)` and `(12,34)`. `contour.typ` has an iterative
+  `source-walk` mode that
   follows cLine's source scan, edge order, visited-cell choice and directed
   branches without recursive Typst calls; `wooden-thing` uses it for source
   fields. On the first M9 path it emits 22 points in source order, with mean/
