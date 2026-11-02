@@ -969,15 +969,17 @@ current path lengths before the cut.
 The six source midpoint paths pair to the reconstructed Typst cubics with
 control-point MAE of 0.000010–0.000013 mm and maximum error below 0.000055 mm.
 Source lane controls also fit the paired Typst sampled paths within 0.002 mm.
-Before shadow clipping, each traced lane, centerline, and `tubeWidth` path has
-24 or 36 units in a given call. `shadowCut` then changes calls 4–6 lane lengths
+Before `shadowCut`, each traced lane, centerline, and `tubeWidth` path has 24
+or 36 units in a given call. `shadowCut` then changes calls 4–6 lane lengths
 to 39–41, 39–40, and 28 units respectively; calls 1–3 remain unchanged. The
-brush callback times reach exactly these post-cut path ends. This explains why
-the callback samples do not align with uncut Typst lane samples. Typst currently
-masks finished layer drawings but does not clip lane paths before brush
-recursion, so hidden strokes still consume RNG before a later layer erases them.
-Use `M11POSTCURVEA/B` to compare source post-cut geometry when implementing this
-step; do not tune lighting from the earlier uncut path comparison alone.
+brush callback times reach these post-cut path ends. The `..` join appears to
+preserve the original curve geometry while inserting path knots: for two call
+4 cuts, the post-cut connector cubics match the original de Casteljau subcurves
+within `3.8e-6` and `1.7e-5` mm. The callback mismatch is therefore a knot/time
+mapping difference, not evidence that source skips the hidden strokes. Typst
+does not insert these knots before brush recursion. Use `M11POSTCURVEA/B` to
+compare the reparameterized path; do not tune lighting from the uncut path
+comparison alone.
 
 The projection orientation is independently checked on source call 4, lane
 k=2. Its pre-cut lane and the shifted high-layer outline at `(rank=1,
@@ -985,8 +987,11 @@ segment=4)` intersect first at source path time `21.78946`; intersecting the
 recorded cubic/polyline geometry predicts `21.7896`. The next geometric hit is
 at pre-cut time `26.0622`. After the first `shadowCut` splice, the source
 reports it at `28.06259`, matching the splice's two-unit path-time advance.
-This pins both the y-axis sign and sequential reparameterization for a
-representative lane.
+The connector at the first hit matches the original cubic subcurve over
+`[21.73946, 21.83946]`; the second connector similarly matches its original
+subcurve within `1.7e-5` mm. This pins the projection direction and confirms
+that the operation inserts knots without materially changing this lane's
+geometry.
 
 The same instrumenter emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
