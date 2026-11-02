@@ -1150,6 +1150,19 @@ width itself was retested and reverted: outer nodes fell to 814 and hatch
 RMSE regressed to 0.07529141. The instrumentation records `S104-CUT` only
 when the source returns an interior cut.
 
+One source row (`traceHatchRow = -14.45174`) exposes a particularly sensitive
+case in the remaining narrow-crossing mismatch. Its outer recursion accepts
+ten successive cuts near the ends of the two child paths: the first moves from
+`(28.24090, 10.41788)` to `(45.86412, 20.59260)`, then the left child is cut
+repeatedly from `x=36.97789` through `x=36.97308` mm; the right child similarly
+accumulates cuts from `x=45.86465` through `x=45.86945` mm. These are source
+decisions (`S104-CUT`), not Typst artifacts. They show that tiny residual
+width crossings can continue to split when the outer brush has no 0.01
+path-time endpoint guard. A future candidate must reproduce this row's
+recursive path-time and fixed-point behavior before using leaf counts or a
+local cut match as evidence; simply accepting every flat-width crossing is
+already known to overgrow the all-row tree.
+
 A follow-up removed 16.16 rounding from each local intersection fraction while
 retaining rounding of the selected whole-path parameter. This slightly lowers
 hatch RMSE to 0.07528461, but the outer recursion grows to 2110 nodes (source:
