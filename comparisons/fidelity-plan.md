@@ -622,6 +622,13 @@ affected source-parity crops do not materially regress.
   counts were unchanged. It was reverted without a render trial. Future
   parameter rebasing must use the traced source seam, not assume the first
   input coordinate is the contour origin.
+  Rotating instead to the traced seam at outline index 1 and rebasing its
+  source-time labels moves M1's root thin cut to 97.70260, within 0.0033 of
+  source 97.69934. However, M1 calls rise from 10 to 12 (source: 6), while
+  M2/M4 call counts stay at 30/6 (source: 15/3). Without paired-tree or raster
+  improvement, this phase candidate was reverted too; keep the measured root
+  time as a clue for carrying the recursive q template, not as a production
+  change.
   A new source-side audit captures exact 16.16 q knots, cut times, and the
   selected q cubic controls. Fixed-point de Casteljau replay matches the full
   child q-knot sequences, not only their endpoints, for all 7 mass-1 and 28
