@@ -170,6 +170,18 @@ affected source-parity crops do not materially regress.
   subdivision primitive, and a paired replay matches all 18 left and 18 right
   child control arrays exactly after quantization. The primitive is not yet
   wired into `_ink-loops`, so no renderer change is claimed.
+  An expanded source trace now covers the three divergent lanes: fixed-point
+  subdivision verifies 19/9/14 parent-left and parent-right pairs for calls
+  4/lane 2, 4/lane 6 and 5/lane 2, and the Typst primitive matches every
+  control array. `brushGenerate` tracing also shows that MetaPost renumbers a
+  partial cubic in a `subpath` as a full local path-time interval: call 4/lane
+  2 cuts its 40-segment root at `22.33324`, then the 23-segment left child
+  reports its next cut near `22.9997`. A diagnostic q-state port that preserved
+  these remapped knots leaves call 4/lane 2 at 18 calls (source: 16), with 56
+  thin nodes and 30/40 source endpoint pairs; the baseline has 34 thin nodes
+  and 32/40 endpoint pairs. The production candidate was removed. The next
+  attempt must pair recursive q-time remapping with the corresponding
+  centerline subpath parameters before changing cut selection.
   Source recursive nodes now include their geometric endpoints and cut points.
   In call 4 lane 2, the source chooses width `0.03807` and splits near
   `(89.32121,15.79910)`; adjacent source pieces of `0.30544` and `0.31416` mm

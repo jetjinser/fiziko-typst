@@ -994,7 +994,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11QPT|^M11THINPATH|^M11TCUT|^M11TCUTFIX|^M11TCUTPATH|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11BQPT|^M11BRCUT|^M11QPT|^M11THINPATH|^M11TCUT|^M11TCUTFIX|^M11TCUTPATH|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1142,6 +1142,22 @@ unchanged.
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
 repeated endpoint callback values, before evaluating brush recursion.
+
+The expanded trace also records the outer `brushGenerate` q controls as
+`M11BQPT` and its `cutPathTime` result as `M11BRCUT` for call 4/lane 2. Its
+40-segment root q path cuts at time `22.33324`; the left `subpath` is then
+reparameterized to 23 unit-time segments, and the next source cut is at
+`22.9997`. This establishes that a partial final cubic becomes a full local
+path-time interval after `subpath`.
+
+A diagnostic candidate carried fixed-point q controls through the recursive
+subpaths and tracked each subpath's remapped source-time knots. It did not
+improve the tree: call 4/lane 2 stayed at 18 Typst calls versus 16 source;
+the candidate had 56 thin nodes and paired 30/40 source node endpoints,
+compared with 34 thin nodes and 32/40 endpoint pairs for the baseline. The
+production change was removed. The next attempt needs to pair the remapped
+q-time knots with the source centerline's subpath parameterization before
+changing cut selection.
 
 `extract_m11_shadow_brush_inputs.py` exports the traced post-shadow cubic
 paths, their integer callback widths and source-order RNG offsets as a Typst

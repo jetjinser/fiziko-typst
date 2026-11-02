@@ -107,6 +107,16 @@ def main() -> None:
         message "M11BW " & decimal(traceTubeCall) & " " & decimal(traceCurrentK)
             & " " & decimal(w0) & " " & decimal(w1) & " " & decimal(arclength(p)/mm);
     fi;''')
+    brush_cut = "    t := cutPathTime(bt, minStrokeWidth);"
+    if source.count(brush_cut) != 1:
+        raise ValueError(f"expected one brush cut hook, found {source.count(brush_cut)}")
+    source = source.replace(brush_cut, brush_cut + '''
+    if traceKnotActive:
+        message "M11BRCUT " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(i) & " "
+            & decimal(t) & " " & decimal(xpart(point t of p)/mm) & " "
+            & decimal(ypart(point t of p)/mm);
+    fi;''')
     shadow_hit = "            if q isInside shiftedShadowPath:"
     if source.count(shadow_hit) != 1:
         raise ValueError(f"expected one lighting shadow test, found {source.count(shadow_hit)}")
@@ -173,6 +183,40 @@ enddef;''')
     if source.count(template_start) != 2:
         raise ValueError(f"expected two brush template anchors, found {source.count(template_start)}")
     before_template, after_template = source.rsplit(template_start, 1)
+    outer_q_trace = '''
+    if traceKnotActive:
+      if traceTubeCall = 4:
+       if traceCurrentK = 2:
+        save traceTemplatePoint;
+        pair traceTemplatePoint;
+        for traceTemplateIndex := 0 step 1 until length(bt) - 1:
+            for traceControlIndex := 0 step 1 until 3:
+                if traceControlIndex = 0:
+                    traceTemplatePoint := point traceTemplateIndex of bt;
+                elseif traceControlIndex = 1:
+                    traceTemplatePoint := postcontrol traceTemplateIndex of bt;
+                elseif traceControlIndex = 2:
+                    traceTemplatePoint := precontrol (traceTemplateIndex+1) of bt;
+                else:
+                    traceTemplatePoint := point (traceTemplateIndex+1) of bt;
+                fi;
+                message "M11BQPT " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(traceTemplateIndex) & " " & decimal(traceControlIndex) & " "
+                    & decimal(floor(xpart(traceTemplatePoint)*256)) & " "
+                    & decimal(round((xpart(traceTemplatePoint)*256-
+                        floor(xpart(traceTemplatePoint)*256))*256)) & " "
+                    & decimal(floor(ypart(traceTemplatePoint)*256)) & " "
+                    & decimal(round((ypart(traceTemplatePoint)*256-
+                        floor(ypart(traceTemplatePoint)*256))*256));
+            endfor;
+        endfor;
+       fi;
+      fi;
+    fi;'''
+    before_template = before_template.replace(
+        template_start, template_start + outer_q_trace, 1
+    )
     q_trace = '''
     if traceKnotActive:
         save traceTemplatePoint;
