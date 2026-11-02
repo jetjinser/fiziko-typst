@@ -35,7 +35,7 @@ included where a plate contains distinct drawing families.
 | M8 pulley composites | 0.11833 | 1.734% → 2.116% | The rope-occlusion silhouette now derives its endpoints from the source support arc's vertical intersections with the outer rim. Shaded-wheel masking is still approximated by draw order. The default figure omits non-source length labels and maps A/B/C offsets to the source; optional `length-labels: true` restores `l` and `m`. At 600 ppi whole-plate RMSE is 0.11833; left/right crops are 0.13227/0.10421. Overall ink coverage remains high. |
 | M9 wood panels | 0.21275 | 4.203% → 3.749% | The comparison reproduces its source driver's 1 mm `woodBlockRes`, source-ordered fractional contour levels, and source-space knot field. A 72-point source/Typst grid probe differs by 0.00029 normalized units on average (0.00151 max); the paired contour's reverse-ordered cell ranges match source `v[st]` values within 0.00005 normalized units. Source `reverse(iL)` path-time width interpolation lowers matched 600 ppi RMSE from 0.21329 to 0.21275, while ink coverage falls slightly farther below source (3.749% vs 4.203%). |
 | M10 mechanics and optics | 0.07533 | 0.645% → 0.810% | Source hanging-weight radius, 1/4 neck, shoulder expansion, 2 mm body offset and a 2*shadingDensity auricle capsule reduce spring/weight crop RMSE to 0.09878 (previous 0.09909); lens/rays remain 0.06302. Auricle interior shading remains approximate. |
-| M11 globe, eye, knot, refraction | 0.11283 | 4.917% → 5.059% | The source-equation coast normal correction moves focused 600 ppi whole-plate RMSE from 0.11266 to 0.11283; globe crop RMSE is 0.18941 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.372% against 25.940% source. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. Coast brush calls are 50 versus source 27 across visible masses; knot per-segment random calls remain 202 versus source 224. Eye 0.23617 and refraction 0.08193 are unchanged. |
+| M11 globe, eye, knot, refraction | 0.11295 | 4.917% → 5.056% | The source-equation coast normal and corrected `atan2` argument order move focused 600 ppi whole-plate RMSE from 0.11266 to 0.11295; globe crop RMSE is 0.18990 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.353% against 25.940% source. For mass 4, the root recursive cut now splits 14.296/13.938 mm, matching source 14.292/13.925 mm. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. Coast brush calls are 52 versus source 27 across visible masses; knot per-segment random calls remain 202 versus source 224. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.06951 | 1.818% → 1.884% | Tube crop coverage is 0.621% → 0.613%; sphere crop is 5.700% → 5.955%. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
 | S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. The thin-recursion endpoint guard now uses source path-time units: paired outer decisions move from 942 to 1270 (source 1340), thin decisions from 1577 to 1739 (source 1696), with no raster change. Brush-call totals remain 1540 vs 1516 source. |
@@ -96,15 +96,18 @@ affected source-parity crops do not materially regress.
   time within 0.001 fullcircle units. The spherical normal now uses the source
   radius exactly, `|point - center| / d` (where `d` is the globe diameter),
   and its first traced mass-4 normal agrees with MetaPost within 0.001 per
-  component. The focused 600 ppi render moves globe ink coverage from 26.443%
-  to 26.372% against 25.940% source, while globe RMSE changes from 0.188748
-  to 0.189414 and whole M11 RMSE from 0.112661 to 0.112829. Keep this
-  source-equation change, with its small raster tradeoff recorded. Dash phase,
-  recursive cuts and random-call order remain open: source/Typst calls are
-  27/50 over the six visible masses, and their thin-node totals are 106/25.
-  Continue by pairing source cut parameters and width-cubic ranges on masses 2
-  and 4. Acceptance: improve paired leaf/call traces and the globe render
-  together.
+  component. Correcting Typst's `atan2(x, y)` call order also restores the
+  source mass-4 normal direction. The focused source/Typst root cuts now split
+  mass 4 into 14.296/13.938 mm children (source 14.292/13.925 mm) and mass 2
+  into 139.786/107.763 mm (source 139.59/107.88 mm).
+  The 600 ppi globe ink coverage moves from 26.443% to 26.353% against 25.940%
+  source, while globe RMSE changes from 0.188748 to 0.189896 and whole M11
+  RMSE from 0.112661 to 0.112950. Keep the source-equation correction with
+  this raster tradeoff recorded. Recursive cuts and random-call order remain
+  open: source/Typst calls are 27/52 over visible masses, and thin-node totals
+  are 106/27. Continue pairing source cut parameters and width-cubic ranges on
+  masses 2 and 4. Acceptance: improve paired leaf/call traces and the globe
+  render together.
 
 The following are deliberately not implementation tasks until new evidence
 changes their status: the M11 radial-y shading candidate (it moves lane call

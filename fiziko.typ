@@ -3957,7 +3957,8 @@
         // source sphereAnglesToNormalVector uses asin(abs(point) / 2s);
         // here d == 2s, so the normal's horizontal radius is |point| / d.
         let radial = calc.min(0.999999, _len(local) / d)
-        let angle = calc.atan2(-local.at(1), local.at(0)) / 1deg
+        // Typst's atan2 takes (x, y), unlike the usual atan2(y, x) notation.
+        let angle = calc.atan2(local.at(0), -local.at(1)) / 1deg
         // Match sphereAnglesToNormalVector and normalVectorToLightness for
         // the coast point, including the source's azimuthal light direction.
         let normal = (radial * _cos(angle), radial * _sin(angle),

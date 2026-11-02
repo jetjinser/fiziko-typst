@@ -311,10 +311,10 @@ fixture, source versus Typst counts are:
 
 | Landmass | Source RNG calls | Source thin nodes | Typst RNG calls | Typst thin nodes |
 | ---: | ---: | ---: | ---: | ---: |
-| 1 | 6 | 15 | 12 | 6 |
+| 1 | 6 | 15 | 10 | 6 |
 | 2 | 15 | 57 | 30 | 15 |
 | 3 (empty) | 0 | 1 | — | — |
-| 4 | 3 | 31 | 2 | 1 |
+| 4 | 3 | 31 | 6 | 3 |
 | 5 | 1 | 1 | 2 | 1 |
 | 6 (empty) | 0 | 1 | — | — |
 | 7 | 1 | 1 | 2 | 1 |
@@ -322,38 +322,45 @@ fixture, source versus Typst counts are:
 
 The source trace counts all `uniformdeviate` calls inside each coast brush;
 Typst's RNG cursor counts modeled dash draws. The six visible coast paths total
-27 source calls versus 50 Typst calls; source fallback paths 3 and 6 are empty,
-so Typst omits them. Their recursive node totals are 106 and 25 respectively.
-Mass 4 has 31 source nodes versus 1 Typst thin node, and mass 2 has 57 versus
+27 source calls versus 52 Typst calls; source fallback paths 3 and 6 are empty,
+so Typst omits them. Their recursive node totals are 106 and 27 respectively.
+Mass 4 has 31 source nodes versus 3 Typst thin nodes, and mass 2 has 57 versus
 15. The current trace also logs each source normal and its lightness. For
 source mass 4's first callback, the normal is
 `(0.19894, -0.45815, 0.86633)` at `(16.91675, -38.96030)` MetaPost units;
 the corresponding Typst coast sample uses the globe center `(19, 22)` mm and
 diameter `30` mm, yielding a normalized vector within 0.001 per component.
 This confirms the corrected radial factor `|point - center| / d`: `d` is the
-diameter, matching the source's `abs(point) / 2s`. The focused 600 ppi render
-changes globe RMSE from `0.188748` to `0.189414`, while ink coverage moves
-closer from `26.443%` to `26.372%` against `25.940%` source; whole M11 RMSE
-changes from `0.112661` to `0.112829`. Keep the source-equation match and
-record this small raster tradeoff. Next, pair source cut parameters and
-width-cubic ranges on masses 2 and 4 before changing dash phase or recursion.
+diameter, matching the source's `abs(point) / 2s`. Typst's `calc.atan2` takes
+`(x, y)`, so the source azimuth maps with `atan2(local.x, -local.y)`; the old
+argument order put the normal in the wrong quadrant and underweighted the
+coast. After correcting it, mass 4's root cut divides the 28.234 mm path into
+14.296/13.938 mm children, close to source's 14.292/13.925 mm; mass 2's root
+cut is 139.786/107.763 mm against source 139.59/107.88 mm. At 600 ppi,
+globe ink coverage moves from `26.443%` to `26.353%` against `25.940%` source,
+while globe RMSE changes from `0.188748` to `0.189896` and whole M11 RMSE from
+`0.112661` to `0.112950`. Keep the source-equation match and record the raster
+tradeoff. Mass 2 still has 57 source nodes versus 15 Typst thin nodes; pair
+its source cut parameters and width-cubic ranges before changing dash phase
+or recursion further.
 
 The paired root cuts make that priority concrete. Upstream
 `offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the
 template's x coordinate and the width in y; `cutPathTime` chooses the width
 crossing nearest the half-length x midpoint. It is therefore an arc-length
-selection, not a screen-space x selection. On mass 4, the source and Typst
-targets already agree (`0.05563` and `0.05565` mm) and both root lengths are
-about 28.2 mm, but the source cuts into `14.292/13.925` mm children while the
-Typst linear-width trace cuts into `8.974/19.260` mm children. The source trace
-records a q cubic segment around its hit at cumulative arc `40.51292 bp`:
+selection, not a screen-space x selection. On mass 4, both root lengths are
+about 28.2 mm. Correcting the Typst normal angle moves its cut from the
+incorrect `8.974/19.260` mm split to `14.296/13.938` mm, within 0.004/0.013 mm
+of the source `14.292/13.925` mm. The source trace records a q cubic segment
+around its hit at cumulative arc `40.51292 bp`:
 `(40.37596, .15778)`, `(40.56644, .15770)`, `(40.75690, .15764)`,
-`(40.94737, .15756)`, with target `.15773 bp`. Mass 2 diverges earlier in the
-width profile: its source root target is `.05270` mm versus Typst `.06151` mm.
+`(40.94737, .15756)`, with target `.15773 bp`. The corrected mass 2 root
+target now matches source (`.05272` vs `.05270` mm), although its deeper
+recursive descendants remain different.
 `instrument_brush.py` now emits `S101-CUBIC`, `S101-Q0`, `S101-QPOST`,
 `S101-QPRE`, and `S101-Q1` records for the source q segment around each cut,
-which should be paired with the corresponding Typst node before implementing
-source fixed-point cubic intersection. A temporary screen-space x-midpoint
+which should be paired with corresponding Typst descendants before
+implementing source fixed-point cubic interpolation. A temporary screen-space x-midpoint
 selector reduced whole M11 RMSE from `0.11266070` to `0.11264450` and globe
 crop RMSE from `0.18874815` to `0.18868380`, but it interpreted q.x as page x;
 the upstream definition proves q.x is cumulative arc length. That selector
