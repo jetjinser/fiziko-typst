@@ -128,6 +128,17 @@ clipped Typst vertices produced M9 RMSE 0.214688, worse than the retained
 reproduce MetaPost's `offsetPathTime`/`v[st]` interpolation and clipped-end
 behavior directly instead of projecting onto geometric segments.
 
+The pinned `isoLines` source confirms the exact width lookup: except for the
+terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`
+and `v[ceiling(sqB + offsetPathTime)]`; `cLine` fills each `v[st]` with that
+cell's scalar range. In the first traced M9 path, `sqB=-1`, `sqBm=19`, and
+`length(iL)=21`, while recursive cell visits assign the `st` sequence. The
+remaining task is to map that sequence onto MetaPost path time, including the
+reversed path passed to `brushGenerate` and the terminal-width fallback. The
+current cell-range model chooses a cell from each geometric sample and does
+not reproduce this indexed interpolation. This trace was regenerated from
+the pinned source in `/tmp/m9-cLine-followup/trace.log` during the investigation.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh
