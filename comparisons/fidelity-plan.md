@@ -450,6 +450,22 @@ affected source-parity crops do not materially regress.
   are byte-for-byte unchanged, so the instrumentation preserves the source
   random sequence. The next arithmetic probe should expose the exact shifted
   `wKnot` pair before the `woodBlockRes/detail` output conversion.
+  `WKRANDFIX` now captures the exact 16.16 bound/product pair. For the first
+  candidate, MetaPost returns `1.72431946` from bound `6.84989929`; multiplying
+  the old 16.16-rounded Typst random `0.25172424` by that bound gives
+  `1.72428894`, two 16.16 units low. Retaining the full subtractive-stream
+  fraction (`0.2517283261`) and rounding only the product reproduces the
+  source result exactly, consistent with MetaPost's documented
+  `uniformdeviate`/`take_fraction` path ([MetaPost source manual, §163](https://tug.org/metapost/src/manual/mp.pdf)).
+  This brings the first five candidate positions within
+  `0.000015 mm` of the source. Yet the knot-only raw-fraction render regresses
+  M9 RMSE `0.21156032 → 0.21169146` and S105
+  `0.10213793 → 0.10215109`; applying raw fractions to column jitter also
+  regresses both plates further. Both production candidates were reverted.
+  The coordinate trace is now source-accurate, but the continuous field and
+  contour interpolation currently do not preserve the raster gain; keep the
+  exact RNG product as a diagnostic oracle until the field evaluator is paired
+  at the same source grid points.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →

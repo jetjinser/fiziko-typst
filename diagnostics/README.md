@@ -571,6 +571,8 @@ to millimetres. The final field reports output-space coordinates in millimetres.
 `WKRAND` records the two candidate-only `uniformdeviate` bounds and returned
 products immediately before the pair is shifted into `wKnot`; it is restricted
 to the candidate assignment and leaves the existing `WKCAND` sequence intact.
+`WKRANDFIX` encodes the same bound and product as exact 16.16 integers (two
+base-256 digits per value) for arithmetic replay.
 
 ## M11 coastline lightness
 

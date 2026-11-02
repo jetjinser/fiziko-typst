@@ -104,6 +104,11 @@ vardef traceUniformdeviate (expr x) =
     traceRandomValue := uniformdeviate(x);
     if traceWoodCandidate:
         message "WKRAND " & decimal(x) & " " & decimal(traceRandomValue);
+        message "WKRANDFIX "
+            & decimal(floor(x*256)) & " "
+            & decimal(round((x*256-floor(x*256))*256)) & " "
+            & decimal(floor(traceRandomValue*256)) & " "
+            & decimal(round((traceRandomValue*256-floor(traceRandomValue*256))*256));
     fi;
     traceRandomValue
 enddef;
