@@ -589,6 +589,16 @@ affected source-parity crops do not materially regress.
   pair `(0.98898315, 0.8125)`). The intersection algorithm is therefore not
   the remaining cause for this node; production still needs to preserve or
   reconstruct the source's cubic width-template through recursive children.
+  A production prototype then rebuilt straight 16.16 q cubics from Typst's
+  sampled widths and routed all coast cuts through this solver. It still
+  missed the mass-1 start-width cut, grew the visible Typst tree from 48 to 64
+  nodes, and moved mass 2's first paired divergence from depth 5 to depth 3.
+  The paired decision score changed only from 37/46 to 44/54, so this
+  representation did not resolve the traced source controls and the prototype
+  was reverted before raster rendering.
+  The exact cubic replay remains diagnostic; the next implementation needs to
+  preserve the source q path as recursive state instead of rebuilding it from
+  each sampled child.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.
