@@ -65,6 +65,10 @@ def main():
             time = callback_time.pop(key)
             callbacks[key][time]["normal"] = list(map(float, f[5:8]))
             callbacks[key][time]["lightness"] = float(f[8])
+        elif f[0] == "M11WIDTHFIX":
+            key = (int(f[1]), int(f[2]))
+            time = int(f[3])
+            callbacks[key][time]["width_fixed"] = int(f[4]) * 256 + int(f[5])
         elif f[0] == "M11LANE":
             key = (int(f[1]), int(f[2]))
             lane_calls[key] = int(f[3])
@@ -96,8 +100,13 @@ def main():
             # samples per source unit and map them back to source path time.
             integration_points, lengths = sampled_curve(control_points, 32)
             segment_length = lengths[-1]
-            w0 = width_samples[i]["max_width"] * width_samples[i]["lightness"]
-            w1 = width_samples[i + 1]["max_width"] * width_samples[i + 1]["lightness"]
+            def width(sample):
+                if "width_fixed" in sample:
+                    return sample["width_fixed"] / 65536
+                return sample["max_width"] * sample["lightness"]
+
+            w0 = width(width_samples[i])
+            w1 = width(width_samples[i + 1])
             if i == 0:
                 path_points.append(integration_points[0])
                 widths.append(w0)

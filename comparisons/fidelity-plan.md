@@ -132,6 +132,12 @@ affected source-parity crops do not materially regress.
   sampling density from one to four or sixteen samples per source cubic does
   not change those call totals, so the remaining discrepancy is localized to
   recursive branching or low-level arithmetic rather than broad path density.
+  A source instrument now records callback widths exactly as 16.16 fixed-point
+  values (encoded in two base-256 digits to stay within MetaPost's numeric
+  range). Replaying those exact widths also leaves the 15/18 match and the same
+  three lane differences unchanged; five-decimal callback truncation is not
+  their cause. The existing source and new precision trace agree on all 6,409
+  post-curve, callback, lane-call and brush-node records.
   This replay is diagnostic only; no production rendering change is justified
   until the three divergent branch trees are paired and a render improves.
   Reproduction is documented in `diagnostics/README.md`.

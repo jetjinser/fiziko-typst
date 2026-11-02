@@ -130,6 +130,11 @@ def main() -> None:
             & decimal(ypart(q)/mm) & " " & decimal(redpart(normalVector)) & " "
             & decimal(greenpart(normalVector)) & " " & decimal(bluepart(normalVector))
             & " " & decimal(returnValue);
+        message "M11WIDTHFIX " & decimal(traceTubeCall) & " "
+            & decimal(traceCurrentK) & " " & decimal(offsetPathTime) & " "
+            & decimal(floor(maxShadingStrokeWidth*returnValue/mm*256)) & " "
+            & decimal(round((maxShadingStrokeWidth*returnValue/mm*256 -
+                floor(maxShadingStrokeWidth*returnValue/mm*256))*256));
     fi;
     returnValue
 enddef;

@@ -954,7 +954,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11TCUT|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1004,6 +1004,17 @@ nix develop path:./nix --command python \
   diagnostics/analyze_m11_shadow_callbacks.py \
   /tmp/m11-tube-outline-trace/trace.log
 ```
+
+The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. This records
+the source's 16.16 fixed-point result of `maxShadingStrokeWidth * lightness`
+without asking MetaPost to represent the overflowing intermediate
+`value * 65536`. Across 1,895 callback samples, the previous product of
+five-decimal log values differs from this exact width by at most
+0.00001039 mm. Replaying these exact widths leaves all 18 lane call totals
+unchanged, including the same three mismatches. The callback log precision is
+therefore not the cause of those brush-tree differences. The current source
+trace and replay result were cross-checked against the earlier trace: all
+6,409 post-curve, callback, lane-call and brush-node records match exactly.
 
 Future knot-insertion candidates should rebuild the source
 `offsetPathTemplate` width knots at integer post-cut times, including the
