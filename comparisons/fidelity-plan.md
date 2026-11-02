@@ -1025,7 +1025,15 @@ contours with the sampled source rings (the measured render regressed).
    while thin recursion still has a small, localized residual. The controls
    are trace fixtures only; no production render has changed or been shown
    to improve. Next pair the two extra thin leaves to source width samples
-   and cut decisions before considering a production-path change.
+   and cut decisions before considering a production-path change. The new
+   `diagnostics/compare_m11_thin_trees.py` pins the first decisions: on 4/2,
+   source stops at depth 1, while replay cuts at path time 6.77946 and creates
+   a 0.02238 mm child; on 5/2, the first 29 decisions agree, then replay cuts
+   the final source leaf at 0.04147 and creates a 0.01092 mm child. Both source
+   nodes have endpoint widths 0.02344/0.01866 mm and no source cut record.
+   Lane 4/6 has an exact 20-node tree. These two extra splits sit near the
+   0.023432 mm width floor, so compare the source thin q template at those
+   leaves before changing the endpoint guard or width rounding.
    Keep eye and refraction as independent component gates.
 5. **Tune the mechanical details from local crops.** S106 now maps the
    source's standing weight from its base upward and uses the source-derived
