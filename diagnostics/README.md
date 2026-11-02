@@ -1510,8 +1510,19 @@ The cubic integral computed from the exact fixed-point center controls differs
 from MetaPost's arc values by at most 21.337 fixed units (mean 9.371). A
 16-sample-per-cubic polyline is closer than 32 samples on this trace (maximum
 9.140 versus 16.023 units), but neither sampling choice reconstructs all three
-trees. MetaPost's documented `arclength` uses recursive bisection and an
-adaptive Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); its approximation policy, rather than the q line controls, is now the unresolved part of this replay.
+trees. A fixed-point port of MetaPost's recursive `arc_test` and `pyth_add`
+now reproduces all 121 cumulative `M11POSTARC` values exactly (maximum and
+mean error 0 in 16.16 units). The implementation is currently an audit
+prototype in `audit_m11_q_arclength.py`; it is not yet ported to Typst or wired
+into production recursion. Re-run the source comparison with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/audit_m11_q_arclength.py /tmp/m11-q-audit/trace.log
+```
+
+MetaPost's documented `arclength` uses recursive bisection and an adaptive
+Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/knuth-pdf/mp/mp.pdf)); the newly verified fixed-point arithmetic supplies a bounded implementation target for the Typst port.
 
 Removing the injected q controls and increasing only the sampled center-curve
 density does not recover all three trees. At 8 samples per cubic, calls 4/lanes

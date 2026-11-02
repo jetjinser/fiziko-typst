@@ -8,6 +8,10 @@ from pathlib import Path
 
 
 FIXED = 65536
+# MetaPost's internal fraction is 28-bit fixed point. The arc estimator's
+# stopping threshold is unity / 4096 (mpmath.w: arc_tol_k).
+FRACTION_ONE = 1 << 28
+ARC_TOLERANCE = FRACTION_ONE // 4096
 
 
 def fixed_pair(hi, lo):
@@ -50,6 +54,97 @@ def arc_length(points):
     return integrate(points, 0, 1, fa, fm, fb, whole, 1e-12, 24)
 
 
+def half_trunc(value):
+    return (abs(value) // 2) * (-1 if value < 0 else 1)
+
+
+def round_ratio(numerator, denominator):
+    sign = -1 if (numerator < 0) != (denominator < 0) else 1
+    numerator, denominator = abs(numerator), abs(denominator)
+    return sign * ((numerator + denominator // 2) // denominator)
+
+
+def pyth_add(a, b):
+    """Fixed-point port of MetaPost's scaled Euclidean norm (pyth_add)."""
+    a, b = abs(a), abs(b)
+    if a < b:
+        a, b = b, a
+    if b == 0:
+        return a
+    if a >= 2 * FRACTION_ONE:
+        a //= 4
+        b //= 4
+        big = True
+    else:
+        big = False
+    while True:
+        ratio = round_ratio(b * FRACTION_ONE, a)
+        ratio = round_ratio(ratio * ratio, FRACTION_ONE)
+        if ratio == 0:
+            break
+        ratio = round_ratio(ratio * FRACTION_ONE, 4 * FRACTION_ONE + ratio)
+        a += round_ratio((a + a) * ratio, FRACTION_ONE)
+        b = round_ratio(b * ratio, FRACTION_ONE)
+    return a * 4 if big else a
+
+
+def metapost_arc_test(d0, d1, d2, v0=None, v02=None, v2=None,
+                      tolerance=ARC_TOLERANCE, depth=0):
+    """MetaPost's recursive adaptive arc test on cubic derivative controls."""
+    if depth > 40:
+        raise RecursionError("MetaPost arc-test subdivision exceeded 40 levels")
+    v0 = pyth_add(*d0) if v0 is None else v0
+    v2 = pyth_add(*d2) if v2 is None else v2
+    dx01 = tuple(half_trunc(d0[i] + d1[i]) for i in (0, 1))
+    dx12 = tuple(half_trunc(d1[i] + d2[i]) for i in (0, 1))
+    dx02 = tuple(half_trunc(dx01[i] + dx12[i]) for i in (0, 1))
+    v002 = pyth_add(half_trunc(d0[0] + dx02[0]) + dx01[0],
+                    half_trunc(d0[1] + dx02[1]) + dx01[1])
+    v022 = pyth_add(half_trunc(dx02[0] + d2[0]) + dx12[0],
+                    half_trunc(dx02[1] + d2[1]) + dx12[1])
+    if v02 is None:
+        v02 = pyth_add(half_trunc(d0[0] + d2[0]) + d1[0],
+                       half_trunc(d0[1] + d2[1]) + d1[1])
+    tmp = (v02 + 2) >> 1
+    arc1 = (((v0 + tmp) >> 1) - v002)
+    arc1 = half_trunc(arc1) + v002
+    arc = (((v2 + tmp) >> 1) - v022)
+    arc = half_trunc(arc) + v022
+    arc += arc1
+    simple_x = all(x >= 0 for x in (d0[0], d1[0], d2[0])) or all(
+        x <= 0 for x in (d0[0], d1[0], d2[0]))
+    simple_y = all(y >= 0 for y in (d0[1], d1[1], d2[1])) or all(
+        y <= 0 for y in (d0[1], d1[1], d2[1]))
+    simple = simple_x and simple_y
+    if not simple:
+        direct = all(x >= y for x, y in zip((d0[0], d1[0], d2[0]),
+                                             (d0[1], d1[1], d2[1]))) or all(
+            x <= y for x, y in zip((d0[0], d1[0], d2[0]),
+                                    (d0[1], d1[1], d2[1])))
+        if direct:
+            negated = tuple(-x for x in (d0[0], d1[0], d2[0]))
+            simple = all(x >= y for x, y in zip(negated,
+                                                 (d0[1], d1[1], d2[1]))) or all(
+                x <= y for x, y in zip(negated, (d0[1], d1[1], d2[1])))
+    discrepancy = abs(arc - ((v0 + v2) >> 1) - v02)
+    if simple and discrepancy <= tolerance:
+        return arc
+    next_tolerance = tolerance + (tolerance >> 1)
+    half_v02 = v02 >> 1
+    left = metapost_arc_test(d0, dx01, dx02, v0, v002, half_v02,
+                             next_tolerance, depth + 1)
+    right = metapost_arc_test(dx02, dx12, d2, half_v02, v022, v2,
+                              next_tolerance, depth + 1)
+    return half_trunc(right - left) + left
+
+
+def metapost_arc_length_fixed(points):
+    d0 = tuple(points[1][axis] - points[0][axis] for axis in (0, 1))
+    d1 = tuple(points[2][axis] - points[1][axis] for axis in (0, 1))
+    d2 = tuple(points[3][axis] - points[2][axis] for axis in (0, 1))
+    return metapost_arc_test(d0, d1, d2)
+
+
 def read_trace(path):
     curves = defaultdict(dict)
     qcurves = defaultdict(lambda: defaultdict(dict))
@@ -88,6 +183,7 @@ def audit(path):
         cumulative = 0.0
         arc_errors = []
         source_arc_errors = []
+        port_arc_errors = []
         sampled_arc_errors = {steps: [] for steps in (1, 4, 8, 16, 32)}
         control_errors = []
         for index in curve_ids:
@@ -101,6 +197,17 @@ def audit(path):
                 raise ValueError(f"missing source arclength for {key} segment {index}")
             source_arc = source_arcs[(key[0], key[1], index)]
             source_arc_errors.append(abs(q[3][0] - source_arc))
+            fixed_points = [
+                tuple(int(round(c[point][axis] * FIXED)) for axis in (0, 1))
+                for point in range(4)
+            ]
+            port_arc = metapost_arc_length_fixed(fixed_points)
+            if index == 0:
+                port_prefix = 0
+            else:
+                port_prefix = source_arc_total
+            source_arc_total = port_prefix + port_arc
+            port_arc_errors.append(abs(source_arc - source_arc_total))
             for steps in sampled_arc_errors:
                 points = [bezier([c[i] for i in range(4)], j / steps)
                           for j in range(steps + 1)]
@@ -124,17 +231,21 @@ def audit(path):
                                        abs(q[2][axis] - expected[1])))
         reports.append((key, len(arc_errors), max(arc_errors), sum(arc_errors) / len(arc_errors),
                         max(control_errors, default=0), max(source_arc_errors),
-                        sum(source_arc_errors) / len(source_arc_errors), sampled_arc_errors))
+                        sum(source_arc_errors) / len(source_arc_errors), sampled_arc_errors,
+                        max(port_arc_errors), sum(port_arc_errors) / len(port_arc_errors)))
     if not reports:
         raise SystemExit("no M11 root q templates or exact post-shadow controls found")
     print("call lane segments max-arc-error mean-arc-error max-line-control-error (16.16 bp units)")
     for row in reports:
-        key, count, maximum, mean, control, source_max, source_mean, _ = row
+        key, count, maximum, mean, control, source_max, source_mean, _, port_max, port_mean = row
         print(f"{key[0]} {key[1]} {count} {maximum:.3f} {mean:.3f} {control} "
-              f"source-arclength-q-error={source_max}/{source_mean:.3f}")
+              f"source-arclength-q-error={source_max}/{source_mean:.3f} "
+              f"ported-arc-error={port_max}/{port_mean:.3f}")
     weighted_mean = sum(row[3] * row[1] for row in reports) / sum(row[1] for row in reports)
     print(f"aggregate quadrature/q error: {max(row[2] for row in reports):.3f}/{weighted_mean:.3f} units")
     print(f"aggregate max source-arc/q mismatch: {max(row[5] for row in reports)} units")
+    print(f"aggregate max/mean ported arc error: {max(row[8] for row in reports)}/"
+          f"{sum(row[9]*row[1] for row in reports)/sum(row[1] for row in reports):.3f} units")
     for steps in (1, 4, 8, 16, 32):
         vals = [err for row in reports for err, _ in row[7][steps]]
         print(f"polyline samples/cubic={steps}: max/mean source-arc error "
