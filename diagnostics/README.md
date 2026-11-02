@@ -433,18 +433,21 @@ recursion counts still differ, so short dash placement and phase remain open.
 The M4 comparison used 40 exact-circle samples in Typst, while its pinned
 MetaPost driver connects the same 41 anchors with MetaPost's cubic path solver.
 `instrument_m4_tube_path.py` and `extract_m4_tube_path.py` now export that path
-at 1/8 path-time intervals (321 points) into `comparisons/m4-tube-path.typ`.
-Using the source-derived centerline lowers nominal 600 ppi RMSE from 0.07025 to
-0.06050; Typst ink coverage is 1.756% versus 1.789% in the source. The denser
-path retains the existing lane model and dash stream; remaining width and dash
-differences are independent.
+at 1/16 path-time intervals (641 points) into `comparisons/m4-tube-path.typ`.
+Using the source-derived centerline lowers nominal 600 ppi RMSE from 0.07025
+(the 1/8 result was 0.06050) to 0.06019; Typst ink coverage is 1.756% versus
+1.789% in the source. The 1/16 comparison takes 125.7 s and retains the
+existing lane model and dash stream; remaining width and dash differences are
+independent. A 1/32 candidate (1281 points) did not complete: Typst exited
+with status -9 during the comparison after several minutes, before producing
+metrics. Keep 1/16 as the best completed source-path sample.
 
 Regenerate the M4 path from the pinned comparison driver inside the Nix shell:
 
 ```sh
 mkdir -p /tmp/m4-tube-source
 python3 diagnostics/instrument_m4_tube_path.py \
-  comparisons/reference/main.mp /tmp/m4-tube-source/main.mp 8
+  comparisons/reference/main.mp /tmp/m4-tube-source/main.mp 16
 cp "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m4-tube-source/fiziko.mp
 printf 'selected := 4; input main.mp;\n' > /tmp/m4-tube-source/trace.mp
 (cd /tmp/m4-tube-source && \
@@ -659,10 +662,12 @@ to the scalar ratio; it regressed hatch RMSE to 0.07974 and was reverted. Brush
 leaf geometry and some local random calls still differ.
 
 Rounding each S104 width-template sample to MetaPost's 16.16 millimetre grid
-left the 142 row call counts unchanged (108 exact source-row matches) and
-slightly regressed the 600 ppi whole/hatch RMSE from 0.20703/0.07530 to
-0.20704/0.07537. That prototype was reverted; the remaining call-count
-differences cluster in the variable-width middle rows.
+left the 142 row call counts unchanged (108 exact source-row matches; 34
+mismatches, with per-row deltas up to ±20 calls). It slightly regressed the
+600 ppi whole/hatch RMSE from 0.207029/0.075286 to 0.207041/0.075353. That
+prototype was reverted; the call-count differences cluster in the
+variable-width middle rows, so the next useful trace is the source width
+template's knot values and recursive cut positions.
 
 The row-level Typst trace is `flat_surface_hatch_trace.typ`. To instrument the
 pinned source without changing its lock-verified snapshot, use a copy inside

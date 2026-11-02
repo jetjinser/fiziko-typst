@@ -63,9 +63,11 @@ strokes, while M10 contains mostly whitespace.
    Sampling the actual M7 spline at 1/8 path-time gives source-shaped geometry,
    but the full transverse render scores 0.12542, so the current comparison
    retains its anchor polyline while dash phase and spacing are unresolved.
-   Sampling M4's actual MetaPost spline at 1/8 path-time intervals replaces the
-   ideal-circle approximation and lowers its RMSE from 0.07025 to 0.06050;
-   source path extraction is reproducible from the pinned driver.
+   Sampling M4's actual MetaPost spline at 1/16 path-time intervals (641 points)
+   replaces the ideal-circle approximation and lowers its RMSE from 0.07025 to
+   0.06019 (the 1/8 result was 0.06050). A 1/32 sample was killed before
+   producing metrics, so retain 1/16 as the best completed source-path sample;
+   extraction remains reproducible from the pinned driver.
    Boundary-lane marks and exact recursive subdivision still limit the tube
    renderer; a direct M4 boundary-stroke pilot regressed and was reverted
    pending better offset geometry. Brush stipples and further wood call-order
@@ -129,8 +131,12 @@ strokes, while M10 contains mostly whitespace.
    0.07530 and whole-plate RMSE to 0.20703. An earlier prototype incorrectly
    quantized this ratio as a millimetre length and regressed; it was reverted.
    Prior S104 width and row-phase scans used the wrong hatch orientation and
-   are superseded. Remaining hatch differences are concentrated in brush
-   stroke shape and random details.
+   are superseded. A follow-up found 34 mismatched row counts, concentrated in
+   the variable-width interior and reaching ±20 calls per row. Rounding width
+   samples to 16.16 leaves those calls unchanged and slightly regresses hatch
+   RMSE (0.075286 to 0.075353), so it was reverted. The next useful trace is
+   source width-template knot values and recursive cut positions; remaining
+   hatch image differences also include brush stroke shape and random details.
 4. **Split M11 into faithful globe and knot renderers.** The public `globe`
    offers latitude hatching and `strand-knot` draws longitudinal tube segments
    with per-crossing layers and either gaps or local silhouette masks. Mapping the upstream strand parameter to
