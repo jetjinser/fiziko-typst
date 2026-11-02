@@ -405,11 +405,21 @@ affected source-parity crops do not materially regress.
   `0.20356750/0.00444031`; Typst gives `0.20359104/0.00444468`. The column
   random sample at index 176 rounds to the same `291/65536` source offset, and
   the first accepted knot matches within `0.0003 mm`, so the residual is in
-  `wField` evaluation. Do not
-  apply another global field correction: the prior fixed-point field-operation
-  candidate regressed both wood plates. Reproduce the source maximum-field
-  arithmetic for level selection without changing contour corner values, then
-  test that level-only candidate on M9 and S105.
+  `wField` evaluation. At this cell the source cumulative knot terms are
+  `0.01373291, 0.23362732, 0.24186707, 0.23954773, 0.27470398`. Typst terms
+  with source-rounded `detail`/`rho` constants are
+  `0.01373820, 0.23362618, 0.24187107, 0.23956109, 0.27472421`, exposing the
+  remaining error in intermediate operations. A source-constant candidate
+  rounded `woodBlockDetail` and `woodBlockYRdensity` to 16.16 while leaving
+  other field operations floating point. It moved the first M9 crossing
+  toward source (`12.85438 → 12.85284 mm`, source `12.85017 mm`), but regressed
+  M9 RMSE `0.21156032 → 0.21170117` across all four panel crops and S105
+  `0.10213793 → 0.10214326`; block/surface crops became
+  `0.12791856/0.07693501` versus `0.12790793/0.07693635`. Ink coverage moves
+  slightly closer, but the production candidate was reverted. Reproduce
+  `wField` intermediate arithmetic in a max-only evaluator before trying a
+  level-only correction; the earlier full-field 16.16 candidate also
+  regressed both plates.
   A narrow 16.16 rounding of only the sampled maximum changed M9 RMSE
   `0.21156032 → 0.21154594`, but S105 regressed `0.10213793 → 0.10213956`,
   including both block/surface crops (`0.12790793/0.07693635 →

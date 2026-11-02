@@ -268,6 +268,13 @@ sample at index 176 is `0.85337830`, which rounds through
 `uniformdeviate(1/192)` to the same `291/65536`. The residual is therefore in
 the `wField` arithmetic, not the column RNG. The traced first accepted knot
 also agrees with Typst within 0.0003 mm after converting MetaPost bp to mm.
+At the maximum cell, source cumulative knot terms are
+`0.01373291, 0.23362732, 0.24186707, 0.23954773, 0.27470398`; corresponding
+Typst terms with only `detail`/`rho` source-rounded are
+`0.01373820, 0.23362618, 0.24187107, 0.23956109, 0.27472421`. The largest
+remaining increase occurs in the last two knot contributions, so matching the
+constants alone does not reproduce MetaPost's intermediate fixed-point
+operations.
 Field-operation 16.16 rounding previously improved lattice samples but
 regressed both M9 and S105 renders, so do not apply a global field correction.
 Next, reproduce the source maximum-field arithmetic for level selection
@@ -284,6 +291,15 @@ effectively unchanged. Its first-path end intersection also moved from
 The small M9 pixel gain is not a consistent fidelity improvement, so the
 production change was reverted.
 
+A separate source-constant candidate set `woodBlockDetail` and
+`woodBlockYRdensity` to their MetaPost 16.16 values while leaving the other
+field operations floating point. It moved the first M9 crossing closer to
+source (`x=12.85438 → 12.85284 mm`, source `12.85017 mm`), but 600 ppi RMSE
+regressed on M9 (`0.21156032 → 0.21170117`, all four panel crops) and S105
+(`0.10213793 → 0.10214326`; block `0.12790793 → 0.12791856`). Surface crop
+improved only `0.07693635 → 0.07693501`. Constant quantization alone is
+insufficient; the production change was reverted.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh
@@ -296,6 +312,7 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
 rg 'CL(FIELD|VALUE|LEVEL|PATH|WIDTH)' /tmp/m9-cLine-trace/trace.log
+rg 'CLW(R|TERM|BASE|FINAL)|CLMAXCELL|CLDRAWFIX' /tmp/m9-cLine-trace/trace.log
 rg 'WB(NODE|CUT|LEAF|TCALL|THIN|THINDASH)' /tmp/m9-cLine-trace/trace.log
 typst eval 'query(<m9-contour-walk>).first().value' \
   --in diagnostics/m9_contour_walk_trace.typ --root . \

@@ -1,5 +1,5 @@
 // Typst's first M9 contour and the 1 mm cells crossed by each path segment.
-#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, stroke-ink
+#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, _mp-scalar-rounded, stroke-ink
 #import "../contour.typ": marching-squares
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
@@ -14,6 +14,41 @@
   model.rng-count - 34 + 6 + 1).last()
 #let maximum-field-value = (model.field)(6, 42) / 24
 #let maximum-field-offset = maximum-column-random / 192
+#let maximum-wfield-terms = {
+  let i = 6
+  let j = 42
+  let detail = _mp-scalar-rounded(1 / 5)
+  let rho = _mp-scalar-rounded(1 / 24)
+  let bd = 1.25 / 2 * detail
+  let cumulative = 0.0
+  let terms = ()
+  for knot in model.knots {
+    let dx = (i - knot.at(0)) * detail
+    let dy = (j - knot.at(1)) * detail
+    let r = calc.sqrt(dx * dx + dy * dy * calc.pow(calc.sin(60 * 1deg), 2))
+    let a = calc.atan2(dx, dy)
+    if r >= 2 * bd and 0.5 * r - bd < 8 {
+      let q = 0.5 * r - bd
+      let wave = ((calc.sqrt(calc.max(0.0, q)) / calc.pow(3.0, q))
+        * (calc.sin(60 * 1deg) * 0.5 * calc.sin(-a) + 1)
+        * (1 / 3 + 2 / 3 * calc.abs(calc.cos(a))))
+      cumulative += wave * wave
+    } else if r < 2 * bd {
+      cumulative -= 10 * calc.sqrt(calc.max(0.0,
+        1 - calc.pow(r / (2 * bd), 4)))
+    }
+    cumulative += calc.cos(2 * calc.pi / 30 * r * 1rad) / 64
+    terms.push((r: r, angle: a, cumulative: cumulative))
+  }
+  let before-grid = cumulative
+  let drift = i * rho / 5
+  cumulative -= drift
+  let grid-wave = calc.sin((calc.pi * i / 33 +
+    4 * calc.pi * j / 55) * 1rad) / 32
+  cumulative += grid-wave
+  (terms: terms, before-grid: before-grid, drift: drift,
+    grid-wave: grid-wave, final: cumulative)
+}
 #let grid = range(34).map(j => range(56).map(i => field(i, j)))
 #let values = grid.fold((), (all, row) => all + row)
 #let groups = levels.enumerate().map(((level-index, level)) => {
@@ -64,6 +99,7 @@
   maximum-components: (w-field: maximum-field-value - maximum-field-offset,
     field-offset: maximum-field-offset, field-value: maximum-field-value,
     column-random: maximum-column-random),
+  maximum-wfield-terms: maximum-wfield-terms,
   field-rng-count: model.rng-count,
   first-contour-random: first-contour-random,
   levels: levels, paths: paths,

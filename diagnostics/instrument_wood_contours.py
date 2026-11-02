@@ -217,6 +217,51 @@ def main() -> None:
                     fi;
                 fi;"""
     source = replace_once(source, field_anchor, field_trace, "wood field sample")
+    radius_anchor = "a := angleRad((x, y) shifted -wk[k]);"
+    radius_trace = radius_anchor + """
+        if traceWoodBlock = 1:
+            if (i = 6) and (j = 42):
+                message "CLWR " & decimal(k) & " " & decimal(r) & " " & decimal(a);
+                message "CLWRFIX " & decimal(floor(r*256)) & " "
+                    & decimal(round((r*256-floor(r*256))*256)) & " "
+                    & decimal(floor(a*256)) & " "
+                    & decimal(round((a*256-floor(a*256))*256));
+            fi;
+        fi;"""
+    source = replace_once(source, radius_anchor, radius_trace,
+                          "wood maximum knot radius and angle")
+    knot_sum_anchor = "outputValue := outputValue + 1/64cos(2pi*1/30r);"
+    knot_sum_trace = knot_sum_anchor + """
+        if traceWoodBlock = 1:
+            if (i = 6) and (j = 42):
+                message "CLWTERM " & decimal(k) & " " & decimal(outputValue);
+                message "CLWTERMFIX "
+                    & decimal(floor(outputValue*256)) & " "
+                    & decimal(round((outputValue*256-floor(outputValue*256))*256));
+            fi;
+        fi;"""
+    source = replace_once(source, knot_sum_anchor, knot_sum_trace,
+                          "wood knot field term")
+    final_anchor = "outputValue := outputValue - (i*woodBlockYRdensity)/5 + 1/32sin(pi*i/xpart(cs) + 4pi*j/ypart(cs));"
+    final_trace = """if traceWoodBlock = 1:
+        if (i = 6) and (j = 42):
+            message "CLWBASE " & decimal(outputValue);
+            message "CLWBASEFIX "
+                & decimal(floor(outputValue*256)) & " "
+                & decimal(round((outputValue*256-floor(outputValue*256))*256));
+        fi;
+    fi;
+    """ + final_anchor + """
+    if traceWoodBlock = 1:
+        if (i = 6) and (j = 42):
+            message "CLWFINAL " & decimal(outputValue);
+            message "CLWFINALFIX "
+                & decimal(floor(outputValue*256)) & " "
+                & decimal(round((outputValue*256-floor(outputValue*256))*256));
+        fi;
+    fi;"""
+    source = replace_once(source, final_anchor, final_trace,
+                          "wood final field value")
     max_anchor = "if wood[i][j] > maxWithinMask:"
     max_trace = max_anchor + "\n                            message \"CLMAX \" & decimal(i) & \" \" & decimal(j) & \" \" & decimal(wood[i][j]);"
     source = replace_once(source, max_anchor, max_trace, "wood field maximum")
