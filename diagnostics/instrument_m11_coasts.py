@@ -59,7 +59,9 @@ def main() -> None:
     source += """
 
 numeric traceCoastRng;
+boolean traceCoastWidth;
 traceCoastRng := 0;
+traceCoastWidth := false;
 vardef traceUniformdeviate (expr x) =
     traceCoastRng := traceCoastRng + 1;
     uniformdeviate(x)

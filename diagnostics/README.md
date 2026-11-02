@@ -766,6 +766,16 @@ some sampled widths but left the six recursion trees and all call counts
 unchanged. Its 600 ppi whole/globe RMSE remained `0.11295018`/`0.18989608`,
 identical to baseline, so the option was not retained.
 
+A further production trial routed coast width crossings through the Typst
+fixed-point `intersection-times` solver. The tree grew from 48 to 64 Typst
+nodes against 106 source nodes; parent-aware recursion decisions agreed on
+44/54 pairs versus 37/46 before. The 600 ppi render nevertheless regressed:
+whole/globe RMSE changed from `0.11289878`/`0.18989608` to
+`0.11291172`/`0.18994729`, while knot RMSE was unchanged. The solver hook was
+removed. This confirms the coast divergence is not fixed by swapping only the
+crossing search; the q-template controls and recursive subpath mapping still
+need to match together.
+
 The paired root cuts make that priority concrete. Upstream
 `offsetPathTemplate` stores cumulative `arclength(subpath (0,i) of p)` in the
 template's x coordinate and the width in y; `cutPathTime` chooses the width
