@@ -66,7 +66,9 @@ def analyze(path):
 
     splice_deltas = Counter()
     near_integer_deltas = Counter()
-    for records in cuts.values():
+    splice_mismatches = []
+    predicted_deltas = defaultdict(int)
+    for key, records in cuts.items():
         for current, following in zip(records, records[1:]):
             cut_time, path_length = current
             if cut_time <= 0.1 or cut_time >= path_length - 0.1:
@@ -74,8 +76,13 @@ def analyze(path):
             delta = following[1] - path_length
             splice_deltas[delta] += 1
             phase = cut_time % 1
-            if min(phase, 1 - phase) < 0.05:
+            crosses_knot = min(phase, 1 - phase) < 0.05
+            if crosses_knot:
                 near_integer_deltas[delta] += 1
+            expected_delta = 1 if crosses_knot else 2
+            predicted_deltas[key] += expected_delta
+            if abs(delta - expected_delta) > 1e-6:
+                splice_mismatches.append((cut_time, delta, expected_delta))
     if splice_deltas:
         total = sum(splice_deltas.values())
         summary = ", ".join(
@@ -88,6 +95,18 @@ def analyze(path):
             for delta, count in sorted(near_integer_deltas.items())
         ) or "none"
         print(f"cuts within 0.05 of an integer path time: {near}")
+        print(f"integer-knot splice model matches: "
+              f"{total-len(splice_mismatches)}/{total}")
+        if splice_mismatches:
+            print(f"splice-model mismatches: {splice_mismatches}")
+        expanded_keys = [key for key in before
+                         if key in after and after[key] > before[key]]
+        final_matches = sum(
+            before[key] + predicted_deltas[key] == after[key]
+            for key in expanded_keys
+        )
+        print(f"predicted expanded path lengths: "
+              f"{final_matches}/{len(expanded_keys)}")
     if expanded == 0:
         raise SystemExit("no expanded M11 lanes with callback samples found")
 
