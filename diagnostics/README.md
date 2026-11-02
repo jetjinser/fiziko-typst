@@ -416,6 +416,12 @@ typst compile --root . diagnostics/m4_longitudinal_compare.typ /tmp/m4-longitudi
 typst compile --root . diagnostics/m6_variable_tube_compare.typ /tmp/m6-variable-tube.pdf
 ```
 
+An analogous source-sampled M6 `fullcircle` path at 1/8 path-time produced
+RMSE 0.09006 versus 0.08919 for the current ideal-circle path when the radius
+sine followed the source traversal. Reversing the sine to keep the old phase
+raised RMSE to 0.16438. Both candidates were removed; M6's closed-path radius
+parameterization needs a separate trace before another geometry change.
+
 To regenerate the comparison from an upstream `fiziko.mp`, make a diagnostic
 copy and run the included MetaPost and Typst drivers:
 
