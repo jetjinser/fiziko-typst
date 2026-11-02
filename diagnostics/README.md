@@ -711,32 +711,33 @@ triples. At the first M2 divergence, the target and endpoint width are both
 q time `3:245:152` (3.95935059) and x `249:5:249` (249.02333 bp); the reverse
 ray has no hit. The cubic ends at q time 4, so MetaPost cuts about 0.160 mm
 before the endpoint although the exact target equals its endpoint width. This
-confirms a near-endpoint `firstIntersectionTimes` case, but does not yet
-identify which low-level intersection step causes the early hit or justify a
-production special case. A reduced MetaPost probe in
-`m11_coast_endpoint_intersection.mp` reproduces the behavior from that one
+confirms a near-endpoint `firstIntersectionTimes` case. A reduced MetaPost
+probe in `m11_coast_endpoint_intersection.mp` reproduces the behavior from that one
 cubic plus the original template's ray bounds: exact endpoint target gives
 `t=0.95935`; raising the target by one 16.16 unit moves the hit to `0.99634`,
 and lowering it by one unit returns no hit. This isolates the behavior to
 MetaPost's intersection routine and exact fixed-point inputs, independently of
 the rest of the coastline traversal. The raw forward pair is
 `(0.99014, 0.95935)` and the reverse-path pair is `(1, 0)`; Fiziko's wrapper
-chooses the forward result. The existing fixed-point packet replay predicts
-`(0.999996, 0.999996)` for this pair, so the case lands in the model's known
-endpoint/backtrack gap. A target-level sweep from eight 16.16 units below to
+chooses the forward result. The first packet replay predicted
+`(0.999996, 0.999996)` for this pair; after reproducing the source's
+branch-dependent `three_l` tolerance updates, it now matches the forward and
+reverse pairs exactly. A target-level sweep from eight 16.16 units below to
 eight above the exact endpoint level reports no hit for offsets `-8…-1`,
 `t=0.95935` at 0, and `t=0.99634` at +1. Offsets `+2…+8` return
 `0.99268, 0.98901, 0.98535, 0.98169, 0.97803, 0.97437, 0.97070`.
 This is a discontinuity in the fixed-point search, followed by hits tracking
 the shallow cubic's near-endpoint root; it rejects a simple constant
-parameter-margin model. The scan is diagnostic only. Do not encode its values
-as a coast-specific correction: a production port needs a general
-source-compatible intersection search that also reproduces known S104 raw
-pairs. MetaPost's 2.11 source uses recursive cubic bisection
-and falls back to its best approximate pair after 5000 unsuccessful
-backtracks ([pinned-version source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15053-L15102)).
-The next model step is to reproduce that patience and best-candidate path for
-this probe and the existing S104 endpoint cases. Mass 4 has 31 source nodes and five
+parameter-margin model. The fixed-point replay now reproduces all 17 sweep
+points exactly to one 16.16 time unit, including the no-hit and discontinuous
+cases. It also reproduces every raw direct/reverse hit pair in the fresh S104
+trace. The next step is to use this general source solver in production
+`cutPathTime` sampling and measure its effect on complete recursion trees and
+rasters; do not encode the sweep values as a coast-specific correction.
+MetaPost's 2.11 source uses recursive cubic bisection and falls back to its
+best approximate pair after 5000 unsuccessful backtracks
+([pinned-version source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15053-L15102)).
+Mass 4 has 31 source nodes and five
 Typst nodes, with four of five paired decisions agreeing. The current trace
 also logs each source normal and its lightness. For source mass 4's first
 callback, the normal is
@@ -1962,52 +1963,43 @@ python3 diagnostics/replay_s104_thin_intersections.py \
   /tmp/s104-thin-ray-replay/trace.log -6.37912 --node 172
 ```
 
-This closes the source-side decision trace, but not the port. The raw
-`intersectiontimes` pairs come from MetaPost's low-level fixed-point search;
-the existing Python bisection model does not reproduce all thin hits when
-applied to these curves. Typst still selects the other midpoint-side cut at
-x `44.895` mm. Do not infer a production change from the source replay alone;
-the next comparison must pair recursive subpath controls and reproduce the
-low-level hit choice across the full row before a render candidate is judged.
+This closes the source-side decision trace, but not the port. At this point the
+Python bisection model was superseded by the fixed-point packet replay below;
+the production Typst path still uses width crossings on sampled segments and
+selects the other midpoint-side cut at x `44.895` mm. Do not infer a production
+change from source replay alone: pair recursive subpath controls and validate
+the cut choice in the full render before retaining a renderer change.
 
-The thin replay also includes an integer first-difference packet model of
-MetaPost's cubic search. It uses 16.16 controls, integer `half` operations,
-the four ordered child pairs, and source-style tolerance updates. MetaPost 2.11
-sets a precision guard from 17 nominal bisections plus two extra bits, tracks
-the packed `max_t` frontier, saves its best approximation, and returns that
-approximation after 5000 backtracks
-([source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15000-L15101)).
-The replay now models those state transitions, the packet-stack guard and
-MetaPost's final 16.16 path-time conversion. It still matches 67/76 raw
-forward/reverse pairs on the target S104 row, including all four node-172 ray
-results; the other saved row remains 15/20. The classification separates the
-target row's 76 pairs into 43 matched hits, 24 matching misses, eight missed
-source hits within 1/64 path-time of a cubic endpoint, and one missed interior
-source hit. Adding source state did not explain those nine mismatches, so the
-remaining discrepancy lies in the fixed-point packet overlap evaluation or
-its arithmetic order. The replay's packet-limit handling was adjusted to
-reject an over-depth branch and resume sibling enumeration, matching the
-source's `NOT_FOUND` backtracking path more closely than aborting the cubic.
-This sensitivity probe leaves both row results unchanged at 67/76 and 15/20;
-it therefore does not explain the mismatches. A fresh target-row trace also
-tested moving the packet-stack guard to the start of a candidate visit, before
-overlap and `max_t`: matches fell from 67/76 to 31/76. The level-to-stack-bound
-mapping is therefore wrong, and this guard-order change was reverted. The
-same fresh trace still replays source cut choices exactly (19/19). This is
-diagnostic work only. Sweeping effective guard depths 15 through 23 leaves the
-packet result fixed at 67/76; substituting floor, truncation, nearest-away or
-nearest-even halving does the same. The nine missed hits are therefore not
-explained by this depth bound or a simple negative-half convention. The next
-useful comparison is the source packet overlap arithmetic;
-no production change is justified until the endpoint and interior cases are
-explained together. The instrumenter now emits
-`S104-FIRST-FIX`, preserving all four returned path times as signed 16.16
-integers; the replay uses these exact values when present and still accepts
-older decimal-only logs. For node 173's interior source pair
-`(0.05839539, 0.5)`, evaluating the logged cubic controls gives a residual of
-about `(2.16, 0.5)` raw 16.16 coordinate units. This is consistent with an
-approximate near-overlap result; reproducing MetaPost's intermediate
-fixed-point overlap evaluation is still required.
+The thin replay includes an integer first-difference packet model of
+MetaPost's cubic search. It uses 16.16 controls, the four ordered child pairs,
+source-style tolerance updates, the packed `max_t` frontier, best-pair
+fallback, packet-stack limit and final 16.16 path-time conversion
+([source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15000-L15149)).
+The crucial branch rule is in `NOT_FOUND`: moving from left-left to left-right
+adds the current `three_l` to `tol`; moving to right-left retains that value;
+moving to right-right adds it once more. The old recursive replay passed one
+tolerance to all four pairs and matched only 67/76 target-row cases. With the
+branch-specific values, it matches all 76/76 raw pairs within one 16.16 time
+unit, including the former endpoint and interior misses.
+
+The fresh source trace contains 62 rows, 6,784 raw direct/reverse hit pairs,
+and 1,696 wrapper cut decisions; the corrected replay matches every pair and
+decision. The earlier wrapper mismatches came from returning before applying
+`firstIntersectionTimes`' direct-miss override and from comparing rounded
+five-place hit positions; the current trace includes fixed-point hit positions
+and cut times. On the focused row, the depth sweep
+15–23 and four half-rounding variants all remain 76/76. The wrapper-level
+replay independently reproduces all 19/19 selected cut decisions. The reduced
+M11 coast endpoint probe also matches all 17 source sweep values. These are
+diagnostic results only: production `split-path` still finds crossings by
+linear interpolation and midpoint arc distance. The next task is to port the
+packet search and source `cutPathTime` pair selection into that production
+path, then compare full S104 and M11 trees and renders.
+
+`S104-FIRST-FIX` preserves the raw source intersection times as signed 16.16
+chunks; older decimal-only logs remain supported. `audit_s104_fixed_encoding.py`
+checks the paired source controls, rays and time values against the five-place
+decimal trace so input conversion remains separately verifiable.
 
 `audit_s104_fixed_encoding.py` checks that the recorded base-256 controls,
 ray endpoints and raw intersection-time pairs decode consistently with their
@@ -2023,7 +2015,18 @@ nix shell nixpkgs#python3 --command python3 \
   /tmp/s104-fresh/trace.log -6.37912
 ```
 
-Compare the remaining pairs with:
+To reproduce the full-trace result:
+
+```sh
+nix shell nixpkgs#python3 --command python3 \
+  diagnostics/compare_s104_all_intersections.py \
+  /tmp/s104-fresh/trace.log
+nix shell nixpkgs#python3 --command python3 \
+  diagnostics/compare_m11_endpoint_intersection.py \
+  /tmp/m11-endpoint-probe/probe.log
+```
+
+For a detailed focused-row report:
 
 ```sh
 nix shell nixpkgs#python3 --command python3 \
@@ -2036,9 +2039,9 @@ nix shell nixpkgs#python3 --command python3 \
 
 This narrows the source solver work but does not validate a Typst change. The
 rounded-cubic production candidates still regress the whole S104 render; keep
-the renderer unchanged until the packet model covers all target-row endpoint
-cases and a full-row Typst comparison improves both recursion decisions and
-the paired hatch image.
+the renderer unchanged until the packet model is ported, target-row endpoint
+cases pass, and a full-row Typst comparison improves both recursion decisions
+and the paired hatch image.
 
 The source trace now also emits `S104-PCURVE` for the target row's recursive
 thin paths. At node 172, the path's page-space cubic is straight within each

@@ -227,27 +227,26 @@ affected source-parity crops do not materially regress.
   `intersectiontimes` pairs. Replaying Fiziko's forward/reverse preference
   and midpoint-nearest selection reproduces all 19 source cuts on the target
   row, including node 172 (`1.50017` at x `52.61568` versus the other hit at
-  x `35.07321`). This isolates the remaining mismatch to low-level
-  `intersectiontimes` behavior and Typst's recursive subpath parameterization.
-  An integer 16.16 packet-search model now reproduces 67/76 raw
-  forward/reverse hit pairs within one path-time unit on this row, including
-  all four for node 172. Raising its depth from 17 to 18 accounts for five
-  additional pairs. The replay now models the source's packed `max_t`
-  progression, saved approximation, backtrack timeout and packet-stack guard.
-  Treating stack-limit overflow as a failed packet branch that can resume
-  sibling search instead of terminating the cubic leaves both recorded rows
-  unchanged at 67/76 and 15/20. Nine raw pairs still disagree: eight
-  source hits lie within 1/64 path-time of a cubic endpoint, and one is an
-  interior source hit. A new trace records exact 16.16 intersection times;
-  evaluating node 173's recorded cubics at its source pair leaves an estimated
-  residual of about 2.16/0.5 raw coordinate units. This supports a
-  near-overlap/precision-fallback explanation, but fixed-point overlap
-  evaluation still differs on the nine raw pairs; no production change is
-  justified yet. A separate
-  depth-only comparison also leaves both rows unchanged at 67/76 and 15/20,
-  respectively, so a larger terminal depth is not a substitute for the source
-  state transitions. The trace replay is documented in
-  `diagnostics/README.md` and implemented by
+  x `35.07321`). At that point this isolated the mismatch to low-level
+  `intersectiontimes` behavior and Typst's recursive subpath parameterization;
+  the source-side solver is now reproduced, while the production Typst port
+  and recursive subpath parameterization remain open.
+  The integer 16.16 packet-search replay initially matched 67/76 raw pairs
+  because it passed one tolerance to all four child-pair visits. MetaPost's
+  `NOT_FOUND` traversal accumulates `three_l` as it switches to right packets:
+  left-left uses the split tolerance, both mixed pairs use one increment, and
+  right-right uses two. Encoding this branch-dependent tolerance makes the
+  replay exact across the fresh 62-row trace: 6,784/6,784 direct/reverse raw
+  hit pairs and all 1,696 wrapper cut decisions, including every endpoint and
+  interior case. It also reproduces all 17 widths in the minimized M11 coast
+  endpoint sweep. Guard depths 15–23
+  and four tested half-rounding rules all retain 76/76 on the focused S104 row;
+  the old 31/76 guard-order result came from the incomplete tolerance model and
+  is superseded. This identifies a concrete source-semantic gap and removes
+  the main low-level intersection uncertainty. Next, port the same packet and
+  `cutPathTime` selection into the Typst brush path, then compare the full S104
+  and M11 recursion trees and raster before retaining a production change.
+  The replay is documented in `diagnostics/README.md` and implemented by
   `diagnostics/replay_s104_thin_intersections.py`.
   Acceptance: match the target node and terminal leaf/dash tree, then improve
   paired row decisions without the known flat-crossing node-count explosion
@@ -539,32 +538,23 @@ affected source-parity crops do not materially regress.
   a near-endpoint `firstIntersectionTimes` behavior but does not yet isolate
   its low-level cause or justify a production special case. A reduced probe
   produces raw forward pair `(0.99014, 0.95935)` and reverse pair `(1, 0)`;
-  Fiziko selects the forward pair. The current integer packet replay predicts
-  `(0.999996, 0.999996)`, missing the source result. MetaPost 2.11 documents
-  a best-pair fallback after 5000 unsuccessful bisection backtracks. An
-  attempted reordering of the replay's stack guard to the start of each
-  packet visit, based on the source's control flow
-  ([`mp_cubic_intersection`](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15047-L15103)),
-  reduced the fresh S104 target-row matches from 67/76 to 31/76. The assumed
-  level-19-to-stack-bound mapping is therefore wrong; that edit was reverted.
-  The updated source trace still independently replays all 19 cut choices,
-  while the fixed packet classification remains 67/76. A diagnostic sweep of
-  guard depths 15–23 stays flat at 67/76; truncation, floor, nearest-away and
-  nearest-even packet halving also all stay at 67/76. These results move the
-  remaining investigation toward packet overlap arithmetic rather than guard
-  depth or half rounding. `audit_s104_fixed_encoding.py` checks the fresh
-  source trace's 132 cubic controls, 76 ray endpoints and 38 fixed raw-hit
-  pairs against their decimal companions: maximum differences are
-  `7.28e-6`, `6.59e-6` and `6.81e-6` respectively, with no low-byte carry
-  anomalies. This rules out a large serialization mismatch; reproduce the
-  source overlap operations directly before changing the packet model.
-  The exact-level sweep finds no hit from −8 through −1 raw 16.16 units, the
-  early `0.95935` hit at zero, `0.99634` at +1, then `0.99268` at +2; later positive
-  offsets track the shallow cubic root. The isolated +1 excursion shows that
-  even a local monotone endpoint rule would be wrong. Model the
-  best-pair fallback against this probe and known S104 endpoint cases before
-  changing production recursion. Continue pairing the Typst interpolation
-  interval and source cut inputs on masses 2 and 4.
+  Fiziko selects the forward pair. The integer packet replay originally
+  predicted `(0.999996, 0.999996)`, missing the source result, because it passed
+  one tolerance to all child pairs. MetaPost's `NOT_FOUND` traversal adds
+  `three_l` when switching to a right packet: left-left uses the split
+  tolerance, both mixed pairs use one increment, and right-right accumulates
+  two. With this branch-dependent tolerance, the replay exactly reproduces
+  the minimized M11 result and all 17 levels in its endpoint sweep. It also
+  matches all 6,784 raw direct/reverse hit pairs and all 1,696 wrapper cut
+  decisions from the fresh 62-row S104 trace; guard depth 15–23 and four
+  half-rounding variants leave the focused result at 76/76. Earlier 67/76 and
+  31/76 guard experiments used the incomplete tolerance model and are
+  superseded. The source-side intersection algorithm is now reproduced; the
+  remaining M11 coast gap is integrating it with
+  Typst's piecewise width/path representation and comparing the full recursion
+  tree and raster. The exact input audit checks 132 cubic controls, 76 ray
+  endpoints and 38 raw-hit pairs against their decimal companions (maximum
+  differences `7.28e-6`, `6.59e-6` and `6.81e-6`).
   The endpoint behavior is reproduced independently of coast traversal. The
   remaining implementation gap is matching this fixed-point cubic
   intersection behavior in the Typst brush model.

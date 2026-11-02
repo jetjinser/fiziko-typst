@@ -301,6 +301,24 @@ def main() -> None:
                 & decimal(d3) & " " & decimal(cutTime1) & " " & decimal(cutTime2);
             message "S104-THIN-HIT-X " & decimal(traceHatchRow) & " "
                 & decimal(traceThinSerial) & " " & decimal(d4) & " " & decimal(d5);
+            message "S104-THIN-HIT-FIX " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " "
+                & decimal(floor(h*256)) & " "
+                & decimal(round((h*256-floor(h*256))*256)) & " "
+                & decimal(floor(d3*256)) & " "
+                & decimal(round((d3*256-floor(d3*256))*256));
+            message "S104-THIN-TIMES-FIX " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " "
+                & decimal(floor(cutTime1*256)) & " "
+                & decimal(round((cutTime1*256-floor(cutTime1*256))*256)) & " "
+                & decimal(floor(cutTime2*256)) & " "
+                & decimal(round((cutTime2*256-floor(cutTime2*256))*256));
+            message "S104-THIN-POS-FIX " & decimal(traceHatchRow) & " "
+                & decimal(traceThinSerial) & " "
+                & decimal(floor(d4*256)) & " "
+                & decimal(round((d4*256-floor(d4*256))*256)) & " "
+                & decimal(floor(d5*256)) & " "
+                & decimal(round((d5*256-floor(d5*256))*256));
         elseif traceFlatHatch:
             message "S104-HIT " & decimal(traceHatchRow) & " "
                 & decimal(traceCutSerial) & " " & decimal(h) & " "

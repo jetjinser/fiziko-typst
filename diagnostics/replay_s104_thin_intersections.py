@@ -7,8 +7,9 @@ MetaPost's built-in ``intersectiontimes`` results are recorded as ``S104-FIRST``
 This script applies Fiziko's forward/reverse preference and cutPathTime's
 midpoint-nearest choice to those raw results. It also compares a fixed-point
 packet-search model of MetaPost's low-level cubic intersection routine with
-the logged raw results; that model remains incomplete on some near-endpoint
-cases and is diagnostic, not a production solver.
+the logged raw results. It reproduces all recorded raw pairs across the fresh
+62-row S104 trace and the minimized M11 coast endpoint sweep; it remains a
+diagnostic implementation, not yet wired into production brush sampling.
 """
 
 import argparse
@@ -18,8 +19,9 @@ from pathlib import Path
 
 # MetaPost's cubic_intersection adds two bits after the nominal 17-level
 # parameter search. The source-state replay below models the packed max_t
-# threshold, saved approximation and backtrack limit; the S104 measurements
-# show that this alone does not explain the remaining raw-hit mismatches.
+# threshold, branch-dependent tolerance, saved approximation, and backtrack
+# limit. The depth is retained as a parameter because its precise relationship
+# to the source packet-stack capacity is not needed for observed intersections.
 MAX_INTERSECTION_DEPTH = 19
 
 
@@ -27,14 +29,15 @@ def load(log_path: str, row: float):
     nodes = defaultdict(lambda: {
         "first": [], "first-fixed": [], "controls": defaultdict(dict), "thin": None,
         "rays": defaultdict(dict), "y_controls": defaultdict(dict),
-        "hit": None, "hit_x": None,
+        "hit": None, "hit_x": None, "hit-fixed": None,
     })
     for line in Path(log_path).read_text().splitlines():
         p = line.split()
         if len(p) < 3 or p[0] not in {
             "S104-FIRST", "S104-FIRST-FIX", "S104-TXCTRL", "S104-TCTRL",
             "S104-TRAY", "S104-THIN",
-            "S104-THIN-HIT-T", "S104-THIN-HIT-X",
+            "S104-THIN-HIT-T", "S104-THIN-HIT-X", "S104-THIN-HIT-FIX",
+            "S104-THIN-TIMES-FIX", "S104-THIN-POS-FIX",
         }:
             continue
         if abs(float(p[1]) - row) > 0.00001:
@@ -69,27 +72,49 @@ def load(log_path: str, row: float):
             node["hit"] = tuple(map(float, p[3:7]))
         elif p[0] == "S104-THIN-HIT-X":
             node["hit_x"] = tuple(map(float, p[3:5]))
+        elif p[0] == "S104-THIN-HIT-FIX":
+            node["hit-fixed"] = {
+                "levels": tuple(decode_pair(p[i], p[i + 1]) for i in (3, 5))
+            }
+        elif p[0] == "S104-THIN-TIMES-FIX":
+            node.setdefault("hit-fixed", {})["times"] = tuple(
+                decode_pair(p[i], p[i + 1]) for i in (3, 5))
+        elif p[0] == "S104-THIN-POS-FIX":
+            node.setdefault("hit-fixed", {})["positions"] = tuple(
+                decode_pair(p[i], p[i + 1]) for i in (3, 5))
     return nodes
+
+
+def decode_pair(high: str, low: str) -> float:
+    return (int(high) * 256 + int(low)) / 65536
 
 
 def source_first_intersection(raw, path_length):
     """Apply the pinned firstIntersectionTimes macro to its raw pair."""
     x1, y1, x2, y2 = raw
     if x1 < x2:
-        return x1, y1
-    result = x2, path_length - y2
+        result = x1, y1
+    else:
+        result = x2, path_length - y2
     if x1 < 0:
-        return x2, y2
+        result = x2, y2
     return result
 
 
 def replay(node):
-    first, second = node["first"][-2:]
+    pairs = node["first-fixed"] or node["first"]
+    first, second = pairs[-2:]
     path_length = len(node["controls"])
     cut1 = source_first_intersection(first, path_length)
     cut2 = source_first_intersection(second, path_length)
-    _, d3, source_cut1, source_cut2 = node["hit"]
-    d4, d5 = node["hit_x"]
+    if (node["hit-fixed"] is not None
+            and all(key in node["hit-fixed"] for key in ("levels", "times", "positions"))):
+        _, d3 = node["hit-fixed"]["levels"]
+        source_cut1, source_cut2 = node["hit-fixed"]["times"]
+        d4, d5 = node["hit-fixed"]["positions"]
+    else:
+        _, d3, source_cut1, source_cut2 = node["hit"]
+        d4, d5 = node["hit_x"]
     chosen = cut1[1] if abs(d4 - d3) < abs(d5 - d3) else cut2[1]
     return {
         "cut1": cut1[1], "cut2": cut2[1], "chosen": chosen,
@@ -217,6 +242,12 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
         next_dx, next_dy = 2 * dx, 2 * dy
         for a_side, a_child in enumerate((a_left, a_right)):
             for b_side, b_child in enumerate((b_left, b_right)):
+                # NOT_FOUND advances the four child pairs in source order.
+                # Every switch to the right packet adds the current three_l
+                # to tolerance; the mixed pairs therefore share one increment
+                # and the right-right pair has accumulated two.
+                branch_tolerance = next_tolerance + next_three_l * (
+                    a_side + b_side)
                 dx_child = next_dx
                 dy_child = next_dy
                 if a_side:
@@ -227,7 +258,7 @@ def fixed_cubic_intersection(left_points, right_points, tolerance_step):
                     dy_child -= sum(point[1] for point in b_left)
                 result = descend(
                     a_child, b_child, dx_child, dy_child,
-                    next_tolerance, next_three_l, level + 1,
+                    branch_tolerance, next_three_l, level + 1,
                     ai * 2 + a_side, bi * 2 + b_side,
                 )
                 if result is not None or stopped:
