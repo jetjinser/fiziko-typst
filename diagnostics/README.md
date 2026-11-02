@@ -247,6 +247,25 @@ and dimensional brush width at their source arithmetic boundaries. Controlled
 (`0.69618% → 0.69603%` vs `0.74053%`). Keep this small pixel-error improvement
 with the coverage tradeoff recorded.
 
+A fresh paired trace localizes the remaining M9 end-intersection residual to
+the field maximum and first contour level. Source `CLFIELDFIX` records the
+first block maximum as `13632/65536 = 0.2080078125`; the Typst sampled maximum
+is `4.9928571449/24 = 0.2080357144`. On the source edge corresponding to
+Typst model samples `(0,12)` and `(0,13)`, the source fixed-point values are
+`10204/65536` and `10758/65536`; Typst reports `3.7375370140/24` and
+`3.9395665455/24`. The source contour level is `-10675/65536`, while the
+Typst level divided by its 24x field scale is `0.1629227866`. The source
+jitter is `226/65536`; Typst's first contour draw at RNG offset 204 is
+`0.6616821289`, which MetaPost's `uniformdeviate(1/192)` rounds to the same
+16.16 value. Thus the random-call position matches. The observed endpoint
+discrepancy (about `0.004–0.005 mm`) is already present in the maximum/level
+inputs; it is not a path-direction, boundary-stitching, or RNG-offset error.
+Field-operation 16.16 rounding previously improved lattice samples but
+regressed both M9 and S105 renders, so do not apply a global field correction.
+Next, reproduce the source maximum-field arithmetic for level selection
+without changing contour corner values, then test that level-only candidate
+against both wood plates.
+
 To capture the source traversal from the pinned M9 driver:
 
 ```sh

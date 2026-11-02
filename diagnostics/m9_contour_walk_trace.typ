@@ -52,7 +52,10 @@
   _path-time: true)
 #metadata((contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
-  sample-values: sample-values, levels: levels, paths: paths,
+  sample-values: sample-values,
+  target-values: ((6, 42, (model.field)(6, 42)),
+    (0, 12, (model.field)(0, 12)), (0, 13, (model.field)(0, 13))),
+  levels: levels, paths: paths,
   brush-rng-calls: brush-trace.at(1),
   brush-outer-leaves: brush-trace.at(2).outer,
   brush-thin-leaves: brush-trace.at(2).thin,

@@ -41,6 +41,9 @@ def main() -> None:
                             iL := cLine (xy)((i, j), (0, 0), 0, cs) scaled s;
                             if traceWoodLine = 1:
                                 message "CLLEVEL " & decimal(lvl);
+                                message "CLLEVELFIX "
+                                    & decimal(floor(lvl*256)) & " "
+                                    & decimal(round((lvl*256-floor(lvl*256))*256));
                                 message "CLSPAN " & decimal(sqB) & " "
                                     & decimal(sqBm) & " " & decimal(length(iL));
                                 for traceWoodPoint := 0 step 1 until length(iL):
@@ -192,6 +195,11 @@ def main() -> None:
     range_anchor = "for i := -maxWithinMask/woodBlockYRdensity - 1 upto -minWithinMask/woodBlockYRdensity + 1:"
     range_trace = (
         'message "CLFIELD " & decimal(minWithinMask) & " " & decimal(maxWithinMask);\n'
+        'message "CLFIELDFIX " '
+        '& decimal(floor(minWithinMask*256)) & " " '
+        '& decimal(round((minWithinMask*256-floor(minWithinMask*256))*256)) & " " '
+        '& decimal(floor(maxWithinMask*256)) & " " '
+        '& decimal(round((maxWithinMask*256-floor(maxWithinMask*256))*256));\n'
         + range_anchor
     )
     source = replace_once(source, range_anchor, range_trace, "wood field range")
@@ -212,6 +220,18 @@ def main() -> None:
     max_anchor = "if wood[i][j] > maxWithinMask:"
     max_trace = max_anchor + "\n                            message \"CLMAX \" & decimal(i) & \" \" & decimal(j) & \" \" & decimal(wood[i][j]);"
     source = replace_once(source, max_anchor, max_trace, "wood field maximum")
+    level_anchor = "draw isoLines(wood)((wS, lS), woodBlockYRdensity*i + uniformdeviate(1/8woodBlockYRdensity), woodBlockRes);"
+    level_trace = """if traceWoodBlock = 1:
+                    traceWoodJitter := uniformdeviate(1/8woodBlockYRdensity);
+                    message "CLDRAW " & decimal(i) & " " & decimal(traceWoodJitter);
+                    message "CLDRAWFIX "
+                        & decimal(floor(traceWoodJitter*256)) & " "
+                        & decimal(round((traceWoodJitter*256-floor(traceWoodJitter*256))*256));
+                    draw isoLines(wood)((wS, lS), woodBlockYRdensity*i + traceWoodJitter, woodBlockRes);
+                else:
+                    draw isoLines(wood)((wS, lS), woodBlockYRdensity*i + uniformdeviate(1/8woodBlockYRdensity), woodBlockRes);
+                fi;"""
+    source = replace_once(source, level_anchor, level_trace, "wood contour jitter draw")
     block_anchor = "vardef woodBlock (expr w, l) ="
     block_trace = block_anchor + "\n    traceWoodBlock := traceWoodBlock + 1;"
     source = replace_once(source, block_anchor, block_trace, "wood block")

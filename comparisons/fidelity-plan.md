@@ -390,6 +390,21 @@ affected source-parity crops do not materially regress.
   A field-operation 16.16 probe improved the 72 grid samples (mean/max
   `8.48e-6/4.58e-5`, 37 exact matches versus 29), but regressed 600 ppi M9
   `0.212742 → 0.212848` and S105 `0.102443 → 0.102495`; it was reverted.
+  A targeted source trace now shows the end-intersection residual is present
+  in the level inputs: source's first-block maximum is
+  `13632/65536 = 0.2080078125`, versus Typst `0.2080357144`; the adjacent
+  source edge corners are `10204/65536` and `10758/65536`, while Typst's
+  24x-scaled samples convert to `0.1557307` and `0.1641486`. The source level
+  is `-10675/65536`; Typst's level converts to `0.1629227866`. The source
+  jitter is `226/65536`, and the Typst RNG value at offset 204
+  (`0.6616821289`) rounds to that same value through `uniformdeviate(1/192)`,
+  so the random-call position matches. This explains the approximately
+  `0.004–0.005 mm` intersection offset without a path-order mismatch and
+  localizes the remaining level error to maximum-field arithmetic. Do not
+  apply another global field correction: the prior fixed-point field-operation
+  candidate regressed both wood plates. Reproduce the source maximum-field
+  arithmetic for level selection without changing contour corner values, then
+  test that level-only candidate on M9 and S105.
   A narrower contour-only probe rounded edge parameters and physical crossing
   points to 16.16 while leaving field sampling untouched. It regressed same-
   checkout M9 RMSE `0.21155798 → 0.21162015`; S105 changed only
