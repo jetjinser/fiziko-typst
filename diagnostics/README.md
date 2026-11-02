@@ -546,17 +546,20 @@ comparing controls.
 The same instrumenter now emits source lane widths (`M11BW`) and random-call
 counts (`M11LANE`). The paired Typst trace in
 `m11_knot_tube_trace.typ` records each inner and boundary lane's sampled
-points, widths, and call count. All six source tube intervals pair to Typst paths
-with exact endpoints. In source draw order, source/Typst calls are
-14/10, 58/38, 54/40, 42/52, 38/50, and 18/14 before source-cubic
-reconstruction. Thus the prior 20-call deficit came from different lane-width
-profiles, not missing tube intervals. For source
-call 2, lane 6 has a source maximum width of 0.04524 mm versus 0.03634 mm in
-the paired Typst lane. This points the next audit at the surface-normal and
-width calculation along offset boundaries. A trial that reduced the dense
-Typst width profile to quarter-path-time knots and interpolated by lane arc
-kept the 204 total calls but increased the six-segment absolute count error
-from 64 to 68; it was reverted.
+points, widths, and call count. All six source tube intervals pair to Typst
+paths with exact endpoints. With the retained source-cubic centerline,
+aggregating each Typst path's inner and two boundary lanes gives 202 calls in
+source draw order (`36/50/14/10/38/54`); the source uses
+`14/58/54/42/38/18` (224 total). For source tube call 2, lane k=6 pairs
+geometrically with Typst inner lane 1 (mean point distance 0.000038 mm). Its
+source effective width peaks at 0.04525 mm, while the paired Typst profile
+peaks at 0.05496 mm; the brush consumes 38 source calls and 10 Typst calls on
+this lane. The older 0.03634 mm figure came from comparing against Typst lane
+5 and is not a valid pairing. The radial-y shade formula trial moves this lane
+to 34 calls, but its full M11/M4/M6 renders regress, so it remains discarded.
+A separate trial that reduced the dense Typst width profile to quarter-path-
+time knots and interpolated by lane arc also regressed the six-segment
+call-count agreement and was reverted.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
