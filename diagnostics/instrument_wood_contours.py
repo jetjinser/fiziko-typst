@@ -51,6 +51,32 @@ def main() -> None:
                             fi;
                             traceWoodCells := false;"""
     source = replace_once(source, call_anchor, call_trace, "isoLines call")
+
+    width_anchor = "offsetPathTemplate(iL, 0)(\n"
+    width_trace = """offsetPathTemplate(iL, 0)(
+                            begingroup
+                            if traceWoodLine = 1:
+                                if (offsetPathTime < length(iL) - 1):
+                                    message "CLWIDTH " & decimal(offsetPathTime) & " "
+                                        & decimal(sqB) & " " & decimal(sqBm) & " "
+                                        & decimal(length(iL)) & " "
+                                        & decimal(v[floor(sqB + offsetPathTime)]) & " "
+                                        & decimal(v[ceiling(sqB + offsetPathTime)]);
+                                else:
+                                    message "CLWIDTH " & decimal(offsetPathTime) & " "
+                                        & decimal(sqB) & " " & decimal(sqBm) & " "
+                                        & decimal(length(iL)) & " 1 1";
+                                fi;
+                            fi;
+                            """
+    source = replace_once(source, width_anchor, width_trace, "isoLines width callback")
+    width_end_anchor = "\t\t\t\t\t\t\t)\n\t\t\t\t\t\t\t, 0);"
+    width_end_trace = """\t\t\t\t\t\t\tendgroup
+\t\t\t\t\t\t\t)
+\t\t\t\t\t\t\t, 0);"""
+    source = replace_once(source, width_end_anchor, width_end_trace,
+                           "isoLines width callback end")
+
     range_anchor = "for i := -maxWithinMask/woodBlockYRdensity - 1 upto -minWithinMask/woodBlockYRdensity + 1:"
     range_trace = (
         'message "CLFIELD " & decimal(minWithinMask) & " " & decimal(maxWithinMask);\n'

@@ -23,7 +23,17 @@
   }
   (index: index, start: path.first(), end: path.last(), points: path, cells: cells)
 })
+#let paired-path = paths.at(2)
+#let paired-cell-ranges = paired-path.cells.map(cell => {
+  let i = cell.at(0)
+  let j = cell.at(1)
+  let corners = (
+    field(i, j), field(i + 1, j), field(i, j + 1), field(i + 1, j + 1),
+  )
+  calc.max(..corners) - calc.min(..corners)
+})
 #metadata((contour-count: contours.len(), level-count: result.at(1),
   field-range: (calc.min(..values), calc.max(..values)),
   sample-values: sample-values,
-  levels: levels, paths: paths)) <m9-contour-walk>
+  levels: levels, paths: paths, paired-path-index: paired-path.index,
+  paired-cell-ranges: paired-cell-ranges)) <m9-contour-walk>

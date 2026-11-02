@@ -3071,8 +3071,7 @@
 #let _stroke-paths(paths, stroke) = _join(paths.map(path =>
   stroke-path(path, stroke: stroke, per: 0)))
 
-// Approximate cLine's v[st] width profile: each traversed square contributes
-// its scalar range, and the brush is thinner where that range is larger.
+// Approximate a source-style width profile for a generic contour path.
 #let _contour-source-width(field, x, y, w, h, nx, ny, line,
                           value-scale: 1) = {
   let dx = w / nx
@@ -3091,14 +3090,38 @@
     let b = field(x + (i + 1) * dx, y + k * dy)
     let c = field(x + (i + 1) * dx, y + (k + 1) * dy)
     let d = field(x + i * dx, y + (k + 1) * dy)
-    // WoodBlock normalizes wField by 1/24 for the contour levels, while
-    // cLine's brush width uses the unnormalized cell range.
     let variation = (calc.max(a, b, c, d) - calc.min(a, b, c, d)) * value-scale
     (_source-min-stroke / 16) / (1 / 64 + 2 * variation)
   }
 }
 
-#let _wood-source-width(field, w, h, nx, ny, line) = _contour-source-width(field, 0, 0, w, h, nx, ny, line, value-scale: 1 / 24)
+// Source wood uses brushGenerate(reverse(iL)) with a width template built on
+// iL. Rebuild that path-time profile from visible cell ranges in reverse.
+#let _wood-source-width(field, w, h, nx, ny, line) = {
+  let dx = w / nx
+  let dy = h / ny
+  let fractions = _path-fractions(line, false)
+  let cell-ranges = range(line.len() - 1).map(j => {
+    let p = _mul(_add(line.at(j), line.at(j + 1)), 0.5)
+    let i = int(calc.clamp(calc.floor(p.at(0) / dx), 0, nx - 1))
+    let k = int(calc.clamp(calc.floor(p.at(1) / dy), 0, ny - 1))
+    let a = field(i * dx, k * dy)
+    let b = field((i + 1) * dx, k * dy)
+    let c = field((i + 1) * dx, (k + 1) * dy)
+    let d = field(i * dx, (k + 1) * dy)
+    (calc.max(a, b, c, d) - calc.min(a, b, c, d)) / 24
+  })
+  let width-values = (1.0,) + cell-ranges
+  (t) => {
+    let j = range(line.len() - 1).find(i =>
+      fractions.at(i) <= t and t <= fractions.at(i + 1))
+    let j = if j == none { line.len() - 2 } else { j }
+    let span = fractions.at(j + 1) - fractions.at(j)
+    let q = if span > 0 { calc.clamp((t - fractions.at(j)) / span, 0.0, 1.0) } else { 0.0 }
+    let variation = width-values.at(j) * (1 - q) + width-values.at(j + 1) * q
+    (_source-min-stroke / 16) / (1 / 64 + 2 * variation)
+  }
+}
 
 /// Return sampled contour polylines for selected scalar-field levels.
 /// `field(x, y)` returns a number; bounds and grid dimensions are in mm and

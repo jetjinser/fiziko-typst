@@ -114,8 +114,9 @@ field range, selected field samples, path vertices, and traversal's
 row or geometric-segment order. A 1/3 mm contour-grid pilot, combined with the
 source-rate random-column offsets, increased ink coverage and regressed M9 to
 0.22506 and S105 to 0.13050. That pilot was reverted. Field samples and the
-first contour geometry now have direct source comparisons; recursive width
-interpolation and brush placement remain to be aligned.
+first contour geometry now have direct source comparisons. Source-indexed
+width interpolation is modeled below; recursive leaf placement and dash
+coverage remain open.
 
 The trace now includes out-of-bounds cells and `CLSPAN` (`sqB`, `sqBm`, and
 path length). In the first M9 path, the two exterior cells are
@@ -124,20 +125,30 @@ coordinates, the reversed Typst path cell sequence matches the in-bounds
 `cLine` traversal. This establishes traversal correspondence for that path,
 but a prototype that projected the source per-cell width profile onto the
 clipped Typst vertices produced M9 RMSE 0.214688, worse than the retained
-0.213280. That production prototype was reverted. The next width attempt must
-reproduce MetaPost's `offsetPathTime`/`v[st]` interpolation and clipped-end
-behavior directly instead of projecting onto geometric segments.
+0.213280. That production prototype was reverted; it projected the cell
+profile onto vertices without preserving the source path-time orientation.
 
 The pinned `isoLines` source confirms the exact width lookup: except for the
 terminal unit of the path, it interpolates `v[floor(sqB + offsetPathTime)]`
 and `v[ceiling(sqB + offsetPathTime)]`; `cLine` fills each `v[st]` with that
 cell's scalar range. In the first traced M9 path, `sqB=-1`, `sqBm=19`, and
-`length(iL)=21`, while recursive cell visits assign the `st` sequence. The
-remaining task is to map that sequence onto MetaPost path time, including the
-reversed path passed to `brushGenerate` and the terminal-width fallback. The
-current cell-range model chooses a cell from each geometric sample and does
-not reproduce this indexed interpolation. This trace was regenerated from
-the pinned source in `/tmp/m9-cLine-followup/trace.log` during the investigation.
+`length(iL)=21`, while recursive cell visits assign the `st` sequence. A
+paired Typst path has 20 visible vertices versus the source's 22; after the
+source landscape transform, its 19 segment cell ranges match the reverse
+source `v[st]` sequence. The mean absolute range error is `1.54e-5` and the
+maximum is `4.92e-5` in normalized field units. This follows from the source
+passing `reverse(iL)` to `brushGenerate` while building the width template on
+forward `iL`: the visible path starts with the terminal fallback, then uses
+the reversed cell ranges. `_wood-source-width` now models that sequence and
+its path-time interpolation. On matched 600 ppi runs, M9 RMSE changes from
+`0.213294` to `0.212745`; S105 changes from `0.103137` to `0.102450`, with
+block/surface crops changing from `0.128550/0.078508` to
+`0.127935/0.077662`. Ink coverage moves slightly farther below source on both
+plates (M9 `3.777% → 3.749%`, source `4.203%`; S105 `0.715% → 0.696%`, source
+`0.741%`). Keep the width mapping for its lower pixel error, while treating
+the remaining under-coverage as an open difference. The `CLWIDTH` source
+records include the `offsetPathTime`, `sqB`, `sqBm`, path length, interpolated
+`v[st]` values, and terminal fallback.
 
 To capture the source traversal from the pinned M9 driver:
 
@@ -150,7 +161,7 @@ printf 'selected := 9; input main.mp;\n' > /tmp/m9-cLine-trace/trace.mp
 (cd /tmp/m9-cLine-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'CLSTEP' /tmp/m9-cLine-trace/trace.log
-rg 'CL(FIELD|VALUE|LEVEL|PATH)' /tmp/m9-cLine-trace/trace.log
+rg 'CL(FIELD|VALUE|LEVEL|PATH|WIDTH)' /tmp/m9-cLine-trace/trace.log
 typst eval 'query(<m9-contour-walk>).first().value' \
   --in diagnostics/m9_contour_walk_trace.typ --root .
 ```
