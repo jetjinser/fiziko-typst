@@ -175,8 +175,9 @@ enddef;''')
     before_template, after_template = source.rsplit(template_start, 1)
     source = before_template + template_start + '''
     if traceKnotActive:
-      if traceCurrentK = 2:
-       if (i = 2) or (i = 3):
+      if traceTubeCall = 4:
+       if traceCurrentK = 2:
+        if i <= 5:
         for traceTemplateIndex := 0 step 1 until length(bt) - 1:
             message "M11QSEG " & decimal(traceTubeCall) & " "
                 & decimal(traceCurrentK) & " " & decimal(i) & " "
@@ -194,6 +195,7 @@ enddef;''')
                 & decimal(round((ypart(point (traceTemplateIndex+1) of bt)*256-
                     floor(ypart(point (traceTemplateIndex+1) of bt)*256))*256));
         endfor;
+        fi;
        fi;
       fi;
     fi;''' + after_template
