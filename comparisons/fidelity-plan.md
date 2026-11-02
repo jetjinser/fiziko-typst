@@ -568,7 +568,21 @@ affected source-parity crops do not materially regress.
   differences `7.28e-6`, `6.59e-6` and `6.81e-6`).
   The endpoint behavior is reproduced independently of coast traversal. The
   remaining implementation gap is matching this fixed-point cubic
-  intersection behavior in the Typst brush model.
+  intersection behavior in the Typst brush model. A fresh comparison of the
+  first mass-1 divergence narrows the same gap from the other endpoint: both
+  implementations have the same width range and almost the same path
+  endpoints (0.00870 mm mean endpoint error), but MetaPost finds a cut at
+  source path time 0.18750 and creates a 0.203 mm child while Typst finds no
+  crossing. The requested width equals the node's starting width in both
+  traces (`0.04979014 mm`); the source's traced width-template cubic still
+  yields an interior hit. This rules out a width-endpoint mismatch as the
+  cause and points to the cubic width-template/first-hit representation at
+  equality. It does not justify accepting arbitrary endpoint hits: the
+  production fixed-point-intersection trial changed tree pairing and slightly
+  regressed the 600 ppi whole-plate RMSE (`0.11289878 → 0.11291172`), so it
+  remains reverted. The next probe should replay this exact mass-1 node's
+  width-template controls and selected hit before attempting another
+  production integration.
   Acceptance:
   improve paired leaf/call traces and the globe
   render together.

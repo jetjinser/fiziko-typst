@@ -834,7 +834,17 @@ typst eval 'query(<m11-coast-brush-trace>).first().value' \
   > /tmp/m11-coast-brush/typst.json
 nix develop path:./nix --command python3 diagnostics/compare_m11_coast_brush.py \
   /tmp/m11-coast-brush/trace.log /tmp/m11-coast-brush/typst.json 2
+nix develop path:./nix --command python3 diagnostics/compare_m11_coast_brush.py \
+  /tmp/m11-coast-brush/trace.log /tmp/m11-coast-brush/typst.json 1
 ```
+
+Landmass 1's first paired divergence is a useful complementary case to
+landmass 2's near-endpoint hit: its target equals the starting width, yet the
+source width-template cubic returns an interior cut at path time 0.18750.
+The comparison records that cut and the resulting 0.203 mm child, while
+Typst reports no crossing. See the M11 coast item in
+[`comparisons/fidelity-plan.md`](../comparisons/fidelity-plan.md) for the
+measured pairing and rejected production trial.
 
 The instrumented source also emits `S101-CUTINPUT`, `S101-HIT1/2`, and
 `S101-QX1/QY1` or `S101-QX2/QY2` records. They contain exact 16.16 midpoint,
