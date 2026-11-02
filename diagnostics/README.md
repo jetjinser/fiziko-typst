@@ -442,6 +442,17 @@ python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/outlines.typ
 ```
 
+The same instrumenter now emits source lane widths (`M11BW`) and random-call
+counts (`M11LANE`). The paired Typst trace in
+`m11_knot_tube_trace.typ` records each inner and boundary lane's endpoint,
+width range, and call count. All six source tube intervals pair to Typst paths
+with exact endpoints. In source draw order, source/Typst calls are
+14/10, 58/38, 54/40, 42/52, 38/50, and 18/14. Thus the 20-call deficit comes
+from different lane-width profiles, not missing tube intervals. For source
+call 2, lane 6 has a source maximum width of 0.04524 mm versus 0.03634 mm in
+the paired Typst lane. This points the next audit at the surface-normal and
+width calculation along offset boundaries.
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and

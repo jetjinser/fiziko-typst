@@ -45,7 +45,7 @@ def main() -> None:
     if source.count(lane_start) != 1:
         raise ValueError(f"expected one tube lane brush hook, found {source.count(lane_start)}")
     source = source.replace(lane_start,
-        "                    if traceKnotActive: traceLaneStart := traceKnotRng; fi;\n"
+        "                    if traceKnotActive: traceLaneStart := traceKnotRng; traceCurrentK := k; fi;\n"
         + lane_start)
     lane_end = "                    ), 0);\n                elseif (str @# = \"stipples\"):"
     if source.count(lane_end) != 1:
@@ -56,6 +56,14 @@ def main() -> None:
         ' & " " & decimal(k) & " "'
         ' & decimal(traceKnotRng-traceLaneStart); fi;\n'
         "                elseif (str @# = \"stipples\"):")
+    brush_width = "    w1 := (ypart(lrcorner(bt)));"
+    if source.count(brush_width) != 1:
+        raise ValueError(f"expected one brush width hook, found {source.count(brush_width)}")
+    source = source.replace(brush_width, brush_width + '''
+    if traceKnotActive:
+        message "M11BW " & decimal(traceTubeCall) & " " & decimal(traceCurrentK)
+            & " " & decimal(w0) & " " & decimal(w1) & " " & decimal(arclength(p)/mm);
+    fi;''')
     knot_start = "    totalNumberOfSegments := 0;\n    for sNa := 1 step 1 until knotName.nStrands:"
     if source.count(knot_start) != 1:
         raise ValueError(f"expected one knot start hook, found {source.count(knot_start)}")
@@ -72,7 +80,7 @@ def main() -> None:
     # word character. Match any non-letter prefix instead.
     source = re.sub(r"(?<![A-Za-z])uniformdeviate\s*\(", "traceKnotDeviate(", source)
     source += """
-numeric traceMaskTime, traceKnotRng, traceLaneStart, traceTubeCall;
+numeric traceMaskTime, traceKnotRng, traceLaneStart, traceTubeCall, traceCurrentK;
 numeric traceCallBlocks, traceCallRemainder;
 boolean traceKnotActive;
 traceKnotRng := 0;

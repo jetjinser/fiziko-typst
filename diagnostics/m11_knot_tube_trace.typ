@@ -22,6 +22,7 @@
     let edge-calls = 0
     let edge-dashes = 0
     let edge-lanes = ()
+    let inner-lanes = ()
     for (section-index, section) in layout.division-sections.enumerate() {
       let knots = (section.from,)
       for t in layout.times {
@@ -41,17 +42,21 @@
           calc.min(_source-max-shading, _source-max-shading
             * (layout.shade)(side, t) * residual)
         }
+        let lane-widths = knots.map(width)
         let result = _ink-loops(_frame(points, false),
-          knots.map(t => width(t)), false, _source-min-stroke,
+          lane-widths, false, _source-min-stroke,
           _source-dash-length, seed: 1 + 500000 + section-index * 2 + side-index,
           dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true)
         edge-calls += result.at(1)
         edge-dashes += result.at(2).dashes
-        edge-lanes.push((section: section-index, side: side, calls: result.at(1)))
+        edge-lanes.push((section: section-index, side: side,
+          start: points.first(), end: points.last(),
+          width-min: calc.min(..lane-widths), width-max: calc.max(..lane-widths),
+          calls: result.at(1)))
       }
     }
-    for lane in layout.inner {
-      for piece in lane.pieces {
+    for (lane-index, lane) in layout.inner.enumerate() {
+      for (piece-index, piece) in lane.pieces.enumerate() {
         lane-count += 1
         let result = _ink-loops(piece.frames, piece.widths, piece.closed,
           _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
@@ -59,15 +64,20 @@
           source-rounding: false)
         calls += result.at(1)
         dashes += result.at(2).dashes
+        inner-lanes.push((lane: lane-index, piece: piece-index,
+          start: piece.frames.first().at(0), end: piece.frames.last().at(0),
+          width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
+          calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()
         thin-nodes += result.at(2).nodes.filter(node => node.stage == "thin").len()
       }
     }
     traces.push((strand: strand, segment: segment, start: interval.at(0),
-      finish: interval.at(1), divisions: layout.inner-n + 1,
+      finish: interval.at(1), path-start: path.first(), path-end: path.last(),
+      divisions: layout.inner-n + 1,
       lanes: lane-count, random-calls: calls, dash-patterns: dashes,
       edge-random-calls: edge-calls, edge-dash-patterns: edge-dashes,
-      edge-lanes: edge-lanes, outer-nodes: outer-nodes,
+      edge-lanes: edge-lanes, inner-lanes: inner-lanes, outer-nodes: outer-nodes,
       thin-nodes: thin-nodes))
   }
 }
