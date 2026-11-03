@@ -1982,15 +1982,21 @@ time knots and interpolated by lane arc also regressed the six-segment
 call-count agreement and was reverted.
 
 A refreshed source trace now includes the three `tubeAnglesToNormalVector`
-angles at each paired callback sample. For all six unshadowed call-1–3 lanes,
-the Typst circular angle and width-profile angle match within 0.0005°; the
-centerline direction differs by at most 0.021°. On shadow-cut calls 4–5, the
-centerline direction error rises to 11.0–16.8° mean and 83.6° maximum, while
-the circular and width-profile angles remain within 0.0005°. Call 6's mean
-centerline error is 7.63°. This isolates the remaining normal mismatch to the
-post-`shadowCut` centerline tangent and its connector pieces. Do not retune the
-cross-section or radius-slope lighting for these lanes; carry the source's
-post-cut path parameterization and tangent into the Typst lane model instead.
+angles at each paired callback sample. When compared at the same geometric
+point, the circular and width-profile angles match within 0.0005°; the green
+centerline angle differs by 11.0–16.8° mean on calls 4–5 and 7.63° on call 6.
+That is a parameter-domain difference: the source evaluates
+`direction offsetPathTime of currentTubePath`, where `currentTubePath` is the
+uncut centerline, but `offsetPathTime` comes from each lane after `shadowCut`
+has inserted path knots. The callback's numeric path time therefore advances
+by one or two units at each splice even though its geometric point follows the
+original centerline. Directly evaluating the traced uncut centerline cubics at
+that post-cut callback time reproduces the source green angle on all paired
+lanes with 0.0016–0.0022° mean error and at most 0.0054° error. This confirms
+that the missing behavior is the source callback-time mapping across splices,
+not a different cross-section normal or connector tangent. Implement the
+post-cut callback clock while preserving the uncut geometry and endpoint
+clamping of the source width path.
 
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.

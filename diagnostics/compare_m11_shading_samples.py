@@ -31,6 +31,7 @@ def source_samples(path: Path):
     samples = defaultdict(list)
     shadows = defaultdict(list)
     angles = defaultdict(list)
+    center_curves = defaultdict(dict)
     for line in path.read_text().splitlines():
         f = line.split()
         if not f:
@@ -62,12 +63,27 @@ def source_samples(path: Path):
         elif tag == "M11ANGLE":
             key = (int(f[1]), int(f[2]))
             angles[key].append(tuple(map(float, f[3:6])))
+        elif tag == "M11CENTERA":
+            call, segment = int(f[1]), int(f[2])
+            center_curves[call][segment] = [
+                (float(f[3]), float(f[4])), (float(f[5]), float(f[6])), None, None
+            ]
+        elif tag == "M11CENTERB":
+            call, segment = int(f[1]), int(f[2])
+            center_curves[call][segment][2:] = [
+                (float(f[3]), float(f[4])), (float(f[5]), float(f[6]))
+            ]
         elif tag == "M11SHADOW":
             key = (int(f[1]), int(f[2]))
             shadows[key].append((float(f[3]), float(f[4])))
     for key, rows in samples.items():
         for index, row in enumerate(rows):
+            if index >= len(angles[key]):
+                raise ValueError(f"missing M11ANGLE for callback {key} sample {index}")
             row["angles"] = angles[key][index]
+            row["center-direction-error"] = center_direction_error(
+                center_curves[key[0]], row["time"], row["angles"][1]
+            )
             row["width"] = widths.get(((key[0], key[1]), row["time"]))
             residual = 1.0
             if row["width"] is not None and key[1] % 2 == 1:
@@ -104,6 +120,22 @@ def summarize(values):
 
 def angle_error(a, b):
     return abs((a - b + math.pi) % (2 * math.pi) - math.pi)
+
+
+def center_direction_error(segments, path_time, source_angle):
+    if not segments:
+        return None
+    ordered = [segments[i] for i in sorted(segments)]
+    i = max(0, min(len(ordered) - 1, int(math.floor(path_time))))
+    t = max(0.0, min(1.0, path_time - i))
+    p0, p1, p2, p3 = ordered[i]
+    dx = (3 * (1 - t) ** 2 * (p1[0] - p0[0])
+          + 6 * (1 - t) * t * (p2[0] - p1[0])
+          + 3 * t * t * (p3[0] - p2[0]))
+    dy = (3 * (1 - t) ** 2 * (p1[1] - p0[1])
+          + 6 * (1 - t) * t * (p2[1] - p1[1])
+          + 3 * t * t * (p3[1] - p2[1]))
+    return angle_error(source_angle, math.atan2(dy, dx))
 
 
 def y_flipped_lightness(normal, slope, u):
@@ -182,6 +214,8 @@ def main() -> None:
             angle_error(row["angles"][2], math.atan(values["radius_slope"]))
             for _, row, values in paired
         ]
+        center_errors = [row["center-direction-error"] for _, row, _ in paired
+                         if row["center-direction-error"] is not None]
         mean_distance = statistics.mean(d for d, _, _ in paired)
         max_distance = max(d for d, _, _ in paired)
         wmae, wmax, ws, wt = summarize(width_errors)
@@ -194,10 +228,12 @@ def main() -> None:
             f"yflip+shadow={wc:.5f} mae/max={cmae:.5f}/{cmax:.5f} "
             f"shadow-samples={shadow_count} "
             f"light={ls:.4f}/{lt:.4f} mae/max={lmae:.4f}/{lmax:.4f} "
-            f"angle-mae/max-deg="
+            f"angle-at-geometric-pairing-mae/max-deg[cross,center,width]="
             f"{math.degrees(statistics.mean(angle_errors)):.4f}/{math.degrees(max(angle_errors)):.4f},"
             f"{math.degrees(statistics.mean(direction_errors)):.4f}/{math.degrees(max(direction_errors)):.4f},"
-            f"{math.degrees(statistics.mean(width_slope_errors)):.4f}/{math.degrees(max(width_slope_errors)):.4f}"
+            f"{math.degrees(statistics.mean(width_slope_errors)):.4f}/{math.degrees(max(width_slope_errors)):.4f} "
+            f"source-green-vs-uncut-centerline-at-callback-time-mae/max-deg="
+            f"{math.degrees(statistics.mean(center_errors)):.4f}/{math.degrees(max(center_errors)):.4f}"
         )
 
 
