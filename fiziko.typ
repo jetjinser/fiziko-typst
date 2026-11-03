@@ -710,7 +710,10 @@
       1 + calc.max(0, calc.floor(at) - first-end) + at - calc.floor(at)
     }
   }
-  let source-q-split-path(path, target, margin, qcurves, qmap) = {
+  // Preserve q-intersection failure details in node traces. Without an
+  // explicit trace request, failed cuts keep the ordinary `none` result.
+  let source-q-split-path(path, target, margin, qcurves, qmap,
+                          report-failure: false) = {
     let total = 0.0
     for i in range(path.len() - 1) {
       total += _dist(frame-index(path.at(i)).at(0), frame-index(path.at(i + 1)).at(0))
@@ -720,7 +723,12 @@
     let xs = points.map(point => point.at(0))
     let x-min = calc.min(..xs)
     let x-max = calc.max(..xs)
-    if x-max <= x-min { return none }
+    if x-max <= x-min {
+      if not report-failure { return none }
+      return ((), (), 0.0, 0.0, 0.0, total, false, none, none,
+        none, none, none, none, none,
+        (status: "degenerate-width", x-min: x-min, x-max: x-max))
+    }
     let midpoint = _mp-rounded((x-min + x-max) / 2)
     let height = if source-rounding { _mp-rounded(target) } else { target }
     let ray-right = source-q-fixed((source-q-cubic((midpoint, height), (x-max, height)),))
@@ -730,7 +738,14 @@
     let left-hit = intersection-times(ray-left.first(), fixed-curves)
     let right-time = right-hit.at(1)
     let left-time = left-hit.at(1)
-    if right-time < 0 and left-time < 0 { return none }
+    if right-time < 0 and left-time < 0 {
+      if not report-failure { return none }
+      return ((), (), 0.0, 0.0, 0.0, total, false, none, none,
+        none, none, none, none, none,
+        (status: "no-intersection", right-time: right-time,
+          left-time: left-time, midpoint: midpoint, target: height,
+          x-min: x-min, x-max: x-max))
+    }
     let right-x = if right-time < 0 { 0.0 } else { source-q-point(qcurves, right-time).at(0) }
     let left-x = if left-time < 0 { 0.0 } else { source-q-point(qcurves, left-time).at(0) }
     let qtime = if right-time < 0 { left-time }
@@ -745,7 +760,14 @@
     let arc = source-path-arc(path, cut)
     let valid = if param-times == none { arc > margin and total - arc > margin }
       else { source-cut-valid(path, cut, margin) }
-    if not valid { return none }
+    if not valid {
+      if not report-failure { return none }
+      return ((), (), 0.0, 0.0, 0.0, total, false, none, none,
+        none, none, none, none, none,
+        (status: "invalid-cut", right-time: right-time,
+          left-time: left-time, qtime: qtime, source-time: source-time,
+          cut: cut, arc: arc, total: total, midpoint: midpoint, target: height))
+    }
     let edge = range(path.len() - 1).find(i => path.at(i) <= cut and cut <= path.at(i + 1))
     let q = if edge == none { path.len() - 2 } else { edge }
     let left-path = path.slice(0, q + 1) + (cut,)
@@ -756,11 +778,16 @@
     let rlen = total - llen
     (left-path, right-path, llen, rlen, arc, total, valid,
       source-path-time(path, cut), frame-index(cut).at(0),
-      qsplit.left, qsplit.right, mapsplit.left, mapsplit.right, qtime)
+      qsplit.left, qsplit.right, mapsplit.left, mapsplit.right, qtime,
+      (status: "split", right-time: right-time, left-time: left-time,
+        qtime: qtime, source-time: source-time, cut: cut, arc: arc,
+        total: total, midpoint: midpoint, target: height))
   }
-  let split-path(path, target, margin: 0.01, qcurves: none, qmap: none) = {
+  let split-path(path, target, margin: 0.01, qcurves: none, qmap: none,
+                 report-failure: false) = {
     if qcurves != none {
-      return source-q-split-path(path, target, margin, qcurves, qmap)
+      return source-q-split-path(path, target, margin, qcurves, qmap,
+        report-failure: report-failure)
     }
     let total = 0.0
     for q in range(path.len() - 1) {
@@ -1002,7 +1029,8 @@
         let width = base + level * thin-step
         if not source-rounding { width } else { _mp-rounded(width) }
       } else { base }
-      let candidate = split-path(path, target, qcurves: qcurves, qmap: qmap)
+      let candidate = split-path(path, target, qcurves: qcurves, qmap: qmap,
+        report-failure: trace-nodes)
       let split = if candidate != none and (candidate.at(2) > minlen or candidate.at(3) > minlen) {
         (candidate.at(0), candidate.at(1),
           if qcurves == none { none } else { candidate.at(9) },
@@ -1033,10 +1061,12 @@
           path-start: frame-index(path.first()).at(0),
           path-end: frame-index(path.last()).at(0),
           cut-point: if candidate == none { none } else { candidate.at(8) },
-          has-cut: candidate != none,
+          has-cut: candidate != none and (qcurves == none or candidate.at(14).status == "split"),
           cut-distance: if candidate == none { none } else { candidate.at(4) },
           cut-param: if candidate == none { none } else { candidate.at(7) },
           q-cut-time: if candidate == none or qcurves == none { none } else { candidate.at(13) },
+          split-debug: if qcurves == none or candidate == none { none }
+            else { candidate.at(14) },
           left-length: if candidate == none { 0.0 } else { candidate.at(2) },
           right-length: if candidate == none { 0.0 } else { candidate.at(3) },
           recurse: recurse,

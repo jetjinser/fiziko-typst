@@ -1777,6 +1777,18 @@ diverges at the final thin decision, where a compared width endpoint is within
 localize post-shadow arc errors around those leaves; source q-knot injection
 is not a production fix because its prior full-plate comparison regressed.
 
+The thin-node trace now retains the reason a source-q split was rejected.
+At the first differing leaf on call `4/2` (node 33) and `5/2` (node 20),
+the production arc estimate finds only the right-ray hit at q time `4.0`, the
+end of its four-piece q path; the left ray has no hit. The endpoint maps to
+the end of the lane, so the source path-time guard rejects it. Replaying the
+same node with source arc knots finds an interior right-ray hit at `3.93918`
+and `3.93916`, respectively, and recurses. This isolates the branch mismatch
+to which q-curve intersection survives the midpoint ray selection. The trace
+field is diagnostic-only; no production shading or geometry changed. Keep the
+local q x-knots and ray bounds under investigation before attempting a global
+arc correction.
+
 Rounding `param-at` results onto the source 16.16 path-time grid also left the
 same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
 whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
