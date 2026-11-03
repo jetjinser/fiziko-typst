@@ -2955,3 +2955,17 @@ it substantially improves the source recursion tree while preserving the
 existing path samples; track the small raster tradeoff. Higher-density outline
 sampling (24 and 64 points per source path-time unit) was separately rejected
 because it made Typst rendering impractical.
+
+### S104 scalar-width fixed-point probe
+
+The 142-row brush-call trace confirmed that the first mismatch is sensitive to
+the thin-recursion width state. A diagnostic callback now rounds the scalar
+envelope's intermediate operations to 16.16, then compares its generated q
+widths against source calls. This raises exact-call rows from 108 to 115 and
+reduces per-row call-count L1 error from 332 to 302. However, it raises the
+Typst total from 1538 to 1566 calls against 1516 source calls, and mismatches
+include both over- and under-recursed rows. This is evidence that scalar
+arithmetic can move the branch decisions, but not evidence that this guessed
+rounding order matches MetaPost. Keep it diagnostic-only; do not enable it in
+production unless the callback operations are paired to source fixed-point
+states and the complete S104 raster gate also passes.

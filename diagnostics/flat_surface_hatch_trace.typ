@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -30,6 +30,23 @@
   let width(t) = {
     let envelope = calc.sin(180deg * t) * line-length / total-width * calc.sin(180deg * row-fraction)
     2 * _source-min-stroke * (1 / 15 + shade) * (1 - 6 / 7 * calc.sqrt(calc.max(0.0, envelope)))
+  }
+  // Candidate MetaPost-style 16.16 arithmetic for the scalar envelope.
+  // The height normal and light make surfLight exactly one in this fixture.
+  let fixed-width(t) = {
+    let q = _mp-scalar-rounded
+    let ratio = q(line-length / total-width)
+    let row-position = q(row-fraction)
+    let s1 = q(_sin(q(q(t) * 180)))
+    let s2 = q(_sin(q(row-position * 180)))
+    let envelope = q(q(s1 * ratio) * s2)
+    let root = q(calc.sqrt(calc.max(0.0, envelope)))
+    let fade = q(q(6 / 7) * root)
+    let remain = q(1 - fade)
+    let light-factor = q(q(1 / 15) + q(shade))
+    let base-bp = q(2 * q(_source-min-stroke / _mp-unit))
+    let width-bp = q(q(base-bp * light-factor) * remain)
+    _mp-rounded(width-bp * _mp-unit)
   }
   let points = subdivision-times.map(t => _add(segment.at(0),
     _mul(_sub(segment.at(1), segment.at(0)), t)))
@@ -102,11 +119,19 @@
   }
   let typst-width-fixed = widths.map(width =>
     int(calc.round(width / _mp-unit * 65536)))
+  let fixed-widths = fractions.map(fixed-width)
+  let fixed-width-fixed = fixed-widths.map(width =>
+    int(calc.round(width / _mp-unit * 65536)))
   let width-q-ink = _ink-loops(frames, widths, false, _source-min-stroke,
     _source-dash-length, random-stream: stream, rng-offset: cursor,
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true, source-width-fixed: typst-width-fixed)
+  let fixed-width-q-ink = _ink-loops(frames, fixed-widths, false, _source-min-stroke,
+    _source-dash-length, random-stream: stream, rng-offset: cursor,
+    dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+    with-rng: true, with-stats: true, trace-nodes: true,
+    source-rounding: true, source-width-fixed: fixed-width-fixed)
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
@@ -126,6 +151,9 @@
     width-q-nodes: if width-q-ink == none { () } else { width-q-ink.at(2).nodes },
     width-q-calls: if width-q-ink == none { none } else { width-q-ink.at(1) },
     width-q-dashes: if width-q-ink == none { none } else { width-q-ink.at(2).dashes },
+    fixed-width-q-nodes: if fixed-width-q-ink == none { () } else { fixed-width-q-ink.at(2).nodes },
+    fixed-width-q-calls: if fixed-width-q-ink == none { none } else { fixed-width-q-ink.at(1) },
+    fixed-width-q-dashes: if fixed-width-q-ink == none { none } else { fixed-width-q-ink.at(2).dashes },
   ))
   cursor += ink.at(1)
 }

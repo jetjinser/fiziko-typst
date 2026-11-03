@@ -54,10 +54,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_log", type=Path)
     parser.add_argument("typst_trace", type=Path)
-    parser.add_argument(
+    candidate = parser.add_mutually_exclusive_group()
+    candidate.add_argument(
         "--generated-q",
         action="store_true",
         help="use width-q-calls from the trace instead of baseline rng-used",
+    )
+    candidate.add_argument(
+        "--fixed-width-q",
+        action="store_true",
+        help="use fixed-width-q-calls from the trace",
     )
     args = parser.parse_args()
     source = source_rows(args.source_log)
@@ -68,7 +74,11 @@ def main() -> int:
 
     paired = []
     for index, (src, out) in enumerate(zip(source, typst), 1):
-        call_field = "width-q-calls" if args.generated_q else "rng-used"
+        call_field = (
+            "fixed-width-q-calls" if args.fixed_width_q
+            else "width-q-calls" if args.generated_q
+            else "rng-used"
+        )
         if out[call_field] is None:
             raise ValueError(f"Typst row {out['row']} has no {call_field} value")
         typst_calls = round(out[call_field]) + 1  # one subdivision draw per row
@@ -83,7 +93,11 @@ def main() -> int:
 
     exact = sum(src["calls"] == calls for _, src, _, calls, _ in paired)
     l1 = sum(abs(src["calls"] - calls) for _, src, _, calls, _ in paired)
-    label = "generated-q " if args.generated_q else "baseline "
+    label = (
+        "fixed-width-q " if args.fixed_width_q
+        else "generated-q " if args.generated_q
+        else "baseline "
+    )
     print(
         f"{label}paired rows: {len(paired)}; exact call rows: {exact}; "
         f"call-count L1: {l1}; source/Typst total calls: "
@@ -92,11 +106,12 @@ def main() -> int:
     )
     mismatches = [item for item in paired if item[1]["calls"] != item[3]]
     for index, src, out, calls, length_error in mismatches[:12]:
-        if args.generated_q:
-            nodes = out["width-q-nodes"]
+        if args.generated_q or args.fixed_width_q:
+            prefix = "fixed-width-q" if args.fixed_width_q else "width-q"
+            nodes = out[f"{prefix}-nodes"]
             outer = sum(node["stage"] == "outer" for node in nodes)
             thin = sum(node["stage"] == "thin" for node in nodes)
-            dashes = int(out["width-q-dashes"])
+            dashes = int(out[f"{prefix}-dashes"])
         else:
             outer, thin, dashes = out["outer"], out["thin"], int(out["dash-calls"])
         print(
