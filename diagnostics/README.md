@@ -1613,6 +1613,28 @@ path-time interpolation, the replay still matches 15/18 lane totals and leaves
 the same three differences. This rules out arc-length resampling as their
 cause; production rendering is unchanged.
 
+A fresh replay from the same source trace and Typst lane trace confirms the
+boundary of the remaining error. Injecting the traced source arc knots yields
+exact q controls and exact trees on all three paired lanes: 40/20/30 nodes.
+Reconstructing arcs from the actual Typst lane samples yields 38/20/28 nodes.
+The cumulative q-abscissa offsets peak at 58, 49, and 62 16.16 units for
+call/lane 4/2, 4/6, and 5/2, at knots 33, 32, and 21 respectively. Source and
+Typst post-shadow curve samples still differ by at most 0.00147 mm, so small
+per-segment geometry errors accumulate into the later q knots. Quarter-sample,
+fifth-sample, and blended cubic fits move the divergent lane but do not
+recover all three trees together. The next probe should target cumulative knot
+alignment across post-shadow segments, while retaining source time splices and
+callback widths; no production change is justified until all three trees and
+the M11/M4/M6 image gates improve together.
+
+As a bounded diagnostic, linearly distributing each lane's final cumulative
+arc error over its interior knots was also tried, using the traced source end
+arc as an oracle. This endpoint-only correction made the trees `38/22/28`,
+with first differences at nodes `18/11/6`; it did not recover the source
+`40/20/30` trees. A total-length scale therefore does not explain the interior
+drift. The temporary replay branch was removed. Further work must locate local
+arc offsets around the divergence knots rather than tune only the final length.
+
 The production-lane arc audit compares straight accumulation over the four
 Typst samples per segment with a MetaPost-fixed cubic fitted from the quarter
 samples. The cubic fit reduces mean absolute 16.16 arc error from
