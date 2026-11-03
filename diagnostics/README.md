@@ -741,9 +741,17 @@ Fresh paired traces confirm that recursive q splitting itself is exact:
 `audit_m11_coast_q_children.py` checks all 28 recursive cuts on mass 2 and all
 15 on mass 4. Every child endpoint matches the parent fixed-point cubic at
 the recorded cut, and every child knot sequence matches the expected split.
-The remaining divergence therefore precedes child construction, in the
-initial projected path/q template and near-endpoint intersection decisions.
-Pair those inputs before changing recursive split code.
+Latitude globe coast brushes now build their initial q template from the
+callback widths at source path times, round those widths to 16.16, and pass
+the template through the fixed-point intersection solver. Against the same
+code with this q template disabled, mass 4 improves from 4/5 to 30/31 paired
+recursion decisions; mass 2's first branch endpoint residual falls from
+0.48721 to 0.00280 mm, though its paired decision count remains 21/27. The
+600 ppi M11 render improves slightly: whole RMSE `0.11289888 → 0.11289642`,
+globe RMSE `0.18989648 → 0.18988674`, and knot RMSE is unchanged at
+`0.05823034`. Keep the source q path enabled. Coast RNG calls remain 52
+versus 27 source calls, so per-mass random-call alignment and the remaining
+mass-2 decisions still need work.
 Mass 4 has 31 source nodes and five
 Typst nodes, with four of five paired decisions agreeing. The current trace
 also logs each source normal and its lightness. For source mass 4's first

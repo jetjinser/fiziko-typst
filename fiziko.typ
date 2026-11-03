@@ -1460,7 +1460,8 @@
                 _random-stream: none, _rng-offset: 0, _with-rng: false,
                 _source-rounding: false, _with-stats: false,
                 _trace-nodes: false, _path-time: false,
-                _param-times: none, _param-end: none) = {
+                _param-times: none, _param-end: none,
+                _source-width-fixed: none) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1479,7 +1480,8 @@
     random-stream: _random-stream, rng-offset: _rng-offset,
     with-rng: _with-rng, with-stats: _with-stats,
     trace-nodes: _trace-nodes, source-rounding: _source-rounding,
-    param-times: _param-times, param-end: _param-end)
+    param-times: _param-times, param-end: _param-end,
+    source-width-fixed: _source-width-fixed)
   let drawing = place(top + left,
     _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
   if _with-stats {
@@ -4390,13 +4392,43 @@
         let lightness = calc.clamp(1 - lam, 0.0, 1.0)
         _source-min-stroke * (2 / 3 + lightness / 3)
       }
+      let source-width-fixed = {
+        let times = coast-param-times.at(i)
+        let start-time = times.first()
+        let end-time = coast-param-ends.at(i)
+        let count = int(calc.round(end-time - start-time))
+        range(count + 1).map(offset => {
+          let source-time = start-time + offset
+          let segment = if source-time >= times.last() {
+            path.len() - 1
+          } else {
+            range(path.len() - 1).find(j =>
+              times.at(j) <= source-time and source-time <= times.at(j + 1))
+          }
+          let segment = if segment == none { path.len() - 1 } else { segment }
+          let segment-end = if segment + 1 < path.len() {
+            times.at(segment + 1)
+          } else { end-time }
+          let span = segment-end - times.at(segment)
+          let fraction = if span > 0 {
+            calc.clamp((source-time - times.at(segment)) / span, 0.0, 1.0)
+          } else { 0.0 }
+          let t = if segment + 1 < path.len() {
+            fractions.at(segment) + fraction * (fractions.at(segment + 1) - fractions.at(segment))
+          } else {
+            fractions.at(segment) + fraction * (1 - fractions.at(segment))
+          }
+          int(calc.round(width(t) / _mp-unit * 65536))
+        })
+      }
       let result = stroke-ink(path, width, closed: true, per: 0,
         min-w: _source-min-stroke, period: _source-dash-length,
         seed: seed + i * 104729,
         _with-rng: _trace-coasts, _with-stats: _trace-coasts,
-        _trace-nodes: _trace-coasts, _source-rounding: false,
+        _trace-nodes: _trace-coasts, _source-rounding: true,
         _param-times: coast-param-times.at(i),
-        _param-end: coast-param-ends.at(i))
+        _param-end: coast-param-ends.at(i),
+        _source-width-fixed: source-width-fixed)
       if _trace-coasts {
         let trace-samples = range(result.at(3).times.len()).map(j => (
           arc: result.at(3).times.at(j) * result.at(2).nodes.at(0).length,
