@@ -79,6 +79,13 @@ made raster improvements. The first two have the strongest bounded replay
 oracles; continue with the smallest isolated case, preserve paired baseline
 metrics, and record a rejected candidate when the production gate fails.
 
+The latest M11 callback-time integration attempt used sampled lane/shadow
+polygon intersections inside `_tube-layout`; despite bounding-box rejection,
+the 600 ppi M11 run produced no PDF within 85 seconds. That production edit was
+removed without image claims. Keep the inverse path-time map, but compute
+shadow intersections with a spatial index or shared source-order events before
+retrying the renderer integration.
+
 ### Accepted wood width-template alignment
 
 The source-field `contour-brush: "cell-range"` path now passes explicit

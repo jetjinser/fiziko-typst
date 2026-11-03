@@ -1450,6 +1450,15 @@ the callback clock introduced by lane splices. This ports the path-time
 structure only; it does not yet replace the connector geometry or alter
 production `strand-knot` rendering.
 
+A production experiment then generated those maps by intersecting every
+sampled tube lane with every shifted shadow-polygon edge inside `_tube-layout`
+and fed the mapped normals to the source-width callback. Even with segment
+and edge bounding-box rejection, the M11 600 ppi comparison produced no PDF
+within 85 seconds. The production edit was removed before recording any image
+claim. The inverse map is still useful; the all-pairs geometry scan is not an
+acceptable renderer path. A production retry needs spatially indexed shadow
+edges or source-order intersection events computed once and shared by lanes.
+
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
 `maxShadingStrokeWidth * lightness`; the extractor converts it to millimetres
