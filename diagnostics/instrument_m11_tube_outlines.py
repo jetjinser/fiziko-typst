@@ -272,6 +272,13 @@ enddef;''')
                 & decimal(traceCurrentK) & " " & decimal(i) & " "
                 & decimal(w2/mm) & " " & decimal(t);
             if (t >= 0) and (t <= length(p)):
+                message "M11TCUTQ " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(i) & " "
+                    & decimal(xpart(point t of bt)/mm) & " "
+                    & decimal(ypart(point t of bt)/mm) & " "
+                    & decimal(w2/mm) & " "
+                    & decimal(xpart(urcorner(bt))/mm) & " "
+                    & decimal(xpart(ulcorner(bt))/mm);
                 message "M11TCUTFIX " & decimal(traceTubeCall) & " "
                     & decimal(traceCurrentK) & " " & decimal(i) & " "
                     & decimal(floor(t*256)) & " "

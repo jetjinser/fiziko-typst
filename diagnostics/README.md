@@ -1789,6 +1789,20 @@ field is diagnostic-only; no production shading or geometry changed. Keep the
 local q x-knots and ray bounds under investigation before attempting a global
 arc correction.
 
+The source instrumenter also emits `M11TCUTQ` at the chosen thin-brush cut:
+the evaluated q point, target width, and q bounding-box x limits. On source
+calls 4/lane 2 and 5/lane 2, the decisive cut lies about `0.00006 mm` above
+the target width and about `0.0059 mm` before the q curve's right x bound.
+At those same recursive nodes, source and generated q controls have identical
+y coordinates, while the generated x coordinates differ by 41–58 and 45–62
+16.16 units. Increasing packet-search tolerance steps through 6, 12, 24, and
+48 did not change the generated trees (38/20/28 nodes, versus source 40/20/30)
+or call counts (16/6/14). This rejects a tolerance-only correction. The next
+probe should compare the source and generated q x parameterization at the
+interior cut, including its local derivative, before changing production
+geometry; the source cut point is near the width threshold, not the curve
+endpoint.
+
 Rounding `param-at` results onto the source 16.16 path-time grid also left the
 same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
 whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
