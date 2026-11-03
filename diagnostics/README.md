@@ -737,6 +737,13 @@ rasters; do not encode the sweep values as a coast-specific correction.
 MetaPost's 2.11 source uses recursive cubic bisection and falls back to its
 best approximate pair after 5000 unsuccessful backtracks
 ([pinned-version source](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L15053-L15102)).
+Fresh paired traces confirm that recursive q splitting itself is exact:
+`audit_m11_coast_q_children.py` checks all 28 recursive cuts on mass 2 and all
+15 on mass 4. Every child endpoint matches the parent fixed-point cubic at
+the recorded cut, and every child knot sequence matches the expected split.
+The remaining divergence therefore precedes child construction, in the
+initial projected path/q template and near-endpoint intersection decisions.
+Pair those inputs before changing recursive split code.
 Mass 4 has 31 source nodes and five
 Typst nodes, with four of five paired decisions agreeing. The current trace
 also logs each source normal and its lightness. For source mass 4's first
