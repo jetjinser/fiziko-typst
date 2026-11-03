@@ -916,6 +916,15 @@ two-call deficit to the seam's recursive path geometry/parameterization, rather
 than a missing coast-level RNG call. The hook is gated by `traceCoastWidth`,
 so it adds records only during the instrumented M11 coast stage.
 
+Increasing only the geographic input densification (`coast-step: 1` instead
+of `0`) does not repair this seam. On mass 1 it changes the thin tree from 15
+to 21 nodes, leaves 14/15 paired decisions agreeing, and increases root
+endpoint error from 0.37242 to 0.36701 mm only marginally. The extra samples
+change other source path-time intervals as well, so this candidate was
+discarded without a render trial. Keep `coast-step: 0` for source-parity work;
+the remaining issue is local recursive parameterization, not insufficient
+geographic sampling density.
+
 To capture these records, run `instrument_brush.py` before
 `instrument_m11_coasts.py` as in the coast recursion command above, then
 inspect `S101-DASHPATH` and `S101-DASH` records between
