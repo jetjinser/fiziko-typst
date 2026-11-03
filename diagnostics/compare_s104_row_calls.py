@@ -4,6 +4,7 @@
 Usage: compare_s104_row_calls.py META_POST_LOG TYPST_ROW_TRACE.json
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -50,17 +51,27 @@ def source_rows(path: Path):
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        raise SystemExit(__doc__)
-    source = source_rows(Path(sys.argv[1]))
-    typst_doc = json.loads(Path(sys.argv[2]).read_text())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source_log", type=Path)
+    parser.add_argument("typst_trace", type=Path)
+    parser.add_argument(
+        "--generated-q",
+        action="store_true",
+        help="use width-q-calls from the trace instead of baseline rng-used",
+    )
+    args = parser.parse_args()
+    source = source_rows(args.source_log)
+    typst_doc = json.loads(args.typst_trace.read_text())
     typst = typst_doc["rows"]
     if len(source) != len(typst):
         raise ValueError(f"row count differs: source {len(source)}, Typst {len(typst)}")
 
     paired = []
     for index, (src, out) in enumerate(zip(source, typst), 1):
-        typst_calls = round(out["rng-used"]) + 1  # one subdivision draw per row
+        call_field = "width-q-calls" if args.generated_q else "rng-used"
+        if out[call_field] is None:
+            raise ValueError(f"Typst row {out['row']} has no {call_field} value")
+        typst_calls = round(out[call_field]) + 1  # one subdivision draw per row
         length_error = src["length"] * BP_TO_MM - out["length"]
         paired.append((
             index,
@@ -72,22 +83,29 @@ def main() -> int:
 
     exact = sum(src["calls"] == calls for _, src, _, calls, _ in paired)
     l1 = sum(abs(src["calls"] - calls) for _, src, _, calls, _ in paired)
+    label = "generated-q " if args.generated_q else "baseline "
     print(
-        f"paired rows: {len(paired)}; exact call rows: {exact}; "
+        f"{label}paired rows: {len(paired)}; exact call rows: {exact}; "
         f"call-count L1: {l1}; source/Typst total calls: "
         f"{sum(src['calls'] for src in source)}/"
         f"{sum(calls for _, _, _, calls, _ in paired)}"
     )
     mismatches = [item for item in paired if item[1]["calls"] != item[3]]
     for index, src, out, calls, length_error in mismatches[:12]:
+        if args.generated_q:
+            nodes = out["width-q-nodes"]
+            outer = sum(node["stage"] == "outer" for node in nodes)
+            thin = sum(node["stage"] == "thin" for node in nodes)
+            dashes = int(out["width-q-dashes"])
+        else:
+            outer, thin, dashes = out["outer"], out["thin"], int(out["dash-calls"])
         print(
             f"row {index}: source y={src['row']:.5f}, Typst row={out['row']}; "
             f"length delta={length_error:+.6f} mm; calls "
             f"{src['calls']}/{calls}; subdivisions "
             f"{src['requested_subdivisions']}/{out['requested-subdivisions']} "
             f"(path segments {src['path_segments']}/{out['subdivisions']}); "
-            f"Typst outer/thin/dashes "
-            f"{out['outer']}/{out['thin']}/{int(out['dash-calls'])}"
+            f"Typst outer/thin/dashes {outer}/{thin}/{dashes}"
         )
     return 0
 

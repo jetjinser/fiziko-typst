@@ -102,13 +102,11 @@
   }
   let typst-width-fixed = widths.map(width =>
     int(calc.round(width / _mp-unit * 65536)))
-  let width-q-ink = if segment.at(2) == 93 {
-    _ink-loops(frames, widths, false, _source-min-stroke,
-      _source-dash-length, random-stream: stream, rng-offset: cursor,
-      dash-extra: 0.01 * _mp-unit, dash-cap: 1,
-      with-rng: true, with-stats: true, trace-nodes: true,
-      source-rounding: true, source-width-fixed: typst-width-fixed)
-  } else { none }
+  let width-q-ink = _ink-loops(frames, widths, false, _source-min-stroke,
+    _source-dash-length, random-stream: stream, rng-offset: cursor,
+    dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+    with-rng: true, with-stats: true, trace-nodes: true,
+    source-rounding: true, source-width-fixed: typst-width-fixed)
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),

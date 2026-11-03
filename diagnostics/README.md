@@ -2766,6 +2766,22 @@ nix develop path:./nix --command python diagnostics/compare_s104_row_calls.py \
   /tmp/s104-fresh/trace.log /tmp/s104-fresh/typst-row-trace-current.json
 ```
 
+The row trace can also evaluate generated 16.16 q knots on every row. Passing
+those width knots makes row 93's call count exact, but the first mismatch moves
+six rows earlier to source `-11.76086` / Typst row 99, where calls change from
+17/13. The all-row candidate still has only 108/142 exact call rows; L1 changes
+by just `332 → 330`, and the Typst total remains above source at `1538/1516`.
+Its generated trees also over-split several later rows (for example, source
+row `0.79654` / Typst row 85 has 21 outer and 35 thin nodes). Do not enable
+generated q knots globally; the row-93 match requires source q state, not just
+width samples. Compare the candidate with:
+
+```sh
+nix develop path:./nix --command python diagnostics/compare_s104_row_calls.py \
+  /tmp/s104-fresh/trace.log \
+  /tmp/s104-fresh/typst-row-trace-width-q-all.json --generated-q
+```
+
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node
 172's cut to x=39.537 mm, within 0.0017 mm of the source's x=39.539 mm, and
