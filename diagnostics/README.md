@@ -1653,9 +1653,18 @@ quarter-fit q trees remain 38/20/28 versus source 40/20/30; a residual-weighted
 per-segment fit recovers the latter two lanes but not call 4/lane 2. Doubling
 the dense subdivisions again did not further reduce point residuals and
 changed the third tree to 34 nodes. This is a geometry improvement in the
-diagnostic, not a production or raster result. The next step is to test dense
-offset-lane sampling in the production layout, then gate it on all three
-recursion trees and paired M11/M4/M6 renders.
+diagnostic, not by itself a production result. A temporary production trial
+and its image gate follow.
+
+A temporary `lane-subdivisions: 4` production option sampled each M11 inner
+offset directly at the same four intermediate positions and rendered at 600
+ppi. Against the paired baseline, whole-plate RMSE changed from
+`0.11291172` to `0.11290663`, globe crop from `0.18994728` to `0.18989648`,
+but knot crop regressed from `0.05823034` to `0.05831953`. The small full-page
+gain does not compensate for the knot crop regression; the production option
+and M11 setting were removed. Keep only the diagnostic dense path. Any future
+production geometry change must pass the knot and globe crop gates, not only
+whole-page RMSE.
 
 Generate and replay the diagnostic dense lane samples with:
 
