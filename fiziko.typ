@@ -1012,12 +1012,24 @@
       } else { none }
       // thinBrushGenerate only attempts a width cut when its upper corner
       // exceeds the dash floor by the source's 0.01 bp guard.
-      let recurse = hi > dash-floor and hi - lo >= step and depth < 15 and split != none
+      let width-span-ok = if source-rounding and qcurves != none {
+        let lo-fixed = int(calc.round(lo / _mp-unit * 65536))
+        let hi-fixed = int(calc.round(hi / _mp-unit * 65536))
+        let step-fixed = int(calc.round(thin-step / _mp-unit * 65536))
+        hi-fixed - lo-fixed >= step-fixed
+      } else { hi - lo >= step }
+      let recurse = hi > dash-floor and width-span-ok and depth < 15 and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
           width-start: width-index(path.first()),
           width-end: width-index(path.last()),
           target: target, width-base: base, width-step: thin-step, length: total,
+          width-span-ok: width-span-ok,
+          width-span-fixed: if qcurves == none { none } else {
+            (int(calc.round(hi / _mp-unit * 65536))
+              - int(calc.round(lo / _mp-unit * 65536)),
+              int(calc.round(thin-step / _mp-unit * 65536)))
+          },
           path-start: frame-index(path.first()).at(0),
           path-end: frame-index(path.last()).at(0),
           cut-point: if candidate == none { none } else { candidate.at(8) },

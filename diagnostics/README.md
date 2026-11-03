@@ -2640,6 +2640,19 @@ farther from source and was discarded. Width samples alone are insufficient:
 the row's source scanline schedule, q-curve controls and recursive path-time
 mapping must be carried together.
 
+That trial preceded the fixed-point q-width span gate in `_ink-loops`. With
+the span compared in integer 16.16 units, repeating the same production-width
+q-knot injection gives 19 thin nodes and 5 dash leaves on row 93; all 19
+source thin-node endpoints are within 0.00054 mm, and all recurse/stop and
+dash decisions match. The source exact q-curve replay and generated-width
+replay both cut the critical branch at q time `1.5001678467`; the following
+node's 544-unit span equals its 544-unit step and now correctly recurses.
+Despite that exact row tree, injecting generated q knots into production
+regresses 600 ppi S104 whole/hatch RMSE from `0.20703985/0.07534579` to
+`0.20743547/0.07745702`. The renderer injection was reverted; keep the
+diagnostic as a local recursion oracle while resolving page-wide scanline and
+q-template mapping.
+
 Run the endpoint probe with the project toolchain:
 
 ```sh

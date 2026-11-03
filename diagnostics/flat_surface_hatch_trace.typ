@@ -63,6 +63,52 @@
       with-rng: true, with-stats: true, trace-nodes: true,
       source-rounding: true, width-by-arc: true)
   } else { none }
+  // Exact 16.16 source q cubics captured from S104 row-93 outer node 278.
+  // The four q segments map to this row's four sampled line segments.
+  let source-q-curves-fixed = if segment.at(2) == 93 {
+    (
+      (
+        (0, 108 * 256 + 209),
+        (2992 * 256 + 234, 86 * 256 + 1),
+        (5985 * 256 + 212, 63 * 256 + 49),
+        (8978 * 256 + 190, 40 * 256 + 97),
+      ),
+      (
+        (8978 * 256 + 190, 40 * 256 + 97),
+        (11971 * 256 + 167, 40 * 256 + 97),
+        (14964 * 256 + 144, 40 * 256 + 96),
+        (17957 * 256 + 121, 40 * 256 + 96),
+      ),
+      (
+        (17957 * 256 + 121, 40 * 256 + 96),
+        (20950 * 256 + 99, 63 * 256 + 4),
+        (23943 * 256 + 77, 85 * 256 + 169),
+        (26936 * 256 + 55, 108 * 256 + 77),
+      ),
+      (
+        (26936 * 256 + 55, 108 * 256 + 77),
+        (26936 * 256 + 90, 108 * 256 + 121),
+        (26936 * 256 + 126, 108 * 256 + 165),
+        (26936 * 256 + 161, 108 * 256 + 209),
+      ),
+    )
+  } else { none }
+  let source-q-ink = if source-q-curves-fixed == none { none } else {
+    _ink-loops(frames, widths, false, _source-min-stroke,
+      _source-dash-length, random-stream: stream, rng-offset: cursor,
+      dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+      with-rng: true, with-stats: true, trace-nodes: true,
+      source-rounding: true, source-q-curves-fixed: source-q-curves-fixed)
+  }
+  let typst-width-fixed = widths.map(width =>
+    int(calc.round(width / _mp-unit * 65536)))
+  let width-q-ink = if segment.at(2) == 93 {
+    _ink-loops(frames, widths, false, _source-min-stroke,
+      _source-dash-length, random-stream: stream, rng-offset: cursor,
+      dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+      with-rng: true, with-stats: true, trace-nodes: true,
+      source-rounding: true, source-width-fixed: typst-width-fixed)
+  } else { none }
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
@@ -76,6 +122,12 @@
     rng-used: ink.at(1), nodes: ink.at(2).nodes,
     arc-width-nodes: if arc-width-ink == none { () } else { arc-width-ink.at(2).nodes },
     arc-width-calls: if arc-width-ink == none { none } else { arc-width-ink.at(1) },
+    source-q-nodes: if source-q-ink == none { () } else { source-q-ink.at(2).nodes },
+    source-q-calls: if source-q-ink == none { none } else { source-q-ink.at(1) },
+    source-q-dashes: if source-q-ink == none { none } else { source-q-ink.at(2).dashes },
+    width-q-nodes: if width-q-ink == none { () } else { width-q-ink.at(2).nodes },
+    width-q-calls: if width-q-ink == none { none } else { width-q-ink.at(1) },
+    width-q-dashes: if width-q-ink == none { none } else { width-q-ink.at(2).dashes },
   ))
   cursor += ink.at(1)
 }
