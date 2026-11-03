@@ -2610,6 +2610,15 @@ to 422. At 600 ppi, whole/hatch RMSE regressed from 0.207029/0.075285 to
 S104 task is to carry row scheduling, recursive center-path parameterization,
 and q controls together, then pass both tree and image gates.
 
+A further diagnostic supplied each subdivided Typst vertex width to
+`_ink-loops` as a source-rounded 16.16 q-template knot, letting it rebuild q
+abscissae from the row's polyline arc. On the Typst row paired to source row
+93, this changes the thin tree from 10 nodes/9 dash leaves to 5/3; the source
+has 19 nodes/5 dash leaves. The q-knot injection therefore moves the tree
+farther from source and was discarded. Width samples alone are insufficient:
+the row's source scanline schedule, q-curve controls and recursive path-time
+mapping must be carried together.
+
 Run the endpoint probe with the project toolchain:
 
 ```sh
