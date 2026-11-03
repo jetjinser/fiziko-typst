@@ -1764,6 +1764,19 @@ nix develop path:./nix --command typst eval \
   > build/m11-production-arc-check.json
 ```
 
+The source q abscissae themselves agree exactly with the pinned 16.16
+MetaPost arc-length port on all three lanes (zero fixed-unit mismatch). The
+remaining source-versus-production arc deltas therefore come from the
+reconstructed production cubics: segment errors change sign, ranging from
+`-22` to `+24` units on call `4/2`, `-26` to `+18` on `4/6`, and `-22` to
+`+24` on `5/2`. Their cumulative endpoint deltas are `-42`, `-35`, and `-43`
+units, with intermediate absolute maxima of 58, 49, and 62. This rules out a
+constant whole-path scale correction. On calls `4/2` and `5/2`, the tree
+diverges at the final thin decision, where a compared width endpoint is within
+`0.00001 mm` of the recursion threshold. A useful next probe must
+localize post-shadow arc errors around those leaves; source q-knot injection
+is not a production fix because its prior full-plate comparison regressed.
+
 Rounding `param-at` results onto the source 16.16 path-time grid also left the
 same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
 whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
