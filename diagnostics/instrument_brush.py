@@ -22,6 +22,14 @@ def main() -> None:
     source = Path(sys.argv[1]).read_text()
     source = replace_once(
         source,
+        "vardef thinBrushPattern (expr w, l) =\n"
+        "    save d;",
+        "vardef thinBrushPattern (expr w, l) =\n"
+        '    message "S101-DASH " & decimal(w) & " " & decimal(l);\n'
+        "    save d;",
+    )
+    source = replace_once(
+        source,
         "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"
         "    returnValue\nenddef;\n\nvardef lightnessPP",
         "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"

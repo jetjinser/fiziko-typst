@@ -677,25 +677,28 @@ fixture, source versus Typst counts are:
 
 | Landmass | Source RNG calls | Source recursion nodes | Typst RNG calls | Typst recursion nodes | Typst thin leaves |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 6 | 15 | 10 | 11 | 6 |
-| 2 | 15 | 57 | 30 | 29 | 15 |
+| 1 | 12 | 15 | 10 | 15 | 8 |
+| 2 | 30 | 57 | 30 | 29 | 15 |
 | 3 (empty) | 0 | 1 | — | — | — |
-| 4 | 3 | 31 | 6 | 5 | 3 |
-| 5 | 1 | 1 | 2 | 1 | 1 |
+| 4 | 6 | 31 | 6 | 33 | 17 |
+| 5 | 2 | 1 | 2 | 2 | 1 |
 | 6 (empty) | 0 | 1 | — | — | — |
-| 7 | 1 | 1 | 2 | 1 | 1 |
-| 8 | 1 | 1 | 2 | 1 | 1 |
+| 7 | 2 | 1 | 2 | 2 | 1 |
+| 8 | 2 | 1 | 2 | 2 | 1 |
 
-The source trace counts all `uniformdeviate` calls inside each coast brush;
-Typst's RNG cursor counts modeled dash draws. The six visible coast paths total
-27 source calls versus 52 Typst calls; source fallback paths 3 and 6 are empty,
-so Typst omits them. The earlier 106-versus-27 node summary compared source
-recursion nodes to Typst thin leaves. Counting the Typst `nodes` arrays gives
-106 source recursion nodes and 48 Typst recursion nodes across the six visible
-masses. `compare_m11_coast_brush.py` pairs nodes by parent and endpoint after
+The corrected source trace counts all `uniformdeviate` calls inside each coast
+brush; Typst's RNG cursor counts two values per dash pattern. The original
+source regex missed `1/2uniformdeviate(d1)` because a digit before the function
+name defeats a word-boundary match. After correcting it, the six visible paths
+total 54 source calls versus 52 Typst calls; five mass vectors match exactly,
+and mass 1 has one additional source dash (two calls). Source fallback paths 3
+and 6 are empty, so Typst omits them. The earlier 106-versus-27 node summary
+compared source recursion nodes to Typst dash leaves. Counting thin-stage
+nodes gives 106 source recursion nodes and 80 Typst recursion nodes across the
+six visible masses. `compare_m11_coast_brush.py` pairs nodes by parent and endpoint after
 converting source bp to the Typst `(19,22)` mm globe frame. Across the six
-trees it pairs 46 nodes; 37/46 recurse/stop decisions agree, and 22 pairs are
-within 0.1 mm. Mass 2 accounts for the largest tree (57 source nodes, 29
+trees it pairs 76 nodes; 69/76 recurse/stop decisions agree, and 66 pairs are
+within 0.1 mm. Mass 2 accounts for the largest source tree (57 nodes, 29
 Typst nodes): its first paired divergence is at depth 5. Source selects a
 width cut at q time 3.95935, leaving 32.374/0.160 mm children; Typst finds no
 cut for the corresponding node. The logged source q endpoint and cut level
@@ -750,8 +753,9 @@ recursion decisions; mass 2's first branch endpoint residual falls from
 600 ppi M11 render improves slightly: whole RMSE `0.11289888 → 0.11289642`,
 globe RMSE `0.18989648 → 0.18988674`, and knot RMSE is unchanged at
 `0.05823034`. Keep the source q path enabled. Coast RNG calls remain 52
-versus 27 source calls, so per-mass random-call alignment and the remaining
-mass-2 decisions still need work.
+versus 54 source calls; masses 2 and 4 now have exact call vectors. The
+remaining call difference is one mass-1 dash pattern, alongside the remaining
+mass-2 recursion decisions.
 Mass 4 has 31 source nodes and five
 Typst nodes, with four of five paired decisions agreeing. The current trace
 also logs each source normal and its lightness. For source mass 4's first

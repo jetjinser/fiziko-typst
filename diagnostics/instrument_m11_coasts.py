@@ -55,7 +55,11 @@ def main() -> None:
         + '            message "M11-COAST-END " & decimal(i);\n',
         "coast brush",
     )
-    source = re.sub(r"\buniformdeviate\s*\(", "traceUniformdeviate(", source)
+    # MetaPost allows implicit multiplication before a function name, as in
+    # `1/2uniformdeviate(d1)`. A word boundary misses that call because the
+    # preceding `2` and the `u` are both word characters.
+    source = re.sub(r"(?<![A-Za-z_])uniformdeviate\s*\(",
+                    "traceUniformdeviate(", source)
     source += """
 
 numeric traceCoastRng;
