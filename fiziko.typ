@@ -197,6 +197,19 @@
   let interval = segments.at(i)
   interval.at(0) + (interval.at(1) - interval.at(0)) * f
 }
+#let _source-path-time-inverse(segments, source-time) = {
+  for (i, interval) in segments.enumerate() {
+    let lo = calc.min(interval.at(0), interval.at(1))
+    let hi = calc.max(interval.at(0), interval.at(1))
+    if source-time >= lo - 1e-9 and source-time <= hi + 1e-9 {
+      let span = interval.at(1) - interval.at(0)
+      return if calc.abs(span) > 1e-12 {
+        i + (source-time - interval.at(0)) / span
+      } else { float(i) }
+    }
+  }
+  none
+}
 #let _source-path-time-splice(segments, cut-time, half-gap: 0.05) = {
   let start-time = cut-time - half-gap
   let end-time = cut-time + half-gap

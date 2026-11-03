@@ -1441,8 +1441,14 @@ nix develop path:./nix --command typst eval \
 ```
 
 The Typst replay matches 60/60 post-cut lengths and 27/27 terminal lengths.
-This ports the path-time structure only; it does not yet replace the connector
-geometry or alter production `strand-knot` rendering.
+The new inverse `_source-path-time-inverse` maps an original geometric path
+time back to its post-cut callback time. Sampling each of the 27 reconstructed
+lanes at 1/8-unit intervals gives 6,939/6,939 exact round trips through the
+forward and inverse maps (maximum error `1.8e-15`). Combined with the angle
+trace, this supplies the mapping needed to evaluate the uncut centerline at
+the callback clock introduced by lane splices. This ports the path-time
+structure only; it does not yet replace the connector geometry or alter
+production `strand-knot` rendering.
 
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of

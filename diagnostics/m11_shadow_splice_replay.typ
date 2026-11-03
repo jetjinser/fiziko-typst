@@ -1,5 +1,5 @@
 // Replay all source-traced M11 shadowCut path-time interval splices.
-#import "../fiziko.typ": _source-path-time-at, _source-path-time-splice
+#import "../fiziko.typ": _source-path-time-at, _source-path-time-inverse, _source-path-time-splice
 #import "../build/m11-shadow-splice-cases.typ": m11-shadow-cases
 
 #let source-path(length) = range(length).map(i => (float(i), float(i + 1)))
@@ -7,6 +7,9 @@
 #let matched-cuts = 0
 #let terminal-checks = 0
 #let matched-terminals = 0
+#let inverse-checks = 0
+#let inverse-matches = 0
+#let max-inverse-error = 0.0
 #for case in m11-shadow-cases {
   let segments = source-path(case.initial)
   for splice in case.splices {
@@ -16,6 +19,17 @@
   }
   terminal-checks += 1
   if segments.len() == case.terminal { matched-terminals += 1 }
+  for sample in range(case.initial * 8 + 1) {
+    let source-time = sample / 8
+    let callback-time = _source-path-time-inverse(segments, source-time)
+    inverse-checks += 1
+    if callback-time != none {
+      let recovered = _source-path-time-at(segments, callback-time)
+      let error = calc.abs(recovered - source-time)
+      max-inverse-error = calc.max(max-inverse-error, error)
+      if error < 1e-8 { inverse-matches += 1 }
+    }
+  }
 }
 
 #let call4-lane2 = m11-shadow-cases.find(case => case.call == 4 and case.lane == 2)
@@ -28,6 +42,9 @@
   matched-cuts: matched-cuts,
   terminal-checks: terminal-checks,
   matched-terminals: matched-terminals,
+  inverse-checks: inverse-checks,
+  inverse-matches: inverse-matches,
+  max-inverse-error: max-inverse-error,
   call4-lane2-recovered-time: recovered-time,
 )
 #metadata(replay) <m11-shadow-splice-replay>
