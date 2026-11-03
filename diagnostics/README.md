@@ -906,6 +906,21 @@ Typst reports no crossing. See the M11 coast item in
 [`comparisons/fidelity-plan.md`](../comparisons/fidelity-plan.md) for the
 measured pairing and rejected production trial.
 
+The dash-path hook now records source leaf endpoints as well as pattern width
+and length. On mass 1, the sixth source dash is a 1.68953 bp (0.59603 mm)
+leaf from approximately `(23.06729, 7.56214)` to `(23.20318, 7.62602)` mm.
+The nearby Typst seam has a 0.14086 mm dashed tail and 0.16866/0.22203 mm
+non-dashed leaves; their endpoints lie within about 0.03 mm of the source
+leaf, but their path lengths are distributed differently. This localizes the
+two-call deficit to the seam's recursive path geometry/parameterization, rather
+than a missing coast-level RNG call. The hook is gated by `traceCoastWidth`,
+so it adds records only during the instrumented M11 coast stage.
+
+To capture these records, run `instrument_brush.py` before
+`instrument_m11_coasts.py` as in the coast recursion command above, then
+inspect `S101-DASHPATH` and `S101-DASH` records between
+`M11-COAST-BEGIN 1` and `M11-COAST-END 1`.
+
 To compare one recursive source q-template node's knots with the original
 Typst coast samples, run:
 

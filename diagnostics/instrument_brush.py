@@ -30,6 +30,21 @@ def main() -> None:
     )
     source = replace_once(
         source,
+        "                    if (w2 < minStrokeWidth) and (arclength(p) > minLength):\n"
+        "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));",
+        "                    if (w2 < minStrokeWidth) and (arclength(p) > minLength):\n"
+        "                        if traceCoastWidth:\n"
+        '                            message "S101-DASHPATH " & decimal(i) & " "'
+        '                                & decimal(xpart(point 0 of p)) & " "'
+        '                                & decimal(ypart(point 0 of p)) & " "'
+        '                                & decimal(xpart(point length(p) of p)) & " "'
+        '                                & decimal(ypart(point length(p) of p)) & " "'
+        '                                & decimal(arclength(p));\n'
+        "                        fi;\n"
+        "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));",
+    )
+    source = replace_once(
+        source,
         "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"
         "    returnValue\nenddef;\n\nvardef lightnessPP",
         "    if invertedLight:\n\t\treturnValue := 1 - returnValue;\n\tfi;\n"
