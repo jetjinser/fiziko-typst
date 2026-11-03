@@ -1635,6 +1635,13 @@ with first differences at nodes `18/11/6`; it did not recover the source
 drift. The temporary replay branch was removed. Further work must locate local
 arc offsets around the divergence knots rather than tune only the final length.
 
+A 1%-step sweep of the quarter/fifth arc blend also found no coefficient that
+recovers all three trees at once. Exact-tree blend intervals were 10–12% and
+30–37% for call 4/lane 2, 0–50% for call 4/lane 6, and 17–25%, 51–75%, and
+84–100% for call 5/lane 2. Their intersection is empty. This rules out a
+single global blend as the correction; the best intervals vary by lane and
+the sweep branch was removed after measurement.
+
 The production-lane arc audit compares straight accumulation over the four
 Typst samples per segment with a MetaPost-fixed cubic fitted from the quarter
 samples. The cubic fit reduces mean absolute 16.16 arc error from
