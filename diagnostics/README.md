@@ -2554,6 +2554,24 @@ unchanged until recursive width-template controls are carried exactly and a
 full-row comparison improves both recursion decisions and the paired hatch
 image.
 
+`s104_node_172_q_replay.typ` is a focused trace-driven check of that missing
+state. It feeds the exact source 16.16 width q cubics and the matching three
+centerline segments from row `-6.37912`, node 172, into `_ink-loops`' existing
+q-state path. Typst selects q time `1.5001678467` and cuts at x `39.53915 mm`,
+matching the source's q time `1.50017` and x `39.539 mm` within 0.00016 mm.
+The following recursive left child also reaches q time `1.468994`, matching
+the source's logged `1.469` to the 16.16 grid. This verifies that exact q
+controls plus their one-to-one centerline segment map recover the troublesome
+local cuts. It does not show how to reconstruct that q state from the row's
+initial scanline samples, nor does it establish full-row tree or raster
+improvement. Run the fixture with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<s104-node-172-q-replay>).first().value' \
+  --in diagnostics/s104_node_172_q_replay.typ --root .
+```
+
 The source trace now also emits `S104-PCURVE` for the target row's recursive
 thin paths. At node 172, the path's page-space cubic is straight within each
 segment, but the node contains a short first segment, a long middle segment,
