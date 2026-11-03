@@ -1981,6 +1981,17 @@ A separate trial that reduced the dense Typst width profile to quarter-path-
 time knots and interpolated by lane arc also regressed the six-segment
 call-count agreement and was reverted.
 
+A refreshed source trace now includes the three `tubeAnglesToNormalVector`
+angles at each paired callback sample. For all six unshadowed call-1–3 lanes,
+the Typst circular angle and width-profile angle match within 0.0005°; the
+centerline direction differs by at most 0.021°. On shadow-cut calls 4–5, the
+centerline direction error rises to 11.0–16.8° mean and 83.6° maximum, while
+the circular and width-profile angles remain within 0.0005°. Call 6's mean
+centerline error is 7.63°. This isolates the remaining normal mismatch to the
+post-`shadowCut` centerline tangent and its connector pieces. Do not retune the
+cross-section or radius-slope lighting for these lanes; carry the source's
+post-cut path parameterization and tangent into the Typst lane model instead.
+
 - `figure12_*`, `instrument_metapost.py`, `instrument_recursion.py`, and
   `compare_latitudes.py`: latitude geometry and recursion traces.
 - `m4_*`, `m6_*`, `tube_longitudinal_nodes.typ`, and

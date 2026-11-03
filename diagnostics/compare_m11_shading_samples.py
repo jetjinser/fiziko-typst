@@ -30,6 +30,7 @@ def source_samples(path: Path):
     widths = {}
     samples = defaultdict(list)
     shadows = defaultdict(list)
+    angles = defaultdict(list)
     for line in path.read_text().splitlines():
         f = line.split()
         if not f:
@@ -58,11 +59,15 @@ def source_samples(path: Path):
                 "lightness": float(f[8]),
                 **width_inputs[key],
             })
+        elif tag == "M11ANGLE":
+            key = (int(f[1]), int(f[2]))
+            angles[key].append(tuple(map(float, f[3:6])))
         elif tag == "M11SHADOW":
             key = (int(f[1]), int(f[2]))
             shadows[key].append((float(f[3]), float(f[4])))
     for key, rows in samples.items():
-        for row in rows:
+        for index, row in enumerate(rows):
+            row["angles"] = angles[key][index]
             row["width"] = widths.get(((key[0], key[1]), row["time"]))
             residual = 1.0
             if row["width"] is not None and key[1] % 2 == 1:
@@ -95,6 +100,10 @@ def summarize(values):
     return (statistics.mean(errors), max(errors),
             statistics.mean(a for a, _ in values),
             statistics.mean(b for _, b in values))
+
+
+def angle_error(a, b):
+    return abs((a - b + math.pi) % (2 * math.pi) - math.pi)
 
 
 def y_flipped_lightness(normal, slope, u):
@@ -131,6 +140,9 @@ def main() -> None:
             "width": list(map(float, lane["widths"])),
             "lightness": current_light,
             "candidate_light": candidate_light,
+            "normal_x": [normal[0] for normal in lane["normals"]],
+            "normal_y": [normal[1] for normal in lane["normals"]],
+            "radius_slope": list(map(float, lane["radius-slopes"])),
         }
         paired = []
         shadow_count = 0
@@ -158,6 +170,18 @@ def main() -> None:
                         for _, row, values in paired]
         light_errors = [(row["lightness"], values["lightness"])
                         for _, row, values in paired]
+        angle_errors = [(
+            angle_error(row["angles"][0], math.asin(max(-1.0, min(1.0, lane["u"])))))
+            for _, row, _ in paired
+        ]
+        direction_errors = [(
+            angle_error(row["angles"][1], math.atan2(-values["normal_x"], values["normal_y"])))
+            for _, row, values in paired
+        ]
+        width_slope_errors = [
+            angle_error(row["angles"][2], math.atan(values["radius_slope"]))
+            for _, row, values in paired
+        ]
         mean_distance = statistics.mean(d for d, _, _ in paired)
         max_distance = max(d for d, _, _ in paired)
         wmae, wmax, ws, wt = summarize(width_errors)
@@ -169,7 +193,11 @@ def main() -> None:
             f"width={ws:.5f}/{wt:.5f}mm mae/max={wmae:.5f}/{wmax:.5f} "
             f"yflip+shadow={wc:.5f} mae/max={cmae:.5f}/{cmax:.5f} "
             f"shadow-samples={shadow_count} "
-            f"light={ls:.4f}/{lt:.4f} mae/max={lmae:.4f}/{lmax:.4f}"
+            f"light={ls:.4f}/{lt:.4f} mae/max={lmae:.4f}/{lmax:.4f} "
+            f"angle-mae/max-deg="
+            f"{math.degrees(statistics.mean(angle_errors)):.4f}/{math.degrees(max(angle_errors)):.4f},"
+            f"{math.degrees(statistics.mean(direction_errors)):.4f}/{math.degrees(max(direction_errors)):.4f},"
+            f"{math.degrees(statistics.mean(width_slope_errors)):.4f}/{math.degrees(max(width_slope_errors)):.4f}"
         )
 
 
