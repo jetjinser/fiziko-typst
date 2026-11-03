@@ -359,9 +359,11 @@ reversed 19-cell visit sequence. Its mean/max source-point distance is
 extension), while reversed per-cell ranges differ by `1.54e-5` mean and
 `4.92e-5` max. With the production-matched `per: 0` trace, the root cut point
 is `0.00383 mm` from source, but its path length is `14.5469 mm` versus
-`17.2809 mm` in source. The source records 37 outer nodes and 19 leaves;
-Typst records 11 outer nodes. The open wood gap is brush recursion and the
-boundary it draws, not cLine cell discovery.
+`17.2809 mm` in source. The source records 37 outer nodes and 19 leaves.
+Supplying source-rounded 16.16 width-template knots to the diagnostic brings
+the first Typst brush tree to 41 outer nodes; contour geometry and root length
+are unchanged. The open wood gap is brush recursion and the boundary it draws,
+not cLine cell discovery.
 
 The trace also follows `thinBrushGenerate` into its recursive thin branches
 and dash leaves. Set `per: 0` in `m9_contour_walk_trace.typ` to match the
@@ -370,17 +372,18 @@ segment into a Hobby curve and gives a different brush tree. The older 7/46
 node, 10-dash figures and their parent-pair metrics came from that incorrect
 default and are withdrawn. With the corrected production setting, the source
 has 66 thin-brush calls, 65 split/terminal nodes through depth 15, and 12 dash
-leaves. Typst has 48 thin nodes, 12 dash leaves and 24 RNG calls, exactly
-matching the source's 12 dashes/24 calls. The trace also records 11 Typst
-outer nodes against 37 source outer nodes. The first outer cut is 0.00383 mm
-from source. `WBTCALL` and `WBTHIN` carry call IDs, so
+leaves. With source-rounded 16.16 width-template knots, Typst has 50 thin
+nodes, 12 dash leaves and 24 RNG calls, exactly matching the source's dash
+and RNG totals; without those knots it had 48 thin nodes. `WBTCALL` and
+`WBTHIN` carry call IDs, so
 `compare_wood_contours.py` reconstructs both recursion forests, pairs their
 roots geometrically, then pairs each parent's children by endpoint error. The
-corrected parent-aware walk pairs 42 nodes; 34 pairs are within 0.1 mm and
-37/42 recurse/stop decisions agree. Five first divergences remain: the first
-two differ by only 0.0033 and 0.0025 mm at the endpoints, while three later
-pairs have 0.115–0.501 mm endpoint error. Source/Typst dash leaves pair 8/12
-times within 0.1 mm, with 0.0627 mm endpoint-distance MAE. These are
+no-knot parent-aware walk pairs 42 nodes, has 36 pairs within 0.1 mm and
+37/42 matching recurse/stop decisions. With source width knots it pairs 44
+nodes, has 37 within 0.1 mm and 40/44 matching decisions. The first two
+remaining divergences are still close (0.0032 and 0.0024 mm); two later
+pairs remain far apart (about 0.393 and 0.500 mm). Source/Typst dash leaves
+still pair 8/12 times within 0.1 mm. These are
 geometry-guided parent pairs, not proof of identical trees; the close branches
 narrow the source audit to width-level selection and endpoint/candidate
 validity without justifying a global threshold change.

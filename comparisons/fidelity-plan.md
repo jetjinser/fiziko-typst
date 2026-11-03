@@ -95,7 +95,12 @@ coverage moves slightly farther below the source, `3.7120% → 3.7069%` versus
 `4.2032%`. S105 whole-frame RMSE changes `0.10213793 → 0.10214082`, with its
 block crop unchanged and surface crop slightly worse (`0.07693635 →
 0.07694344`). Retain the source-semantic change as a small net image improvement
-with those tradeoffs recorded; source cLine recursion and random-call order
+with those tradeoffs recorded. The first-contour diagnostic also improves:
+Typst outer nodes move `7 → 41` against 37 source nodes; thin nodes move
+`48 → 50` against 65; parent-paired recurse/stop decisions improve from
+`37/42` to `40/44`, with close endpoint pairs (`<0.1 mm`) moving `36 → 37`.
+The aggregate first-contour dash/RNG totals remain an exact `12/24` match.
+Later branch geometry, other contour calls and their random-call ordering
 remain open.
 
 - [x] **MetaPost fixed-point brush-width interpolation.** With

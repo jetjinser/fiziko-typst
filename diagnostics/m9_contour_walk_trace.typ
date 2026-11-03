@@ -1,5 +1,5 @@
 // Typst's first M9 contour and the 1 mm cells crossed by each path segment.
-#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, _mp-scalar-rounded, stroke-ink
+#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, _mp-scalar-rounded, _mp-unit, stroke-ink
 #import "../contour.typ": marching-squares
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
@@ -86,11 +86,14 @@
 #let brush-path = paired-path.points.rev()
 #let width = _wood-source-width(field, 55, 33, 55, 33, brush-path,
   source-time: true)
+#let source-width-fixed = range(brush-path.len()).map(i =>
+  int(calc.round(width(float(i) / (brush-path.len() - 1))
+    / _mp-unit * 65536)))
 #let brush-trace = stroke-ink(brush-path, width, closed: false,
   per: 0,
   min-w: _source-min-stroke, period: _source-dash-length,
   _source-rounding: true, _with-stats: true, _trace-nodes: true,
-  _path-time: true)
+  _path-time: true, _source-width-fixed: source-width-fixed)
 #metadata((contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
   sample-values: sample-values,
