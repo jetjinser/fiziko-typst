@@ -1183,11 +1183,13 @@ nix develop path:./nix --command python3 diagnostics/compare_m11_knot_dashes.py 
 ```
 
 This resolves the lane-level phase-pairing discrepancy in the rounded
-diagnostic. It does not establish a production shading fix: the broader
-source-normal rendering candidate still regresses M11/M4/M6 and worsens the
-six-interval call distribution, so it remains reverted. Earlier pre-cubic
-traces attributed the apparent gaps to a 0.02009 rad tangent error; the
-retained `source-cubic-step: 4` model resolves that tangent discrepancy.
+diagnostic. The earlier broader source-normal trial was rejected because its
+comparison treated `M11WIDTHFIX` as the complete lane width. That trace records
+only `maxShadingStrokeWidth * lightness`; the source applies an additional
+residual multiplier on odd lanes. The all-lane comparison below includes that
+factor and supersedes the earlier call-distribution conclusion. Earlier
+pre-cubic traces attributed the apparent gaps to a 0.02009 rad tangent error;
+the retained `source-cubic-step: 4` model resolves that tangent discrepancy.
 The source cubic controls for both `currentTubePath` and k=6 `currentPath` (36
 segments each) remain available for exact sample pairing.
 
@@ -1214,9 +1216,10 @@ normal gives source-normal error 0.000055 mean and 0.000127 maximum; the old
 sign gives 0.573 mean and 0.983 maximum. Applying that correction only to
 `u=0.5` lanes moves this lane from 10 to 34 calls (source: 38), but across all
 six intervals raises total calls from 202 to 240 (source: 224) and worsens the
-per-interval distribution. The diagnostic-only lane scope was reverted; the
-normal evidence alone does not justify a production shade-law change while
-the existing global source-normal candidate regresses the raster.
+per-interval distribution. This diagnostic used the unadjusted `M11WIDTHFIX`
+value as the target on odd lanes. The source residual was not applied in that
+comparison, so its call totals do not measure the source width law. The
+all-lane residual-corrected trace below replaces that conclusion.
 
 ### M11 self-shadow geometry in tube lighting
 
@@ -1236,17 +1239,43 @@ nix develop path:./nix --command python diagnostics/compare_m11_shadow_polygons.
   /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace-shadow.json
 ```
 
-Production tube lighting now receives only higher-layer contours that
-intersect the current strand, matching the source's `intersectiontimes`
-precondition; its shadow depth is `1.5 * current segment width`. With the
-existing radial normal sign retained, the 600 ppi M11 knot RMSE changes from
-`0.05904` to `0.06347`; M4 is `0.05947` and M6 is `0.08949`. This is
-source-conforming shadow behavior, but it has not yet improved the M11 pixel
-metric. The paired lane-width diagnostic shows why a global normal-sign flip
-remains unresolved: it makes selected source callback widths nearly exact,
-but the combined full render raises knot RMSE to `0.07923`. Keep the normal
-sign unchanged while the remaining lane-width and brush-recursion differences
-are narrowed.
+Production tube lighting receives only higher-layer contours that intersect
+the current strand, matching the source's `intersectiontimes` precondition;
+its shadow depth is `1.5 * current segment width`. The all-lane diagnostic
+matches source call k to Typst inner lane `7-k` (and k=0/8 to the opposite
+edges). It applies the source odd-lane residual
+`abs(tubeWidth/bw1 - lineDensity/2) / bp` to `M11WIDTHFIX` before comparing
+effective widths, using source shadow labels that the polygon audit below
+reproduces at precision and recall `1.0`. With that correction,
+source-normal plus source-shadow candidate width MAE is `0.00000–0.00165 mm`
+by tube call, versus
+`0.01149–0.01545 mm` for the old normal. The production `strand-knot` tube
+renderer now uses the source radial normal sign and actual shadow contours.
+
+The full `tube()` replay with the shared MetaPost stream and source segment
+order gives per-call brush counts `14/54/54/42/38/16` (218 total) against
+source `14/58/54/42/38/18` (224 total), for per-call L1 error 6. The source
+order is strand 1 then strand 0 within each rank; `strand-knot` now uses that
+order when caching and painting layer segments. This ordering lowers the 600
+ppi M11 knot crop RMSE from `0.07923` to `0.07841` and whole-plate RMSE from
+`0.11503` to `0.11493`. M4 and M6 use standalone tube lighting and remain at
+`0.05947` and `0.08949`. The next gap is the remaining six brush calls, on
+source calls 2 and 6, plus their resulting dash placement.
+
+Generate the complete lane report with:
+
+```sh
+nix develop path:./nix --command typst query diagnostics/m11_knot_tube_trace.typ \
+  '<m11-knot-tube-trace>' --field value --root . \
+  > build/m11-knot-tube-trace-source-light.json
+nix develop path:./nix --command python diagnostics/compare_m11_all_shading_samples.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace-source-light.json
+nix develop path:./nix --command typst query diagnostics/m11_shared_rng_order_trace.typ \
+  '<m11-shared-rng-order>' --field value --root . \
+  > build/m11-shared-rng-order.json
+nix develop path:./nix --command python diagnostics/compare_m11_shared_rng_order.py \
+  /tmp/m11-q-audit/trace.log build/m11-shared-rng-order.json
+```
 
 ### M11 knot tube lanes and shared RNG
 

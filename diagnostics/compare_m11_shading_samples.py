@@ -26,6 +26,7 @@ PAIRS = {
 
 def source_samples(path: Path):
     callback = {}
+    width_inputs = {}
     widths = {}
     samples = defaultdict(list)
     shadows = defaultdict(list)
@@ -37,6 +38,12 @@ def source_samples(path: Path):
         if tag == "M11WIDTHINPUT":
             key = (int(f[1]), int(f[2]))
             callback[key] = float(f[4])
+            width_inputs[key] = {
+                "bw1": float(f[3]),
+                "max-width": float(f[5]),
+                "line-density": float(f[6]),
+                "tube-width": float(f[7]),
+            }
         elif tag == "M11WIDTHFIX":
             key = (int(f[1]), int(f[2]))
             time = float(f[3])
@@ -49,6 +56,7 @@ def source_samples(path: Path):
                 "point": (float(f[3]), float(f[4])),
                 "normal": tuple(map(float, f[5:8])),
                 "lightness": float(f[8]),
+                **width_inputs[key],
             })
         elif tag == "M11SHADOW":
             key = (int(f[1]), int(f[2]))
@@ -56,6 +64,12 @@ def source_samples(path: Path):
     for key, rows in samples.items():
         for row in rows:
             row["width"] = widths.get(((key[0], key[1]), row["time"]))
+            residual = 1.0
+            if row["width"] is not None and key[1] % 2 == 1:
+                residual = abs(row["tube-width"] / row["bw1"]
+                    - row["line-density"] / 2) / MM_PER_BP
+            row["effective-width"] = (
+                None if row["width"] is None else row["width"] * residual)
     return samples, shadows
 
 
@@ -134,13 +148,13 @@ def main() -> None:
             current = values["lightness"]
             candidate_width = (values["width"] * candidate_light / current
                                if current > 1e-9 else values["width"])
-            candidate_shadow_width.append((row["width"], candidate_width))
+            candidate_shadow_width.append((row["effective-width"], candidate_width))
             values["is_shadow"] = is_shadow
             paired.append((distance, row, values))
         if not paired:
             print(f"source={key} typst={pair}: no paired width/light samples")
             continue
-        width_errors = [(row["width"], values["width"])
+        width_errors = [(row["effective-width"], values["width"])
                         for _, row, values in paired]
         light_errors = [(row["lightness"], values["lightness"])
                         for _, row, values in paired]

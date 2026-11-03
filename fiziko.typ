@@ -2247,7 +2247,7 @@
                   max-w: _source-max-shading,
                   light: (-0.353553, 0.382683, 0.853553), gamma: 1.0,
                   shift: (0, 0), source-cubic-step: 0,
-                  shadow-planes: ()) = {
+                  radial-y-sign: -1, shadow-planes: ()) = {
   let src = pts.map(p => _add(p, shift))
   let fr = _frame(_prepare(src, per, closed), closed)
   let n = fr.len()
@@ -2349,7 +2349,7 @@
     // the cross-section normal rotates with the centerline tangent without
     // adding a separate bend-dependent axial correction.
     let nx = (u * nv.at(0) - slope * tangent.at(0)) / norm
-    let ny = (-u * nv.at(1) - slope * tangent.at(1)) / norm
+    let ny = (radial-y-sign * u * nv.at(1) - slope * tangent.at(1)) / norm
     let nz = radial-z / norm
     let lam = calc.clamp(nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
     let point = _add(center-at(t), _mul(nv, u * rfun(t)))
@@ -2640,7 +2640,7 @@
           dot-size: _source-max-shading, dot-step: _source-max-shading,
           dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true,
           source-cubic-step: 0,
-          _shadow-planes: (),
+          _radial-y-sign: -1, _shadow-planes: (),
           _random-stream: none, _rng-offset: 0, _with-rng: false) = {
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
@@ -2656,6 +2656,7 @@
                        w: w, min-w: min-w, max-w: max-w, light: light,
                        gamma: gamma, shift: shift,
                        source-cubic-step: source-cubic-step,
+                       radial-y-sign: _radial-y-sign,
                        shadow-planes: _shadow-planes)
   let random-stream = if _random-stream != none { _random-stream } else if rng == "metapost" {
     _metapost-rng-sequence(seed,
@@ -4967,6 +4968,8 @@
     } else { none }
     let rng-cursor = rng-offset
     let cached-drawings = ()
+    // The paired source M11 trace visits the last strand first within each
+    // rank; preserve that order because it assigns the shared RNG stream.
     // Source layer pictures are evaluated from the highest rank down. Cache
     // their tube renders in that order, while the final compositing below
     // still erases and paints from low rank to high rank.
@@ -4974,7 +4977,7 @@
       let draw-ranks = sorted-ranks.rev()
       for (rank-index, rank) in draw-ranks.enumerate() {
         if rank-index > 0 and rank == draw-ranks.at(rank-index - 1) { continue }
-        for i in range(n) {
+        for i in range(n).rev() {
           for segment-index in range(strand-segments.at(i).len()) {
             let segment = strand-segments.at(i).at(segment-index)
             if segment.rank != rank { continue }
@@ -4984,6 +4987,7 @@
               end-caps: false, rng: "metapost", _random-stream: shared-stream,
               _rng-offset: rng-cursor, _with-rng: true,
               source-cubic-step: source-cubic-step,
+              _radial-y-sign: 1,
               _shadow-planes: shadow-planes)
             cached-drawings.push((strand: i, segment: segment-index,
               drawing: result.at(0)))
@@ -4996,14 +5000,14 @@
       if rank-index > 0 and rank == sorted-ranks.at(rank-index - 1) { continue }
       // Mask the accumulated lower layer with every silhouette in this layer
       // before drawing any same-layer hatch, matching source layerPicture.
-      for i in range(n) {
+      for i in range(n).rev() {
         for segment in strand-segments.at(i) {
           if segment.rank != rank { continue }
           drawings.push(stroke-path(segment.path,
             stroke: (paint: white, thickness: 2 * widths.at(i) * 1mm), per: 0))
         }
       }
-      for i in range(n) {
+      for i in range(n).rev() {
         for (segment-index, segment) in strand-segments.at(i).enumerate() {
           if segment.rank != rank { continue }
           if rng == "metapost" {
@@ -5014,6 +5018,7 @@
             drawings.push(tube(segment.path, widths.at(i), hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed, end-caps: false,
               source-cubic-step: source-cubic-step,
+              _radial-y-sign: 1,
               _shadow-planes: shadows-for(rank, widths.at(i))))
           }
         }
@@ -5026,6 +5031,7 @@
         drawings += fragments.map(part => tube(part, widths.at(i),
           hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
           source-cubic-step: source-cubic-step,
+          _radial-y-sign: 1,
           end-caps: false))
       } else {
         drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
