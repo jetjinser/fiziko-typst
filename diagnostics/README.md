@@ -2578,10 +2578,16 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
+
+`S104-SUBDRAW` records the raw `uniformdeviate(2)` result for each row's
+subdivision request. `S104-RNG-ABS-ROW` records the absolute random-call
+offset immediately before that draw; the counter wraps only after 4,000 calls
+to stay within MetaPost's numeric range. The selected hatch panel completes
+before the wrap.
 
 On row 93 (`y=-6.37912`), rebuilding q x knots from fixed-point cubic arc
 lengths of the sampled straight segments does not change the q-candidate tree:
@@ -2806,7 +2812,10 @@ by just `332 → 330`, and the Typst total remains above source at `1538/1516`.
 Its generated trees also over-split several later rows (for example, source
 row `0.79654` / Typst row 85 has 21 outer and 35 thin nodes). Do not enable
 generated q knots globally; the row-93 match requires source q state, not just
-width samples. Compare the candidate with:
+width samples. These all-row candidate figures reused the baseline cursor, so
+their downstream row calls and subdivision positions are not a valid
+sequential candidate result; see the corrected trace below. Compare the
+historical candidate with:
 
 ```sh
 nix develop path:./nix --command python diagnostics/compare_s104_row_calls.py \
@@ -2875,7 +2884,9 @@ Despite that exact row tree, injecting generated q knots into production
 regresses 600 ppi S104 whole/hatch RMSE from `0.20703985/0.07534579` to
 `0.20743547/0.07745702`. The renderer injection was reverted; keep the
 diagnostic as a local recursion oracle while resolving page-wide scanline and
-q-template mapping.
+q-template mapping. This result belongs to that earlier sampled-knot renderer
+trial; the later source-fixed callback integration has a separate same-run
+comparison recorded below.
 
 Run the endpoint probe with the project toolchain:
 
@@ -2988,7 +2999,7 @@ existing path samples; track the small raster tradeoff. Higher-density outline
 sampling (24 and 64 points per source path-time unit) was separately rejected
 because it made Typst rendering impractical.
 
-### S104 scalar-width fixed-point probe
+### S104 scalar-width fixed-point probe (superseded)
 
 The 142-row brush-call trace confirmed that the first mismatch is sensitive to
 the thin-recursion width state. A diagnostic callback now rounds the scalar
@@ -2996,11 +3007,10 @@ envelope's intermediate operations to 16.16, then compares its generated q
 widths against source calls. This raises exact-call rows from 108 to 115 and
 reduces per-row call-count L1 error from 332 to 302. However, it raises the
 Typst total from 1538 to 1566 calls against 1516 source calls, and mismatches
-include both over- and under-recursed rows. This is evidence that scalar
-arithmetic can move the branch decisions, but not evidence that this guessed
-rounding order matches MetaPost. Keep it diagnostic-only; do not enable it in
-production unless the callback operations are paired to source fixed-point
-states and the complete S104 raster gate also passes.
+include both over- and under-recursed rows. Those full-sequence statistics
+were invalid: the trace advanced following subdivision draws using the
+baseline brush's RNG calls rather than the fixed-width-q candidate's calls.
+They are superseded by the sequential-cursor replay below.
 
 ### S104 recursive q-control alignment audit
 
@@ -3008,23 +3018,40 @@ states and the complete S104 raster gate also passes.
 traversal order, applies the page's vertical flip (`y_typst = 44 mm -
 y_source`), then pairs recursive nodes by their center-path endpoints. It
 compares source `S104-TCTRL`/`S104-TXCTRL` 16.16 controls with
-`fixed-width-q-nodes` in the Typst trace. Run it on a fresh source trace and
-the all-row fixed-width diagnostic:
+`fixed-width-q-nodes` in the Typst trace. The trace now carries a separate RNG
+cursor for the fixed-width-q candidate; each candidate row selects its own
+subdivision count and advances by its own brush calls. Run it on a fresh source
+trace and the sequential candidate diagnostic:
 
 ```sh
 nix develop path:./nix --command python \
   diagnostics/audit_s104_q_alignment.py \
-  /tmp/s104-fresh/trace.log \
-  /tmp/s104-fresh/typst-row-trace-fixed-width.json
+  /tmp/s104-rng-draw-trace/trace.log \
+  /tmp/s104-hatch-sequential-q.json
 ```
 
-On the current 142-row trace, 768 of 1,696 source nodes pair within 0.005 mm
-and have the same q-curve count; among those pairs, 648 have every width
-control identical. Many source nodes cannot pair because earlier recursive
-trees diverge. The focused first-mismatch row `-6.37912` pairs all 19 nodes;
-all 19 have exact width controls, while accumulated-arc controls differ by a
-mean 10.932 and maximum 17 units on the 16.16 bp grid. Thus this row's width
-q is already reconstructed exactly; its remaining source q discrepancy is
-small in arc coordinates, while the page-wide problem is locating and
-reproducing the row/node schedules before RNG drift. This diagnostic does not
-change production rendering or establish a raster improvement.
+On the current trace, 1,475 of 1,696 source nodes pair within 0.005 mm; among
+these, 1,209 have every width control identical. The focused first-mismatch
+row `-6.37912` pairs all 19 nodes with exact width controls; accumulated-arc
+controls differ by a mean of 10.932 and a maximum of 17 units on the 16.16 bp
+grid.
+
+The comparator independently checks per-row brush calls, subdivision
+requests, generated path segment counts and absolute random-draw offsets:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/compare_s104_row_calls.py \
+  /tmp/s104-rng-draw-trace/trace.log \
+  /tmp/s104-hatch-sequential-q.json --fixed-width-q
+```
+
+All four checks match `142/142`; source and Typst brush totals are `1516/1516`.
+The source instrumenter records `S104-SUBDRAW` and `S104-RNG-ABS-ROW` for this
+check. A same-run 600 ppi render with the sequential q callback changes S104
+whole/hatch RMSE from `0.20703985/0.07534579` to
+`0.20640646/0.07184556`; stipple RMSE is unchanged at `0.28514532`. Hatch ink
+coverage increases slightly from `14.3591%` to `14.3722%` against `14.0655%`
+source. The source-fixed q callback is now integrated for `rng: "metapost"`
+hatch rendering. The local q-control audit still finds small arc-coordinate
+errors and some unmatched nodes after recursive geometry diverges.

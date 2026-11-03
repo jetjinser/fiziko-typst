@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -13,6 +13,7 @@
 #let total-width = calc.max(..projections) - calc.min(..projections)
 #let stream = _metapost-rng-sequence(1, calc.max(128, segments.len() * 128))
 #let cursor = 0
+#let fixed-width-q-cursor = 0
 #let rows = ()
 #let draw-segments = segments.rev()
 #let nn = calc.sqrt(normal.at(0) * normal.at(0) + normal.at(1) * normal.at(1) + normal.at(2) * normal.at(2))
@@ -33,21 +34,19 @@
   }
   // Candidate MetaPost-style 16.16 arithmetic for the scalar envelope.
   // The height normal and light make surfLight exactly one in this fixture.
-  let fixed-width(t) = {
-    let q = _mp-scalar-rounded
-    let ratio = q(line-length / total-width)
-    let row-position = q(row-fraction)
-    let s1 = q(_sin(q(q(t) * 180)))
-    let s2 = q(_sin(q(row-position * 180)))
-    let envelope = q(q(s1 * ratio) * s2)
-    let root = q(calc.sqrt(calc.max(0.0, envelope)))
-    let fade = q(q(6 / 7) * root)
-    let remain = q(1 - fade)
-    let light-factor = q(q(1 / 15) + q(shade))
-    let base-bp = q(2 * q(_source-min-stroke / _mp-unit))
-    let width-bp = q(q(base-bp * light-factor) * remain)
-    _mp-rounded(width-bp * _mp-unit)
-  }
+  let fixed-width(t) = _flat-surface-source-width(
+    t, line-length, total-width, row-fraction, shade, 6 / 7, 2)
+  let fixed-width-q-subdivision-start = fixed-width-q-cursor
+  let fixed-width-q-requested-subdivisions = 3 + int(calc.floor(
+    stream.at(fixed-width-q-cursor) * 2 + 0.5))
+  fixed-width-q-cursor += 1
+  let fixed-width-q-subdivision-times = _mp-path-subdivision-times(
+    fixed-width-q-requested-subdivisions)
+  let fixed-width-q-points = fixed-width-q-subdivision-times.map(t =>
+    _add(segment.at(0), _mul(_sub(segment.at(1), segment.at(0)), t)))
+  let fixed-width-q-frames = _frame(fixed-width-q-points, false)
+  let fixed-width-q-fractions = _path-fractions(
+    fixed-width-q-frames.map(e => e.at(0)), false)
   let points = subdivision-times.map(t => _add(segment.at(0),
     _mul(_sub(segment.at(1), segment.at(0)), t)))
   let frames = _frame(points, false)
@@ -119,7 +118,7 @@
   }
   let typst-width-fixed = widths.map(width =>
     int(calc.round(width / _mp-unit * 65536)))
-  let fixed-widths = fractions.map(fixed-width)
+  let fixed-widths = fixed-width-q-fractions.map(fixed-width)
   let fixed-width-fixed = fixed-widths.map(width =>
     int(calc.round(width / _mp-unit * 65536)))
   let width-q-ink = _ink-loops(frames, widths, false, _source-min-stroke,
@@ -127,8 +126,8 @@
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true, source-width-fixed: typst-width-fixed)
-  let fixed-width-q-ink = _ink-loops(frames, fixed-widths, false, _source-min-stroke,
-    _source-dash-length, random-stream: stream, rng-offset: cursor,
+  let fixed-width-q-ink = _ink-loops(fixed-width-q-frames, fixed-widths, false, _source-min-stroke,
+    _source-dash-length, random-stream: stream, rng-offset: fixed-width-q-cursor,
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true, source-width-fixed: fixed-width-fixed)
@@ -154,8 +153,13 @@
     fixed-width-q-nodes: if fixed-width-q-ink == none { () } else { fixed-width-q-ink.at(2).nodes },
     fixed-width-q-calls: if fixed-width-q-ink == none { none } else { fixed-width-q-ink.at(1) },
     fixed-width-q-dashes: if fixed-width-q-ink == none { none } else { fixed-width-q-ink.at(2).dashes },
+    fixed-width-q-rng-start: fixed-width-q-cursor,
+    fixed-width-q-requested-subdivisions: fixed-width-q-requested-subdivisions,
+    fixed-width-q-subdivisions: fixed-width-q-subdivision-times.len() - 1,
   ))
   cursor += ink.at(1)
+  fixed-width-q-cursor += fixed-width-q-ink.at(1)
 }
 
-#metadata((rows: rows, rng-count: cursor, subdivision-draws: segments.len())) <s104-hatch-rows>
+#metadata((rows: rows, rng-count: cursor, fixed-width-q-rng-count: fixed-width-q-cursor,
+  subdivision-draws: segments.len())) <s104-hatch-rows>

@@ -2901,6 +2901,25 @@
   segments
 }
 
+// MetaPost rounds each scalar operation in flatSurface's width callback to
+// 16.16 before offsetPathTemplate stores the resulting q-width knot.
+#let _flat-surface-source-width(t, line-length, total-width, row-fraction,
+                                shade, end-fade, scale) = {
+  let q = _mp-scalar-rounded
+  let ratio = q(line-length / total-width)
+  let row-position = q(row-fraction)
+  let s1 = q(_sin(q(q(t) * 180)))
+  let s2 = q(_sin(q(row-position * 180)))
+  let envelope = q(q(s1 * ratio) * s2)
+  let root = q(calc.sqrt(calc.max(0.0, envelope)))
+  let fade = q(q(end-fade) * root)
+  let remain = q(1 - fade)
+  let light-factor = q(q(1 / 15) + q(shade))
+  let base-bp = q(scale * q(_source-min-stroke / _mp-unit))
+  let width-bp = q(q(base-bp * light-factor) * remain)
+  _mp-rounded(width-bp * _mp-unit)
+}
+
 /// Parallel clipped strokes inside a polygon. `style: "glass"` leaves
 /// periodic gaps to suggest a transparent material.
 #let _dash-segment(a, b, on, off, phase: 0) = {
@@ -3015,6 +3034,8 @@
       )
       scale * _source-min-stroke * (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
     }
+    let source-fixed-width(t, end-fade, scale) = _flat-surface-source-width(
+      t, line-length, total-width, row-fraction, shade, end-fade, scale)
     let pts = subdivision-times.map(t => _add(s.at(0),
       _mul(_sub(s.at(1), s.at(0)), t)))
     if style == "stipples" {
@@ -3026,11 +3047,23 @@
         seed: seed + s.at(2)))
     } else {
       if rng == "metapost" {
-        let drawn = stroke-ink(pts, t => width(t, 6 / 7, 2),
+        let source-fixed = style == "hatch"
+        let active-width(t) = if source-fixed {
+          source-fixed-width(t, 6 / 7, 2)
+        } else { width(t, 6 / 7, 2) }
+        let frames = _frame(pts, false)
+        let fractions = _path-fractions(frames.map(e => e.at(0)), false)
+        let callback-widths = fractions.map(active-width)
+        let source-width-fixed = if source-fixed {
+          callback-widths.map(value =>
+            int(calc.round(value / _mp-unit * 65536)))
+        } else { none }
+        let drawn = stroke-ink(pts, active-width,
           closed: false, per: 0, min-w: _source-min-stroke,
           period: _source-dash-length, seed: seed + s.at(2),
           _random-stream: stream, _rng-offset: cursor, _with-rng: true,
-          _source-rounding: true)
+          _source-rounding: true,
+          _source-width-fixed: source-width-fixed)
         items.push(drawn.at(0))
         cursor += drawn.at(1)
       } else {

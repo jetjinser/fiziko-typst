@@ -38,7 +38,7 @@ included where a plate contains distinct drawing families.
 | M11 globe, eye, knot, refraction | 0.11295 | 4.917% → 5.056% | The source-equation coast normal and corrected `atan2` argument order move focused 600 ppi whole-plate RMSE from 0.11266 to 0.11295; globe crop RMSE is 0.18990 (previously 0.18875), while globe ink coverage moves closer from 26.443% to 26.353% against 25.940% source. For mass 4, the root recursive cut now splits 14.296/13.938 mm, matching source 14.292/13.925 mm. The fitted knot center cubic controls from 1/16 source samples match traced MetaPost controls within 0.000049 mm, with tangent error at most 0.000156 rad. Mask mode splits at crossing-interval midpoints, erases prior ink with higher tube silhouettes, and redraws hatch. Three crossing times match source times 6, 12, and 18. Knot crop RMSE is 0.05882, with knot ink 2.606% → 2.843%. The corrected coast RNG trace counts 54 source calls versus 52 Typst calls across visible masses; five of six mass call vectors match, and mass 1 differs by one dash pattern (two calls). The corrected source-rounded lane diagnostic counts 212 knot calls versus 224 source. Eye 0.23617 and refraction 0.08193 are unchanged. |
 | S102 tube and shadow | 0.04909 | 1.818% → 1.887% | Matching the source's two smooth cubic tube joins with Hobby resampling at `per: 64` lowers tube-crop RMSE `0.07861 → 0.01821`; dark coverage is 0.6195% vs 0.6208% source. Sphere crop stays at 0.09110 and now dominates the residual. A source eight-knot lightness-only sphere probe moves dark coverage closer but regresses sphere RMSE to 0.10564; it was reverted. |
 | S103 surface fills | 0.21682 | 3.240% → 3.342% | After matching the upstream four-row glass dash cycle, glass RMSE fell from 0.26279 to 0.23791 and coverage moved from 1.63× to 1.06× source. Opaque and gradient retain near-equal coverage (8.738% → 8.699%; 6.901% → 6.917%). |
-| S104 flat surfaces | 0.20703 | 10.630% → 10.810% | Mapping source +30° through the fixture's vertical flip gives Typst −30°; reversed row traversal and source-randomized 3–5 path subdivision lower hatch crop RMSE to 0.07650. Unit-aware 16.16 width-level rounding then lowers it to 0.07530, with hatch ink 14.066% → 14.363%. Stipple coverage remains 7.079% → 7.138%. The thin-recursion endpoint guard now uses source path-time units: paired outer decisions move from 942 to 1270 (source 1340), thin decisions from 1577 to 1739 (source 1696), with no raster change. Brush-call totals remain 1540 vs 1516 source. |
+| S104 flat surfaces | 0.20641 | 10.630% → 10.815% | Source-fixed 16.16 callback samples now build and split the width q template in source order. Its independent RNG cursor matches all 142 source subdivision draws, path-segment counts, and brush-call totals. Same-run 600 ppi whole/hatch RMSE improves from 0.20704/0.07535 to 0.20641/0.07185; stipple RMSE and output are unchanged. Hatch ink coverage moves slightly farther from source (14.372% vs 14.066%), while whole-frame coverage is 10.815% vs 10.630%. |
 | S105 wood block and surface | 0.10215 | 0.741% → 0.689% | The source-derived field uses the 1/3 mm `woodBlockRes`, fractional source contour levels and source-space landscape knot transform. The source-path-time width profile lowers same-grid RMSE to 0.102148; block/surface crops are 0.127927/0.076936. Full-plate ink remains below source (0.6891% vs 0.7405%), while surface ink is 0.5309% vs 0.4892%; brush recursion and dash calls remain open. |
 | S106 weights | 0.07663 | 1.091% → 1.106% | Standing crop RMSE is 0.09949 with ink 1.594% → 1.474%. The source-derived hanging profile plus a 2 mm body offset and 2*shadingDensity auricle capsule reduces hanging crop RMSE to 0.06998; ink is 1.131% → 1.263%. Auricle interior shading and tube hatch remain approximate. |
 | S107 wheels and centroid | 0.08667 | 3.159% → 2.976% | Both source-style ring renderers now match closely: pulley-wheel RMSE 0.09105 with 3.947% vs 3.833% coverage; wheel RMSE 0.12807 with 6.034% vs 7.100%. Centroid crop RMSE 0.05441. |
@@ -86,15 +86,23 @@ removed without image claims. Keep the inverse path-time map, but compute
 shadow intersections with a spatial index or shared source-order events before
 retrying the renderer integration.
 
-The new all-row q-control audit applies the source-to-page vertical flip and
-pairs recursive nodes by center-path endpoints. On the first-mismatch row
-`-6.37912`, all 19 source/Typst nodes pair; every width q control is identical,
-and the maximum accumulated-arc q-control error is 17 fixed units. Across all
-rows, 768/1,696 source nodes pair within 0.005 mm and 648 paired nodes have
-exact width controls; the other rows remain affected by tree divergence. See
-the reproducible procedure in `diagnostics/README.md`. This narrows row 93's
-remaining local geometry error to arc coordinates and confirms that the
-page-wide blocker is still earlier row/node scheduling and RNG drift.
+The sequential q-control audit applies the source-to-page vertical flip and
+pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19
+source/Typst nodes pair; every width q control is identical, and the maximum
+accumulated-arc q-control error is 17 fixed units. Across all rows, 1,475/1,696
+source nodes pair within 0.005 mm and 1,209 paired nodes have exact width
+controls; the unpaired nodes remain concentrated in rows with differing tree
+geometry. See the reproducible procedure in `diagnostics/README.md`.
+
+The first full-sequence q trace incorrectly advanced later rows with the
+baseline brush's RNG use. That produced invalid all-row call statistics and is
+superseded: after giving the q candidate its own subdivision and brush cursor,
+all 142 rows match source calls, subdivision requests, path segment counts,
+and absolute random-draw positions. Integrating that source-fixed width q into
+`flat-surface` improves both S104 whole-frame and hatch RMSE in a same-run
+600 ppi source comparison. The updated implementation is retained; the
+remaining S104 differences include a small ink-coverage increase and local
+q-arc/geometry errors.
 
 ### Accepted wood width-template alignment
 

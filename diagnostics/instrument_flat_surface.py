@@ -18,6 +18,7 @@ def main() -> None:
     source = source.replace(
         anchor,
         anchor
+        + '\n                message "S104-RNG-ABS-ROW " & decimal(i) & " " & decimal(traceRngAbsolute);'
         + '\n                traceRngTotal := 0;'
         '\n                message "FSROW " & decimal(i) & " "'
         ' & decimal(hatchLength) & " " & decimal(totalWidth)'
@@ -384,8 +385,11 @@ def main() -> None:
         raise ValueError(f"expected one pathSubdivide hook, found {source.count(subdivide_anchor)}")
     source = source.replace(
         subdivide_anchor,
-        "traceSubdivisions := 3+round(uniformdeviate(2));\n"
+        "traceSubdivisionDraw := uniformdeviate(2);\n"
+        "traceSubdivisions := 3+round(traceSubdivisionDraw);\n"
         "                aHatch := pathSubdivide(aHatch,traceSubdivisions);\n"
+        '                message "S104-SUBDRAW " & decimal(i) & " "'
+        ' & decimal(traceSubdivisionDraw) & " " & decimal(traceRngAbsolute);\n'
         "                message \"FSSUB \" & decimal(arclength(aHatch)) & \" \""
         " & decimal(length(aHatch)) & \" \" & decimal(traceSubdivisions);",
     )
@@ -402,6 +406,10 @@ def main() -> None:
 
 numeric traceRngTotal;
 traceRngTotal := 0;
+numeric traceRngAbsolute;
+traceRngAbsolute := 0;
+numeric traceSubdivisionDraw;
+traceSubdivisionDraw := 0;
 numeric traceSubdivisions;
 traceSubdivisions := 0;
 boolean traceFlatHatch;
@@ -416,6 +424,8 @@ traceThinSerial := 0;
 traceCutSerial := 0;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
+    traceRngAbsolute := traceRngAbsolute + 1;
+    if traceRngAbsolute >= 4000: traceRngAbsolute := traceRngAbsolute - 4000; fi;
     uniformdeviate(x)
 enddef;
 """

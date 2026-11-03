@@ -130,7 +130,7 @@
       "title": "Flat surfaces", "frame_mm": [120,44], "driver": "supplemental.mp", "figure": 104,
       "shared": {"source_seed": 1},
       "nominal": {"seed": 1}, "calibrated": {"seed": 1},
-      "notes": "The source +30° hatch maps to -30° on the Typst page because the fixture flips its vertical axis. The MetaPost RNG mode reverses row traversal and uses its random pathSubdivide count (3 + round(uniformdeviate(2))) for each hatch. Unit-aware 16.16 thin-brush width-level rounding gives a 600 ppi hatch crop RMSE of 0.07530 with ink coverage 14.36% vs 14.07% source; stipple coverage remains close (7.14% vs 7.08%). Whole-plate RMSE is 0.20703 with ink coverage 10.81% vs 10.63%. Some brush recursion and local random details still differ.",
+      "notes": "The source +30° hatch maps to -30° on the Typst page because the fixture flips its vertical axis. In MetaPost RNG mode, the hatch uses source-rounded 16.16 width callback samples in its q template and advances the RNG cursor through all brush and subdivision calls. A source trace matches all 142 row call totals, subdivision requests, path segment counts and random-draw offsets. At 600 ppi whole/hatch RMSE is 0.20641/0.07185 (baseline 0.20704/0.07535); stipple RMSE is unchanged at 0.28515. Hatch ink coverage is 14.37% vs 14.07% source, and whole-plate coverage is 10.81% vs 10.63%.",
       "regions_mm": {"hatch_panel": [0,0,61,44], "stipple_panel": [61,0,59,44]}
     },
     "S105": {

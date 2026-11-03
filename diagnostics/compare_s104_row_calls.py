@@ -18,9 +18,12 @@ BP_TO_MM = 25.4 / 72
 def source_rows(path: Path):
     rows = []
     current = None
+    absolute_draw_index = None
     for line in path.read_text().splitlines():
         fields = line.split()
-        if fields[:1] == ["FSROW"] and len(fields) == 8:
+        if fields[:1] == ["S104-RNG-ABS-ROW"] and len(fields) == 3:
+            absolute_draw_index = int(round(float(fields[2])))
+        elif fields[:1] == ["FSROW"] and len(fields) == 8:
             if current is not None:
                 raise ValueError("FSROW appeared before the previous FSEND")
             current = {
@@ -31,6 +34,7 @@ def source_rows(path: Path):
                 "length": 0.0,
                 "requested_subdivisions": 0,
                 "path_segments": 0,
+                "absolute_draw_index": absolute_draw_index,
             }
         elif current is not None and fields[:1] == ["FSSUB"] and len(fields) == 4:
             current.update(
@@ -93,6 +97,25 @@ def main() -> int:
 
     exact = sum(src["calls"] == calls for _, src, _, calls, _ in paired)
     l1 = sum(abs(src["calls"] - calls) for _, src, _, calls, _ in paired)
+    subdivision_exact = 0
+    segment_exact = 0
+    rng_offsets = []
+    for _, src, out, _, _ in paired:
+        subdivisions = (
+            out["fixed-width-q-requested-subdivisions"]
+            if args.fixed_width_q else out["requested-subdivisions"]
+        )
+        segments = (
+            out["fixed-width-q-subdivisions"]
+            if args.fixed_width_q else out["subdivisions"]
+        )
+        subdivision_exact += src["requested_subdivisions"] == subdivisions
+        segment_exact += src["path_segments"] == segments
+        if (args.fixed_width_q and src["absolute_draw_index"] is not None):
+            rng_offsets.append(
+                src["absolute_draw_index"]
+                == out["fixed-width-q-rng-start"] - 1
+            )
     label = (
         "fixed-width-q " if args.fixed_width_q
         else "generated-q " if args.generated_q
@@ -104,8 +127,20 @@ def main() -> int:
         f"{sum(src['calls'] for src in source)}/"
         f"{sum(calls for _, _, _, calls, _ in paired)}"
     )
+    print(f"matching subdivision requests: {subdivision_exact}/{len(paired)}; "
+          f"matching path segment counts: {segment_exact}/{len(paired)}")
+    if rng_offsets:
+        print(f"matching absolute RNG draw offsets: {sum(rng_offsets)}/{len(rng_offsets)}")
     mismatches = [item for item in paired if item[1]["calls"] != item[3]]
     for index, src, out, calls, length_error in mismatches[:12]:
+        subdivisions = (
+            out["fixed-width-q-requested-subdivisions"]
+            if args.fixed_width_q else out["requested-subdivisions"]
+        )
+        segments = (
+            out["fixed-width-q-subdivisions"]
+            if args.fixed_width_q else out["subdivisions"]
+        )
         if args.generated_q or args.fixed_width_q:
             prefix = "fixed-width-q" if args.fixed_width_q else "width-q"
             nodes = out[f"{prefix}-nodes"]
@@ -118,8 +153,8 @@ def main() -> int:
             f"row {index}: source y={src['row']:.5f}, Typst row={out['row']}; "
             f"length delta={length_error:+.6f} mm; calls "
             f"{src['calls']}/{calls}; subdivisions "
-            f"{src['requested_subdivisions']}/{out['requested-subdivisions']} "
-            f"(path segments {src['path_segments']}/{out['subdivisions']}); "
+            f"{src['requested_subdivisions']}/{subdivisions} "
+            f"(path segments {src['path_segments']}/{segments}); "
             f"Typst outer/thin/dashes {outer}/{thin}/{dashes}"
         )
     return 0
