@@ -1262,6 +1262,16 @@ ppi M11 knot crop RMSE from `0.07923` to `0.07841` and whole-plate RMSE from
 `0.05947` and `0.08949`. The next gap is the remaining six brush calls, on
 source calls 2 and 6, plus their resulting dash placement.
 
+Refreshing `m11-shadow-brush-inputs.typ` from the same source log and replaying
+those lanes through the current `_ink-loops` confirms that the brush recursion
+can reproduce both outstanding source calls when given the traced post-shadow
+center paths, integer width callbacks, q controls, and RNG offsets. Call 2
+matches all three active lanes exactly (`12/38/8` calls); call 6 also matches
+all active lanes (`6/0/12`). The production `tube()` replay remains short by
+four calls on call 2 and two on call 6. This narrows the open work to building
+the same source q state and parameter mapping from production tube geometry;
+the exact-input replay is diagnostic evidence, not a production fix.
+
 Generate the complete lane report with:
 
 ```sh
