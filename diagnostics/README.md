@@ -2901,3 +2901,21 @@ hypothesis; it shows that increasing the shared outline point count makes the
 current downstream brush construction too expensive for a practical render.
 Any revisit should improve arc-length accuracy without multiplying the points
 passed into brush geometry.
+
+The source q template's horizontal coordinate is cumulative path arc length.
+The coastline outline's horizon arcs are MetaPost cubic `fullcircle` segments,
+but the production outline samples them at 16 points per source path-time unit.
+Using those samples' chords to place q knots left a nearly constant 0.54 bp x
+residual on the first mass-2 depth-5 branch. A targeted arc-length integration
+now computes eight internal chord subdivisions per existing sample interval,
+without adding outline points, and supplies cumulative source-arc positions to
+`_ink-loops`. This changes mass 2 from 29 to 55 Typst recursion nodes; its
+parent-aware comparison rises from 27 to 29 pairs and from 21/27 to 23/29
+matching decisions. Mass 4 remains at 30/31 matching decisions. The 600 ppi
+M11 raster is nearly unchanged but slightly worse against the pinned source:
+whole RMSE `0.11493414 → 0.11494357`, globe crop `0.18988674 → 0.18992473`,
+and knot crop unchanged at `0.07840452`. Keep the source-arc mapping because
+it substantially improves the source recursion tree while preserving the
+existing path samples; track the small raster tradeoff. Higher-density outline
+sampling (24 and 64 points per source path-time unit) was separately rejected
+because it made Typst rendering impractical.

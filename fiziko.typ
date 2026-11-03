@@ -534,7 +534,8 @@
                 with-rng: false, with-stats: false,
                 param-times: none, param-end: none, trace-nodes: false,
                 source-rounding: false, width-by-arc: false,
-                source-width-fixed: none, source-q-curves-fixed: none) = {
+                source-width-fixed: none, source-q-curves-fixed: none,
+                source-arc-positions: none) = {
   let n = fr.len()
   let step = (minw - minw / 3) / 16
   let dash-floor = minw / 3 + dash-extra
@@ -674,7 +675,19 @@
     }
     result
   }
+  // Some traced outlines carry more accurate cumulative lengths than their
+  // rendering polyline, e.g. sampled points on MetaPost cubic horizon arcs.
   let source-path-arc(path, at) = {
+    if source-arc-positions != none {
+      let sample-at(time) = {
+        let index = int(calc.clamp(calc.floor(time), 0,
+          source-arc-positions.len() - 2))
+        let fraction = calc.clamp(time - index, 0.0, 1.0)
+        (source-arc-positions.at(index) * (1 - fraction)
+          + source-arc-positions.at(index + 1) * fraction)
+      }
+      return sample-at(at) - sample-at(path.first())
+    }
     let total = 0.0
     for i in range(path.len() - 1) {
       let span = _dist(frame-index(path.at(i)).at(0), frame-index(path.at(i + 1)).at(0))
@@ -1503,7 +1516,8 @@
                 _source-rounding: false, _with-stats: false,
                 _trace-nodes: false, _path-time: false,
                 _param-times: none, _param-end: none,
-                _source-width-fixed: none) = {
+                _source-width-fixed: none,
+                _source-arc-positions: none) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
   let n = fr0.len()
@@ -1523,7 +1537,8 @@
     with-rng: _with-rng, with-stats: _with-stats,
     trace-nodes: _trace-nodes, source-rounding: _source-rounding,
     param-times: _param-times, param-end: _param-end,
-    source-width-fixed: _source-width-fixed)
+    source-width-fixed: _source-width-fixed,
+    source-arc-positions: _source-arc-positions)
   let drawing = place(top + left,
     _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
   if _with-stats {
@@ -4305,6 +4320,9 @@
   }
   let outline = ()
   let outline-times = ()
+  // Keep q-template arc coordinates independent from outline sampling density.
+  let outline-arc-positions = (0.0,)
+  let closing-arc-length = none
   let path-time = 0.0
   for i in range(runs.len()) {
     let run = runs.at(i)
@@ -4316,8 +4334,11 @@
       // centerline has a zero-length segment. Only merge the shared endpoint
       // where a sampled horizon arc joins a coast run.
       if j > 0 or outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
+        let increment = if outline.len() == 0 { 0.0 }
+          else { _dist(outline.last(), point) }
         outline.push(point)
         outline-times.push(path-time + j)
+        outline-arc-positions.push(outline-arc-positions.last() + increment)
       }
     }
     path-time += calc.max(0, coast.len() - 1)
@@ -4341,6 +4362,7 @@
       }
       arc-boundaries.push(to)
       let steps = int(calc.ceil(calc.abs(to - from) * 16))
+      let previous-arc-time = from
       for j in range(steps + 1) {
         if steps == 0 { continue }
         let t = from + (to - from) * j / steps
@@ -4358,15 +4380,37 @@
         // _mp-circle-point is the source cubic fullcircle rotated by 90°.
         let p = _mp-circle-point(t - 2)
         let point = _add(center, (2 * radius * p.at(0), -2 * radius * p.at(1)))
+        let subdivisions = 8
+        let arc-length = range(subdivisions).map(k => {
+          let ta = previous-arc-time + (t - previous-arc-time) * k / subdivisions
+          let tb = previous-arc-time + (t - previous-arc-time) * (k + 1) / subdivisions
+          let a = _mp-circle-point(ta - 2)
+          let b = _mp-circle-point(tb - 2)
+          _dist((2 * radius * a.at(0), -2 * radius * a.at(1)),
+            (2 * radius * b.at(0), -2 * radius * b.at(1)))
+        }).sum()
         if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
           outline.push(point)
           outline-times.push(path-time + arc-time)
+          outline-arc-positions.push(outline-arc-positions.last() + arc-length)
+        } else if (j == steps and outline.len() > 1
+            and _dist(point, outline.first()) <= 1e-8) {
+          closing-arc-length = arc-length
         }
+        previous-arc-time = t
       }
       path-time += arc-boundaries.len() - 1
     }
   }
-  (points: outline, source-times: outline-times, source-time-end: path-time,
+  if outline.len() > 1 {
+    let closure = if closing-arc-length == none {
+      _dist(outline.last(), outline.first())
+    } else { closing-arc-length }
+    outline-arc-positions.push(outline-arc-positions.last() + closure)
+  }
+  (points: outline, source-times: outline-times,
+    source-arc-positions: outline-arc-positions,
+    source-time-end: path-time,
     runs: runs, arcs: arcs)
 }
 
@@ -4422,6 +4466,7 @@
   let coast-lines = ()
   let coast-landmass-ids = ()
   let coast-param-times = ()
+  let coast-param-arcs = ()
   let coast-param-ends = ()
   for (land-index, land) in lands.enumerate() {
     if shading == "latitude" {
@@ -4431,6 +4476,7 @@
         coast-lines += (data.points,)
         coast-landmass-ids.push(land-index + 1)
         coast-param-times.push(data.source-times)
+        coast-param-arcs.push(data.source-arc-positions)
         coast-param-ends.push(data.source-time-end)
       }
     } else {
@@ -4505,7 +4551,8 @@
         _trace-nodes: _trace-coasts, _source-rounding: true,
         _param-times: coast-param-times.at(i),
         _param-end: coast-param-ends.at(i),
-        _source-width-fixed: source-width-fixed)
+        _source-width-fixed: source-width-fixed,
+        _source-arc-positions: coast-param-arcs.at(i))
       if _trace-coasts {
         let trace-samples = range(result.at(3).times.len()).map(j => (
           arc: result.at(3).times.at(j) * result.at(2).nodes.at(0).length,
