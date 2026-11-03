@@ -1803,6 +1803,31 @@ interior cut, including its local derivative, before changing production
 geometry; the source cut point is near the width threshold, not the curve
 endpoint.
 
+Evaluating the final q cubic at the source cut parameter refines that result.
+For call 4/lane 2 (`u=0.93918`) and call 5/lane 2 (`u=0.93916`), generated
+q x is behind the source by 43.18 and 47.18 fixed units, respectively
+(`0.000232` and `0.000254 mm`). Their local x derivatives differ by only 3
+fixed units per segment, about `0.017%`; y controls and derivatives are
+identical. The mismatch is therefore almost a constant x translation across
+the final cubic, consistent with a cumulative arc-origin offset inherited
+from earlier knots. A useful correction must carry that offset through
+recursive child paths from their parent arc mapping; changing local cubic
+shape or packet tolerance does not address this evidence.
+
+The paired derivative report is reproducible with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/analyze_m11_q_parameter_offset.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay-debug-default.json
+```
+
+It pairs source and generated recursive nodes by call/lane and center-path
+endpoints. On the current trace it reports eight near-endpoint cuts; the two
+branch-divergent cuts are the `4/2` and `5/2` rows at `t=3.93918` and
+`t=3.93916`, respectively. Both have zero q-y value and derivative error at
+the paired local parameter, while their q-x offsets are almost constant.
+
 Rounding `param-at` results onto the source 16.16 path-time grid also left the
 same 15/18 lane call totals. On a 600 ppi M11 render it slightly regressed
 whole RMSE `0.1128986841 → 0.1128987766` and knot-crop RMSE
