@@ -2887,3 +2887,17 @@ runtime: its first output is `0.28035307` with seed 1 and `0.05092263` with
 seed 65536. This mismatch means the Typst implementation must not claim
 MetaPost random-stream compatibility. Keep the current deterministic keyed
 RNG unless a comparison proves a visual improvement from another model.
+
+### M11 coastline arc sampling cost probe
+
+The production globe-outline builder samples each MetaPost fullcircle arc at
+16 steps per source path-time unit. The paired coastline trace showed a nearly
+constant 0.54 bp offset in the cumulative q-lane x coordinates, suggesting
+that chord-based arc-length accumulation could be under-resolved. Raising this
+to 64 steps made the M11 Typst render exceed the normal comparison window
+without producing a page. Reducing it to 24 steps had the same result at 300
+ppi. Both changes were discarded. This does not disprove the arc-length
+hypothesis; it shows that increasing the shared outline point count makes the
+current downstream brush construction too expensive for a practical render.
+Any revisit should improve arc-length accuracy without multiplying the points
+passed into brush geometry.
