@@ -79,6 +79,25 @@ made raster improvements. The first two have the strongest bounded replay
 oracles; continue with the smallest isolated case, preserve paired baseline
 metrics, and record a rejected candidate when the production gate fails.
 
+### Accepted wood width-template alignment
+
+The source-field `contour-brush: "cell-range"` path now passes explicit
+source-rounded 16.16 widths at each reversed contour path-time knot into
+`stroke-ink`. This reproduces the source `offsetPathTemplate`'s discrete width
+samples while retaining the existing center path, traversal and RNG stream.
+The paired 600 ppi comparison used the same pinned source, fixtures and
+renderer: the baseline `fiziko.typ` SHA-256 was
+`ba1c65ce0cc802cc8407725a982f0553c7de33fd2256ce968814ee2766ec65dc`, and the
+candidate was `419b84ed90e7893f8d683e2712ab32d2686c6be833e141e455b261eb8f64acb3`.
+M9 whole-frame RMSE improves `0.21156032 → 0.21138154`; three of four panel
+crops improve, while top-right regresses `0.23363340 → 0.23368409`. M9 ink
+coverage moves slightly farther below the source, `3.7120% → 3.7069%` versus
+`4.2032%`. S105 whole-frame RMSE changes `0.10213793 → 0.10214082`, with its
+block crop unchanged and surface crop slightly worse (`0.07693635 →
+0.07694344`). Retain the source-semantic change as a small net image improvement
+with those tradeoffs recorded; source cLine recursion and random-call order
+remain open.
+
 - [x] **MetaPost fixed-point brush-width interpolation.** With
   `source-rounding: true`, `_ink-loops` separately rounds the scalar fraction,
   each dimensional width product, and their sum to source 16.16 precision.

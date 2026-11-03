@@ -3653,12 +3653,16 @@
         let brush-path = path.rev()
         let width = _wood-source-width(field, w, h, nx, ny, brush-path,
           source-time: true)
+        let source-width-fixed = range(brush-path.len()).map(i =>
+          int(calc.round(width(float(i) / (brush-path.len() - 1))
+            / _mp-unit * 65536)))
         let drawn = stroke-ink(
           brush-path.map(p => _add(p, (x0, y0))), width,
           closed: false, min-w: _source-min-stroke,
           period: _source-dash-length, seed: seed, per: 0,
           _random-stream: contour-stream, _rng-offset: brush-cursor,
-          _with-rng: true, _source-rounding: true, _path-time: true)
+          _with-rng: true, _source-rounding: true, _path-time: true,
+          _source-width-fixed: source-width-fixed)
         source-brushes.push(drawn.at(0))
         brush-cursor += drawn.at(1)
       } else { segments.push(path.map(p => _add(p, (x0, y0)))) }
