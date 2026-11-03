@@ -1629,6 +1629,20 @@ fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
 the quarter-sample implementation as the measured baseline; no production
 renderer change is claimed.
 
+The q-replay's recursive arc-offset result must not be mistaken for a current
+production q tree. `m11_knot_tube_trace.typ` calls `_ink-loops` without
+`source-width-fixed` or `source-q-curves-fixed`; its baseline trace therefore
+has no q curves. A temporary diagnostic passed its sampled lane widths back as
+16.16 `source-width-fixed`, causing `_ink-loops` to build q curves from the
+sampled-frame chord arcs. That candidate changed aggregate M11 knot-lane and
+edge calls from 212 to 208, farther from the source total of 224; its
+source-ordered vector changed from `38/56/14/10/40/54` to
+`38/54/14/10/40/52`, while its L1 error against source
+`14/58/54/42/38/18` remained 136. It was removed without a raster trial. The
+next production task is to carry the source callback q
+template into the real lane renderer, not to promote the replay's local x
+offset as though the renderer already used that q state.
+
 Rebuild the actual Typst lane trace and compare generated, fifth-fit, and
 source-arc q trees with:
 
