@@ -3001,3 +3001,30 @@ arithmetic can move the branch decisions, but not evidence that this guessed
 rounding order matches MetaPost. Keep it diagnostic-only; do not enable it in
 production unless the callback operations are paired to source fixed-point
 states and the complete S104 raster gate also passes.
+
+### S104 recursive q-control alignment audit
+
+`audit_s104_q_alignment.py` pairs source rows to the Typst trace in source
+traversal order, applies the page's vertical flip (`y_typst = 44 mm -
+y_source`), then pairs recursive nodes by their center-path endpoints. It
+compares source `S104-TCTRL`/`S104-TXCTRL` 16.16 controls with
+`fixed-width-q-nodes` in the Typst trace. Run it on a fresh source trace and
+the all-row fixed-width diagnostic:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-fresh/trace.log \
+  /tmp/s104-fresh/typst-row-trace-fixed-width.json
+```
+
+On the current 142-row trace, 768 of 1,696 source nodes pair within 0.005 mm
+and have the same q-curve count; among those pairs, 648 have every width
+control identical. Many source nodes cannot pair because earlier recursive
+trees diverge. The focused first-mismatch row `-6.37912` pairs all 19 nodes;
+all 19 have exact width controls, while accumulated-arc controls differ by a
+mean 10.932 and maximum 17 units on the 16.16 bp grid. Thus this row's width
+q is already reconstructed exactly; its remaining source q discrepancy is
+small in arc coordinates, while the page-wide problem is locating and
+reproducing the row/node schedules before RNG drift. This diagnostic does not
+change production rendering or establish a raster improvement.

@@ -86,6 +86,16 @@ removed without image claims. Keep the inverse path-time map, but compute
 shadow intersections with a spatial index or shared source-order events before
 retrying the renderer integration.
 
+The new all-row q-control audit applies the source-to-page vertical flip and
+pairs recursive nodes by center-path endpoints. On the first-mismatch row
+`-6.37912`, all 19 source/Typst nodes pair; every width q control is identical,
+and the maximum accumulated-arc q-control error is 17 fixed units. Across all
+rows, 768/1,696 source nodes pair within 0.005 mm and 648 paired nodes have
+exact width controls; the other rows remain affected by tree divergence. See
+the reproducible procedure in `diagnostics/README.md`. This narrows row 93's
+remaining local geometry error to arc coordinates and confirms that the
+page-wide blocker is still earlier row/node scheduling and RNG drift.
+
 ### Accepted wood width-template alignment
 
 The source-field `contour-brush: "cell-range"` path now passes explicit
