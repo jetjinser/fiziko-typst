@@ -1218,6 +1218,30 @@ per-interval distribution. The diagnostic-only lane scope was reverted; the
 normal evidence alone does not justify a production shade-law change while
 the existing global source-normal candidate regresses the raster.
 
+### M11 self-shadow evidence in tube lighting
+
+The full global y-normal flip still fails the rendering gate. At 600 ppi, the
+current M11 knot crop RMSE is `0.077357`, versus `0.05904` before that trial;
+M4 and M6 are `0.126241` and `0.115937`, matching the previously rejected
+global shade candidate. The production change was reverted.
+
+A paired callback diagnostic now distinguishes the missing factor. Source
+calls 1–3 have no self-shadow hits: with the y-normal corrected in the
+diagnostic, all six sampled lanes reproduce source effective widths to
+`0.00001 mm` maximum error. Calls 4–6 contain source self-shadow hits (5–7
+per lane in the paired callbacks). Adding those hit flags to the diagnostic
+brings their width MAE down to `0.00076–0.00355 mm`, from baseline MAE
+`0.02832–0.03506 mm`. The callback hit flags are source-oracle data, not a
+production solution. The next concrete rendering task is to pass prior-layer
+tube silhouettes and source depth into tube lighting, then validate M11/M4/M6
+together before retaining any sign or shadow changes. Reproduce the pairing
+with:
+
+```sh
+nix develop path:./nix --command python diagnostics/compare_m11_shading_samples.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json
+```
+
 ### M11 knot tube lanes and shared RNG
 
 The source trace starts the knot at MetaPost random-call offset 4639. Its six
