@@ -1272,6 +1272,15 @@ four calls on call 2 and two on call 6. This narrows the open work to building
 the same source q state and parameter mapping from production tube geometry;
 the exact-input replay is diagnostic evidence, not a production fix.
 
+A production trial carried the original M11 path parameters and cubics through
+the crossing-midpoint cuts, then evaluated each tube segment against its
+original source curve instead of fitting new cubics from the cut segment's
+local sample indices. The 600 ppi whole-plate RMSE regressed from `0.11493` to
+`0.12250`, and knot crop RMSE from `0.07841` to `0.12966`; the trial was
+reverted. Recovering the source centerline alone does not preserve the fitted
+tube lane widths, recursive cuts, and shadow masks. Further work needs to pair
+those states together before changing the production parameter mapping.
+
 Generate the complete lane report with:
 
 ```sh
