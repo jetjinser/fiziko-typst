@@ -825,7 +825,20 @@ nix develop path:./nix --command typst eval \
 nix develop path:./nix --command python3 \
   diagnostics/compare_m11_coast_samples.py \
   /tmp/m11-coast-paths/trace.log /tmp/m11-coast-paths/typst.json
+nix develop path:./nix --command python3 \
+  diagnostics/compare_m11_coast_polyline.py \
+  /tmp/m11-coast-paths/trace.log /tmp/m11-coast-paths/typst.json
 ```
+
+`compare_m11_coast_polyline.py` measures each source sample to the nearest
+Typst outline segment, so cyclic starts and different point densities do not
+inflate the geometric residual. On a fresh paired trace, the six visible
+masses have median errors `0.000046–0.000087 mm` and maximum errors
+`0.000140–0.004568 mm`. This rules out the projected centerline outline as
+the main cause of the recursive tree mismatch. Vertex-only nearest-neighbor
+statistics from `compare_m11_coast_samples.py` are useful for locating run
+ordering, but should not be read as path-shape error when sample densities
+differ.
 
 The sample pairing confirms that source and Typst use different cyclic start
 positions for the closed coastline, while their raw visible runs can still be
