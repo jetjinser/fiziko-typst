@@ -90,6 +90,17 @@
     let candidate-calls = 0
     for (lane-index, lane) in layout.inner.enumerate() {
       for (piece-index, piece) in lane.pieces.enumerate() {
+        let dense-points = ()
+        for time-index in range(piece.times.len() - 1) {
+          let start-time = piece.times.at(time-index)
+          let finish-time = piece.times.at(time-index + 1)
+          for subdivision in range(4) {
+            let time = start-time + (finish-time - start-time) * subdivision / 4
+            dense-points.push(_add((layout.center-at)(time),
+              _mul((layout.normal-at)(time), piece.u * (layout.rfun)(time))))
+          }
+        }
+        dense-points.push(piece.frames.last().at(0))
         lane-count += 1
         let result = _ink-loops(piece.frames, piece.widths, piece.closed,
           _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
@@ -111,7 +122,7 @@
           u: piece.u,
           start: piece.frames.first().at(0), end: piece.frames.last().at(0),
           points: piece.frames.map(frame => frame.at(0)), widths: piece.widths,
-          times: piece.times,
+          times: piece.times, dense-points: dense-points,
           normals: piece.times.map(t => (layout.normal-at)(t)),
           radius-slopes: piece.times.map(t => (layout.radius-slope)(t)),
           lightness: piece.times.map(t => (layout.shade)(piece.u, t)),

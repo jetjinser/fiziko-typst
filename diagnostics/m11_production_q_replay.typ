@@ -7,7 +7,8 @@
 #let replay = m11-production-q-inputs.map(item => {
   let segment-arcs = range(item.segments).map(i => {
     let raw-samples = (0, 1, 3, 4).map(offset => {
-      let point = item.points.at(i * 4 + offset)
+      let point = item.points.at(i * item.samples-per-segment
+        + int(offset * item.samples-per-segment / 4))
       (point.at(0) / _mp-unit, point.at(1) / _mp-unit)
     })
     let cubic = _mp-fixed-cubic-from-quarter-samples-raw(raw-samples)
@@ -17,7 +18,8 @@
   for length in segment-arcs { arc-fixed.push(arc-fixed.last() + length) }
   let fifth-segment-arcs = range(item.segments).map(i => {
     let raw-samples = range(5).map(offset => {
-      let point = item.points.at(i * 4 + offset)
+      let point = item.points.at(i * item.samples-per-segment
+        + int(offset * item.samples-per-segment / 4))
       (point.at(0) / _mp-unit, point.at(1) / _mp-unit)
     })
     let cubic = _mp-fixed-cubic-from-fifth-samples-raw(raw-samples)

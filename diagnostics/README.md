@@ -1642,6 +1642,38 @@ recovers all three trees at once. Exact-tree blend intervals were 10–12% and
 single global blend as the correction; the best intervals vary by lane and
 the sweep branch was removed after measurement.
 
+The lane trace also emits a diagnostic-only `dense-points` path, evaluating
+`center-at + normal-at * u * rfun` at four intermediate positions between
+every existing lane knot. Exporting these 16 points per path-time unit reduces
+source-cubic point residuals on calls/lanes 4/2, 4/6, and 5/2 from max/mean
+`0.001235/0.000262`, `0.001474/0.000284`, and `0.001262/0.000291` mm to
+`0.000529/0.000182`, `0.000572/0.000186`, and `0.000548/0.000215` mm.
+Cumulative arc-knot errors fall from 58/49/62 to 23/24/17 fixed units. Yet
+quarter-fit q trees remain 38/20/28 versus source 40/20/30; a residual-weighted
+per-segment fit recovers the latter two lanes but not call 4/lane 2. Doubling
+the dense subdivisions again did not further reduce point residuals and
+changed the third tree to 34 nodes. This is a geometry improvement in the
+diagnostic, not a production or raster result. The next step is to test dense
+offset-lane sampling in the production layout, then gate it on all three
+recursion trees and paired M11/M4/M6 renders.
+
+Generate and replay the diagnostic dense lane samples with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-knot-tube-trace>).first().value' \
+  --in diagnostics/m11_knot_tube_trace.typ --root . \
+  > build/m11-knot-tube-trace-dense.json
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_typst_q_inputs.py /tmp/m11-q-audit/trace.log \
+  build/m11-knot-tube-trace-dense.json build/m11-production-q-inputs.typ \
+  --dense
+nix develop path:./nix --command typst eval \
+  'query(<m11-production-q-replay>).first().value' \
+  --in diagnostics/m11_production_q_replay.typ --root . \
+  > build/m11-production-q-replay-dense.json
+```
+
 The production-lane arc audit compares straight accumulation over the four
 Typst samples per segment with a MetaPost-fixed cubic fitted from the quarter
 samples. The cubic fit reduces mean absolute 16.16 arc error from

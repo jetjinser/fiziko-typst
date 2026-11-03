@@ -90,18 +90,19 @@ def read_source(path):
     return cuts, widths, lane_calls, offsets, post_lengths, source_arcs, curves
 
 
-def typst_lane_map(path):
+def typst_lane_map(path, dense=False):
     traces = json.loads(path.read_text())
     out = {}
     for trace in traces:
         for lane in trace["inner-lanes"]:
             key = (trace["strand"], trace["segment"], lane["lane"])
-            out[key] = [tuple(map(float, point)) for point in lane["points"]]
+            field = "dense-points" if dense else "points"
+            out[key] = [tuple(map(float, point)) for point in lane[field]]
     return out
 
 
-def sample(points, source_time):
-    at = max(0.0, min(len(points) - 1, source_time * SAMPLES_PER_CUBIC))
+def sample(points, source_time, samples_per_cubic=SAMPLES_PER_CUBIC):
+    at = max(0.0, min(len(points) - 1, source_time * samples_per_cubic))
     i = int(at)
     if i + 1 >= len(points):
         return points[-1]
@@ -117,9 +118,10 @@ def cubic(points, t):
                  for a, b, c, d in zip(p0, p1, p2, p3))
 
 
-def export(source_log, typst_trace, output):
+def export(source_log, typst_trace, output, dense=False, dense_factor=4):
     cuts, widths, calls, offsets, post_lengths, source_arcs, source_curves = read_source(source_log)
-    lanes = typst_lane_map(typst_trace)
+    samples_per_cubic = SAMPLES_PER_CUBIC * dense_factor if dense else SAMPLES_PER_CUBIC
+    lanes = typst_lane_map(typst_trace, dense=dense)
     records = []
     for key, pair in PAIRS.items():
         if key not in widths or key not in cuts or key not in offsets:
@@ -130,7 +132,7 @@ def export(source_log, typst_trace, output):
             raise ValueError(f"callback/path length mismatch for {key}: "
                              f"{len(widths[key])} widths, path={post_lengths[key]}")
         center = lanes[pair]
-        segments = [(float(i), float(i + 1)) for i in range(len(center) // SAMPLES_PER_CUBIC)]
+        segments = [(float(i), float(i + 1)) for i in range(len(center) // samples_per_cubic)]
         expected_initial = cuts[key][0][1]
         if len(segments) != expected_initial:
             raise ValueError(f"paired Typst lane {pair} has {len(segments)} cubics; "
@@ -149,22 +151,22 @@ def export(source_log, typst_trace, output):
         point_errors = []
         segment_errors = defaultdict(list)
         for i in range(post_lengths[key]):
-            for q in range(SAMPLES_PER_CUBIC):
-                post_time = i + q / SAMPLES_PER_CUBIC
+            for q in range(samples_per_cubic):
+                post_time = i + q / samples_per_cubic
                 source_time = source_time_at(segments, post_time)
-                point = sample(center, source_time)
-                reference = cubic(source_curves[key][i], q / SAMPLES_PER_CUBIC)
+                point = sample(center, source_time, samples_per_cubic)
+                reference = cubic(source_curves[key][i], q / samples_per_cubic)
                 error = math.dist(point, reference)
                 point_errors.append(error)
                 segment_errors[i].append(error)
                 path.append(point)
                 path_times.append(post_time)
                 w0, w1 = widths[key][i], widths[key][i + 1]
-                ws.append((w0 * (1 - q / SAMPLES_PER_CUBIC)
-                           + w1 * (q / SAMPLES_PER_CUBIC)) / 65536
+                ws.append((w0 * (1 - q / samples_per_cubic)
+                           + w1 * (q / samples_per_cubic)) / 65536
                           * 25.4 / 72)
         end_time = float(post_lengths[key])
-        endpoint = sample(center, source_time_at(segments, end_time))
+        endpoint = sample(center, source_time_at(segments, end_time), samples_per_cubic)
         endpoint_error = math.dist(endpoint, source_curves[key][-1][-1])
         point_errors.append(endpoint_error)
         segment_errors[post_lengths[key] - 1].append(endpoint_error)
@@ -201,7 +203,7 @@ def export(source_log, typst_trace, output):
         lines.append(
             f"  (call: {r['call']}, lane: {r['lane']}, "
             f"source-calls: {r['source-calls']}, rng-offset: {r['rng-offset']}, "
-            f"segments: {r['segments']}, points: ({points}), "
+            f"segments: {r['segments']}, samples-per-segment: {samples_per_cubic}, points: ({points}), "
             f"widths: ({widths_text}), param-times: ({times}), "
             f"source-width-fixed: ({fixed}), source-arc-fixed: ({source_arc})),")
     lines.append(")")
@@ -221,5 +223,10 @@ if __name__ == "__main__":
     parser.add_argument("source_trace", type=Path)
     parser.add_argument("typst_trace", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--dense", action="store_true",
+                        help="read the densely sampled lane path from the trace")
+    parser.add_argument("--dense-factor", type=int, default=4,
+                        help="number of direct curve samples between input knots")
     args = parser.parse_args()
-    export(args.source_trace, args.typst_trace, args.output)
+    export(args.source_trace, args.typst_trace, args.output, dense=args.dense,
+           dense_factor=args.dense_factor)
