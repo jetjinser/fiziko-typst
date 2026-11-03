@@ -2746,6 +2746,26 @@ evaluates the same law over normalized cumulative path length with
 replacing arc-length width interpolation with path-time interpolation would
 not address this cut.
 
+`compare_s104_row_calls.py` pairs all 142 target-panel rows in source traversal
+order with their Typst counterparts. The first 49 rows consume the same number
+of random values. The first divergence is source row `-6.37912` / Typst row 93:
+their line lengths differ by only `0.000122 mm`, both request three
+subdivisions and both produce four path segments, but the source consumes 11
+random values and Typst consumes 7. One value is the row subdivision draw, so
+the first discrepancy is four brush values (two dash patterns) inside the
+row's recursion; the later subdivision-count differences follow the resulting
+random-stream offset. Across the panel there are 108 exact call rows, total
+calls are `1516/1540`, and call-count L1 error is 332. The focused exact-q
+replay already matches all 19 source thin nodes and five dash patterns on row
+93, making that row the first target for generalizing q-state construction.
+
+Reproduce the row pairing with:
+
+```sh
+nix develop path:./nix --command python diagnostics/compare_s104_row_calls.py \
+  /tmp/s104-fresh/trace.log /tmp/s104-fresh/typst-row-trace-current.json
+```
+
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node
 172's cut to x=39.537 mm, within 0.0017 mm of the source's x=39.539 mm, and
