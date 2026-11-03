@@ -2246,7 +2246,8 @@
                   closed: false, per: 12, w: 0.5 * pt, min-w: _source-min-stroke,
                   max-w: _source-max-shading,
                   light: (-0.353553, 0.382683, 0.853553), gamma: 1.0,
-                  shift: (0, 0), source-cubic-step: 0) = {
+                  shift: (0, 0), source-cubic-step: 0,
+                  shadow-planes: ()) = {
   let src = pts.map(p => _add(p, shift))
   let fr = _frame(_prepare(src, per, closed), closed)
   let n = fr.len()
@@ -2351,7 +2352,15 @@
     let ny = (-u * nv.at(1) - slope * tangent.at(1)) / norm
     let nz = radial-z / norm
     let lam = calc.clamp(nx * L.at(0) + ny * L.at(1) + nz * L.at(2), 0.0, 1.0)
-    calc.pow(1 - lam, gamma)
+    let point = _add(center-at(t), _mul(nv, u * rfun(t)))
+    let depth = -calc.abs((1 - radial-z) * 2 * rfun(t))
+    let shadowed = shadow-planes.any(shadow => {
+      let dz = depth - shadow.depth
+      let dx = dz * L.at(0) * L.at(2)
+      let dy = dz * L.at(1) * L.at(2)
+      _inside-poly((point.at(0) - dx, point.at(1) - dy), shadow.polygon)
+    })
+    if shadowed { 1.0 } else { calc.pow(1 - lam, gamma) }
   }
   let cov = if coverage == auto {
     if hatch == "t" { 1 / 3 } else if hatch == "s" { 0.4 } else { 0.6 }
@@ -2568,6 +2577,24 @@
     }
   }
 
+  let silhouette = ()
+  if source-cubic-step >= 4 {
+    for t in ts {
+      silhouette.push(_add(center-at(t), _mul(normal-at(t), rfun(t))))
+    }
+    for t in ts.rev() {
+      silhouette.push(_add(center-at(t), _mul(normal-at(t), -rfun(t))))
+    }
+  } else {
+    for (i, frame) in fr.enumerate() {
+      silhouette.push(_add(frame.at(0), _mul(frame.at(1), rs.at(i))))
+    }
+    for i in range(fr.len()).rev() {
+      let frame = fr.at(i)
+      silhouette.push(_add(frame.at(0), _mul(frame.at(1), -rs.at(i))))
+    }
+  }
+
   (
     frames: fr,
     times: ts,
@@ -2585,6 +2612,7 @@
     division-sections: division-sections,
     lane-pitch: lane-pitch,
     trans: trans,
+    silhouette: silhouette,
     w: w,
   )
 }
@@ -2612,6 +2640,7 @@
           dot-size: _source-max-shading, dot-step: _source-max-shading,
           dot-range: (0.9, 1.2), dot-density: 0.56, end-caps: true,
           source-cubic-step: 0,
+          _shadow-planes: (),
           _random-stream: none, _rng-offset: 0, _with-rng: false) = {
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
@@ -2626,7 +2655,8 @@
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
                        gamma: gamma, shift: shift,
-                       source-cubic-step: source-cubic-step)
+                       source-cubic-step: source-cubic-step,
+                       shadow-planes: _shadow-planes)
   let random-stream = if _random-stream != none { _random-stream } else if rng == "metapost" {
     _metapost-rng-sequence(seed,
       calc.max(1024, L.frames.len() * calc.max(1, L.inner.len()) * 16))
@@ -4686,6 +4716,37 @@
   result
 }
 
+// Reconstruct a tube's closed outer contour for source-style planar lighting
+// shadows. The returned points use the same screen-space coordinates as tube.
+#let _tube-shadow-plane(pts, radius, depth, source-cubic-step: 0) = {
+  let layout = _tube-layout(pts, radius, hatch: "none", per: 12,
+    source-cubic-step: source-cubic-step)
+  (polygon: layout.silhouette, depth: depth)
+}
+
+#let _path-intersects-polygon(path, polygon) = {
+  if path.any(point => _inside-poly(point, polygon)) { return true }
+  let hit = false
+  for i in range(path.len() - 1) {
+    let a = path.at(i)
+    let da = _sub(path.at(i + 1), a)
+    for j in range(polygon.len()) {
+      let b = polygon.at(j)
+      let db = _sub(polygon.at(_mod(j + 1, polygon.len())), b)
+      let point = line-intersect(a, da, b, db)
+      if point != none and _len(da) > 0 and _len(db) > 0 {
+        let ta = _dot(_sub(point, a), da) / _dot(da, da)
+        let tb = _dot(_sub(point, b), db) / _dot(db, db)
+        if (ta >= -1e-6 and ta <= 1 + 1e-6
+          and tb >= -1e-6 and tb <= 1 + 1e-6) {
+          hit = true
+        }
+      }
+    }
+  }
+  hit
+}
+
 /// Draw sampled strands with real over/under gaps at their intersections.
 /// `strands` is a tuple of open polylines. By default, crossings between each
 /// strand pair alternate over/under in traversal order. `layers` accepts either
@@ -4886,6 +4947,21 @@
       }
     }
     let sorted-ranks = layer-ranks.sorted()
+    let shadows-for(rank, current-width) = {
+      let shadows = ()
+      for i in range(n) {
+        for segment in strand-segments.at(i) {
+          if segment.rank > rank {
+            let shadow = _tube-shadow-plane(segment.path, widths.at(i),
+              1.5 * current-width, source-cubic-step: source-cubic-step)
+            if _path-intersects-polygon(segment.path, shadow.polygon) {
+              shadows.push(shadow)
+            }
+          }
+        }
+      }
+      shadows
+    }
     let shared-stream = if rng == "metapost" {
       _metapost-rng-sequence(seed, rng-offset + 16384)
     } else { none }
@@ -4902,11 +4978,13 @@
           for segment-index in range(strand-segments.at(i).len()) {
             let segment = strand-segments.at(i).at(segment-index)
             if segment.rank != rank { continue }
+            let shadow-planes = shadows-for(rank, widths.at(i))
             let result = tube(segment.path, widths.at(i), hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed,
               end-caps: false, rng: "metapost", _random-stream: shared-stream,
               _rng-offset: rng-cursor, _with-rng: true,
-              source-cubic-step: source-cubic-step)
+              source-cubic-step: source-cubic-step,
+              _shadow-planes: shadow-planes)
             cached-drawings.push((strand: i, segment: segment-index,
               drawing: result.at(0)))
             rng-cursor = result.at(1)
@@ -4935,7 +5013,8 @@
           } else {
             drawings.push(tube(segment.path, widths.at(i), hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed, end-caps: false,
-              source-cubic-step: source-cubic-step))
+              source-cubic-step: source-cubic-step,
+              _shadow-planes: shadows-for(rank, widths.at(i))))
           }
         }
       }

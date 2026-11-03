@@ -1218,29 +1218,35 @@ per-interval distribution. The diagnostic-only lane scope was reverted; the
 normal evidence alone does not justify a production shade-law change while
 the existing global source-normal candidate regresses the raster.
 
-### M11 self-shadow evidence in tube lighting
+### M11 self-shadow geometry in tube lighting
 
-The full global y-normal flip still fails the rendering gate. At 600 ppi, the
-current M11 knot crop RMSE is `0.077357`, versus `0.05904` before that trial;
-M4 and M6 are `0.126241` and `0.115937`, matching the previously rejected
-global shade candidate. The production change was reverted.
-
-A paired callback diagnostic now distinguishes the missing factor. Source
-calls 1–3 have no self-shadow hits: with the y-normal corrected in the
-diagnostic, all six sampled lanes reproduce source effective widths to
-`0.00001 mm` maximum error. Calls 4–6 contain source self-shadow hits (5–7
-per lane in the paired callbacks). Adding those hit flags to the diagnostic
-brings their width MAE down to `0.00076–0.00355 mm`, from baseline MAE
-`0.02832–0.03506 mm`. The callback hit flags are source-oracle data, not a
-production solution. The next concrete rendering task is to pass prior-layer
-tube silhouettes and source depth into tube lighting, then validate M11/M4/M6
-together before retaining any sign or shadow changes. Reproduce the pairing
-with:
+The source trace records the complete six `tubeOutline` contours plus the
+shadow plane depth and light vector. Rebuilding each contour from the paired
+Typst tube path agrees with source to `0.0004 mm` mean distance or better.
+Projecting the source upper-layer contours with the recorded depth and light
+vector reproduces every sampled shadow decision for lower calls 4–6: precision
+and recall are both `1.0` across 63, 49, and 42 shadowed samples respectively.
+The trace-backed checker is:
 
 ```sh
-nix develop path:./nix --command python diagnostics/compare_m11_shading_samples.py \
-  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json
+nix develop path:./nix --command typst query diagnostics/m11_knot_tube_trace.typ \
+  '<m11-knot-tube-trace>' --field value --root . \
+  > build/m11-knot-tube-trace-shadow.json
+nix develop path:./nix --command python diagnostics/compare_m11_shadow_polygons.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace-shadow.json
 ```
+
+Production tube lighting now receives only higher-layer contours that
+intersect the current strand, matching the source's `intersectiontimes`
+precondition; its shadow depth is `1.5 * current segment width`. With the
+existing radial normal sign retained, the 600 ppi M11 knot RMSE changes from
+`0.05904` to `0.06347`; M4 is `0.05947` and M6 is `0.08949`. This is
+source-conforming shadow behavior, but it has not yet improved the M11 pixel
+metric. The paired lane-width diagnostic shows why a global normal-sign flip
+remains unresolved: it makes selected source callback widths nearly exact,
+but the combined full render raises knot RMSE to `0.07923`. Keep the normal
+sign unchanged while the remaining lane-width and brush-recursion differences
+are narrowed.
 
 ### M11 knot tube lanes and shared RNG
 

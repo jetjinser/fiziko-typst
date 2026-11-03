@@ -146,7 +146,7 @@
       candidate-random-calls: candidate-calls,
       candidate-edge-random-calls: candidate-edge-calls,
       edge-lanes: edge-lanes, inner-lanes: inner-lanes, outer-nodes: outer-nodes,
-      thin-nodes: thin-nodes))
+      thin-nodes: thin-nodes, silhouette: layout.silhouette))
   }
 }
 
