@@ -26,7 +26,7 @@
     + data.points.at(segment + 1).at(1) * fraction,
 )
 
-#let width(point, fixed: false) = {
+#let width(point, fixed: false, terms: false) = {
   let local = (point.at(0) - center.at(0), point.at(1) - center.at(1))
   let radial = len(local) / diameter
   let angle = calc.atan2(local.at(0), -local.at(1)) / 1deg
@@ -53,7 +53,11 @@
   } else { products.sum() }
   let shade = calc.clamp(1 - lam, 0.0, 1.0)
   if fixed { shade = _mp-scalar-rounded(shade) }
-  let result = _source-min-stroke * (2 / 3 + shade / 3)
+  let result = if terms {
+    let base = _mp-rounded(_source-min-stroke * (2 / 3))
+    let slope = _mp-rounded(_source-min-stroke * (1 / 3))
+    base + _mp-rounded(slope * shade)
+  } else { _source-min-stroke * (2 / 3 + shade / 3) }
   int(calc.round(result / _mp-unit * 65536))
 }
 
@@ -62,5 +66,6 @@
   point: point, fixed-point: fixed-point,
   width-float: width(point),
   width-point-rounded: width(fixed-point),
-  width-fixed: width(fixed-point, fixed: true)))
+  width-fixed: width(fixed-point, fixed: true),
+  width-terms: width(fixed-point, fixed: true, terms: true)))
   <m11-coast-path-time-width>

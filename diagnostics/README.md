@@ -3687,12 +3687,13 @@ intersection search tolerance.
 
 `m11_coast_path_time_width.typ` isolates the source callback width at integer
 path-time 43. The pinned source trace reports fixed width 10330 (16.16 bp
-units). Interpolating the current Typst outline at the mapped source time
-produces point `(13.7129754, 35.8870694)`; the callback still evaluates to
-10331 after leaving it floating, rounding the point to MetaPost's dimensional
-grid, or also rounding the normal and lightness arithmetic to 16.16. This
-confirms that the one-unit error is not explained by scalar rounding alone.
-The next probe should compare the source `point 43 of lm` coordinate and its
-`sphereAnglesToNormalVector` / `normalVectorToLightness` intermediates against
-the Typst callback at the same time. The fixture is diagnostic only; it does
-not change production rendering.
+units) and callback point `(-14.98723, -39.36516)` bp. Converting the Typst
+mapped point `(13.7129754, 35.8870694)` from its `(19,22) mm` center to source
+coordinates, including the y-axis inversion, reproduces that point. The float,
+point-rounded and fixed normal/lightness variants give width 10331, while
+rounding the two source width terms separately gives exactly 10330. Thus the
+local one-unit error is in width-expression arithmetic, not path-time point
+mapping. A production-wide two-term rounding change was already rejected: it
+regressed the mass-1/2/4 trees and the paired whole/globe RMSE. Keep this
+variant diagnostic-only until a source-compatible evaluation boundary can be
+applied without those regressions.
