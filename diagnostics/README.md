@@ -1170,6 +1170,23 @@ but changed thin-node totals to `19/65/33` (source `15/57/31`) for masses
 1/2/4. The candidate was reverted. A viable port needs to reproduce
 MetaPost's first-hit choice without promoting these other near-endpoint hits.
 
+Pairing all four production Typst q cubics with the captured source ray returns
+`(ray=0.99108887, q=3.95928955)`, close to MetaPost's
+`(0.99014282, 3.95935059)`. Using the ray built from the Typst q bounds on
+those same cubics instead returns the endpoint `(1, 4)`. The source ray's
+start is `3,020,339` fixed units to the right of the source q minimum; the
+generated ray starts `3,020,353` units to the right of the generated q
+minimum. This 14-unit relative-span difference changes the discrete first hit.
+
+I also tried rounding each projected coast-segment arc increment to source
+16.16 units. Rounding the horizon-arc chord samples as well moved the first
+mass-2 cut to the source-like interior, but thin-node totals became `17/55/9`
+for masses 1/2/4. Keeping horizon-arc sampling unchanged restored mass 2 to
+`57` nodes but left the first cut at the endpoint; mass 4 remained at `9`.
+Both candidates were reverted. The next useful target is reproducing the
+source q-bound span from the centerline arc construction, not loosening the
+intersection solver.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
