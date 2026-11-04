@@ -19,11 +19,13 @@ def load_source(path, landmass):
     active = False
     nodes = []
     pending_widths = []
+    pending_qknots = []
     for line in Path(path).read_text().splitlines():
         match = re.fullmatch(r"M11-COAST-BEGIN (\d+)", line)
         if match:
             active = int(match.group(1)) == landmass
             pending_widths = []
+            pending_qknots = []
             continue
         if line.startswith("M11-COAST-END "):
             active = False
@@ -33,6 +35,16 @@ def load_source(path, landmass):
         fields = line.split()
         if fields[:1] == ["S101-QKNOT"] and len(fields) >= 5:
             pending_widths.append(float(fields[4]))
+        if fields[:1] == ["S101-QKNOT-FIX"] and len(fields) >= 5:
+            _, knot = map(int, fields[1:3])
+
+            def fixed(value):
+                whole, high, low = map(int, value.split(":"))
+                return whole * 65536 + high * 256 + low
+
+            if knot == 0:
+                pending_qknots = []
+            pending_qknots.append((fixed(fields[3]), fixed(fields[4])))
         if len(fields) >= 11 and fields[:2] == ["S101", "NODE"]:
             depth, w0, w1, length = map(float, fields[2:6])
             x0, y0, x1, y1 = map(float, fields[7:11])
@@ -44,6 +56,7 @@ def load_source(path, landmass):
                 "width-max": max(w0, w1) * PT_TO_MM,
                 "width-start": pending_widths[0] * PT_TO_MM,
                 "width-end": pending_widths[-1] * PT_TO_MM,
+                "qknots-fixed": pending_qknots,
                 "length": length * PT_TO_MM,
                 "path-start": convert((x0, y0)),
                 "path-end": convert((x1, y1)),
@@ -52,9 +65,15 @@ def load_source(path, landmass):
                 "cut-time": None,
                 "left-length": None,
                 "right-length": None,
+                "q-controls-fixed": [],
                 "children": [],
             })
             pending_widths = []
+            pending_qknots = []
+        elif fields[:1] == ["S101-QCTRLPT-FIX"] and nodes:
+            control = int(fields[2])
+            nodes[-1]["q-controls-fixed"].insert(
+                control, (fixed(fields[3]), fixed(fields[4])))
         elif fields[:2] == ["S101", "CUT"] and nodes:
             nodes[-1]["cut-width"] = float(fields[3]) * PT_TO_MM
             nodes[-1]["cut-time"] = float(fields[4])
@@ -105,21 +124,23 @@ def pair_trees(source_nodes, typst_nodes):
 
     pairs, divergences = [], []
 
-    def walk(source, typst):
+    def walk(source, typst, parents=()):
         error = endpoint_error(source, typst)
         pairs.append((error, source, typst))
         if source["recurse"] != typst["recurse"]:
-            divergences.append((source, typst, error))
+            divergences.append((source, typst, error,
+                                parents[-1] if parents else None))
             return
         if source["recurse"]:
             left, right = source["children"], typst["children"]
             if len(left) != len(right):
-                divergences.append((source, typst, error))
+                divergences.append((source, typst, error,
+                                    parents[-1] if parents else None))
             count = min(len(left), len(right))
             assignment = min(itertools.permutations(right, count), key=lambda order:
                 sum(endpoint_error(a, b) for a, b in zip(left[:count], order)))
             for a, b in zip(left[:count], assignment):
-                walk(a, b)
+                walk(a, b, parents + ((source, typst),))
 
     for _, source, typst in roots:
         walk(source, typst)
@@ -145,7 +166,7 @@ def main():
           f"{sum(e <= 0.1 for e, _, _ in pairs)}; decisions agree "
           f"{sum(s['recurse'] == t['recurse'] for _, s, t in pairs)}/{len(pairs)}")
     print("first branch divergences:")
-    for source_node, typst_node, error in divergences[:12]:
+    for source_node, typst_node, error, parent in divergences[:12]:
         print(f"  depth {source_node['depth']} source "
               f"{source_node['recurse']} {source_node['path-start']} -> "
               f"{source_node['path-end']} w={source_node['width-min']:.5f}.."
@@ -162,6 +183,29 @@ def main():
               f"{typst_node.get('width-end')}; "
               f"({typst_node['left-length']:.3f}/{typst_node['right-length']:.3f} mm); "
               f"endpoint error {error:.5f} mm")
+        source_q = source_node["q-controls-fixed"]
+        typst_q = typst_node.get("q-curves-fixed") or []
+        if source_q and typst_q:
+            print(f"    source q cubic:       {source_q}")
+            print(f"    first Typst q cubic:  {typst_q[0]}")
+        source_knots = source_node["qknots-fixed"]
+        if source_knots and typst_q:
+            typst_knots = [curve[0] for curve in typst_q]
+            typst_knots.append(typst_q[-1][-1])
+            print(f"    paired q knots source/Typst: {len(source_knots)}/{len(typst_knots)}")
+            print(f"    source q endpoints: {source_knots[0]} -> {source_knots[-1]}")
+            print(f"    Typst q endpoints:  {typst_knots[0]} -> {typst_knots[-1]}")
+        if parent is not None:
+            parent_source, parent_typst = parent
+            source_q = parent_source["q-controls-fixed"]
+            typst_q = parent_typst.get("q-curves-fixed") or []
+            qtime = parent_typst.get("q-cut-time")
+            typst_segment = int(qtime) if qtime is not None else 0
+            typst_cubic = typst_q[typst_segment] if typst_segment < len(typst_q) else []
+            print(f"    parent source cut cubic: {source_q}")
+            print(f"    parent Typst q cubic:    {typst_cubic}")
+            print(f"    parent source/Typst q time: "
+                  f"{parent_source['cut-time']}/{qtime}")
 
 
 if __name__ == "__main__":

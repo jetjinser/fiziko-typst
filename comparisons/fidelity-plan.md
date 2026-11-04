@@ -75,6 +75,23 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Carry source `st`/cell-range state and callback parameterization through recursive brush cuts, first on the exact M9 contour, then validate S105. | The fresh production-matched M9 trace has 41/52 outer/thin nodes versus source 37/65; both consume 24 random calls and draw 12 dashes. The diagnostic source-q replay pairs 46 thin nodes, 43/46 recurse/stop decisions, and 11/12 dash endpoints within 0.1 mm, but integrating that forward-arc template into production regressed M9 RMSE (`0.21138138→0.21201468`). The remaining actionable mismatch is the source q-width/time mapping and recursive geometry, not RNG totals; retain a production change only after M9 and S105 crop gates pass. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M11 coast cubic callback trial (2026-11-05).** The production Typst trace
+rebuilt from the current checkout pairs 7 of 31 source thin nodes on mass 4,
+with 6/7 recurse/stop decisions agreeing; masses 1/2/4 are
+17/57/7 Typst nodes against 15/57/31 source nodes. The paired mass-4 parent
+q cubics begin at source fixed `(3003270, 10336)` and Typst
+`(3002304, 10337)`, and their selected q times differ (`0.05556` vs
+`0.43423`). Source q knots for the child number 9, as do Typst's, but their
+first endpoints differ by 15,864 fixed x units and 9 width units. A diagnostic
+extension to `compare_m11_coast_brush.py` now prints the q controls and knots
+at the first parent-aware branch divergence, avoiding the earlier ambiguous
+depth-only pairing. A production trial evaluated horizon callback points from
+the exact fullcircle source-time map instead of interpolated rendering
+samples; this left mass 4 at 7 thin nodes and expanded mass 2 from 57 to 111,
+so it was reverted before raster comparison. Exact callback point evaluation
+alone is not sufficient: next trace the parent q-hit and cubic subpath
+propagation into the child before trying width arithmetic again.
+
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,
 and call-indexed q2/q3 boundary controls. The independent
