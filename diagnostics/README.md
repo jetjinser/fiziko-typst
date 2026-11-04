@@ -1137,10 +1137,12 @@ increments now agree with their point-to-point chord lengths. Mapping the 170
 source q x knots through this corrected
 arc/time table reduces mass-2 callback-width residual from mean/max
 `13.021/357.310` to `1.314/5.985` 16.16 units; 91 knots are now within one
-unit, versus 65 before. Brush-call totals remain exact. The root recursive
-trees are still source/Typst `15/18`, `57/58`, and `31/34` for masses 1/2/4,
-and the mass-2 callback grid still has one extra sample. Keep the arc-index
-correction; the paired raster gate remains outstanding.
+unit, versus 65 before. Brush-call totals remain exact. Counting only recursive
+`thin` nodes, the source/Typst trees are `15/17`, `57/57`, and `31/33` for
+masses 1/2/4. The Typst `.nodes` trace also contains one `outer` entry per
+mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
+callback grid still has one extra sample. Keep the arc-index correction; the
+paired raster gate remains outstanding.
 
 To reproduce the reduced endpoint probe:
 
