@@ -100,6 +100,13 @@ rectangle; a crossed-tube mask-mode evaluation and the full library entry
 document both complete. This preserves the current mask/shading behavior; it
 does not yet reproduce source `shadowCut` geometry or its callback clock.
 
+On the full M11 plate with seed 1, Typst compile time fell from `140.888 s`
+at commit `82ed62f` to `83.363 s` with the shading index. The PDFs have
+identical page drawing streams and xref offsets; their differing bytes are in
+the generated creation/modification timestamps and document ID. This verifies
+that the acceleration preserves the complete vector plate while reducing
+compile time by about 41%; it is not a source-vs-Typst raster parity result.
+
 **M11 coast update (2026-11-04).** The table's earlier `54/52` total and
 mass-1 dash deficit describe the pre-rebase renderer. The current source-origin
 candidate starts merged closed outlines at the source `drawLandMass` origin,
