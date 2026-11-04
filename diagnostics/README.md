@@ -1144,6 +1144,16 @@ mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
 callback grid still has one extra sample. Keep the arc-index correction; the
 paired raster gate remains outstanding.
 
+To check whether the remaining seam cut came from treating the cumulative
+arc table's sample index as source path time, a diagnostic carried each
+outline point's explicit `source-times` beside its arc value and interpolated
+by those labels. Across all six visible masses the fixed q-control arrays,
+recursive node decisions, and call totals were unchanged; only diagnostic
+path lengths shifted in their final floating-point digits. The mapping
+candidate was reverted. The seam q-time divergence therefore is not caused by
+this sampled-index interpolation; the initial q controls or callback widths
+remain the relevant state to isolate.
+
 The first mass-2 decision divergence is now paired by the shared depth-first
 prefix rather than by raw row count. At depth 5, the source cuts at q time
 `3.95935`, producing a tiny right child of `0.45229 bp` and recursing;
