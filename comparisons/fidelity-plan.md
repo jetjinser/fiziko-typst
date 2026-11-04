@@ -1616,6 +1616,9 @@ intervals cover segments 31–32 and 19–20; the critical latter segments are
 short by 21 and 20 units, while their predecessors are high by 2. Pointwise
 geometry errors peak one segment earlier, so the next probe needs to separate
 quarter-sample reconstruction from the underlying source/Typst curve residual.
+The new dense 16-chord replay restores exact source trees for calls 4/lane 2
+and 5/lane 2, but changes call 4/lane 6 from 20 to 22 nodes. It is diagnostic
+only and does not yet justify a production q-clock rule or raster trial.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's

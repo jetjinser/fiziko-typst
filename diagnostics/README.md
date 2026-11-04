@@ -2260,7 +2260,42 @@ error. A single endpoint scale cannot correct these local arc-clock errors.
 The next probe should separate the quarter-sample reconstruction error from
 the small source/Typst curve difference on these exact segments; do not promote
 global sampling-density or endpoint-scale adjustments.
-Reproduce the local increment report with:
+
+An opt-in replay now computes each source-time segment's q arc from the
+sixteen straight chords in the dense Typst lane trace. This changes the source
+tree replay from `38/20/28` to `40/22/30`: it restores the two width-equality
+decisions at nodes 33 and 20, but introduces two extra nodes on the lane that
+already matched. Its endpoint drifts become `0/0/-9` units, while local errors
+still reach `24/28/24`; the aggregate evidence does not support using this arc
+clock for all lanes. This remains an isolated replay candidate and has not
+been connected to the renderer or passed the M11 raster gate.
+
+Reproduce the dense trace and candidate comparison with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-knot-tube-trace>).first().value' \
+  --in diagnostics/m11_knot_tube_trace.typ --root . \
+  > build/m11-knot-tube-trace.json
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_typst_q_inputs.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json \
+  build/m11-production-q-inputs.typ --dense --dense-factor 4
+nix develop path:./nix --command typst eval \
+  'query(<m11-production-q-replay>).first().value' \
+  --in diagnostics/m11_production_q_replay.typ --root . \
+  > build/m11-production-q-replay.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json \
+  --nodes-field polyline-arc-q-nodes
+nix develop path:./nix --command python \
+  diagnostics/audit_m11_lane_arc_drift.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json \
+  --arc-field polyline-arc-fixed
+```
+
+For the quarter-sample baseline increment report, use:
 
 ```sh
 nix develop path:./nix --command python \

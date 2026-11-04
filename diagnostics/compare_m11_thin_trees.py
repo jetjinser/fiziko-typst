@@ -71,7 +71,7 @@ def main():
     parser.add_argument("replay_json")
     parser.add_argument("--nodes-field", default="q-nodes",
                         choices=("q-nodes", "fifth-arc-q-nodes", "blended-arc-q-nodes",
-                                 "source-arc-q-nodes"))
+                                 "polyline-arc-q-nodes", "source-arc-q-nodes"))
     args = parser.parse_args()
     log = Path(args.log).read_text()
     replay = json.loads(Path(args.replay_json).read_text())

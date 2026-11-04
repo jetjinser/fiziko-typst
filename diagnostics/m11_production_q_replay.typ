@@ -1,6 +1,6 @@
 // Build source q templates from production lane samples plus traced callback
 // widths and source shadowCut parameter splices.
-#import "../fiziko.typ": _frame, _ink-loops, _metapost-rng-sequence, _source-dash-length, _source-min-stroke, _mp-unit, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-arc-raw
+#import "../fiziko.typ": _frame, _ink-loops, _metapost-rng-sequence, _source-dash-length, _source-min-stroke, _mp-unit, _dist, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-arc-raw
 #import "../build/m11-production-q-inputs.typ": m11-production-q-inputs
 
 #let stream = _metapost-rng-sequence(1, 7000)
@@ -29,6 +29,19 @@
   for length in fifth-segment-arcs { fifth-arc-fixed.push(fifth-arc-fixed.last() + length) }
   let blended-arcs = range(arc-fixed.len()).map(i =>
     int(calc.round((arc-fixed.at(i) + fifth-arc-fixed.at(i)) / 2)))
+  let polyline-segment-arcs = range(item.segments).map(i => {
+    let length = 0.0
+    for j in range(item.samples-per-segment) {
+      let a = item.points.at(i * item.samples-per-segment + j)
+      let b = item.points.at(i * item.samples-per-segment + j + 1)
+      length += _dist(a, b)
+    }
+    int(calc.round(length * 65536 / _mp-unit))
+  })
+  let polyline-arc-fixed = (0,)
+  for length in polyline-segment-arcs {
+    polyline-arc-fixed.push(polyline-arc-fixed.last() + length)
+  }
   let generated-q-fixed = range(item.segments).map(i => {
     let x0 = arc-fixed.at(i)
     let x1 = arc-fixed.at(i + 1)
@@ -62,6 +75,7 @@
   let generated-result = run(generated-q-fixed)
   let fifth-result = run(q-from-arcs(fifth-arc-fixed))
   let blended-result = run(q-from-arcs(blended-arcs))
+  let polyline-result = run(q-from-arcs(polyline-arc-fixed))
   let source-result = run(q-from-arcs(item.source-arc-fixed))
   (call: item.call, lane: item.lane,
     source-calls: item.source-calls,
@@ -71,11 +85,15 @@
     fifth-arc-q-nodes: fifth-result.at(2).nodes.filter(node => node.stage == "thin"),
     blended-arc-calls: blended-result.at(1),
     blended-arc-q-nodes: blended-result.at(2).nodes.filter(node => node.stage == "thin"),
+    polyline-arc-calls: polyline-result.at(1),
+    polyline-arc-q-nodes: polyline-result.at(2).nodes.filter(node => node.stage == "thin"),
     source-arc-calls: source-result.at(1), source-arc-dashes: source-result.at(2).dashes,
     source-arc-q-nodes: source-result.at(2).nodes.filter(node => node.stage == "thin"),
     segment-arcs: segment-arcs, arc-fixed: arc-fixed,
     fifth-segment-arcs: fifth-segment-arcs,
     fifth-arc-fixed: fifth-arc-fixed,
+    polyline-segment-arcs: polyline-segment-arcs,
+    polyline-arc-fixed: polyline-arc-fixed,
     source-arc-fixed: item.source-arc-fixed)
 })
 

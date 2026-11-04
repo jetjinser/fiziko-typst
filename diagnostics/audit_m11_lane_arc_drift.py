@@ -23,7 +23,7 @@ def source_arcs(path):
     return records
 
 
-def audit(log, replay):
+def audit(log, replay, arc_field):
     source = source_arcs(log)
     for item in replay:
         key = item["call"], item["lane"]
@@ -31,7 +31,7 @@ def audit(log, replay):
             continue
         expected = [0] + [source[key][i] for i in range(1, len(source[key]) + 1)]
         traced = item["source-arc-fixed"]
-        actual = item["arc-fixed"]
+        actual = item[arc_field]
         if traced != expected:
             raise ValueError(f"replay source arc table differs from source for {key}")
         if len(actual) != len(expected):
@@ -68,8 +68,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_log", type=Path)
     parser.add_argument("replay_json", type=Path)
+    parser.add_argument("--arc-field", default="arc-fixed",
+                        choices=("arc-fixed", "fifth-arc-fixed",
+                                 "polyline-arc-fixed"))
     args = parser.parse_args()
-    audit(args.source_log, json.loads(args.replay_json.read_text()))
+    audit(args.source_log, json.loads(args.replay_json.read_text()),
+          args.arc_field)
 
 
 if __name__ == "__main__":
