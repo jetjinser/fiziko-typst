@@ -1144,6 +1144,13 @@ mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
 callback grid still has one extra sample. Keep the arc-index correction; the
 paired raster gate remains outstanding.
 
+A coast-width arithmetic probe evaluated the source expression as two
+separately rounded dimensional terms, `(2/3 * minStrokeWidth) +
+(1/3 * minStrokeWidth * lightness)`, rather than rounding only the combined
+Typst expression. Random calls stayed `12/30/6`, but thin-node counts changed
+from `9/29/17` to `21/21/4` for M1/M2/M4, farther from source `15/57/31`.
+This width-arithmetic candidate was reverted without a raster trial.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated
