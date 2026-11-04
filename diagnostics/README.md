@@ -1151,6 +1151,15 @@ Typst expression. Random calls stayed `12/30/6`, but thin-node counts changed
 from `9/29/17` to `21/21/4` for M1/M2/M4, farther from source `15/57/31`.
 This width-arithmetic candidate was reverted without a raster trial.
 
+A separate M11 candidate rounded the normal and light-vector components,
+their products, the left-associated dot-product sums, and `1 - lam` to 16.16,
+following MetaPost's `scaled` scalar arithmetic. M1/M2/M4 thin-node counts and
+all brush calls remained unchanged. On mass 1, the 139 initial width knots
+matched the source exactly at 60 positions instead of 62; their absolute
+fixed-unit error sum rose from 3,501 to 3,504 (maximum unchanged at 562).
+The candidate was reverted without a raster run: quantizing the current
+Typst-derived normals does not improve their source agreement.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated
