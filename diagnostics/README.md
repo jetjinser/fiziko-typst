@@ -3276,7 +3276,11 @@ then accumulated the resulting 16.16 lengths into the generated q template.
 The 142-row trace kept its `1374` brush calls, `564` subdivision requests and
 `636` path segments, but exact source/Typst thin-node counts fell from `118/142`
 rows to `117/142`; the generated thin-node total stayed `1648` against `1696`
-source nodes. The candidate changes tree shape without improving row-count
-agreement, so it was reverted without a raster trial. This rules out simply
-replacing floating segment lengths with fixed-point `pyth-add` as the missing
-S104 arc mapping.
+source nodes. A follow-up endpoint/q-control pairing shows why the local result
+is not enough: the focused `-6.37912` row's q-arc mean/max improves
+`10.780/16 → 9.667/15` units, but full-trace endpoint pairs fall
+`1476 → 1464` and exact-width-control nodes fall `1213 → 1196`; maximum q-arc
+error remains `933` units. The candidate changes tree shape without improving
+overall recursion alignment, so it was reverted without a raster trial. This
+rules out simply replacing floating segment lengths with fixed-point `pyth-add`
+as the missing S104 arc mapping.
