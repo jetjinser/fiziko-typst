@@ -4046,19 +4046,22 @@ the current terminal callback mapping; this production change was reverted
 without a raster trial. The mass-1 terminal seam remains open, and any fix must
 distinguish its source topology from mass 4's hidden-start cyclic outline.
 
-**M11 coastline exact-cubic arc-length trial (2026-11-05, rejected).** A
-candidate replaced the eight-chord horizon arc accumulator with lengths from
-the rotated MetaPost `fullcircle` cubic segments, measured by the existing
-fixed-point cubic arc estimator. Against a freshly generated source trace, the
-candidate changed source/Typst thin-node counts on masses 1/2/4 from the
-retained `15/17`, `57/57`, `31/31` to `15/15`, `57/53`, `31/33`. Parent-aware
-decision agreement fell to `1/3`, `15/23`, and `30/31`. The q-arc controls also
-became invalid at divergent descendants (for example, mass 1's first reported
-Typst q endpoint reached `472995907922` fixed units). This indicates the new
-arc values are incompatible with the current horizon time mapping; no raster
-trial was warranted. The helper and production change were removed. The
-retained eight-chord accumulator remains in place while the source-time to
-q-arc mapping is investigated.
+**M11 coastline exact-cubic arc-length trials (2026-11-05, rejected).** The
+first candidate replaced the eight-chord horizon arc accumulator with lengths
+from the rotated MetaPost `fullcircle` cubic segments. It mistakenly added the
+fixed-point estimator's raw 16.16 result as millimetres; the resulting invalid
+q coordinates changed source/Typst thin-node counts on masses 1/2/4 from the
+retained `15/17`, `57/57`, `31/31` to `15/15`, `57/53`, `31/33`. That run is a
+unit-conversion failure, not evidence against exact cubic arc lengths. A
+corrected candidate converted the estimator result to millimetres. Its source/
+Typst counts were `15/17`, `57/61`, and `31/31`; the q.x mean/max absolute
+errors were `0.003856/0.369886`, `0.004689/0.163898`, and
+`0.004984/0.153262 mm`, versus baseline `0.003857/0.369781`,
+`0.004522/0.164164`, and `0.004984/0.153262 mm`. It did not reduce the
+seam-dominated residual and added four mass-2 thin nodes, so it was reverted
+without a raster trial. The retained eight-chord accumulator remains in place;
+the next correction needs to address the source-time/q-arc mapping, not simply
+replace the arc-length estimator.
 
 **S104 current recursive-q checkpoint (2026-11-05).** A newly regenerated
 pinned-source trace and current Typst metadata confirm that the retained
