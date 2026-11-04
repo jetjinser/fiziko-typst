@@ -1,6 +1,6 @@
 // Probe the M11 mass-4 integer path-time 43 callback at the source-mapped
 // outline point, with alternative MetaPost fixed-point boundaries.
-#import "../fiziko.typ": _globe-land-outline-data, _mp-rounded, _mp-scalar-rounded, _source-min-stroke, _mp-unit, _cos, _sin
+#import "../fiziko.typ": _globe-land-outline-data, _mp-circle-point, _mp-cubic-split, _mp-fixed-cubic-arc, _mp-rounded, _mp-scalar-rounded, _source-min-stroke, _mp-unit, _cos, _sin
 #import "../comparisons/globe-coasts.typ": upstream-landmasses
 
 #let center = (19.0, 22.0)
@@ -62,10 +62,69 @@
 }
 
 #let fixed-point = point.map(_mp-rounded)
+#let query-time = 49.0
+#let outline-time-segment = range(data.source-times.len() - 1).find(i =>
+  data.source-times.at(i) <= query-time
+    and query-time <= data.source-times.at(i + 1))
+#let outline-fraction = (
+  (query-time - data.source-times.at(outline-time-segment))
+    / (data.source-times.at(outline-time-segment + 1)
+      - data.source-times.at(outline-time-segment)))
+#let outline-point-at-time = (
+  data.points.at(outline-time-segment).at(0) * (1 - outline-fraction)
+    + data.points.at(outline-time-segment + 1).at(0) * outline-fraction,
+  data.points.at(outline-time-segment).at(1) * (1 - outline-fraction)
+    + data.points.at(outline-time-segment + 1).at(1) * outline-fraction,
+)
+#let circle-time-segment = range(data.source-circle-time-map.len() - 1).find(i => {
+  let a = data.source-circle-time-map.at(i)
+  let b = data.source-circle-time-map.at(i + 1)
+  a.arc == b.arc and a.time <= query-time and query-time <= b.time
+})
+#let circle-a = data.source-circle-time-map.at(circle-time-segment)
+#let circle-b = data.source-circle-time-map.at(circle-time-segment + 1)
+#let circle-fraction = (query-time - circle-a.time) / (circle-b.time - circle-a.time)
+#let circle-param = (
+  circle-a.param * (1 - circle-fraction)
+    + circle-b.param * circle-fraction)
+#let circle-unit-point = _mp-circle-point(circle-param)
+#let exact-circle-point = (
+  center.at(0) + diameter * circle-unit-point.at(0),
+  center.at(1) - diameter * circle-unit-point.at(1),
+)
+#let circle-cubic(segment) = {
+  let a0 = segment * 45
+  let a1 = (segment + 1) * 45
+  let p0 = (0.5 * _cos(a0), 0.5 * _sin(a0))
+  let p1 = (0.5 * _cos(a1), 0.5 * _sin(a1))
+  let h = 0.1326082449
+  let tangent(angle) = (-_sin(angle), _cos(angle))
+  let c0 = (p0.at(0) + tangent(a0).at(0) * h,
+    p0.at(1) + tangent(a0).at(1) * h)
+  let c1 = (p1.at(0) - tangent(a1).at(0) * h,
+    p1.at(1) - tangent(a1).at(1) * h)
+  let world(point) = (center.at(0) - diameter * point.at(1),
+    center.at(1) - diameter * point.at(0))
+  (world(p0), world(c0), world(c1), world(p1))
+}
+#let first-curve = int(calc.floor(circle-a.param))
+#let first-fraction = circle-a.param - first-curve
+#let first-cubic-right = _mp-cubic-split(
+  circle-cubic(first-curve), first-fraction).right
+#let source-model-arc-48-49 = _mp-fixed-cubic-arc(
+  first-cubic-right.map(point => point.map(axis => axis * 1mm)))
+#let source-model-arc-48-49-mm = source-model-arc-48-49 / 65536 * _mp-unit
 #metadata((mass: 4, source-time: source-time, source-width-fixed: 10330,
   point: point, fixed-point: fixed-point,
   width-float: width(point),
   width-point-rounded: width(fixed-point),
   width-fixed: width(fixed-point, fixed: true),
-  width-terms: width(fixed-point, fixed: true, terms: true)))
+  width-terms: width(fixed-point, fixed: true, terms: true),
+  query-time: query-time, outline-point-at-time: outline-point-at-time,
+  circle-map: (circle-a, circle-b), circle-param: circle-param,
+  exact-circle-point: exact-circle-point,
+  source-model-arc-48-49-mm: source-model-arc-48-49-mm,
+  sampled-point-width: width(outline-point-at-time),
+  exact-circle-point-width: width(exact-circle-point),
+  exact-circle-fixed-width: width(exact-circle-point.map(_mp-rounded), fixed: true)))
   <m11-coast-path-time-width>

@@ -3796,6 +3796,22 @@ smaller for masses 1 and 2 (`-0.00023816` and `-0.00007148 mm`). The next arc
 probe should pair each source path-time interval's endpoints and q.x increment
 to find where mass 4's cumulative offset first appears.
 
+That interval comparison localizes the mass-4 residual to its final horizon
+and cyclic intervals. Source q.x versus Typst arc increments are `4.53375183`
+vs `4.59447185 mm` from time 48→49, `6.15948236` vs `6.10528111 mm` from
+49→50, and `0.02163939` vs `0.00167224 mm` from 50→51. The largest per-step
+errors are therefore concentrated at the cyclic join, rather than accumulating
+as a uniform scale offset. A diagnostic extension to
+`m11_coast_path_time_width.typ` also evaluates the exact fullcircle point at
+time 49: the source map is `(time 48, parameter 3.61515976)` to `(time 49,
+parameter 4)`, and the exact endpoint `(19,37) mm` agrees with the source q
+knot. Interpolating the nearby outline samples instead gives
+`(19.052630,36.995656) mm`, `0.05280670 mm` away. The callback width moves from
+`10676` to `10674` fixed units at that exact point, versus the source knot's
+`10673`; point evaluation explains part of the local error but does not
+reproduce the full q arc or width arithmetic. Keep exact-point evaluation
+diagnostic-only: the earlier global trial regressed mass 2 recursion.
+
 A fresh paired recursion trace at the current commit confirms mass 4 remains
 `31/7` source/Typst thin nodes. The first parent-aware branch divergence is a
 source depth-3 node that recurses at local q-time `0.05556`; the geometrically

@@ -111,6 +111,14 @@ def main():
                                       + math.dist(first, second))
     source_minus_chord = [knot[1] * PT_TO_MM - chord
                           for knot, chord in zip(knots, chord_arcs)]
+    intervals = []
+    for index in range(len(knots) - 1):
+        source_increment = (knots[index + 1][1] - knots[index][1]) * PT_TO_MM
+        typst_increment = (typst_arc_at_source_time(entry, index + 1)
+                           - typst_arc_at_source_time(entry, index))
+        intervals.append((index, source_increment, typst_increment,
+                          math.dist(source_points[index], source_points[index + 1]),
+                          math.dist(typst_points[index], typst_points[index + 1])))
     print("source q.x minus Typst source-arc-at-time mean/max abs: "
           f"{sum(map(abs, arc_deltas)) / len(arc_deltas):.8f}/"
           f"{max(map(abs, arc_deltas)):.8f} mm")
@@ -129,6 +137,17 @@ def main():
               f"{source_minus_chord[43]:.8f} mm; raw/fixed Typst point chord residual: "
               f"{knots[43][1] * PT_TO_MM - typst_chord_arcs[43]:.8f}/"
               f"{knots[43][1] * PT_TO_MM - fixed_typst_chord_arcs[43]:.8f} mm")
+    print("largest per-interval source-q.x minus Typst-arc increments:")
+    for index, source_inc, typst_inc, source_chord, typst_chord in sorted(
+            intervals, key=lambda item: abs(item[1] - item[2]), reverse=True)[:8]:
+        print(f"  {index}->{index + 1}: q.x {source_inc:.8f}, "
+              f"Typst arc {typst_inc:.8f}, delta {source_inc - typst_inc:.8f}; "
+              f"source/Typst chords {source_chord:.8f}/{typst_chord:.8f} mm")
+    print("final source-time intervals:")
+    for index, source_inc, typst_inc, source_chord, typst_chord in intervals[-8:]:
+        print(f"  {index}->{index + 1}: q.x {source_inc:.8f}, "
+              f"Typst arc {typst_inc:.8f}, delta {source_inc - typst_inc:.8f}; "
+              f"source/Typst chords {source_chord:.8f}/{typst_chord:.8f} mm")
 
     matched = [item for item in pairs if item[1] <= 0.001]
     print(f"landmass {landmass} depth {depth}: {len(matched)}/{len(pairs)} knots "

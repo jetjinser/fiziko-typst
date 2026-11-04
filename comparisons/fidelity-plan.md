@@ -112,11 +112,16 @@ an additional geometry-clock discrepancy: at mass-4 source time 43 the source
 and Typst cumulative arcs differ by `0.000656 mm`, while the largest indexed
 residual is `0.061453 mm` at time 49, where the source and Typst mapped points
 are `0.052807 mm` apart. Snapping the Typst points to the 16.16 grid does not
-reduce the time-43 arc difference. The next probe should derive a callback
-point/normal/lightness evaluation that explains the one-unit width error and
-pair each source path-time interval's geometry and q.x increment to locate the
-mass-4 seam mapping error, then validate all six mass trees before any
-production change.
+reduce the time-43 arc difference. Interval deltas concentrate at the cyclic
+join: source/Typst q.x increments differ by `-0.060720`, `+0.054201`, and
+`+0.019967 mm` over times 48→49, 49→50, and 50→51. At time 49, the source
+circle map's exact point `(19,37) mm` matches the source knot, while Typst's
+sample interpolation is `0.052807 mm` away; exact evaluation improves the
+callback width from `10676` to `10674`, still one fixed unit above source
+`10673`. Keep it diagnostic-only because the earlier global exact-point trial
+regressed mass 2 recursion. Next compare the source and Typst connector/cubic
+path-time intervals at the cyclic join, then validate all six mass trees
+before any production change.
 
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,
