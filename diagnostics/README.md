@@ -1810,8 +1810,17 @@ can reuse that grid while testing against translated edge coordinates. The
 focused `m11_shifted_shadow_index.typ` diagnostic compares translated-grid
 results with rebuilding the translated polygon grid: both the 128-edge circle
 and a concave outline return identical ordered crossing records. This removes
-the per-lane grid-build prerequisite from the callback-clock scan, but does not
-yet construct or feed those clocks to production tube lanes.
+the per-lane grid-build prerequisite from the callback-clock scan. The indexed
+grid remains available for a production callback-clock scan.
+
+A first indexed production candidate applied this scan to open tube lanes,
+inserted the source ±0.05 path-time cuts, and evaluated widths on the resulting
+callback clock. The full M11 plate compiled to PDF in about 78 seconds, but a
+same-commit 600 ppi comparison against `eae87f5` regressed whole-plate RMSE from
+`0.12930867` to `0.12934565` and knot-crop RMSE from `0.07975427` to
+`0.08011008`. The production integration was reverted. The translated-grid
+crossing helper remains; a retry needs a closer source shadow-path time map and
+cubic cut geometry, then must clear the same image gates.
 
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
