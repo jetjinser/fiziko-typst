@@ -76,7 +76,7 @@ def main():
                         choices=("arc-fixed", "fifth-arc-fixed",
                                  "polyline-arc-fixed"))
     parser.add_argument("--polyline-steps", type=int, default=16,
-                        choices=(1, 2, 4, 8, 16))
+                        choices=(1, 2, 4, 8, 16, 32, 64))
     args = parser.parse_args()
     audit(args.source_log, json.loads(args.replay_json.read_text()),
           args.arc_field, args.polyline_steps)

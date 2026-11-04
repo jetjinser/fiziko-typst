@@ -99,8 +99,8 @@
         for time-index in range(piece.times.len() - 1) {
           let start-time = piece.times.at(time-index)
           let finish-time = piece.times.at(time-index + 1)
-          for subdivision in range(4) {
-            let time = start-time + (finish-time - start-time) * subdivision / 4
+          for subdivision in range(16) {
+            let time = start-time + (finish-time - start-time) * subdivision / 16
             dense-points.push(_add((layout.center-at)(time),
               _mul((layout.normal-at)(time), piece.u * (layout.rfun)(time))))
           }

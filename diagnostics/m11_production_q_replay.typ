@@ -29,7 +29,7 @@
   for length in fifth-segment-arcs { fifth-arc-fixed.push(fifth-arc-fixed.last() + length) }
   let blended-arcs = range(arc-fixed.len()).map(i =>
     int(calc.round((arc-fixed.at(i) + fifth-arc-fixed.at(i)) / 2)))
-  let polyline-arc-tables = (1, 2, 4, 8, 16).map(steps => {
+  let polyline-arc-tables = (1, 2, 4, 8, 16, 32, 64).map(steps => {
     assert(calc.rem(item.samples-per-segment, steps) == 0,
       message: "polyline step count must divide lane sample count")
     let stride = int(item.samples-per-segment / steps)

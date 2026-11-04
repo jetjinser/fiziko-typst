@@ -2289,6 +2289,18 @@ sampling density alone does not select the correct recursive state. This
 remains an isolated replay candidate and has not been connected to the
 renderer or passed the M11 raster gate.
 
+A denser follow-up samples each Typst lane interval at 16 points, reducing the
+maximum mapped post-shadow point error against the traced source cubics from
+`0.00147 mm` to `0.000573 mm`. Replaying with 16, 32, and 64 chords per
+source-time segment gives the same recursive trees at every density:
+`40/22/30` thin nodes for calls 4/lanes 2 and 6, and 5/lane 2, against source
+`40/20/30`. The 32/64-chord arc tables change cumulative endpoint offsets but
+do not change the width-equality decisions. This rules out insufficient
+polyline integration density as the remaining call mismatch; the target is
+the small difference between the generated Typst lane curves and the traced
+source curves at the critical q-map intervals. The denser trace is diagnostic
+only and does not change production geometry.
+
 Reproduce the dense trace and candidate comparison with:
 
 ```sh
@@ -2299,7 +2311,7 @@ nix develop path:./nix --command typst eval \
 nix develop path:./nix --command python \
   diagnostics/extract_m11_typst_q_inputs.py \
   /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace.json \
-  build/m11-production-q-inputs.typ --dense --dense-factor 4
+  build/m11-production-q-inputs.typ --dense --dense-factor 16
 nix develop path:./nix --command typst eval \
   'query(<m11-production-q-replay>).first().value' \
   --in diagnostics/m11_production_q_replay.typ --root . \
@@ -2314,8 +2326,8 @@ nix develop path:./nix --command python \
   --arc-field polyline-arc-fixed --polyline-steps 16
 ```
 
-Repeat the last two commands with `--polyline-steps 1`, `2`, `4`, and `8` to
-compare the other chord counts.
+Repeat the last two commands with `--polyline-steps 1`, `2`, `4`, `8`, `32`,
+and `64` to compare the other chord counts.
 
 For the quarter-sample baseline increment report, use:
 
