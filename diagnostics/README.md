@@ -3756,6 +3756,16 @@ overall recursion alignment, so it was reverted without a raster trial. This
 rules out simply replacing floating segment lengths with fixed-point `pyth-add`
 as the missing S104 arc mapping.
 
+A further diagnostic replay substituted the per-row `subdivided-q-nodes`
+collection for the retained `fixed-width-q-nodes` in the recursive alignment
+audit while leaving the established row schedule and call metadata intact. It
+preserved all `142/142` call vectors, subdivision requests, segment counts,
+and absolute RNG offsets, but endpoint pairs fell from `1476` to `776` and
+exact width-control nodes from `1213` to `655`; q-arc error was
+`59.951/917` fixed units mean/max. The subdivided-q representation therefore
+does not carry the source recursive state through child cuts. This is a
+diagnostic-only negative result; it was not rendered or integrated.
+
 ### M11 coast fullcircle callback point probe
 
 The source-width callback was evaluated at the exact cubic fullcircle point
