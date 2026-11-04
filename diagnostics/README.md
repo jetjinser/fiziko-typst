@@ -1803,6 +1803,16 @@ claim. The inverse map is still useful; the all-pairs geometry scan is not an
 acceptable renderer path. A production retry needs spatially indexed shadow
 edges or source-order intersection events computed once and shared by lanes.
 
+`_path-polygon-crossings` now accepts a polygon translation together with the
+edge grid built for the unshifted polygon. Because a uniform translation
+preserves every edge's grid-cell assignment, lane-specific `shadowCut` planes
+can reuse that grid while testing against translated edge coordinates. The
+focused `m11_shifted_shadow_index.typ` diagnostic compares translated-grid
+results with rebuilding the translated polygon grid: both the 128-edge circle
+and a concave outline return identical ordered crossing records. This removes
+the per-lane grid-build prerequisite from the callback-clock scan, but does not
+yet construct or feed those clocks to production tube lanes.
+
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
 `maxShadingStrokeWidth * lightness`; the extractor converts it to millimetres

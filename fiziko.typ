@@ -4969,13 +4969,16 @@
   (min-x: min-x, max-x: max-x, min-y: min-y, max-y: max-y,
     grid-size: grid-size, edge-grid: edge-grid)
 }
-#let _path-polygon-crossings(path, polygon, index: none) = {
+#let _path-polygon-crossings(path, polygon, index: none, shift: (0, 0)) = {
   if path.len() < 2 or polygon.len() < 3 { return () }
   let edge-index = if index == none { _polygon-edge-grid(polygon) } else { index }
-  let min-x = edge-index.min-x
-  let max-x = edge-index.max-x
-  let min-y = edge-index.min-y
-  let max-y = edge-index.max-y
+  // Translation preserves the edge-to-cell assignment. Shift the grid bounds
+  // and edge coordinates while reusing the original cell lists; shadowCut
+  // translates the same occluder outline separately for each tube lane.
+  let min-x = edge-index.min-x + shift.at(0)
+  let max-x = edge-index.max-x + shift.at(0)
+  let min-y = edge-index.min-y + shift.at(1)
+  let max-y = edge-index.max-y + shift.at(1)
   let grid-size = edge-index.grid-size
   let edge-grid = edge-index.edge-grid
   let x-cell(x) = if max-x > min-x {
@@ -5003,8 +5006,9 @@
       }
     }
     for j in candidates {
-      let b = polygon.at(j)
-      let db = _sub(polygon.at(_mod(j + 1, polygon.len())), b)
+      let b = _add(polygon.at(j), shift)
+      let next-b = _add(polygon.at(_mod(j + 1, polygon.len())), shift)
+      let db = _sub(next-b, b)
       let point = line-intersect(a, da, b, db)
       if point != none and _len(da) > 0 and _len(db) > 0 {
         let ta = _dot(_sub(point, a), da) / _dot(da, da)

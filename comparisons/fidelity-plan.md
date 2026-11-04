@@ -101,6 +101,12 @@ edge indices, and hit points in traversal order. Shared-vertex hits are
 deduplicated. This exposes the event data needed to build post-cut callback
 clocks, but the M11 lane renderer does not consume those events yet.
 
+`_path-polygon-crossings` now also accepts a uniform polygon shift while
+reusing the unshifted edge grid. The focused circle/concave-outline diagnostic
+returns identical ordered crossing records through both the shifted grid and
+a freshly built grid. This removes repeated edge-grid construction from the
+planned per-lane `shadowCut` scan; production callback remapping is still open.
+
 The same edge index now serves point-in-polygon queries in tube shading. Each
 shadow plane built by `strand-knot` carries its precomputed index through the
 lane render, so shading samples test only polygon edges in the relevant
