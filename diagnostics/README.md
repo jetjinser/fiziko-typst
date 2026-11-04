@@ -1696,6 +1696,16 @@ by tube call, versus
 `0.01149–0.01545 mm` for the old normal. The production `strand-knot` tube
 renderer now uses the source radial normal sign and actual shadow contours.
 
+A fresh run of `compare_m11_all_shading_samples.py` on the current tube trace
+confirms calls 1–3 at `0.000002 mm` width MAE. For calls 4–6, replacing only
+the diagnostic shadow labels with the traced source labels gives aggregate
+width MAEs `0.001036/0.001642/0.000382 mm`; the corresponding source-to-Typst
+sample distances are `0.000085/0.000087/0.000008 mm`. This isolates the
+remaining error to post-cut lane geometry and callback-time correspondence,
+especially calls 4–5. The source normal/shading equation is already matched on
+the unshadowed samples, so another global normal or lightness change is not
+supported by this trace.
+
 The full `tube()` replay with the shared MetaPost stream and source segment
 order gives per-call brush counts `14/54/54/42/38/16` (218 total) against
 source `14/58/54/42/38/18` (224 total), for per-call L1 error 6. The source
