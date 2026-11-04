@@ -107,10 +107,16 @@ curve's endpoint values therefore already diverge before de Casteljau child
 propagation. A trace-only source-width correction at that one callback recovers
 all 31 mass-4 recursion decisions, but is not a generic rule; applying the
 separately rounded width expression globally still regresses mass 1/2 and the
-raster gate. The next probe should derive a callback point/normal/lightness
-evaluation that explains the one-unit width error and independently improve
-the source-time-to-arc mapping, then validate all six mass trees before any
-production arithmetic change.
+raster gate. Mapping root q.x through the Typst source-time/arc table confirms
+an additional geometry-clock discrepancy: at mass-4 source time 43 the source
+and Typst cumulative arcs differ by `0.000656 mm`, while the largest indexed
+residual is `0.061453 mm` at time 49, where the source and Typst mapped points
+are `0.052807 mm` apart. Snapping the Typst points to the 16.16 grid does not
+reduce the time-43 arc difference. The next probe should derive a callback
+point/normal/lightness evaluation that explains the one-unit width error and
+pair each source path-time interval's geometry and q.x increment to locate the
+mass-4 seam mapping error, then validate all six mass trees before any
+production change.
 
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,

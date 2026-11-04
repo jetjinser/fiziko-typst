@@ -39,6 +39,31 @@ def source_knots(log_path, landmass, depth):
     raise SystemExit(f"no depth-{depth} source node for landmass {landmass}")
 
 
+def typst_arc_at_source_time(entry, source_time):
+    times = entry["source-times"]
+    arcs = entry["source-arc-positions"]
+    for index, (start, end) in enumerate(zip(times, times[1:])):
+        if (start <= source_time <= end) or (end <= source_time <= start):
+            fraction = 0.0 if end == start else (source_time - start) / (end - start)
+            path_index = index + fraction
+            arc_index = int(math.floor(path_index))
+            arc_fraction = path_index - arc_index
+            return arcs[arc_index] * (1 - arc_fraction) + arcs[arc_index + 1] * arc_fraction
+    raise ValueError(f"source time {source_time} is outside Typst's path map")
+
+
+def typst_point_at_source_time(entry, source_time):
+    times = entry["source-times"]
+    points = entry["outline-points"]
+    for index, (start, end) in enumerate(zip(times, times[1:])):
+        if (start <= source_time <= end) or (end <= source_time <= start):
+            fraction = 0.0 if end == start else (source_time - start) / (end - start)
+            return tuple(points[index][axis] * (1 - fraction)
+                         + points[index + 1][axis] * fraction
+                         for axis in range(2))
+    raise ValueError(f"source time {source_time} is outside Typst's path map")
+
+
 def main():
     if len(sys.argv) != 5:
         raise SystemExit(__doc__)
@@ -52,13 +77,58 @@ def main():
     samples = entry["width-samples"]
     center = (19.0, 22.0)
     pairs = []
+    source_points = []
+    typst_points = []
+    arc_deltas = []
     for index, qx, qy, px, py in knots:
         point = (center[0] + px * PT_TO_MM, center[1] - py * PT_TO_MM)
+        source_points.append(point)
+        typst_points.append(typst_point_at_source_time(entry, index))
+        source_arc = qx * PT_TO_MM
+        typst_arc = typst_arc_at_source_time(entry, index)
+        arc_deltas.append(source_arc - typst_arc)
         nearest = min(samples, key=lambda sample: math.dist(point, sample["point"]))
         error = math.dist(point, nearest["point"])
         width_error = abs(qy * PT_TO_MM - nearest["width"])
-        arc_error = qx * PT_TO_MM - nearest["arc"]
+        arc_error = source_arc - nearest["arc"]
         pairs.append((int(index), error, width_error, arc_error))
+
+    chord_arcs = [0.0]
+    typst_chord_arcs = [0.0]
+    fixed_typst_chord_arcs = [0.0]
+    for first, second in zip(source_points, source_points[1:]):
+        chord_arcs.append(chord_arcs[-1] + math.dist(first, second))
+    for first, second in zip(typst_points, typst_points[1:]):
+        typst_chord_arcs.append(typst_chord_arcs[-1] + math.dist(first, second))
+    fixed_points = []
+    for point in typst_points:
+        local_x = (point[0] - center[0]) / PT_TO_MM
+        local_y = (center[1] - point[1]) / PT_TO_MM
+        fixed_points.append((center[0] + round(local_x * 65536) / 65536 * PT_TO_MM,
+                             center[1] - round(local_y * 65536) / 65536 * PT_TO_MM))
+    for first, second in zip(fixed_points, fixed_points[1:]):
+        fixed_typst_chord_arcs.append(fixed_typst_chord_arcs[-1]
+                                      + math.dist(first, second))
+    source_minus_chord = [knot[1] * PT_TO_MM - chord
+                          for knot, chord in zip(knots, chord_arcs)]
+    print("source q.x minus Typst source-arc-at-time mean/max abs: "
+          f"{sum(map(abs, arc_deltas)) / len(arc_deltas):.8f}/"
+          f"{max(map(abs, arc_deltas)):.8f} mm")
+    max_arc_index = max(range(len(arc_deltas)), key=lambda index: abs(arc_deltas[index]))
+    print(f"largest indexed q.x/Typst arc delta at source time {max_arc_index}: "
+          f"{arc_deltas[max_arc_index]:.8f} mm")
+    if max_arc_index < len(source_points):
+        print(f"  source/Typst points: {source_points[max_arc_index]}/"
+              f"{typst_points[max_arc_index]}; distance "
+              f"{math.dist(source_points[max_arc_index], typst_points[max_arc_index]):.8f} mm")
+    if 43 < len(arc_deltas):
+        print(f"time 43 q.x / Typst arc / delta: "
+              f"{knots[43][1] * PT_TO_MM:.8f}/"
+              f"{typst_arc_at_source_time(entry, 43):.8f}/"
+              f"{arc_deltas[43]:.8f} mm; source q.x minus source-point chord sum: "
+              f"{source_minus_chord[43]:.8f} mm; raw/fixed Typst point chord residual: "
+              f"{knots[43][1] * PT_TO_MM - typst_chord_arcs[43]:.8f}/"
+              f"{knots[43][1] * PT_TO_MM - fixed_typst_chord_arcs[43]:.8f} mm")
 
     matched = [item for item in pairs if item[1] <= 0.001]
     print(f"landmass {landmass} depth {depth}: {len(matched)}/{len(pairs)} knots "

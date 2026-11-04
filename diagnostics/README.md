@@ -3780,6 +3780,22 @@ regressed the mass-1/2/4 trees and the paired whole/globe RMSE. Keep this
 variant diagnostic-only until a source-compatible evaluation boundary can be
 applied without those regressions.
 
+The q-knot comparison now also maps source q.x directly through Typst's
+source-time/arc table. At mass-4 source time 43, source q.x is `16.07075639 mm`
+and Typst's arc table gives `16.07141240 mm` (delta `-0.00065601 mm`). The
+source q.x is within `0.00012136 mm` of the cumulative chord over source knot
+positions; the corresponding raw Typst point chord differs by `0.00065601 mm`,
+and snapping Typst points to the 16.16 grid slightly worsens it to
+`0.00066870 mm`. Simple coordinate quantization therefore does not explain the
+arc offset. The largest indexed mass-4 q.x residual is at source time 49
+(`-0.06145303 mm`), where the source knot position `(19.00000, 36.99997) mm`
+and Typst's source-time-mapped point `(19.05263, 36.99566) mm` differ by
+`0.05280670 mm`; this is a cyclic/coast-to-horizon mapping issue, not a uniform
+arc-length scale error. At source time 43, the corresponding q.x residuals are
+smaller for masses 1 and 2 (`-0.00023816` and `-0.00007148 mm`). The next arc
+probe should pair each source path-time interval's endpoints and q.x increment
+to find where mass 4's cumulative offset first appears.
+
 A fresh paired recursion trace at the current commit confirms mass 4 remains
 `31/7` source/Typst thin nodes. The first parent-aware branch divergence is a
 source depth-3 node that recurses at local q-time `0.05556`; the geometrically
