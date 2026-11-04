@@ -99,6 +99,17 @@ Both experiments were reverted. The next probe must reproduce the source
 `drawLandMass` result-path start and carry that origin through both q width and
 arc coordinates before changing coast recursion.
 
+A follow-up source-oriented cyclic shift starts at the visible coast vertex
+after an explicit horizon intersection and aligns the arc table with the
+rotated points. This puts source q knot zero at Typst time zero for masses 1,
+2 and 4. On mass 4 it reproduces the source root cut at `14.29183 mm` (source
+`14.292 mm`) and the first traced q controls. However, its complete recursive
+tree is worse: mass 1 calls rise `10→12`, mass 2 has 58 nodes versus 57 source,
+and mass 4 falls to 8 nodes versus 31 source. The candidate was reverted
+without a render. The root state is now aligned, but child path-time mapping
+still diverges; the next comparison should pair the source and Typst child
+callbacks at the first mass-4 split.
+
 The latest M11 callback-time integration attempt used sampled lane/shadow
 polygon intersections inside `_tube-layout`; despite bounding-box rejection,
 the 600 ppi M11 run produced no PDF within 85 seconds. That production edit was
