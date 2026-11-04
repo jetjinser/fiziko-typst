@@ -3244,6 +3244,18 @@ raised generated-q endpoint pairs to 1467, but still regressed whole/hatch
 RMSE to `0.20640904/0.07186017`; this variant was also reverted. The current
 source-q audit command above reports the retained 17/19 diagnostic baseline.
 
+A separate near-half probe measured the conversion values inside Typst's
+`_mp-rounded`: products that should land at `-181.5` fixed units evaluate to
+`-181.5000000000001` and `-181.4999999999988`. The first takes the correct
+half-away rounding branch; the second falls below the tie and leaves the
+subpath endpoint one unit high. Snapping only values within `1e-7` fixed units
+of a half-integer makes the injected row exact at 19/19 endpoint/control pairs.
+The all-row audit still matches 142/142 call vectors, RNG offsets, subdivision
+requests and segment counts; node pairs shift `1476→1475`, exact width controls
+`1213→1235`. Paired 600 ppi whole/hatch RMSE regresses
+`0.20640447/0.07183428→0.20640889/0.07185927`, so the global snap was reverted.
+The fix is numerically well-localized but does not improve full S104 fidelity.
+
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node
 172's cut to x=39.537 mm, within 0.0017 mm of the source's x=39.539 mm, and

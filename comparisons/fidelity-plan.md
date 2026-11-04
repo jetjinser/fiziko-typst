@@ -105,6 +105,20 @@ were reverted. The short-row result identifies a q-subpath rounding issue,
 but the correction must preserve the broader generated-q tree and raster
 gates.
 
+A narrower quantization probe traced the tie error to millimeter-to-bp
+conversion noise inside `_mp-rounded`: two intended half-unit products evaluate
+to `-181.5000000000001` and `-181.4999999999988` fixed units. The first rounds
+to `-182`, but the second rounds to `-181`, leaving the split endpoint at
+12514 instead of the source's 12513. Snapping values within `1e-7` fixed units
+of a half-integer restores the injected row to 19/19 exact nodes and controls.
+Across the full trace it produces 1,475/1,696 endpoint pairs and 1,235 exact
+width-control nodes (baseline 1,476 and 1,213); all 142 call vectors, RNG
+offsets, subdivision requests, and segment counts still match. However, the
+paired 600 ppi RMSE regresses from `0.20640447/0.07183428` to
+`0.20640889/0.07185927` for whole/hatch; stipple is unchanged. The global snap
+was reverted. This identifies the arithmetic trigger while showing that a
+global quantizer change is not a fidelity improvement.
+
 **M11 coast callback probe (2026-11-04).** Evaluating integer source-time
 callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst
 thin-node counts from `17/57/33` to `17/43/33`, against source `15/57/31`.
