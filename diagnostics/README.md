@@ -1116,6 +1116,20 @@ still cuts at q time `0.98155212` versus source `0.99816895`. The full M11
 Typst plate compiles to one page. A fresh paired raster gate remains to be run
 because the Nix and Guix daemon sockets are unavailable in this environment.
 
+The fully visible closed contours had a different endpoint error: their
+explicit repeated endpoint was removed, and the cyclic terminal path-time was
+not counted. The pinned source root paths have lengths `38/13/5` on masses
+5/7/8, with `39/14/6` q knots; each source's last two q knots repeat the
+starting point and width. The Typst outlines previously ended at path times
+`36/11/3` and supplied only `37/12/4` widths. `_globe-land-outline-data` now
+preserves the explicit closed endpoint on a single closed run and advances
+the cyclic terminal time once. Its current source-width arrays have the exact
+source knot counts (`39/14/6`); all 59 paired 16.16 widths are within one
+fixed unit (34 are exact), and the endpoint widths are exact. Thin recursion
+node counts are `1/1/1` on both source and Typst, and RNG draw counts agree.
+The M11 `plates.typ` PDF compiles with this change. The paired raster gate is
+still pending because both Nix and Guix cannot reach their daemon sockets here.
+
 The coast trace now includes `source-time-end` so the cyclic q sampling range
 can be audited separately from the outline's last vertex time. For mass 2,
 the current callback grid spans 0–170 and produces 171 fixed-width samples,

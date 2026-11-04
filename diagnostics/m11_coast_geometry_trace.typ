@@ -18,7 +18,22 @@
     } else { none }))
   if data != none {
     arc-details.push((landmass: i + 1, outline-runs: data.runs.len(),
+      outline-run-lengths: data.runs.map(run => run.len()),
+      coast-time-segments: data.runs.map(run => run.len() - 1),
       arcs: data.arcs,
+      arc-time-segments: data.arcs.map(arc => if arc == none { 0 } else {
+        let from = arc.at(0)
+        let to = arc.at(1)
+        let boundaries = 1
+        if to > from {
+          let boundary = calc.floor(from) + 1
+          while boundary < to { boundaries += 1; boundary += 1 }
+        } else {
+          let boundary = calc.ceil(from) - 1
+          while boundary > to { boundaries += 1; boundary -= 1 }
+        }
+        boundaries
+      }),
       outline-start: data.points.first(),
       outline-points: data.points.map(p => (x: p.at(0), y: p.at(1))),
       source-times: data.source-times,

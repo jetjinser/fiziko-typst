@@ -4404,10 +4404,15 @@
   let outline-arc-positions = (0.0,)
   let closing-arc-length = none
   let path-time = 0.0
+  let source-closed-run = runs.len() == 1 and (
+    runs.first().len() > 2
+    and _dist(runs.first().first(), runs.first().last()) <= 1e-8)
   for i in range(runs.len()) {
     let run = runs.at(i)
     let repeated-close = run.len() > 2 and _dist(run.first(), run.last()) <= 1e-8
-    let coast = if repeated-close { run.slice(0, run.len() - 1) } else { run }
+    let coast = if repeated-close and not source-closed-run {
+      run.slice(0, run.len() - 1)
+    } else { run }
     for (j, point) in coast.enumerate() {
       // Keep repeated source vertices inside a coast run: MetaPost's
       // offsetPathTemplate emits a q knot for each path time, even when the
@@ -4482,6 +4487,10 @@
       path-time += arc-boundaries.len() - 1
     }
   }
+  // A fully visible closed source contour retains its explicit endpoint and
+  // the cyclic terminal knot. The latter shares the endpoint's position and
+  // width, but advances the MetaPost path-time once more.
+  if source-closed-run { path-time += 1 }
   if outline.len() > 1 {
     let closure = if closing-arc-length == none {
       _dist(outline.last(), outline.first())

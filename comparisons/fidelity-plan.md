@@ -89,6 +89,13 @@ sample counts stayed fixed, but thin-node counts changed from `17/57/33` to
 `15/41/33` for masses 1/2/4 (source `15/57/31`); the mass-2 tree worsened, so
 the production candidate was reverted. Exact cubic boundaries alone do not
 explain the mass-specific q segmentation.
+For fully visible closed masses 5/7/8, the source root paths have lengths
+`38/13/5` and q-knot counts `39/14/6`, with the last two q knots repeating
+the start. Preserving the Typst run's explicit endpoint and counting its
+cyclic terminal path-time now matches those q counts; all 59 paired fixed
+widths are within one 16.16 unit, and source/Typst thin-node and RNG-draw
+counts match. The M11 PDF compiles, but paired raster validation remains
+pending because the Nix and Guix daemons are unreachable in this environment.
 
 These are evidence-backed investigations, not claims that all seven can be
 made raster improvements. The first two have the strongest bounded replay
