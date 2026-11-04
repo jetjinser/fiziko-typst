@@ -319,9 +319,10 @@ constants alone does not reproduce MetaPost's intermediate fixed-point
 operations.
 Field-operation 16.16 rounding previously improved lattice samples but
 regressed both M9 and S105 renders, so do not apply a global field correction.
-Next, reproduce the source maximum-field arithmetic for level selection
-without changing contour corner values, then test that level-only candidate
-against both wood plates.
+The existing max/min probe's source-rounded evaluator reproduces the source
+M9 extrema when supplied the raw-fraction knot sequence: max `0.2080078125`
+and min `-10.1628875732`. It can therefore produce the source's exact first
+level without changing contour-corner samples.
 
 A narrow candidate rounded only the sampled maximum to 16.16 before deriving
 the source contour levels, leaving all contour-corner samples untouched. On
@@ -332,6 +333,19 @@ effectively unchanged. Its first-path end intersection also moved from
 `(12.854379,33)` to `(12.854690,33)`, farther from source `(12.85017,33)`.
 The small M9 pixel gain is not a consistent fidelity improvement, so the
 production change was reverted.
+
+The exact-bound path was then integrated as a production candidate: it scans
+the source-resolution mask with the 16.16 field evaluator, uses raw RNG
+fractions for level jitter, and applies MetaPost's density loop. It reproduces
+the first source level exactly and improves the focused path to
+`0.000530/0.001721 mm` mean/max error. The paired 600 ppi render still regressed:
+M9 full RMSE `0.211453→0.211578` (top-left/top-right/bottom-left/bottom-right
+`0.194675/0.233713/0.239185/0.170635 →
+0.194929/0.233658/0.239407/0.170728`); S105 full RMSE
+`0.101684→0.102440`. S105's block crop improved slightly
+(`0.127908→0.127797`), while its surface crop regressed
+(`0.075818→0.077823`). Revert the candidate; matching the first level alone
+does not compensate for the field-boundary/contour and brush-tree differences.
 
 A separate source-constant candidate set `woodBlockDetail` and
 `woodBlockYRdensity` to their MetaPost 16.16 values while leaving the other
