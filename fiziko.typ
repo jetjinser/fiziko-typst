@@ -4888,9 +4888,8 @@
   (polygon: layout.silhouette, depth: depth)
 }
 
-#let _path-intersects-polygon(path, polygon) = {
-  if path.any(point => _inside-poly(point, polygon)) { return true }
-  if path.len() < 2 or polygon.len() < 3 { return false }
+#let _polygon-edge-grid(polygon) = {
+  if polygon.len() < 3 { return none }
   // Index polygon edges into a uniform grid so each path segment checks only
   // nearby edges. Strand shadow silhouettes can have hundreds of edges, so
   // scanning every edge for every path segment wastes work on distant pairs.
@@ -4919,15 +4918,37 @@
       }
     }
   }
-  let hit = false
+  (min-x: min-x, max-x: max-x, min-y: min-y, max-y: max-y,
+    grid-size: grid-size, edge-grid: edge-grid)
+}
+#let _path-polygon-crossings(path, polygon, index: none) = {
+  if path.len() < 2 or polygon.len() < 3 { return () }
+  let edge-index = if index == none { _polygon-edge-grid(polygon) } else { index }
+  let min-x = edge-index.min-x
+  let max-x = edge-index.max-x
+  let min-y = edge-index.min-y
+  let max-y = edge-index.max-y
+  let grid-size = edge-index.grid-size
+  let edge-grid = edge-index.edge-grid
+  let x-cell(x) = if max-x > min-x {
+    int(calc.clamp(calc.floor((x - min-x) / (max-x - min-x) * grid-size),
+      0, grid-size - 1))
+  } else { 0 }
+  let y-cell(y) = if max-y > min-y {
+    int(calc.clamp(calc.floor((y - min-y) / (max-y - min-y) * grid-size),
+      0, grid-size - 1))
+  } else { 0 }
+  let crossings = ()
   for i in range(path.len() - 1) {
     let a = path.at(i)
-    let da = _sub(path.at(i + 1), a)
+    let next = path.at(i + 1)
+    let da = _sub(next, a)
     let candidates = ()
-    for iy in range(y-cell(calc.min(a.at(1), path.at(i + 1).at(1))),
-        y-cell(calc.max(a.at(1), path.at(i + 1).at(1))) + 1) {
-      for ix in range(x-cell(calc.min(a.at(0), path.at(i + 1).at(0))),
-          x-cell(calc.max(a.at(0), path.at(i + 1).at(0))) + 1) {
+    let segment-crossings = ()
+    for iy in range(y-cell(calc.min(a.at(1), next.at(1))),
+        y-cell(calc.max(a.at(1), next.at(1))) + 1) {
+      for ix in range(x-cell(calc.min(a.at(0), next.at(0))),
+          x-cell(calc.max(a.at(0), next.at(0))) + 1) {
         for j in edge-grid.at(iy).at(ix) {
           if not candidates.contains(j) { candidates.push(j) }
         }
@@ -4942,12 +4963,35 @@
         let tb = _dot(_sub(point, b), db) / _dot(db, db)
         if (ta >= -1e-6 and ta <= 1 + 1e-6
           and tb >= -1e-6 and tb <= 1 + 1e-6) {
-          hit = true
+          segment-crossings.push((ta, j, point))
         }
       }
     }
+    for (ta, j, point) in segment-crossings.sorted() {
+      let duplicate = crossings.any(event => {
+        let same-segment = (event.at("path-segment") == i and
+          calc.abs(event.at("path-fraction") - ta) <= 1e-8)
+        let same-vertex = (event.at("path-segment") + 1 == i and
+          event.at("path-fraction") >= 1 - 1e-8 and ta <= 1e-8 and
+          _dist(event.at("point"), point) <= 1e-8)
+        same-segment or same-vertex
+      })
+      if not duplicate {
+        crossings.push((path-segment: i, path-fraction: ta,
+          polygon-edge: j, point: point))
+      }
+    }
   }
-  hit
+  crossings
+}
+#let _path-intersects-polygon(path, polygon) = {
+  if path.any(point => _inside-poly(point, polygon)) { return true }
+  if path.len() < 2 or polygon.len() < 3 { return false }
+  let index = _polygon-edge-grid(polygon)
+  if _path-polygon-crossings(path, polygon, index: index).len() > 0 {
+    return true
+  }
+  false
 }
 
 /// Draw sampled strands with real over/under gaps at their intersections.

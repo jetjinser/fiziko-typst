@@ -85,6 +85,12 @@ per-lane callback intersection scan that made the callback-clock production
 experiment exceed 85 seconds, so it is not evidence that callback remapping is
 ready to integrate or that M11 raster fidelity changed.
 
+The index is now reusable through `_polygon-edge-grid`, and
+`_path-polygon-crossings` returns path-segment indices, local crossing times,
+edge indices, and hit points in traversal order. Shared-vertex hits are
+deduplicated. This exposes the event data needed to build post-cut callback
+clocks, but the M11 lane renderer does not consume those events yet.
+
 **M11 coast update (2026-11-04).** The table's earlier `54/52` total and
 mass-1 dash deficit describe the pre-rebase renderer. The current source-origin
 candidate starts merged closed outlines at the source `drawLandMass` origin,
