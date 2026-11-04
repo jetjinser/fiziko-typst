@@ -3255,6 +3255,11 @@ requests and segment counts; node pairs shift `1476→1475`, exact width control
 `1213→1235`. Paired 600 ppi whole/hatch RMSE regresses
 `0.20640447/0.07183428→0.20640889/0.07185927`, so the global snap was reverted.
 The fix is numerically well-localized but does not improve full S104 fidelity.
+Restricting the snap to q-curve splits and then to the width axis also restores
+the injected row's exact width controls, but each variant pairs 1,474/1,696
+full-trace nodes with 1,234 exact width-control nodes. Their whole/hatch RMSEs
+are `0.20640897/0.07185974` and `0.20640899/0.07185985`, respectively; both
+were reverted as well.
 
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node

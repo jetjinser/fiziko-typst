@@ -119,6 +119,13 @@ paired 600 ppi RMSE regresses from `0.20640447/0.07183428` to
 was reverted. This identifies the arithmetic trigger while showing that a
 global quantizer change is not a fidelity improvement.
 
+Restricting the snap to recursive q splits, then to the q-width axis alone,
+also restored the injected row's exact width controls but did not improve the
+all-row gate: both variants paired 1,474/1,696 nodes with 1,234 exact
+width-control nodes. Their 600 ppi whole/hatch RMSEs were respectively
+`0.20640897/0.07185974` and `0.20640899/0.07185985`; both remain worse than the
+retained baseline. These scoped variants were also reverted.
+
 **M11 coast callback probe (2026-11-04).** Evaluating integer source-time
 callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst
 thin-node counts from `17/57/33` to `17/43/33`, against source `15/57/31`.
