@@ -89,8 +89,19 @@ depth-only pairing. A production trial evaluated horizon callback points from
 the exact fullcircle source-time map instead of interpolated rendering
 samples; this left mass 4 at 7 thin nodes and expanded mass 2 from 57 to 111,
 so it was reverted before raster comparison. Exact callback point evaluation
-alone is not sufficient: next trace the parent q-hit and cubic subpath
-propagation into the child before trying width arithmetic again.
+alone is not sufficient. The ancestor trace now shows where the discrepancy
+enters: the root q cut agrees in time (`30.23958` vs `30.239578`) and its
+selected cubic has exact widths, with x controls differing by at most 49 fixed
+units. At depth 1, however, the selected q cubic already starts one fixed
+width unit too high in Typst (`10331` vs `10330`); its cut moves from source
+time `13.29167` to Typst `13.27380`, yielding right-child q starts
+`(3003270, 10336)` vs `(3002304, 10337)`. At depth 2 those differing child
+curves select `0.05556` vs `0.43423`, which explains the missing depth-3
+intersection. Thus the first actionable defect is the q curve arriving at the
+depth-1 cut (including its width-knot construction), with recursive child
+propagation amplifying it. The next probe should isolate the source and Typst
+q cubic controls around that depth-1 crossing and test a generic fixed-point
+construction against every mass-4 node before changing production arithmetic.
 
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,

@@ -15,6 +15,11 @@ PT_TO_MM = 25.4 / 72
 CENTER = (19.0, 22.0)
 
 
+def fixed(value):
+    whole, high, low = map(int, value.split(":"))
+    return whole * 65536 + high * 256 + low
+
+
 def load_source(path, landmass):
     active = False
     nodes = []
@@ -37,11 +42,6 @@ def load_source(path, landmass):
             pending_widths.append(float(fields[4]))
         if fields[:1] == ["S101-QKNOT-FIX"] and len(fields) >= 5:
             _, knot = map(int, fields[1:3])
-
-            def fixed(value):
-                whole, high, low = map(int, value.split(":"))
-                return whole * 65536 + high * 256 + low
-
             if knot == 0:
                 pending_qknots = []
             pending_qknots.append((fixed(fields[3]), fixed(fields[4])))
@@ -128,14 +128,12 @@ def pair_trees(source_nodes, typst_nodes):
         error = endpoint_error(source, typst)
         pairs.append((error, source, typst))
         if source["recurse"] != typst["recurse"]:
-            divergences.append((source, typst, error,
-                                parents[-1] if parents else None))
+            divergences.append((source, typst, error, parents))
             return
         if source["recurse"]:
             left, right = source["children"], typst["children"]
             if len(left) != len(right):
-                divergences.append((source, typst, error,
-                                    parents[-1] if parents else None))
+                divergences.append((source, typst, error, parents))
             count = min(len(left), len(right))
             assignment = min(itertools.permutations(right, count), key=lambda order:
                 sum(endpoint_error(a, b) for a, b in zip(left[:count], order)))
@@ -195,17 +193,51 @@ def main():
             print(f"    paired q knots source/Typst: {len(source_knots)}/{len(typst_knots)}")
             print(f"    source q endpoints: {source_knots[0]} -> {source_knots[-1]}")
             print(f"    Typst q endpoints:  {typst_knots[0]} -> {typst_knots[-1]}")
-        if parent is not None:
-            parent_source, parent_typst = parent
+        for ancestor_depth, (parent_source, parent_typst) in enumerate(parent):
             source_q = parent_source["q-controls-fixed"]
             typst_q = parent_typst.get("q-curves-fixed") or []
             qtime = parent_typst.get("q-cut-time")
             typst_segment = int(qtime) if qtime is not None else 0
             typst_cubic = typst_q[typst_segment] if typst_segment < len(typst_q) else []
-            print(f"    parent source cut cubic: {source_q}")
-            print(f"    parent Typst q cubic:    {typst_cubic}")
-            print(f"    parent source/Typst q time: "
+            print(f"    ancestor {ancestor_depth} source/Typst depths: "
+                  f"{parent_source['depth']}/{parent_typst['depth']}; q times: "
                   f"{parent_source['cut-time']}/{qtime}")
+            print(f"      source cut cubic: {source_q}")
+            print(f"      Typst cut cubic: {typst_cubic}")
+            source_knots = parent_source["qknots-fixed"]
+            if typst_q:
+                typst_knots = [curve[0] for curve in typst_q]
+                typst_knots.append(typst_q[-1][-1])
+                if source_knots and len(source_knots) == len(typst_knots):
+                    delta_x = [a[0] - b[0]
+                               for a, b in zip(source_knots, typst_knots)]
+                    delta_y = [a[1] - b[1]
+                               for a, b in zip(source_knots, typst_knots)]
+                    different = [index for index, (dx, dy) in
+                                 enumerate(zip(delta_x, delta_y))
+                                 if dx != 0 or dy != 0]
+                    print(f"      q knots exact x/y: "
+                          f"{len(source_knots) - sum(dx != 0 for dx in delta_x)}/"
+                          f"{len(source_knots) - sum(dy != 0 for dy in delta_y)}; "
+                          f"max abs delta: {max(map(abs, delta_x))}/"
+                          f"{max(map(abs, delta_y))} fixed")
+                    if different:
+                        print("      first differing q knots: " + ", ".join(
+                            f"{index}:({delta_x[index]},{delta_y[index]})"
+                            for index in different[:8]))
+                    selected = sorted(set((0, 1, 2, len(source_knots) // 2,
+                                           len(source_knots) - 2,
+                                           len(source_knots) - 1)))
+                    for index in selected:
+                        print(f"      knot {index} source/Typst: "
+                              f"{source_knots[index]}/{typst_knots[index]}")
+            if ancestor_depth + 1 < len(parent):
+                child_source, child_typst = parent[ancestor_depth + 1]
+                source_child_q = child_source["qknots-fixed"]
+                typst_child_q = child_typst.get("q-curves-fixed") or []
+                if source_child_q and typst_child_q:
+                    print(f"      right-child q start source/Typst: "
+                          f"{source_child_q[0]}/{typst_child_q[0][0]}")
 
 
 if __name__ == "__main__":
