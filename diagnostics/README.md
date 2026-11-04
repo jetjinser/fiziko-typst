@@ -3985,6 +3985,20 @@ q arc-x control error to mean/max `100.774/441` fixed units. Brush recursion
 counts remain 41/52 versus source 37/65, so this local level probe does not
 yet demonstrate a better recursive tree or rendered plate. The q comparator
 uses `q-nodes`, not the separate production-width trace, so it reports
-like-for-like q replay curves. The next implementation step is to reproduce
-the source contour-level bounds and random draw from the source masked field,
-then test all M9 panels and S105 before retaining that change.
+like-for-like q replay curves. The next implementation step is to compare the
+source mask-extrema and random-level calculation against this production
+builder, then pair the updated q replay and recursive tree across M9 and S105.
+
+**Mask-aware wood contour levels (2026-11-05).** `woodenThing` sets
+`woodBlockMaskPath` to an inset of the plank before `woodBlock` computes
+`minWithinMask` and `maxWithinMask`; the contour-level loop uses those masked
+extrema. The shared Typst `wooden-thing` level builder previously used extrema
+from the whole field grid. It now accepts a point mask, and source-field
+`wooden-thing` supplies the polygon interior inset by `source-res` when finding
+those extrema. The source-level RNG cursor is unchanged. A pinned-source 600 ppi
+M9/S105 run keeps M9 panel offsets `[0,1456,2823,4120]` and the S105 surface
+offset `536`; M9 RMSE moves `0.21156→0.211453` and S105 moves
+`0.102142→0.101684`. M9 top-left, bottom-left, and bottom-right crops improve;
+top-right regresses by `0.00008`. S105's block crop is pixel-metric unchanged,
+while the surface crop moves `0.076946→0.075818`. Retain this change; recursive
+wood brush trees remain open.

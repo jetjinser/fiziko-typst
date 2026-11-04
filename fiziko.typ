@@ -3613,13 +3613,37 @@
 // woodBlock walks its iso-level loop from the sampled field maximum down,
 // preserving that maximum's fractional part. Its jitter is added to the
 // source field level, so the contour threshold moves in the negative direction.
-#let _wood-source-levels(field, w, h, nx, ny, seed, rng-offset) = {
+#let _inside-source-wood-mask(point, poly, inset) = {
+  if not _inside-poly(point, poly) { return false }
+  if inset <= 0 { return true }
+  let nearest = none
+  for i in range(poly.len()) {
+    let a = poly.at(i)
+    let b = poly.at(_mod(i + 1, poly.len()))
+    let edge = _sub(b, a)
+    let length2 = _dot(edge, edge)
+    let t = if length2 == 0 { 0.0 } else {
+      calc.clamp(_dot(_sub(point, a), edge) / length2, 0.0, 1.0)
+    }
+    let distance = _dist(point, _add(a, _mul(edge, t)))
+    nearest = if nearest == none { distance }
+      else { calc.min(nearest, distance) }
+  }
+  nearest >= inset - 1e-8
+}
+
+#let _wood-source-levels(field, w, h, nx, ny, seed, rng-offset,
+                         mask: none) = {
   let values = ()
   for j in range(ny + 1) {
     for i in range(nx + 1) {
-      values.push(field(w * i / nx, h * j / ny))
+      let point = (w * i / nx, h * j / ny)
+      if mask == none or mask(point) {
+        values.push(field(point.at(0), point.at(1)))
+      }
     }
   }
+  assert(values.len() > 0, message: "source wood mask contains no field samples")
   let lo = calc.min(..values)
   let hi = calc.max(..values)
   let stream = _metapost-rng-sequence(seed, rng-offset + 32768)
@@ -3917,7 +3941,11 @@
   } else { _wood-field(angle, spacing, eyes) }
   let contour-offset = if source-field { rng-offset + wood-model.rng-count } else { 0 }
   let contour-result = if source-field {
-    let levels = _wood-source-levels(field, w, h, nx, ny, seed, contour-offset)
+    let source-mask = point => {
+      _inside-source-wood-mask(point, local-poly, source-res)
+    }
+    let levels = _wood-source-levels(field, w, h, nx, ny, seed,
+      contour-offset, mask: source-mask)
     marching-squares(field, 0, 0, w, h, levels: levels,
       nx: nx, ny: ny, with-count: true, source-walk: true)
   } else {
