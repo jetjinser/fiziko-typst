@@ -3055,6 +3055,16 @@ existing path samples; track the small raster tradeoff. Higher-density outline
 sampling (24 and 64 points per source path-time unit) was separately rejected
 because it made Typst rendering impractical.
 
+A follow-up replaced the eight-chord subinterval estimate with direct
+16.16 cubic-arc integration for each fullcircle interval. It compiled, but
+the fresh M11 coast trace was worse on two masses: mass 1 grew from 17 to 19
+Typst thin nodes and decision agreement fell from 14/15 to 13/15; mass 4
+fell from 33 to 9 Typst nodes and from 30/31 to 5/7 matching decisions.
+Mass 2 stayed at 55 nodes and 23/29 decisions. The candidate was reverted
+before a raster run. Keep the existing source-arc mapping; this direct
+integration does not reproduce the source's recursive q state and is not
+evidence for a visual improvement.
+
 ### S104 scalar-width fixed-point probe (superseded)
 
 The 142-row brush-call trace confirmed that the first mismatch is sensitive to
