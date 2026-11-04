@@ -4636,7 +4636,11 @@
           landmass: coast-landmass-ids.at(i), points: path.len(),
           calls: result.at(1), outer: result.at(2).outer,
           thin: result.at(2).thin, dashes: result.at(2).dashes,
-          nodes: result.at(2).nodes, width-samples: trace-samples))
+          nodes: result.at(2).nodes, width-samples: trace-samples,
+          outline-points: path,
+          source-times: coast-param-times.at(i),
+          source-arc-positions: coast-param-arcs.at(i),
+          source-width-fixed: source-width-fixed))
       } else { (drawing: result, trace: none) }
     }
   })

@@ -1073,6 +1073,30 @@ selected hit as MetaPost. This separates intersection-search parity from the
 remaining production gap: carrying the cubic width template through
 recursive Typst brush paths.
 
+The mass-1 seam leaf (`S101` depth 5, from `(29.59125, 11.37854)` to
+`(23.06729, 7.56214)` mm) now has a standalone four-way intersection replay in
+`m11_coast_seam_intersection.typ`. The source q cubic's y controls are
+`9794/9612/9430/9248` on the 16.16 bp grid; current Typst controls are
+`9793/9612/9430/9249`. The target is 9249, so the source endpoint is one unit
+below the cut while Typst ends exactly on it. The fixed-point solver returns
+the source-selected q time `0.99816895` when given the exact source q and ray;
+it returns `0.98155212` for the current Typst q and ray. Cross-pairing gives
+no hit for source q with Typst ray and `0.98255920` for Typst q with source
+ray. Thus the seam mismatch is in the initial q/ray geometry, not the
+fixed-point intersection routine or recursive child splitting. Reproduce the
+replay with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-coast-seam-intersection>).first().value' \
+  --in diagnostics/m11_coast_seam_intersection.typ --root .
+```
+
+The current coast trace also exposes the outline vertices, source-time labels,
+arc positions, and rounded width grid. These fields are diagnostic-only; they
+provide the inputs to pair the root q construction before changing production
+coast geometry again.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
