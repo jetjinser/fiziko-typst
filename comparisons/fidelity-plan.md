@@ -1600,3 +1600,9 @@ improve all three lanes at once. This isolates the remaining production gap
 to recovering the source q arc clock from generated lane geometry. The traced
 arc table remains an oracle only; no source-specific table is enabled in
 production.
+
+**M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
+silhouette with `per: 0` on source-sampled inputs instead of the helper's
+default `per: 12` produces identical 600 ppi M11 regional RMSE and ink
+coverage. The candidate was reverted; shadow-mask differences need a better
+source lane/cut mapping, not a higher density setting in this helper.

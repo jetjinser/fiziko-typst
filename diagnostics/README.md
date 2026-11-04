@@ -1605,6 +1605,13 @@ the source tangent within 0.000156 rad maximum (0.000033 rad mean). Enabling
 counts 212 calls against 224 source calls, so the
 two short dash-phase restarts remain open.
 
+Rebuilding the M11 shadow-plane silhouette with `per: 0` to preserve the
+already source-sampled input, instead of the helper's default `per: 12`, gives
+identical 600 ppi M11 output: whole/globe/knot RMSE remains
+`0.11478531/0.18928662/0.07840452`, and all regional ink-coverage values are
+unchanged. The production experiment was reverted; shadow coverage is not
+limited by this helper's resampling density at the current fixture and grid.
+
 The regenerated post-cubic trace pairs source call 2, lane k=6 to Typst's
 strand 0, interval 0, `u=0.5` lane within 0.000039 mm mean point error. At its
 37 matched samples, flipping the vertical component in the Typst cross-section
