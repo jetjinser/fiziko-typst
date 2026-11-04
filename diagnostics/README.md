@@ -4037,6 +4037,15 @@ endpoint crossings. Do not change the global intersection tolerance: the
 q-control inputs still differ by small fixed-point amounts before the solver
 sees them.
 
+A focused terminal-time candidate then mapped the final callback directly to
+the closed path endpoint, so its q.x included the final cyclic arc instead of
+stopping at the last sampled vertex. This left mass 1/2 unchanged at
+`15/17` and `57/57` source/Typst thin nodes, but reduced mass 4 from `31/31`
+to `31/7`. The closed endpoint is therefore not a universal replacement for
+the current terminal callback mapping; this production change was reverted
+without a raster trial. The mass-1 terminal seam remains open, and any fix must
+distinguish its source topology from mass 4's hidden-start cyclic outline.
+
 **M11 coastline exact-cubic arc-length trial (2026-11-05, rejected).** A
 candidate replaced the eight-chord horizon arc accumulator with lengths from
 the rotated MetaPost `fullcircle` cubic segments, measured by the existing
