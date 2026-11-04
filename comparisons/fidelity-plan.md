@@ -148,6 +148,11 @@ root q sample on masses 1 and 2 (139→140 and 171→172); thin-node counts and
 brush calls stay unchanged. The candidate was reverted. Keep the coast task
 focused on pairing the complete source-time/q-segment sequence and locating
 the compensating extra Typst interval before changing the cyclic join.
+Endpoint pairing now locates the first confirmed mass-1 count divergence in
+the depth-2 right child: source has 18 q segments, Typst 19, although both cut
+at q time `7.14285`. Its depth-3 children then have 8/11 source segments
+versus 8/12 Typst segments. Compare the ordered q knots at this parent to find
+the extra interval before modifying intersection logic.
 
 The sequential q-control audit applies the source-to-page vertical flip and
 pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19

@@ -1191,6 +1191,17 @@ interval is therefore already present in the parameter map before the seam
 leaf. Keep this trace field for the next probe, which should find where the
 source-time/q-segment counts first diverge during outer-path splitting.
 
+Pairing the full mass-1 depth-first prefix by centerline endpoints moves the
+first confirmed count divergence one level earlier: the source depth-2 right
+child runs from `(25.84085, 12.4634)` to the root with 18 q segments (19 q
+knots), while its Typst endpoint-paired child has 19 q-map segments. Their
+cut time is nevertheless the same (`7.14285`). The resulting source depth-3
+children have 8 and 11 q segments; Typst has 8 and 12. Thus the extra interval
+is carried into the right child even though the parent cut parameter matches.
+The next useful comparison is the ordered parent q-knot list against the
+Typst source-time bounds, to identify which interval is duplicated or omitted
+before changing the ray intersection or cut search.
+
 A closed-endpoint probe tested whether the remaining repeated-knot mismatch
 comes from merging the visible runs at the original polygon vertex. In the
 mass-1 source root, q knots 107–109 are identical in fixed x, width, and
