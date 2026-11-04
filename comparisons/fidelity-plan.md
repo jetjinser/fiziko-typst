@@ -628,6 +628,16 @@ injection remains reverted because its full-page image gate regressed.
   callback's cell-corner values. Do not change global thresholds: all 46 q
   nodes already pair within `0.1 mm`, and the full-contour raster candidate
   regressed.
+  The current paired fixed-point audit now reports source/Typst q-width ranges
+  directly: call 10 `[9248,10335]/[9249,10336]`, call 17
+  `[8159,8704]/[8161,8705]`, and call 18 `[8704,9250]/[8705,9248]`. Thus call
+  18's Typst width span is 543 units, below the 544-unit source recursion
+  step, while the source span is 546. For call 17, the selected source q cut
+  is `0.00368` and is rejected by the source `t > 0.01` guard; the paired
+  Typst cut is `0.01843` and passes. The difference is therefore in the
+  callback q-width controls at 1–2 fixed units and their cut location, not
+  only the boolean width-span test. Continue with source cell-corner and
+  fixed-point callback evaluation; retain the source controls as the oracle.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;

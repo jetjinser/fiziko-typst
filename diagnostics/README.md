@@ -421,6 +421,18 @@ and from 39/44 to 43/46 matching recurse decisions. Dash endpoint pairs within
 0.1 mm rise from 8/12 to 11/12; both traces still use 12 dashes and 24 random
 calls. Reproduce the q replay by adding `--q-replay` to
 `compare_wood_contours.py`; omit it for the production-width baseline.
+The comparator now also emits the q-control width extrema in source 16.16
+units and the exact `WBTFIX` values (`w0`, `w1`, `w2`, minimum width and step).
+On the three remaining decisions, source/Typst q-width ranges are
+`[9248,10335]/[9249,10336]` for call 10, `[8159,8704]/[8161,8705]` for call
+17, and `[8704,9250]/[8705,9248]` for call 18. Calls 10/17 therefore differ
+by only one or two fixed units at their width boundaries; call 18 differs by
+enough to put the Typst span at `543`, below the `544`-unit recursion step,
+while the source span is `546`. Call 17 additionally straddles the source
+`t > 0.01` endpoint guard: source selects `0.00368`, while the paired Typst
+cut is `0.01843`. These values make callback q-width construction and source
+fixed-point ordering the narrow target; they do not justify changing the
+global recursion thresholds.
 
 That diagnostic result did not make the full production renderer better. A
 candidate brushed each complete contour with the forward-arc q template, then

@@ -18,6 +18,8 @@ def read_source(path: Path, height: int):
     thin_nodes = []
     thin_dashes = []
     thin_calls = []
+    thin_q_widths = {}
+    thin_fixed_widths = {}
     lines = path.read_text().splitlines()
     for line in lines:
         match = re.match(r"CLLEVEL\s+(-?[\d.]+)", line)
@@ -84,6 +86,26 @@ def read_source(path: Path, height: int):
                     "path-start": (float(fields[7]), height - float(fields[6])),
                     "path-end": (float(fields[9]), height - float(fields[8])),
                 })
+        if line.startswith("WBQCTRL "):
+            fields = line.split()
+            if len(fields) == 20:
+                call_id = int(fields[1])
+                values = list(map(int, fields[4:]))
+                y_values = [values[i + 2] * 256 + values[i + 3]
+                            for i in range(0, len(values), 4)]
+                thin_q_widths.setdefault(call_id, []).extend(y_values)
+        if line.startswith("WBTFIX "):
+            fields = line.split()
+            if len(fields) == 13:
+                call_id = int(fields[1])
+                values = list(map(int, fields[3:]))
+                thin_fixed_widths[call_id] = {
+                    "w0": values[0] * 256 + values[1],
+                    "w1": values[2] * 256 + values[3],
+                    "w2": values[4] * 256 + values[5],
+                    "min-width": values[6] * 256 + values[7],
+                    "dash-step": values[8] * 256 + values[9],
+                }
         if line.startswith("WBTHINPATH ") and thin_nodes:
             fields = line.split()
             if len(fields) == 6:
@@ -114,6 +136,13 @@ def read_source(path: Path, height: int):
         if line.startswith("WBLEAF "):
             fields = line.split()
             brush_leaves.append(fields[1])
+    for call in thin_calls:
+        call_id = call["call-id"]
+        q_widths = thin_q_widths.get(call_id, ())
+        call["q-width-range-fixed"] = (
+            (min(q_widths), max(q_widths)) if q_widths else None
+        )
+        call["fixed-widths"] = thin_fixed_widths.get(call_id)
     if level is None or not points or not cells:
         raise ValueError("source log is missing its first CLLEVEL, CLPATH, or CLSTEP")
     return (level, points, cells, brush_nodes, brush_leaves, thin_nodes,
@@ -211,6 +240,9 @@ def pair_thin_trees(source_calls, source_nodes, source_dashes, typst_nodes):
         source_recurse = source["recurse"]
         typst_recurse = typst["recurse"]
         if source_recurse != typst_recurse:
+            typst_q_widths = [point[1]
+                              for curve in typst.get("q-curves-fixed") or ()
+                              for point in curve]
             divergences.append({
                 "source-id": source["call-id"],
                 "source-depth": source["depth"],
@@ -218,12 +250,18 @@ def pair_thin_trees(source_calls, source_nodes, source_dashes, typst_nodes):
                 "source-dash": source["dash"],
                 "source-widths": (source["width-a"], source["width-b"]),
                 "source-w2": decisions.get(source["call-id"], {}).get("w2"),
+                "source-fixed-widths": source.get("fixed-widths"),
+                "source-q-width-range-fixed": source.get("q-width-range-fixed"),
                 "source-length-mm": source["length"],
                 "typst-index": typst.get("trace-index"),
                 "typst-depth": typst["depth"],
                 "typst-recurse": typst_recurse,
                 "typst-dash": typst["dash"],
                 "typst-width-range": (typst["width-min"], typst["width-max"]),
+                "typst-q-width-range-fixed": (
+                    (min(typst_q_widths), max(typst_q_widths))
+                    if typst_q_widths else None
+                ),
                 "typst-target": typst["target"],
                 "typst-length-mm": typst["length"],
                 "endpoint-error-mm": error,
