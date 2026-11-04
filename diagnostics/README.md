@@ -377,6 +377,15 @@ subtract the matching first-block `CLCOL` offset for each column; `CLCOL`
 records the source column jitter as two base-256 digits. This comparison is diagnostic
 only and does not alter rendering. To reproduce the summary:
 
+The max-cell trace `(6,42)` shows a narrow path forward: running the
+fixed-point evaluator with the current model's knot coordinates reproduces all
+five source cumulative knot terms and the final source `wField` value exactly
+(`0.2035675049`). This isolates the maximum gap to production floating-point
+field evaluation, not knot placement at this sample. The minimum-cell
+evaluator still needs raw-RNG knot coordinates to match source, so this
+supports a max-only level-bounds helper rather than globally replacing
+contour-corner field values.
+
 ```sh
 nix develop path:./nix --command typst eval \
   'query(<m9-fixed-field-probe>).first().value' \
