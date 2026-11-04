@@ -1660,6 +1660,22 @@ general splice/time mapping before changing q-arc integration. The new
 residuals; `extract_m11_typst_q_inputs.py --show-segment-errors` reports the
 post-cut per-cubic position residuals.
 
+**Sampling-resolution qualification (2026-11-05).** The post-cut extractor
+evaluates the Typst lane by linear interpolation between `dense-points`; the
+trace currently stores 16 subdivisions for each interval in `piece.times`.
+For the paired 36-cubic lanes this gives 2,304 intervals. A diagnostic query
+with 64 subdivisions produced 9,216 intervals for the same lane, confirming
+that the existing `0.000181/0.000186/0.000214 mm` post-cut residuals include
+the dense-polyline interpolation error. They are not yet evidence of a
+shadowCut time-map defect. Keep the pre-cut tangent comparison as a geometry
+check, but do not use the post-cut residual to change the splice map until the
+16-versus-64 subdivision convergence is measured with the extractor. The
+64-subdivision Typst query completed; the Python extractor could not be run in
+this shell because Python is absent from `PATH` and both `nix develop` and
+`guix shell` were denied access to their daemon sockets. The exact reproducible
+rerun remains the pair of commands above with `--dense-factor 64` for the
+64-subdivision trace.
+
 Reproduce against a fresh trace in the repository devshell with:
 
 ```sh
