@@ -1180,6 +1180,17 @@ parent. Trace how the cyclic outline's source-time intervals become initial q
 segments, then preserve that segmentation and map the parent cut before
 adjusting the seam ray or width law.
 
+Private coast node traces now include `q-map`, the original source-time bounds
+associated with each q cubic. On this branch the source depth-3 parent has 11
+q segments (`S101 NODE` path length 11), while its paired Typst node has 12
+segments with bounds `126.14285→127→…→138`. Their source cut times are
+`9.00267` and `9.0`. The next source depth-4 parent has two q segments
+(source path length 2), while Typst carries three with bounds
+`135→136→137→138`; their cuts are `0.97148` and `0.97491455`. The extra q
+interval is therefore already present in the parameter map before the seam
+leaf. Keep this trace field for the next probe, which should find where the
+source-time/q-segment counts first diverge during outer-path splitting.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated

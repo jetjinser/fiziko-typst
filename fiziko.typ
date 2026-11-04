@@ -1096,6 +1096,7 @@
           left-length: if candidate == none { 0.0 } else { candidate.at(2) },
           right-length: if candidate == none { 0.0 } else { candidate.at(3) },
           recurse: recurse,
+          q-map: qmap,
           q-curves-fixed: if qcurves == none { none } else { source-q-fixed(qcurves) },
           // A terminal thin node consumes two source RNG values only when it
           // reaches thinBrushPattern: it must be below minw and long enough
