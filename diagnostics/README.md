@@ -3965,3 +3965,12 @@ not contour-cell topology or the per-contour RNG cursor. The exact source
 width-template replay does not repair that tree by itself. Next compare root
 q arc knots and recursive width crossings, then require M9 and S105 crop
 checks before retaining a production change.
+
+For that q comparison, use the actual source `cLine` path-time/arc table.
+`offsetPathTemplate` builds q.x from the arc length of MetaPost's smoothed
+path, while the contour-walk trace exposes sampled marching-squares vertices.
+Constructing q cubics directly from those vertices creates a different,
+piecewise-linear arc clock; its per-segment q controls are not a valid
+source/Typst parity measurement. The production brush-tree counts above remain
+valid, but root q controls still need a paired trace on corresponding path
+representations before attributing their recursion mismatch to q construction.
