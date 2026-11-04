@@ -3089,6 +3089,14 @@ before a raster run. Keep the existing source-arc mapping; this direct
 integration does not reproduce the source's recursive q state and is not
 evidence for a visual improvement.
 
+A separate quantization probe rounded every coast chord and polygon edge
+length to 16.16 before accumulating the existing eight-chord arc table. On
+mass 1, total arc length changed by only `-0.00000704 mm`; the recursive tree,
+including the mismatched seam q cut (`0.98155212` vs source `0.99817`), and
+the 10 brush calls were unchanged. The rounding candidate was reverted. This
+rules out final per-segment 16.16 length quantization as the seam fix; the
+remaining error is in q/path parameter construction or its cubic controls.
+
 ### S104 scalar-width fixed-point probe (superseded)
 
 The 142-row brush-call trace confirmed that the first mismatch is sensitive to
