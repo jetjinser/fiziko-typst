@@ -44,22 +44,26 @@ def main() -> None:
     if traceKnotActive:
         traceBoundaryCall := traceBoundaryCall + 1;
         for traceCurveIndex := 0 step 1 until length(q2) - 1:
-            message "M11EDGECURVEA " & decimal(traceCurveIndex) & " 2 "
+            message "M11EDGECURVEA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 2 "
                 & decimal(xpart(point traceCurveIndex of q2)/mm) & " "
                 & decimal(ypart(point traceCurveIndex of q2)/mm) & " "
                 & decimal(xpart(postcontrol traceCurveIndex of q2)/mm) & " "
                 & decimal(ypart(postcontrol traceCurveIndex of q2)/mm);
-            message "M11EDGECURVEB " & decimal(traceCurveIndex) & " 2 "
+            message "M11EDGECURVEB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 2 "
                 & decimal(xpart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
                 & decimal(ypart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
                 & decimal(xpart(point (traceCurveIndex+1) of q2)/mm) & " "
                 & decimal(ypart(point (traceCurveIndex+1) of q2)/mm);
-            message "M11EDGECURVEA " & decimal(traceCurveIndex) & " 3 "
+            message "M11EDGECURVEA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 3 "
                 & decimal(xpart(point traceCurveIndex of q3)/mm) & " "
                 & decimal(ypart(point traceCurveIndex of q3)/mm) & " "
                 & decimal(xpart(postcontrol traceCurveIndex of q3)/mm) & " "
                 & decimal(ypart(postcontrol traceCurveIndex of q3)/mm);
-            message "M11EDGECURVEB " & decimal(traceCurveIndex) & " 3 "
+            message "M11EDGECURVEB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 3 "
                 & decimal(xpart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
                 & decimal(ypart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
                 & decimal(xpart(point (traceCurveIndex+1) of q3)/mm) & " "
@@ -79,6 +83,34 @@ def main() -> None:
         endfor;
     fi;'''
     source = source.replace(boundary_anchor, boundary_trace)
+    template_anchor = "    q1 := offsetPathTemplate(q0, 0)(offsetFunction);"
+    if source.count(template_anchor) != 1:
+        raise ValueError(f"expected one tube offset-template anchor, found {source.count(template_anchor)}")
+    source = source.replace(template_anchor, template_anchor + '''
+    if traceKnotActive:
+        for traceCurveIndex := 0 step 1 until length(q0) - 1:
+            message "M11INPUTA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & decimal(xpart(point traceCurveIndex of q0)/mm) & " "
+                & decimal(ypart(point traceCurveIndex of q0)/mm) & " "
+                & decimal(xpart(postcontrol traceCurveIndex of q0)/mm) & " "
+                & decimal(ypart(postcontrol traceCurveIndex of q0)/mm);
+            message "M11INPUTB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & decimal(xpart(precontrol (traceCurveIndex+1) of q0)/mm) & " "
+                & decimal(ypart(precontrol (traceCurveIndex+1) of q0)/mm) & " "
+                & decimal(xpart(point (traceCurveIndex+1) of q0)/mm) & " "
+                & decimal(ypart(point (traceCurveIndex+1) of q0)/mm);
+            message "M11OFFSET " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & decimal(xpart(point traceCurveIndex of q1)/mm) & " "
+                & decimal(ypart(point traceCurveIndex of q1)/mm);
+        endfor;
+        message "M11OFFSET " & decimal(traceBoundaryCall) & " "
+            & decimal(length(q0)) & " "
+            & decimal(xpart(point length(q0) of q1)/mm) & " "
+            & decimal(ypart(point length(q0) of q1)/mm);
+    fi;''')
     tube_start = "vardef tubeGenerate@#(expr p, q, d, i) ="
     if source.count(tube_start) != 1:
         raise ValueError(f"expected one tubeGenerate hook, found {source.count(tube_start)}")

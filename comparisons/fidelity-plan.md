@@ -75,6 +75,18 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Carry source `st`/cell-range state and callback parameterization through recursive brush cuts, first on the exact M9 contour, then validate S105. | The fresh production-matched M9 trace has 41/52 outer/thin nodes versus source 37/65; both consume 24 random calls and draw 12 dashes. The diagnostic source-q replay pairs 46 thin nodes, 43/46 recurse/stop decisions, and 11/12 dash endpoints within 0.1 mm, but integrating that forward-arc template into production regressed M9 RMSE (`0.21138138→0.21201468`). The remaining actionable mismatch is the source q-width/time mapping and recursive geometry, not RNG totals; retain a production change only after M9 and S105 crop gates pass. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
+trace now includes each subdivided centerline cubic, q1 offset-template knot,
+and call-indexed q2/q3 boundary controls. The independent
+`diagnostics/compare_m11_offset_curves.py` replay of the upstream
+`offsetPathGenerate` construction matches all 1,536 traced boundary control
+points with mean error `0.0000218–0.0000282 mm` and maximum `0.0000990 mm`.
+This validates the source geometry equation and supplies the direct oracle for
+porting it to Typst. It does not yet establish production lane or raster
+parity; the next implementation should generate both source boundaries and
+interpolate their cubic controls per longitudinal lane before applying
+`shadowCut`.
+
 **S104 source-q row probe (2026-11-04).** The first focused row, source
 `y=-11.76086` / Typst row 99, has the same 19 thin-node count but only 13
 source-node endpoint pairs under the generated q template. Injecting the

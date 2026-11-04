@@ -1718,7 +1718,7 @@ printf 'selected := 11; input main.mp;\n' \
   > /tmp/m11-tube-outline-trace/trace.mp
 (cd /tmp/m11-tube-outline-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
-rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11BQPT|^M11BRCUT|^M11QPT|^M11THINPATH|^M11TCUT|^M11TCUTFIX|^M11TCUTPATH|^M11DASH' \
+rg '^M11TS|^M11TO|^M11EDGE|^M11EDGECURVE|^M11CENTER[AB]|^M11INPUT[AB]|^M11OFFSET|^M11CURVE|^M11POST|^M11CUT|^M11ANGLE|^M11WIDTHINPUT|^M11LIGHT|^M11WIDTHFIX|^M11SHADOW|^M11THIN|^M11THINCALC|^M11BQPT|^M11BRCUT|^M11QPT|^M11THINPATH|^M11TCUT|^M11TCUTFIX|^M11TCUTPATH|^M11DASH' \
   /tmp/m11-tube-outline-trace/trace.log
 python3 diagnostics/extract_m11_tube_outlines.py \
   /tmp/m11-tube-outline-trace/trace.log \
@@ -1730,8 +1730,11 @@ typst eval 'query(<m11-knot-tube-trace>).first().value' \
 
 The midpoint and boundary cubic controls are split into paired `A`/`B` log
 records (`M11CENTERA/B`, `M11EDGECURVEA/B`) so MetaPost does not wrap their
-coordinates across transcript lines. Join records by call and curve index
-before comparing controls. `M11CURVEA/B` records do the same for source lanes
+coordinates across transcript lines. Boundary records carry the tube call,
+curve index, and side; input records `M11INPUTA/B` carry each subdivided
+centerline cubic, and `M11OFFSET` records its offset-template knots. Join each
+pair by tube call and curve index before comparing controls. `M11CURVEA/B`
+records do the same for source lanes
 k=2, 6, and 8; `M11PARAM` records list the current lane, centerline, and
 `tubeWidth` path lengths. `M11POSTPARAM` and `M11POSTCURVEA/B` capture each
 lane after `shadowCut`, immediately before `brushGenerate`. `M11CUTSHADOW`
@@ -1772,6 +1775,20 @@ u * radius(t)`. That explains why denser samples lower point error but do not
 reproduce the exact q-arc threshold decisions. The next geometry port should
 implement and pair the source boundary cubics and `interpath` lane controls;
 only then should their post-`shadowCut` subpaths feed the q-template replay.
+The source boundary step is now independently replayed by
+`compare_m11_offset_curves.py`. It integrates each local half-path arc with
+Simpson's rule, applies the source tangent-ray corner intersection and
+control-handle scaling, and compares against the traced q2/q3 cubics. Across
+1,536 control points from all six M11 tube segments and both sides, mean error
+ranges from `0.0000218` to `0.0000282 mm`, with a maximum of `0.0000990 mm`.
+This validates the geometric construction independently of the raster
+renderer; it does not yet port it into Typst. Run it on the trace above with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_offset_curves.py \
+  /tmp/m11-tube-outline-trace/trace.log
+```
 
 `analyze_m11_shadow_callbacks.py` pairs each pre/post path length with the
 integer `offsetPathTime` callback samples (`M11WIDTHINPUT`/`M11LIGHT`). On all
