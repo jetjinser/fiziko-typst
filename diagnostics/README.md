@@ -3722,3 +3722,17 @@ the global source-arithmetic candidate still fails two other coast trees and
 needs the same-plate raster gate. The next step is to identify a principled
 source-time/geometry condition that applies the needed correction without
 changing unrelated callback knots.
+
+The one-sample trace correction was also rendered as a temporary M11 candidate.
+At 600 ppi it changes whole/globe RMSE from
+`0.11478405/0.18928154` to `0.114783/0.189277`; knot, eye, and refraction
+metrics remain unchanged. This is a measurable but very small visual gain,
+alongside exact mass-4 tree decisions. The hard-coded mass/time override was
+removed because it does not generalize to arbitrary coast inputs. The
+full-fixed-arithmetic candidate improves root-width exact matches across all
+six visible masses (`75/139→129/139`, `83/170→154/170`, `38/52→48/52`,
+`22/39→36/39`, `7/14→14/14`, `5/6→6/6`) with no increase in maximum residual,
+but its M11 whole/globe RMSE is `0.114835/0.189485` and masses 1/2 have 13/97
+thin nodes against 15/57 source. It was removed. These results show that
+source callback arithmetic is part of the fix, but it must be paired with a
+source-accurate recursive q/path mapping before it can be enabled globally.
