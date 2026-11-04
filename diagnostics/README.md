@@ -3200,6 +3200,24 @@ nix develop path:./nix --command python diagnostics/compare_s104_row_calls.py \
   /tmp/s104-fresh/typst-row-trace-width-q-all.json --generated-q
 ```
 
+For the focused source `y=-11.76086` / Typst row 99, the hatch-row diagnostic
+contains the four 16.16 q cubics captured from source outer-template trace
+serial 178. Rebuild the replay and compare its source-q node collection with:
+
+```sh
+typst eval 'query(<s104-hatch-rows>).first().value' \
+  --in diagnostics/flat_surface_hatch_trace.typ --root . \
+  > /tmp/s104-row99-source-q.json
+nix develop path:./nix --command python \
+  diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-rng-draw-trace/trace.log /tmp/s104-row99-source-q.json \
+  --source-y=-11.76086 --node-field=source-q-nodes --largest-arc-errors=5
+```
+
+This yields 17/19 endpoint pairs and 15 exact width/arc-control pairs; the two
+unpaired source nodes span a short interval near x=36.5 mm. It is a diagnostic
+oracle for center-path child mapping, not a production q integration.
+
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node
 172's cut to x=39.537 mm, within 0.0017 mm of the source's x=39.539 mm, and

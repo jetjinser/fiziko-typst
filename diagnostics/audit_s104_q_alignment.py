@@ -56,6 +56,10 @@ def main() -> int:
                         help="restrict the audit to one source row coordinate")
     parser.add_argument("--largest-arc-errors", type=int, default=0,
                         help="print the largest paired q-arc control residuals")
+    parser.add_argument("--node-field", default="fixed-width-q-nodes",
+                        choices=("nodes", "source-q-nodes", "width-q-nodes",
+                                 "fixed-width-q-nodes"),
+                        help="Typst node collection to compare")
     args = parser.parse_args()
 
     src_rows = source_rows(args.source_log)
@@ -69,13 +73,14 @@ def main() -> int:
     row_reports = []
     x_errors = []
     x_node_reports = []
+    unmatched_source = []
     considered_rows = 0
     for row_index, (src_row, typ_row) in enumerate(zip(src_rows, typ_rows), 1):
         source_y = src_row["row"]
         if args.source_y is not None and abs(source_y - args.source_y) > 1e-5:
             continue
         considered_rows += 1
-        candidates = [node for node in typ_row.get("fixed-width-q-nodes", ())
+        candidates = [node for node in typ_row.get(args.node_field, ())
                       if node["stage"] == "thin" and node.get("q-curves-fixed")]
         used = set()
         row_matched = 0
@@ -89,6 +94,8 @@ def main() -> int:
                 if nearest is None or distance < nearest[0]:
                     nearest = (distance, index, node, reverse)
             if nearest is None or nearest[0] > args.endpoint_tolerance:
+                unmatched_source.append((source_y, serial, source_ends,
+                                         None if nearest is None else nearest[0]))
                 continue
             distance, index, node, reverse = nearest
             used.add(index)
@@ -158,6 +165,12 @@ def main() -> int:
         if source_count > matched:
             print(f"  pair {index}: source y={source_y:.5f}, Typst row={typ_row}, "
                   f"nodes={matched}/{source_count}")
+    if unmatched_source:
+        print("unmatched source node endpoints:")
+        for source_y, serial, ends, nearest in unmatched_source:
+            nearest_text = "none" if nearest is None else f"{nearest:.6f} mm"
+            print(f"  row={source_y:.5f} node={serial} "
+                  f"start={ends[:2]} end={ends[2:]} nearest={nearest_text}")
     return 0
 
 
