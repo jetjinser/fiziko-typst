@@ -1167,6 +1167,19 @@ leaf's centerline endpoints and q controls were also unchanged. Revert this
 candidate: the seam mismatch is already present in the q/ray inputs, so
 rounding the later center-path mapping cannot repair it.
 
+Pairing the mass-1 source depth-4 parent with its nearest Typst centerline
+parent gives a more specific q-state discrepancy. The source parent has three
+q knots, at fixed x values `23666483`, `25123928`, and `25193114`; the Typst
+parent has four q-curve endpoints, `23666483`, `25122179`, `25124234`, and
+`25193396`. The two Typst knots around `25123928` are separated by only 2,055
+fixed x units, while the source carries one knot there. Their endpoint widths
+are within one fixed unit. The source depth-4 cut is q time `0.97148`; Typst's
+paired cut is `0.97491455`. This is earlier than the depth-5 seam leaf and
+shows that its cut-time difference arrives with a differently segmented q
+parent. Trace how the cyclic outline's source-time intervals become initial q
+segments, then preserve that segmentation and map the parent cut before
+adjusting the seam ray or width law.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated
