@@ -591,7 +591,21 @@ injection remains reverted because its full-page image gate regressed.
   regressed all four M9 panel crops (whole RMSE `0.211560 → 0.212807`); it was
   reverted. The remaining gap is matching the source's endpoint state and
   clipping order without changing the brush's recursive tree adversely.
-  Brush recursion remains open (11 outer/48 thin nodes versus 37/65 source),
+  Brush recursion remains open. A fresh 2026-11-04 trace of the current
+  checkout supersedes the earlier counts: Typst has 41 outer/52 thin nodes
+  versus 37/65 source, while dash leaves and RNG calls both match at 12/24.
+  The independently replayed source path matches all 22 vertices and 19 cells
+  within `0.000718 mm`; root length is 17.2651 mm versus 17.2808 mm source.
+  Parent-aware thin pairing is 44 nodes, 37 within 0.1 mm, with 39/44
+  recurse/stop decisions. The trace refresh itself does not imply changed
+  raster output; the separate controlled candidate gate is recorded below.
+  Rounding generated q-knot arc coordinates to the MetaPost 16.16 grid leaves
+  this tree unchanged and produces pixel-identical S105/M11 renders, but M9
+  RMSE regresses `0.21138138 → 0.21152740` on paired 600 ppi runs; the edit was
+  reverted. Endpoint quantization alone is therefore not the missing wood
+  recursion state. Continue tracing the mapped source q time and recursive
+  path geometry, rather than changing global cut thresholds.
+  Brush recursion remains open (current 41 outer/52 thin versus 37/65 source),
   and only the full diagnostic contour currently has the complete source-time
   state mapping.
   Typst thin-node traces now include endpoint widths: at paired call 10 they

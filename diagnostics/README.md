@@ -388,6 +388,27 @@ geometry-guided parent pairs, not proof of identical trees; the close branches
 narrow the source audit to width-level selection and endpoint/candidate
 validity without justifying a global threshold change.
 
+The trace was regenerated from the pinned flake source on 2026-11-04 and the
+Typst JSON was evaluated from the current checkout. This fresh pairing
+supersedes the older 50/48 thin-node figures above for the checked-in
+`m9_contour_walk_trace.typ`: source has 37 outer nodes and 65 thin nodes;
+Typst has 41 outer nodes and 52 thin nodes. Both have 12 dash leaves and 24
+random calls. The source cLine replay independently reproduces all 22 path
+points and 19 visited cells (maximum point error `0.000718 mm`). Root lengths
+are `17.2808/17.2651 mm` (source/Typst), with the same close first cut
+(`0.00381 mm`). Parent-aware thin-tree pairing reports 44 node pairs, 37
+within `0.1 mm`, and 39/44 matching recurse/stop decisions. The five reported
+branch divergences include three close width-threshold/candidate cases and
+two later geometry mismatches at about `0.39/0.50 mm`. This updates diagnostic
+counts only; no renderer change or new raster claim is implied.
+An experiment also rounded each generated q knot's cumulative arc coordinate
+to the MetaPost 16.16 grid before building its straight cubic. It left the M9
+outer/thin tree and random-call count unchanged. Paired 600 ppi
+baseline/candidate renders show M9 RMSE regressing `0.21138138 → 0.21152740`;
+S105 and M11 pixels are identical. The renderer edit was reverted. This
+isolates the remaining mismatch to width/path-time construction or recursive
+geometry, rather than q-knot endpoint quantization.
+
 A fresh pinned-source trace identifies an earlier geometric mismatch that
 should be resolved before those local branch decisions. MetaPost's
 `woodBlock` draws `isoLines` into an intermediate picture, then clips that
