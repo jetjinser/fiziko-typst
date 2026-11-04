@@ -37,6 +37,7 @@
       outline-start: data.points.first(),
       outline-points: data.points.map(p => (x: p.at(0), y: p.at(1))),
       source-times: data.source-times,
+      source-circle-time-map: data.source-circle-time-map,
       source-time-end: data.source-time-end,
       endpoints: data.runs.map(run => (first: run.first(), last: run.last()))))
   }

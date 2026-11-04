@@ -3478,3 +3478,26 @@ Because the full recursion trees diverge substantially, the exact-point
 callback candidate was reverted without a raster trial. This shows that
 pointwise width residual alone is not a reliable coast-tree predictor; the
 q-path knot and callback parameterization must be carried together.
+
+### M11 coast fullcircle source-time map
+
+The coast geometry trace now exposes a per-arc map from source path time to
+the parameter of the original fullcircle cubic. Each arc boundary records
+`time = path-time + boundary-index` and `parameter = circle-boundary - 2`;
+entries retain an arc id so interpolation cannot cross a coast run or jump
+between separate arcs. On mass 1, source times `135/136/137` map to circle
+parameters `-1.51304855/-1/-0.33064501`. This confirms that time `136` is an
+exact cubic knot even though it falls between the 16-step outline samples.
+
+A callback replay using that scoped map and source 16.16 point rounding changes
+only mass-1 time `136`, restoring q-curve 9's initial width from `9793` to the
+source value `9796`. Its following q-control widths become
+`9796/9609/9421/9234`, still one unit away from source on controls 1 and 3.
+The same callback replay changes mass-2 times `58, 59, 63, 103, 107, 108, 109,
+167` by `+1, +1, -2, -2, +1, +1, -6, -1`, and mass-4 times `49, 50` by
+`-1, -2`. Thin-node counts move from baseline `17/57/33` to `17/43/33` for
+masses 1/2/4, against source `15/57/31`, so the drawing callback change was
+reverted. An earlier unscoped interpolation crossed the coast gaps between
+mass-2 arcs, changed 97 callback widths, and raised its thin-node count to 111;
+that candidate was also reverted. The retained map is diagnostic metadata
+only and does not alter generated widths or drawing output.

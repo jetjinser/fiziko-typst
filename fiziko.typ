@@ -4439,6 +4439,7 @@
   }
   let outline = ()
   let outline-times = ()
+  let circle-time-map = ()
   // Keep q-template arc coordinates independent from outline sampling density.
   let outline-arc-positions = (0.0,)
   let closing-arc-length = none
@@ -4485,6 +4486,9 @@
         }
       }
       arc-boundaries.push(to)
+      for (j, boundary) in arc-boundaries.enumerate() {
+        circle-time-map.push((time: path-time + j, param: boundary - 2, arc: i))
+      }
       let steps = int(calc.ceil(calc.abs(to - from) * 16))
       let previous-arc-time = from
       for j in range(steps + 1) {
@@ -4547,6 +4551,11 @@
     let total-arc = outline-arc-positions.last()
     let rotated-points = outline.slice(1) + outline.slice(0, 1)
     let rotated-times = outline-times.slice(1).map(t => t - 1) + (path-time,)
+    let circle-map-after = circle-time-map.filter(entry => entry.time >= 1)
+      .map(entry => (time: entry.time - 1, param: entry.param, arc: entry.arc))
+    let circle-map-before = circle-time-map.filter(entry => entry.time < 1)
+      .map(entry => (time: entry.time + path-time - 1, param: entry.param, arc: entry.arc))
+    circle-time-map = circle-map-after + circle-map-before
     let rotated-arcs = outline-arc-positions.slice(2, outline.len() + 1)
       .map(a => a - origin-arc)
     rotated-arcs.push(total-arc - origin-arc)
@@ -4558,6 +4567,7 @@
   // The repeated closed endpoint above already accounts for the cyclic knot;
   // adding another terminal interval would shift later q callback times.
   (points: outline, source-times: outline-times,
+    source-circle-time-map: circle-time-map,
     source-arc-positions: outline-arc-positions,
     source-time-end: path-time,
     runs: runs, arcs: arcs)
