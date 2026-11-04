@@ -3989,6 +3989,15 @@ like-for-like q replay curves. The next implementation step is to compare the
 source mask-extrema and random-level calculation against this production
 builder, then pair the updated q replay and recursive tree across M9 and S105.
 
+An additional source trace wraps every `uniformdeviate` call in `woodBlock`
+and reports the counter at the first contour jitter. The counter is 205 after
+the draw, so the source consumes 204 random values before it; this matches the
+Typst field model's `rng-count: 204`. The source's fixed jitter is `226/65536`,
+while the Typst stream value at that cursor is `0.661682`. Thus a missing or
+extra source RNG call does not explain the level gap. The remaining discrepancy
+lies in the source jitter/level arithmetic or its fixed-point conversion; no
+production adjustment is justified until that calculation is isolated.
+
 **Mask-aware wood contour levels (2026-11-05).** `woodenThing` sets
 `woodBlockMaskPath` to an inset of the plank before `woodBlock` computes
 `minWithinMask` and `maxWithinMask`; the contour-level loop uses those masked
