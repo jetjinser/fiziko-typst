@@ -3998,6 +3998,17 @@ extra source RNG call does not explain the level gap. The remaining discrepancy
 lies in the source jitter/level arithmetic or its fixed-point conversion; no
 production adjustment is justified until that calculation is isolated.
 
+The source loop itself is now pinned down: with maximum `13632/65536`, density
+`2731/65536`, loop index `-261592/65536`, and jitter `226/65536`, MetaPost
+16.16 operations reproduce `CLLEVELFIX = -10675/65536` exactly. A candidate
+replaced the shortcut level sequence with that fixed-point loop, deriving its
+bounds from the Typst field maximum. It improved focused M9 path error slightly
+(`0.00175/0.00414 mm` mean/max), but the 600 ppi M9 plate regressed against the
+retained mask-aware baseline: full RMSE `0.211453 → 0.211506`, with all four
+panel crops unchanged or worse. The candidate was reverted. The remaining
+error is the sampled field maximum (`0.20803571` Typst vs `0.20800781` source);
+the existing max-only field-arithmetic probe remains the next useful target.
+
 **Mask-aware wood contour levels (2026-11-05).** `woodenThing` sets
 `woodBlockMaskPath` to an inset of the plank before `woodBlock` computes
 `minWithinMask` and `maxWithinMask`; the contour-level loop uses those masked
