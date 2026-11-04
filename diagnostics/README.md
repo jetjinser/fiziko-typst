@@ -3909,3 +3909,24 @@ but its M11 whole/globe RMSE is `0.114835/0.189485` and masses 1/2 have 13/97
 thin nodes against 15/57 source. It was removed. These results show that
 source callback arithmetic is part of the fix, but it must be paired with a
 source-accurate recursive q/path mapping before it can be enabled globally.
+
+**M11 current coast-tree checkpoint (2026-11-05).** After the fullcircle
+parameter inversion change, a fresh pinned-source `instrument_brush.py` +
+`instrument_m11_coasts.py` trace and current Typst metadata produce these
+source/Typst thin-node counts: mass 1 `15/17`, mass 2 `57/57`, and mass 4
+`31/31`. Parent-aware decision agreement is `14/15`, `26/31`, and `31/31`,
+respectively. Root endpoint errors are `0.00014`, `0.00012`, and `0.00007 mm`.
+The older mass-4 `31/7` discussion above predates the committed cubic-time
+inversion; it is retained as diagnostic history, not the current state.
+
+The remaining mass-1 divergence is the terminal seam: at the paired depth-5
+node, source stops at q-time `0.99817` while Typst recurses at `0.98076`;
+the source and Typst first q-cubic x starts differ by 3,664 fixed units and
+their y starts by one unit. The parent cuts already agree closely (`23.71552`
+vs `23.71739`, `7.14285` vs `7.14285`, and `9.00267` vs `9.0` at the traced
+ancestors), so the next useful work is to propagate source-compatible child
+q endpoints/cubic controls through those cuts. Mass 2 has the correct node
+count but five parent-aware decision mismatches, concentrated in narrow
+endpoint crossings. Do not change the global intersection tolerance: the
+q-control inputs still differ by small fixed-point amounts before the solver
+sees them.
