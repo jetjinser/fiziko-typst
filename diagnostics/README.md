@@ -3451,3 +3451,18 @@ error remains `933` units. The candidate changes tree shape without improving
 overall recursion alignment, so it was reverted without a raster trial. This
 rules out simply replacing floating segment lengths with fixed-point `pyth-add`
 as the missing S104 arc mapping.
+
+### M11 coast fullcircle callback point probe
+
+The source-width callback was evaluated at the exact cubic fullcircle point
+for integer path times on horizon arcs, rather than at the corresponding
+interpolated point on the 16-step sampled outline. This is geometrically
+source-oriented, but its recursion result is worse: Typst thin-node counts on
+masses 1/2/4 change from `17/57/33` to `9/22/17`, against source
+`15/57/31`. The fixed-width comparison is mixed: mass 1 exact values rise
+`75/139 → 76/139`; mass 2 falls `83/170 → 81/170` although its maximum error
+improves `6 → 4` units; mass 4 remains far off at roughly 267 units maximum.
+Because the full recursion trees diverge substantially, the exact-point
+callback candidate was reverted without a raster trial. This shows that
+pointwise width residual alone is not a reliable coast-tree predictor; the
+q-path knot and callback parameterization must be carried together.

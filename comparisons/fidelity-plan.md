@@ -74,6 +74,15 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Carry source `st`/cell-range state and callback parameterization through recursive brush cuts, first on the exact M9 contour, then validate S105. | The fresh production-matched M9 trace has 41/52 outer/thin nodes versus source 37/65; both consume 24 random calls and draw 12 dashes. The diagnostic source-q replay pairs 46 thin nodes, 43/46 recurse/stop decisions, and 11/12 dash endpoints within 0.1 mm, but integrating that forward-arc template into production regressed M9 RMSE (`0.21138138→0.21201468`). The remaining actionable mismatch is the source q-width/time mapping and recursive geometry, not RNG totals; retain a production change only after M9 and S105 crop gates pass. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M11 coast callback probe (2026-11-04).** Evaluating integer source-time
+callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst
+thin trees from `17/57/33` to `9/22/17`, against source `15/57/31`. The
+mass-1 exact-width count rose only `75/139 → 76/139`; mass 2 fell
+`83/170 → 81/170` while its maximum fixed-width error improved `6 → 4` units.
+The large tree regressions outweigh that local residual improvement, so the
+candidate was reverted without a raster trial. See the detailed fixed-width
+comparison in `diagnostics/README.md`.
+
 **M11 shadow geometry performance probe (2026-11-04).** `_path-intersects-polygon`
 now indexes polygon edges in a uniform grid and checks only edges in cells
 overlapped by each path segment. Direct Typst comparisons against the former
