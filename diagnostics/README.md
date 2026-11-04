@@ -3670,3 +3670,17 @@ no component regression: whole RMSE changes `0.114784047→0.114782776`, globe
 `0.189281541→0.189276409`, while knot, eye, and refraction RMSEs are unchanged.
 Retain the source-origin correction for its path-time and root-q alignment;
 continue tracing the recursive q split before claiming mass-4 brush parity.
+
+The source trace localizes this cut-time jump to the first cubic of that
+child's q template. Source `S101-QX2/QY2` controls are
+`(45:211:134, 0:40:96)`, `(46:11:194, 0:40:102)`,
+`(46:67:255, 0:40:108)`, `(46:124:59, 0:40:114)`; its left ray begins at
+`x=45:211:134`, height `0:40:97`. The rotated Typst child instead starts at
+fixed q control `(3002304, 10337)`, i.e. x `45.81152` and width fixed value
+`10337`, while the source start x is `45.82626` and source width is `10336`.
+That one-unit width and `0.01474 bp` x offset move the start from just below
+the source ray at its left bound to a point on the ray but outside its x range;
+the first source intersection at `0.05556` is therefore absent and Typst
+selects the later hit at `0.43423`. The next fix must recover the fractional
+source q.x and width at this recursive boundary, rather than changing the
+intersection search tolerance.

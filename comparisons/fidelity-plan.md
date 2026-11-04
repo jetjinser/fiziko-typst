@@ -1458,3 +1458,10 @@ component metrics unchanged. Keep the origin mapping; recursive mass-4
 decisions remain worse (`31/7` thin nodes), with the first child cut at source
 q time `0.05556` versus Typst `0.43423`. The next target is fixed-point q
 subpath propagation after the matching root cut (`30.23958`).
+
+The source/Typst child q-control comparison now pinpoints why that hit changes:
+source starts the first q cubic at x `45.82626 bp`, width fixed `10336`, exactly
+at its left-ray x bound and one unit below ray height `10337`; Typst starts at
+x `45.81152 bp`, width `10337`. Its endpoint lies outside the ray's x range,
+so the source's first interior crossing disappears. Reconstruct the fractional
+q.x/width at the recursive boundary before changing intersection tolerances.
