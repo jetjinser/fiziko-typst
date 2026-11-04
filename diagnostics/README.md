@@ -3463,6 +3463,17 @@ masses 1/2/4 change from `17/57/33` to `17/43/33`, against source
 `.thin` summary field is a different statistic. The fixed-width comparison is mixed: mass 1 exact values rise
 `75/139 → 76/139`; mass 2 falls `83/170 → 81/170` although its maximum error
 improves `6 → 4` units; mass 4 remains far off at roughly 267 units maximum.
+The callback arrays differ at only 11 source-time samples: mass 1 time `136`
+changes by `+3` units; mass 2 times `58, 59, 63, 103, 107, 108, 109, 167`
+change by `+1, +1, -2, -2, +1, +1, -6, -1`; mass 4 times `49, 50` change
+by `-1, -2`. These sparse boundary changes coincide with integer
+fullcircle-cubic knots, and the mass-2 tree divergence is therefore driven by
+a small set of boundary callback widths rather than broad outline drift. At
+mass-1 time `136`, the source width is `9796` units and the probe corrects
+`9793 → 9796`. In mass 2, times `58, 59, 107, 108` were already exact and
+move one unit high; times `63, 103` improve from `+3` to `+1`, and times
+`109, 167` become exact. Mass 4's times `49, 50` remain hundreds of units
+below source under both methods.
 Because the full recursion trees diverge substantially, the exact-point
 callback candidate was reverted without a raster trial. This shows that
 pointwise width residual alone is not a reliable coast-tree predictor; the
