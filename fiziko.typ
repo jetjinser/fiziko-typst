@@ -5042,7 +5042,7 @@
         }
       }
       part.push(_polyline-point(points, lengths, left))
-      if part.len() > 1 { result.push(part) }
+      if part.len() > 1 { result.push((path: part, range: (cursor, left))) }
     }
     cursor = calc.max(cursor, right)
   }
@@ -5054,7 +5054,7 @@
       }
     }
     part.push(points.at(points.len() - 1))
-    if part.len() > 1 { result.push(part) }
+    if part.len() > 1 { result.push((path: part, range: (cursor, total))) }
   }
   result
 }
@@ -5199,6 +5199,9 @@
 /// across the source-ordered segment renders; keyed randomness remains default.
 /// `source-cubic-step:` optionally reconstructs centerline cubics from
 /// equally spaced samples, using the same interval meaning as `tube`.
+/// Each entry in `widths:` may be a constant or a callback of normalized
+/// whole-strand arc length; callback positions remain continuous across
+/// fragments created by crossing gaps or masks.
 #let strand-knot(strands, widths: 1.25, layers: auto, path-times: none, gap: 0.6,
                  self-crossings: true, seed: 0, stroke: black,
                  style: "stroke", occlusion: "gap", rng: "keyed", rng-offset: 0,
@@ -5223,6 +5226,43 @@
     path-times.at(si).at(pi + 1) > path-times.at(si).at(pi))),
     message: "path-times must increase strictly along each strand")
   let widths = if type(widths) == array { widths } else { range(n).map(_ => widths) }
+  let width-at-distance(strand-index, distance) = {
+    let total = lengths.at(strand-index).last()
+    let t = if total > 0 { calc.clamp(distance / total, 0.0, 1.0) } else { 0.0 }
+    _val(widths.at(strand-index), t)
+  }
+  let distance-at-time(strand-index, source-time) = {
+    let times = path-times.at(strand-index)
+    let cumulative = lengths.at(strand-index)
+    if source-time <= times.first() { return 0.0 }
+    if source-time >= times.last() { return cumulative.last() }
+    for segment in range(times.len() - 1) {
+      if times.at(segment) <= source-time and source-time <= times.at(segment + 1) {
+        let fraction = ((source-time - times.at(segment)) /
+          (times.at(segment + 1) - times.at(segment)))
+        return cumulative.at(segment) * (1 - fraction)
+          + cumulative.at(segment + 1) * fraction
+      }
+    }
+    cumulative.last()
+  }
+  let width-over-distance-range(strand-index, distance-range) = {
+    let width = widths.at(strand-index)
+    if type(width) != function { return width }
+    let total = lengths.at(strand-index).last()
+    let start-distance = distance-range.at(0)
+    let finish-distance = distance-range.at(1)
+    (local-time) => {
+      let distance = (start-distance + calc.clamp(local-time, 0.0, 1.0)
+        * (finish-distance - start-distance))
+      let source-time = if total > 0 { calc.clamp(distance / total, 0.0, 1.0) } else { 0.0 }
+      _val(width, source-time)
+    }
+  }
+  let segment-width(strand-index, source-time-range) = width-over-distance-range(
+    strand-index, (
+      distance-at-time(strand-index, source-time-range.at(0)),
+      distance-at-time(strand-index, source-time-range.at(1))))
   let crossing-half-gap(width, crossing-sine: 1.0) = if style == "tube" {
     width / calc.max(0.1, crossing-sine) + gap / 2
   } else { (width + gap) / 2 }
@@ -5291,10 +5331,12 @@
               crossing-counts.at(i) += 1
               crossing-counts.at(j) += 1
               if i-over {
-                events.at(j).push((sb, crossing-half-gap(widths.at(i),
+                events.at(j).push((sb, crossing-half-gap(
+                  width-at-distance(i, sa),
                   crossing-sine: crossing-sine)))
               } else {
-                events.at(i).push((sa, crossing-half-gap(widths.at(j),
+                events.at(i).push((sa, crossing-half-gap(
+                  width-at-distance(j, sb),
                   crossing-sine: crossing-sine)))
               }
               pair-count += 1
@@ -5329,9 +5371,10 @@
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
                 let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))
-                let half-gap = crossing-half-gap(widths.at(i),
-                  crossing-sine: crossing-sine)
                 let self-over = over-at(pair-count, i, i)
+                let half-gap = crossing-half-gap(width-at-distance(i,
+                  if self-over { sb } else { sa }),
+                  crossing-sine: crossing-sine)
                 if self-over {
                   events.at(i).push((sb, half-gap))
                   strand-crossings.at(i).push((ta-time,
@@ -5364,7 +5407,8 @@
       let sorted = _sort-crossings(strand-crossings.at(i))
       if sorted.len() == 0 {
         strand-segments.at(i).push((path: strands.at(i), rank: 0,
-          source-time-range: (path-times.at(i).first(), path-times.at(i).last())))
+          source-time-range: (path-times.at(i).first(), path-times.at(i).last()),
+          radius: widths.at(i)))
         layer-ranks.push(0)
       } else {
         for k in range(sorted.len()) {
@@ -5377,7 +5421,8 @@
           let part = _polyline-time-range(
             strands.at(i), path-times.at(i), start, finish)
           strand-segments.at(i).push((path: part, rank: crossing.at(1),
-            source-time-range: (start, finish)))
+            source-time-range: (start, finish),
+            radius: segment-width(i, (start, finish))))
           layer-ranks.push(crossing.at(1))
         }
       }
@@ -5388,7 +5433,7 @@
       for i in range(n) {
         for segment in strand-segments.at(i) {
           if segment.rank > rank {
-            let shadow = _tube-shadow-plane(segment.path, widths.at(i),
+            let shadow = _tube-shadow-plane(segment.path, segment.radius,
               1.5 * current-width, source-cubic-step: source-cubic-step)
             let source-center-units = (segment.source-time-range.at(1)
               - segment.source-time-range.at(0)) * source-cubic-step
@@ -5423,8 +5468,11 @@
           for segment-index in range(strand-segments.at(i).len()) {
             let segment = strand-segments.at(i).at(segment-index)
             if segment.rank != rank { continue }
-            let shadow-planes = shadows-for(rank, widths.at(i))
-            let result = tube(segment.path, widths.at(i), hatch: "l",
+            let current-width = if type(segment.radius) == function {
+              (segment.radius)(0.5)
+            } else { segment.radius }
+            let shadow-planes = shadows-for(rank, current-width)
+            let result = tube(segment.path, segment.radius, hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed,
               end-caps: false, rng: "metapost", _random-stream: shared-stream,
               _rng-offset: rng-cursor, _with-rng: true,
@@ -5445,8 +5493,14 @@
       for i in range(n).rev() {
         for segment in strand-segments.at(i) {
           if segment.rank != rank { continue }
-          drawings.push(stroke-path(segment.path,
-            stroke: (paint: white, thickness: 2 * widths.at(i) * 1mm), per: 0))
+          if type(segment.radius) == function {
+            let silhouette = _tube-shadow-plane(segment.path, segment.radius,
+              0, source-cubic-step: source-cubic-step)
+            drawings.push(_fill((silhouette.polygon,), white))
+          } else {
+            drawings.push(stroke-path(segment.path,
+              stroke: (paint: white, thickness: 2 * segment.radius * 1mm), per: 0))
+          }
         }
       }
       for i in range(n).rev() {
@@ -5457,11 +5511,14 @@
               item.strand == i and item.segment == segment-index).first()
             drawings.push(cached.drawing)
           } else {
-            drawings.push(tube(segment.path, widths.at(i), hatch: "l",
+            let current-width = if type(segment.radius) == function {
+              (segment.radius)(0.5)
+            } else { segment.radius }
+            drawings.push(tube(segment.path, segment.radius, hatch: "l",
               w: _source-min-stroke, per: 0, seed: seed, end-caps: false,
               source-cubic-step: source-cubic-step,
               _radial-y-sign: 1,
-              _shadow-planes: shadows-for(rank, widths.at(i))))
+              _shadow-planes: shadows-for(rank, current-width)))
           }
         }
       }
@@ -5469,15 +5526,18 @@
   } else {
     for i in range(n) {
       let fragments = _strand-fragments(strands.at(i), lengths.at(i), events.at(i))
-      if style == "tube" {
-        drawings += fragments.map(part => tube(part, widths.at(i),
-          hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
-          source-cubic-step: source-cubic-step,
-          _radial-y-sign: 1,
-          end-caps: false))
-      } else {
-        drawings += fragments.map(part => stroke-ink(part, widths.at(i), closed: false,
-          per: 0, fill: stroke, seed: seed))
+      for fragment in fragments {
+        let width = width-over-distance-range(i, fragment.range)
+        if style == "tube" {
+          drawings.push(tube(fragment.path, width,
+            hatch: "l", w: _source-min-stroke, per: 0, seed: seed,
+            source-cubic-step: source-cubic-step,
+            _radial-y-sign: 1,
+            end-caps: false))
+        } else {
+          drawings.push(stroke-ink(fragment.path, width, closed: false,
+            per: 0, fill: stroke, seed: seed))
+        }
       }
     }
   }

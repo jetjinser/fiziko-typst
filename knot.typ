@@ -6,7 +6,9 @@
 = Strand crossings
 
 Zero-length input segments are ignored when finding crossings. Widths can be
-set per strand; numeric layers give a fixed over-under order.
+set per strand as constants or functions of normalized whole-strand arc length;
+the function stays continuous when a strand is split around crossings. Numeric
+layers give a fixed over-under order.
 
 #figure(
   canvas(100, 48,
