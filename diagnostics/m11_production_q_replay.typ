@@ -73,7 +73,10 @@
     blended-arc-q-nodes: blended-result.at(2).nodes.filter(node => node.stage == "thin"),
     source-arc-calls: source-result.at(1), source-arc-dashes: source-result.at(2).dashes,
     source-arc-q-nodes: source-result.at(2).nodes.filter(node => node.stage == "thin"),
-    segment-arcs: segment-arcs, arc-fixed: arc-fixed)
+    segment-arcs: segment-arcs, arc-fixed: arc-fixed,
+    fifth-segment-arcs: fifth-segment-arcs,
+    fifth-arc-fixed: fifth-arc-fixed,
+    source-arc-fixed: item.source-arc-fixed)
 })
 
 #metadata(replay) <m11-production-q-replay>

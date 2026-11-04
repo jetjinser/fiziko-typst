@@ -2201,6 +2201,17 @@ next production task is to carry the source callback q
 template into the real lane renderer, not to promote the replay's local x
 offset as though the renderer already used that q state.
 
+A fresh current-checkout replay of the three traced lane inputs confirms the
+arc-length dependency more broadly: supplying the source cumulative arc knots
+reproduces all 90 source thin nodes and all 90 q control sets exactly across
+calls 4/lanes 2 and 6, and call 5/lane 2. Reconstructing those arcs from the
+current lane points with quarter-sample cubic fits differs by mean absolute
+`6.0–7.8` fixed units (maximum `17–24`); fifth-sample fits do not improve all
+three lanes together. The replay diagnostic now returns both cumulative fit
+tables alongside the source arc table. The remaining production problem is to
+derive the source arc clock from renderer geometry, since injecting the source
+trace's arc table is an oracle and is not a reusable implementation.
+
 Rebuild the actual Typst lane trace and compare generated, fifth-fit, and
 source-arc q trees with:
 

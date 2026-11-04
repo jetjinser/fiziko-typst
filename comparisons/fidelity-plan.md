@@ -1589,3 +1589,14 @@ across the panel, but the prior production integration worsened recursive
 call/tree agreement and the 600 ppi image gate. Do not apply the endpoint
 correction alone: preserve its geometry while propagating matching q curves
 and center-path parameterization through recursion.
+
+**M11 knot q-arc reconstruction audit (2026-11-05).** A fresh trace of the
+current production lane geometry and source callback input reproduces all 90
+thin nodes and all 90 q-control sets exactly when the source cumulative q-arc
+knots are supplied for calls 4/lanes 2 and 6, and call 5/lane 2. Current
+quarter-sample cubic fits differ from those arc knots by mean absolute
+`6.0–7.8` 16.16 units and maximum `17–24`; fifth-sample fitting does not
+improve all three lanes at once. This isolates the remaining production gap
+to recovering the source q arc clock from generated lane geometry. The traced
+arc table remains an oracle only; no source-specific table is enabled in
+production.
