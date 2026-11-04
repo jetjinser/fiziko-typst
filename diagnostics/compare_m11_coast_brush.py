@@ -205,9 +205,26 @@ def main():
             print(f"      source cut cubic: {source_q}")
             print(f"      Typst cut cubic: {typst_cubic}")
             source_knots = parent_source["qknots-fixed"]
+            source_segment = int(float(parent_source["cut-time"]))
+            if source_knots and source_segment + 1 < len(source_knots):
+                print(f"      source cut segment {source_segment} knots: "
+                      f"{source_knots[source_segment]} -> "
+                      f"{source_knots[source_segment + 1]}")
             if typst_q:
                 typst_knots = [curve[0] for curve in typst_q]
                 typst_knots.append(typst_q[-1][-1])
+                typst_segment = int(qtime) if qtime is not None else 0
+                if typst_segment + 1 < len(typst_knots):
+                    print(f"      Typst cut segment {typst_segment} knots: "
+                          f"{typst_knots[typst_segment]} -> "
+                          f"{typst_knots[typst_segment + 1]}")
+                    if source_knots and len(source_knots) == len(typst_knots):
+                        local = range(max(0, typst_segment - 2),
+                                      min(len(source_knots), typst_segment + 4))
+                        print("      nearby source/Typst knots: " + "; ".join(
+                            f"{index}:{source_knots[index]}/"
+                            f"{typst_knots[index]}"
+                            for index in local))
                 if source_knots and len(source_knots) == len(typst_knots):
                     delta_x = [a[0] - b[0]
                                for a, b in zip(source_knots, typst_knots)]

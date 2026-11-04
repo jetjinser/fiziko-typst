@@ -98,10 +98,19 @@ time `13.29167` to Typst `13.27380`, yielding right-child q starts
 `(3003270, 10336)` vs `(3002304, 10337)`. At depth 2 those differing child
 curves select `0.05556` vs `0.43423`, which explains the missing depth-3
 intersection. Thus the first actionable defect is the q curve arriving at the
-depth-1 cut (including its width-knot construction), with recursive child
-propagation amplifying it. The next probe should isolate the source and Typst
-q cubic controls around that depth-1 crossing and test a generic fixed-point
-construction against every mass-4 node before changing production arithmetic.
+depth-1 cut, before recursive splitting: its segment-13 start knot is
+`(2985486, 10330)` in the source and `(2985608, 10331)` in Typst, while the
+next knot has the same width (`10354`). This knot maps to root callback time
+43, where the traced callback width is `10330` and the production Typst sample
+is `10331`; the q arc x coordinate differs by 122 fixed units as well. The
+curve's endpoint values therefore already diverge before de Casteljau child
+propagation. A trace-only source-width correction at that one callback recovers
+all 31 mass-4 recursion decisions, but is not a generic rule; applying the
+separately rounded width expression globally still regresses mass 1/2 and the
+raster gate. The next probe should derive a callback point/normal/lightness
+evaluation that explains the one-unit width error and independently improve
+the source-time-to-arc mapping, then validate all six mass trees before any
+production arithmetic change.
 
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,
