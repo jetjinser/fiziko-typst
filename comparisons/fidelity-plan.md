@@ -1704,6 +1704,23 @@ nix develop path:./nix --command python diagnostics/audit_m11_shadow_cut_preserv
   /tmp/m11-q-audit/trace.log
 ```
 
+The source-side `shadowCut` loop also advances each shadow path by `1/5` path
+time after a hit, while removing `1/20` path time on either side of the hit
+from the current lane. In the fresh source trace, lane 4/2 cuts at current
+times `21.78946` and `28.06259`; its lane length advances `36→38→40`, while
+the remaining shifted-shadow length falls `74→49→23` before the final miss.
+Lane 4/6 has three hits (`23.81978`, `28.67752`, `0.99225`) and finishes at
+length 41; lane 5/2 has two (`9.78946`, `16.06259`) and finishes at 40. This
+is a concrete source-order/cursor invariant for the next implementation
+probe. It does not mean the current polygon shading should erase those whole
+intervals: `shadowCut` affects each generated lane before brush subdivision,
+whereas Typst currently applies projected polygon membership at shading
+samples. A previous direct comparison of old Typst trace time `21.7` against
+source lane time `21.7` was invalid because those traces did not share a
+parameter origin; only the separately projected endpoint check establishes
+geometric correspondence. Do not use that stale time pairing to tune
+production.
+
 Run the endpoint audit against a 64-subdivision lane trace with:
 
 ```sh
