@@ -85,14 +85,15 @@ arc controls, and the largest remaining q-control residual is 3 units on the
 dashes, matching the non-injected replay. The two unmatched source nodes are
 the short interval from x=36.48710 to 36.51228 mm: the replay keeps that span
 inside an adjacent child. This isolates the next task to center-path child
-mapping around a very short interval. A width-control audit finds one-unit
-residuals across the split q controls for source nodes 33/36. At their shared
-endpoint the source stores 12513 in 16.16 bp units while the replay stores
-12514. That rise puts the candidate endpoint above the source target and
-removes the interior crossing that creates nodes 34/35.
-The source-q fixture and selectable
-node collection are diagnostic only; no production rendering change or raster
-gain is claimed.
+mapping around a very short interval. A follow-up pinpoints the one-unit
+trigger: on source node 32, MetaPost selects q-time `0.5` (the intersection
+candidates are `0.50023` and `0.5`, with the latter nearer the target), and the
+Typst source-q replay also cuts at `0.5`. Both use target width `12513/65536
+bp`; the source child starts at width `12513`, while Typst's `_mp-cubic-split`
+produces `12514`. This makes the candidate endpoint exceed the target and
+removes the source interior crossing. The local cause is fixed-point cubic
+subpath interpolation, not the q-time-to-center-path map. The source-q fixture
+remains diagnostic-only; the candidate-wide gates are recorded below.
 
 The fixed-point q split was then tested as a production-wide replacement for
 floating interpolation. It makes this source-q row exact (19/19 endpoint and
