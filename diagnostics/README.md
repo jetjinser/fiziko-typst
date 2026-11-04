@@ -3697,3 +3697,16 @@ mapping. A production-wide two-term rounding change was already rejected: it
 regressed the mass-1/2/4 trees and the paired whole/globe RMSE. Keep this
 variant diagnostic-only until a source-compatible evaluation boundary can be
 applied without those regressions.
+
+A fresh paired recursion trace at the current commit confirms mass 4 remains
+`31/7` source/Typst thin nodes. The first parent-aware branch divergence is a
+source depth-3 node that recurses at local q-time `0.05556`; the geometrically
+paired Typst node reports `no-intersection`. Source q starts at fixed width
+10336 against the 10337 target and rises through the target inside its first
+cubic. The paired Typst q starts at fixed width 10345, already eight units
+above that target, so it cannot find the same crossing. Their node endpoints
+also differ by `0.04246 mm`, despite sharing the far endpoint. This is a child
+q-start / parent-cut mapping error in addition to the isolated path-time-43
+rounding difference. `audit_m11_coast_q_children.py` confirms the source tree
+itself is internally continuous at all 15 recursive cuts; changing the
+intersection tolerance would not repair the mismatched child input.
