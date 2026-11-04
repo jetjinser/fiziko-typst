@@ -1618,7 +1618,11 @@ geometry errors peak one segment earlier, so the next probe needs to separate
 quarter-sample reconstruction from the underlying source/Typst curve residual.
 The new dense 16-chord replay restores exact source trees for calls 4/lane 2
 and 5/lane 2, but changes call 4/lane 6 from 20 to 22 nodes. It is diagnostic
-only and does not yet justify a production q-clock rule or raster trial.
+only and does not yet justify a production q-clock rule or raster trial. A
+1/2/4/8/16-chord sweep produces trees `38/22/30`, `38/22/28`, `40/22/28`,
+`38/22/28`, and `40/22/30` against source `40/20/30`, despite endpoint drift
+falling from thousands of units at one chord to at most nine at sixteen.
+Recursive decisions therefore do not converge with arc-density alone.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's

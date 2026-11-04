@@ -2261,14 +2261,17 @@ The next probe should separate the quarter-sample reconstruction error from
 the small source/Typst curve difference on these exact segments; do not promote
 global sampling-density or endpoint-scale adjustments.
 
-An opt-in replay now computes each source-time segment's q arc from the
-sixteen straight chords in the dense Typst lane trace. This changes the source
-tree replay from `38/20/28` to `40/22/30`: it restores the two width-equality
-decisions at nodes 33 and 20, but introduces two extra nodes on the lane that
-already matched. Its endpoint drifts become `0/0/-9` units, while local errors
-still reach `24/28/24`; the aggregate evidence does not support using this arc
-clock for all lanes. This remains an isolated replay candidate and has not
-been connected to the renderer or passed the M11 raster gate.
+An opt-in replay computes each source-time segment's q arc from 1, 2, 4, 8,
+or 16 straight chords in the dense Typst lane trace. More chords reduce
+endpoint drift (`-6264/-6031/-6129` units at one chord, `-77/-69/-82` at
+eight, and `0/0/-9` at sixteen), but the recursive trees do not converge
+monotonically. The node totals for calls 4/lanes 2 and 6, and 5/lane 2, are
+`38/22/30`, `38/22/28`, `40/22/28`, `38/22/28`, and `40/22/30` respectively.
+Source is `40/20/30`. At sixteen chords, two width-equality decisions recover
+but the already-matched lane gains two extra nodes. Thus endpoint accuracy or
+sampling density alone does not select the correct recursive state. This
+remains an isolated replay candidate and has not been connected to the
+renderer or passed the M11 raster gate.
 
 Reproduce the dense trace and candidate comparison with:
 
@@ -2288,12 +2291,15 @@ nix develop path:./nix --command typst eval \
 nix develop path:./nix --command python \
   diagnostics/compare_m11_thin_trees.py \
   /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json \
-  --nodes-field polyline-arc-q-nodes
+  --nodes-field polyline-arc-q-nodes --polyline-steps 16
 nix develop path:./nix --command python \
   diagnostics/audit_m11_lane_arc_drift.py \
   /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json \
-  --arc-field polyline-arc-fixed
+  --arc-field polyline-arc-fixed --polyline-steps 16
 ```
+
+Repeat the last two commands with `--polyline-steps 1`, `2`, `4`, and `8` to
+compare the other chord counts.
 
 For the quarter-sample baseline increment report, use:
 

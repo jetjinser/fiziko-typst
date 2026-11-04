@@ -72,6 +72,9 @@ def main():
     parser.add_argument("--nodes-field", default="q-nodes",
                         choices=("q-nodes", "fifth-arc-q-nodes", "blended-arc-q-nodes",
                                  "polyline-arc-q-nodes", "source-arc-q-nodes"))
+    parser.add_argument("--polyline-steps", type=int, default=16,
+                        choices=(1, 2, 4, 8, 16),
+                        help="chords per lane segment for polyline arc replay")
     args = parser.parse_args()
     log = Path(args.log).read_text()
     replay = json.loads(Path(args.replay_json).read_text())
@@ -80,7 +83,12 @@ def main():
         source_q = source_q_paths(log, call, lane)
         item = next(record for record in replay
                     if (record["call"], record["lane"]) == (call, lane))
-        candidate = [node for node in item[args.nodes_field]
+        nodes = item[args.nodes_field]
+        if args.nodes_field == "polyline-arc-q-nodes":
+            run = next(record for record in item["polyline-arc-runs"]
+                       if record["steps"] == args.polyline_steps)
+            nodes = run["q-nodes"]
+        candidate = [node for node in nodes
                      if node["stage"] == "thin"]
         if len(source) != len(source_q):
             raise ValueError(

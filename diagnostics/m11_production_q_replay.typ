@@ -29,19 +29,23 @@
   for length in fifth-segment-arcs { fifth-arc-fixed.push(fifth-arc-fixed.last() + length) }
   let blended-arcs = range(arc-fixed.len()).map(i =>
     int(calc.round((arc-fixed.at(i) + fifth-arc-fixed.at(i)) / 2)))
-  let polyline-segment-arcs = range(item.segments).map(i => {
-    let length = 0.0
-    for j in range(item.samples-per-segment) {
-      let a = item.points.at(i * item.samples-per-segment + j)
-      let b = item.points.at(i * item.samples-per-segment + j + 1)
-      length += _dist(a, b)
-    }
-    int(calc.round(length * 65536 / _mp-unit))
+  let polyline-arc-tables = (1, 2, 4, 8, 16).map(steps => {
+    assert(calc.rem(item.samples-per-segment, steps) == 0,
+      message: "polyline step count must divide lane sample count")
+    let stride = int(item.samples-per-segment / steps)
+    let segment-arcs = range(item.segments).map(i => {
+      let length = 0.0
+      for j in range(steps) {
+        let a = item.points.at(i * item.samples-per-segment + j * stride)
+        let b = item.points.at(i * item.samples-per-segment + (j + 1) * stride)
+        length += _dist(a, b)
+      }
+      int(calc.round(length * 65536 / _mp-unit))
+    })
+    let arcs = (0,)
+    for length in segment-arcs { arcs.push(arcs.last() + length) }
+    (steps: steps, arcs: arcs)
   })
-  let polyline-arc-fixed = (0,)
-  for length in polyline-segment-arcs {
-    polyline-arc-fixed.push(polyline-arc-fixed.last() + length)
-  }
   let generated-q-fixed = range(item.segments).map(i => {
     let x0 = arc-fixed.at(i)
     let x1 = arc-fixed.at(i + 1)
@@ -75,7 +79,12 @@
   let generated-result = run(generated-q-fixed)
   let fifth-result = run(q-from-arcs(fifth-arc-fixed))
   let blended-result = run(q-from-arcs(blended-arcs))
-  let polyline-result = run(q-from-arcs(polyline-arc-fixed))
+  let polyline-runs = polyline-arc-tables.map(table => {
+    let result = run(q-from-arcs(table.arcs))
+    (steps: table.steps, arcs: table.arcs,
+      calls: result.at(1), q-nodes: result.at(2).nodes.filter(node => node.stage == "thin"))
+  })
+  let polyline-result = polyline-runs.last()
   let source-result = run(q-from-arcs(item.source-arc-fixed))
   (call: item.call, lane: item.lane,
     source-calls: item.source-calls,
@@ -85,15 +94,15 @@
     fifth-arc-q-nodes: fifth-result.at(2).nodes.filter(node => node.stage == "thin"),
     blended-arc-calls: blended-result.at(1),
     blended-arc-q-nodes: blended-result.at(2).nodes.filter(node => node.stage == "thin"),
-    polyline-arc-calls: polyline-result.at(1),
-    polyline-arc-q-nodes: polyline-result.at(2).nodes.filter(node => node.stage == "thin"),
+    polyline-arc-calls: polyline-result.calls,
+    polyline-arc-q-nodes: polyline-result.q-nodes,
+    polyline-arc-runs: polyline-runs,
     source-arc-calls: source-result.at(1), source-arc-dashes: source-result.at(2).dashes,
     source-arc-q-nodes: source-result.at(2).nodes.filter(node => node.stage == "thin"),
     segment-arcs: segment-arcs, arc-fixed: arc-fixed,
     fifth-segment-arcs: fifth-segment-arcs,
     fifth-arc-fixed: fifth-arc-fixed,
-    polyline-segment-arcs: polyline-segment-arcs,
-    polyline-arc-fixed: polyline-arc-fixed,
+    polyline-arc-fixed: polyline-result.arcs,
     source-arc-fixed: item.source-arc-fixed)
 })
 
