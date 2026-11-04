@@ -54,6 +54,14 @@ def audit(log, replay):
                     if node["stage"] == "thin"][node_index]
             print(f"  first divergent thin node {node_index + 1}: "
                   f"depth={node['depth']} q-map={node['q-map']}")
+            spans = node["q-map"]
+            first_segment = max(0, int(min(span[0] for span in spans)))
+            last_segment = min(len(increment_errors),
+                               int(max(span[1] for span in spans)) + 1)
+            local = [(i, increment_errors[i])
+                     for i in range(first_segment, last_segment)]
+            print("  q-map segment errors (zero-based segment, fixed units): "
+                  + ", ".join(f"{i}:{value:+d}" for i, value in local))
 
 
 def main():

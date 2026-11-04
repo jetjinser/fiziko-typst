@@ -2251,11 +2251,15 @@ and 6, and 5/lane 2; the cumulative endpoint drifts are only `5`, `11`, and
 `2` units because the per-segment errors change sign. Despite those small final
 drifts, the generated q trees remain `38/20/28` against source `40/20/30`:
 the first divergences are nodes `33` and `20`, where the width-equality
-recursion decision changes. A single endpoint scale cannot correct these
-local arc-clock errors. The next probe should pair source and reconstructed
-arc increments around those exact nodes and identify whether the residual
-comes from lane-point quantization or the post-shadow segment reconstruction;
-do not promote global sampling-density or endpoint-scale adjustments.
+recursion decision changes. Their `q-map` intervals cover segments 31–32 and
+19–20 respectively; segment 32 is short by 21 units and segment 20 by 20,
+while the preceding segments are each high by 2 units. The larger pointwise
+geometry residuals occur one segment earlier (30 and 18), so the critical
+increment error is not simply the location of the largest sampled-point
+error. A single endpoint scale cannot correct these local arc-clock errors.
+The next probe should separate the quarter-sample reconstruction error from
+the small source/Typst curve difference on these exact segments; do not promote
+global sampling-density or endpoint-scale adjustments.
 Reproduce the local increment report with:
 
 ```sh

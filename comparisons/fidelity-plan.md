@@ -1611,7 +1611,11 @@ should compare local arc increments around those branch points and establish
 whether their residual is introduced by lane-point quantization or by
 post-shadow segment reconstruction. `diagnostics/audit_m11_lane_arc_drift.py`
 now validates the source arc table and reports per-segment error extrema,
-endpoint drift, and the first divergent node's q-time interval.
+endpoint drift, and the first divergent node's q-time interval. Those
+intervals cover segments 31–32 and 19–20; the critical latter segments are
+short by 21 and 20 units, while their predecessors are high by 2. Pointwise
+geometry errors peak one segment earlier, so the next probe needs to separate
+quarter-sample reconstruction from the underlying source/Typst curve residual.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's
