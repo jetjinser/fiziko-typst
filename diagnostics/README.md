@@ -1116,6 +1116,17 @@ still cuts at q time `0.98155212` versus source `0.99816895`. The full M11
 Typst plate compiles to one page. A fresh paired raster gate remains to be run
 because the Nix and Guix daemon sockets are unavailable in this environment.
 
+The coast trace now includes `source-time-end` so the cyclic q sampling range
+can be audited separately from the outline's last vertex time. For mass 2,
+the current callback grid spans 0–170 and produces 171 fixed-width samples,
+while the source root q template has 170 knots. Its last q knot is at source
+arc x `45974633` with width `8759` fixed units. The Typst widths at callback
+times 169 and 170 are `8763` and `8760`; its arc table places both at the same
+terminal arc position. This localizes the extra sample to the collapsed
+terminal interval in the parameter/arc mapping, but does not yet establish
+which callback knot the source omits. Pair the source q x knots against the
+Typst cumulative arc table before changing the sample schedule.
+
 To reproduce the reduced endpoint probe:
 
 ```sh

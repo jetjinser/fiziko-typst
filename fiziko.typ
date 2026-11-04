@@ -4657,6 +4657,7 @@
           nodes: result.at(2).nodes, width-samples: trace-samples,
           outline-points: path,
           source-times: coast-param-times.at(i),
+          source-time-end: coast-param-ends.at(i),
           source-arc-positions: coast-param-arcs.at(i),
           source-width-fixed: source-width-fixed))
       } else { (drawing: result, trace: none) }
