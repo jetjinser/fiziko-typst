@@ -113,11 +113,14 @@ callbacks at the first mass-4 split.
 That first-child comparison narrows the mismatch further. The source records a
 second mass-4 cut at child q time `31`; the shifted Typst replay finds the same
 q endpoint but maps it back to parent path time `30.239578`, then rejects it as
-an invalid cut. The source continues recursing below that node. This indicates
-the q geometry and root intersection are no longer the cause: the child q
-parameter map must preserve the partial final cubic's endpoint when the parent
-split falls inside that cubic. Keep this as a replay-only target until its
-source child tree matches; do not enable the root shift alone.
+an invalid cut. The source continues recursing below that node. In the source,
+`thinBrushGenerate` passes the same cut time to `subpath` for both the center
+path and q template; recursive calls then use the resulting child-local path
+parameter. The Typst trace instead carries the q map back to the original
+parent time. Instrument the source child path length and callback clock, then
+map child-local q time to the child center path before applying endpoint
+guards. Keep this as a replay-only target until its source child tree matches;
+do not enable the root shift alone.
 
 The latest M11 callback-time integration attempt used sampled lane/shadow
 polygon intersections inside `_tube-layout`; despite bounding-box rejection,
