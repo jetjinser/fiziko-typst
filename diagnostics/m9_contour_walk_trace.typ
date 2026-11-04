@@ -99,7 +99,7 @@
   min-w: _source-min-stroke, period: _source-dash-length,
   _source-rounding: true, _with-stats: true, _trace-nodes: true,
   _path-time: true, _source-q-curves-fixed: q-curves-fixed)
-#metadata((contour-count: paths.len(), level-count: levels.len(),
+#metadata((grid: (55, 33), contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
   sample-values: sample-values,
   target-values: ((6, 42, (model.field)(6, 42)),

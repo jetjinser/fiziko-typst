@@ -447,6 +447,8 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
     )
     trace = json.loads(typst_json.read_text())
     target_level = -source_level * field_scale
+    grid = trace.get("grid")
+    grid_width, grid_height = grid if grid is not None else (None, None)
     level_index = min(
         range(len(trace["levels"])),
         key=lambda i: abs(trace["levels"][i] - target_level),
@@ -459,14 +461,23 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
 
     ranked = []
     for path in candidates:
-        actual_cells = [tuple(cell) for cell in path["cells"]]
+        cell_records = list(zip(path["cells"], path["cell-ranges"]))
+        if grid is not None:
+            cell_records = [
+                (cell, value) for cell, value in cell_records
+                if 0 <= cell[0] < grid_width and 0 <= cell[1] < grid_height
+            ]
+        actual_cells = [tuple(cell) for cell, _ in cell_records]
+        actual_ranges = [value for _, value in cell_records]
         errors = [path_distance(point, path["points"]) for point in source_points]
         range_errors = [
-            abs(a - b) for a, b in zip(source_ranges, path["cell-ranges"])
+            abs(a - b) for a, b in zip(source_ranges, actual_ranges)
         ]
         ranked.append((edit_distance(expected_cells, actual_cells),
-                       sum(errors) / len(errors), path, errors, range_errors))
-    edits, _, path, distances, range_errors = min(ranked, key=lambda item: item[:2])
+                       sum(errors) / len(errors), path, errors, range_errors,
+                       actual_cells, actual_ranges))
+    (edits, _, path, distances, range_errors,
+     actual_cells, actual_ranges) = min(ranked, key=lambda item: item[:2])
     summary = {
         "source-level": source_level,
         "typst-level-target": target_level,
@@ -474,10 +485,11 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
         "typst-level": trace["levels"][level_index],
         "path-index": path["path-index"],
         "cell-edit-distance": edits,
-        "cell-counts": [len(expected_cells), len(path["cells"])],
+        "cell-counts": [len(expected_cells), len(actual_cells)],
+        "excluded-boundary-cell-count": len(path["cells"]) - len(actual_cells),
         "mean-source-point-distance-mm": sum(distances) / len(distances),
         "max-source-point-distance-mm": max(distances),
-        "paired-cell-range-count": min(len(source_ranges), len(path["cell-ranges"])),
+        "paired-cell-range-count": min(len(source_ranges), len(actual_ranges)),
         "cell-range-mae": (
             sum(range_errors) / len(range_errors) if range_errors else None
         ),

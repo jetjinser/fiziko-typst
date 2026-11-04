@@ -3950,15 +3950,18 @@ accept only a candidate that preserves all 142 random schedules and improves
 the full-tree plus 600 ppi whole/hatch comparison.
 
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
-M9 source run paired with `m9_contour_walk_trace.typ` finds 19 source contour
-cells and 21 Typst cells on the first contour (cell-sequence edit distance 2).
-The paired path itself is close: mean/max point-to-path distance is
-`0.00197/0.00465 mm`; source/Typst brush-root lengths are `17.2808/17.2651 mm`.
-The source/Typst brush traces have 37/41 outer nodes and 65/52 thin nodes.
-Both consume 24 random values and draw 12 dashes. Thus the immediate mismatch
-is still contour/recursive geometry, not the per-contour RNG cursor or dash
-count. The existing exact source width-template replay does not repair that
-tree by itself; avoid treating a close rendered centerline as proof of brush
-recursion parity. Next compare the two extra/missing cell transitions and the
-root q arc knots, then require M9 and S105 crop checks before retaining a
-production change.
+M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to
+find 19 source contour cells and 21 Typst cells. The two extra Typst records
+are the path's boundary extensions outside the sampled field, not additional
+contour cells. The diagnostic metadata now carries the grid dimensions, and
+`compare_wood_contours.py` excludes those out-of-grid segments when pairing
+cells. The corrected comparison yields 19/19 cells with edit distance zero;
+mean/max source-path distance is `0.00197/0.00465 mm`, and cell-range error
+mean/max is `1.54e-5/4.91e-5`. Source/Typst brush-root lengths remain
+`17.2808/17.2651 mm`; recursion remains 37/41 outer nodes and 65/52 thin
+nodes. Both consume 24 random values and draw 12 dashes. The remaining
+discrepancy is therefore inside brush path/q construction and recursive cuts,
+not contour-cell topology or the per-contour RNG cursor. The exact source
+width-template replay does not repair that tree by itself. Next compare root
+q arc knots and recursive width crossings, then require M9 and S105 crop
+checks before retaining a production change.
