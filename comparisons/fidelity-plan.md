@@ -1629,3 +1629,15 @@ silhouette with `per: 0` on source-sampled inputs instead of the helper's
 default `per: 12` produces identical 600 ppi M11 regional RMSE and ink
 coverage. The candidate was reverted; shadow-mask differences need a better
 source lane/cut mapping, not a higher density setting in this helper.
+
+**Strand-knot variable-width callback continuity (2026-11-05).** Commit
+`f3fb5f8` carries per-strand width callbacks through crossing-created gap and
+mask fragments using each fragment's distance range on the original strand.
+The crossing clearance, tube shadow silhouette, and lower-layer erasure mask
+now query the same whole-strand width law. A variable-width, multi-crossing
+Typst probe and the existing `knot.typ` and `main.typ` specimens compile in the
+declared Nix devshell. This verifies execution and keeps callback phase from
+restarting at each fragment; it is not yet a source-parity result because the
+pinned MetaPost source callback has not been traced at these crossing
+locations. Add a source-level callback comparison before using it to claim a
+raster-fidelity improvement.
