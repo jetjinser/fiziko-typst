@@ -83,6 +83,12 @@ Its six visible-mass brush-call totals now match source exactly
 mass 2 remains one knot over. Tree counts and the seam q-time still differ, and
 the paired raster gate remains outstanding; details are in
 [the coast trace audit](../diagnostics/README.md#m11-coast-cyclic-origin-correction).
+A follow-up preserved the global arc sample count while snapping the nearest
+sample to each exact fullcircle cubic boundary. Brush-call totals and outline
+sample counts stayed fixed, but thin-node counts changed from `17/57/33` to
+`15/41/33` for masses 1/2/4 (source `15/57/31`); the mass-2 tree worsened, so
+the production candidate was reverted. Exact cubic boundaries alone do not
+explain the mass-specific q segmentation.
 
 These are evidence-backed investigations, not claims that all seven can be
 made raster improvements. The first two have the strongest bounded replay

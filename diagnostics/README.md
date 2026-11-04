@@ -1144,6 +1144,18 @@ mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
 callback grid still has one extra sample. Keep the arc-index correction; the
 paired raster gate remains outstanding.
 
+A narrower fullcircle-boundary probe kept the global arc sample count and
+replaced only the nearest sample at each exact integer cubic boundary. The
+three outlines retained the same point and width-sample counts, and per-mass
+brush-call totals stayed `12/30/6`. The recursive thin-node counts changed
+from `17/57/33` to `15/41/33` for masses 1/2/4 (source: `15/57/31`). This
+fixes mass 1's count but loses 16 nodes on mass 2 and leaves mass 4 unchanged;
+the global boundary-snap rule was reverted. The result rules out simply
+inserting exact fullcircle cubic boundaries into the current global sampling
+schedule as a general coast-tree fix. The initial q-segment construction and
+its mass-specific cyclic mapping still need to be paired before changing
+sample placement.
+
 A coast-width arithmetic probe evaluated the source expression as two
 separately rounded dimensional terms, `(2/3 * minStrokeWidth) +
 (1/3 * minStrokeWidth * lightness)`, rather than rounding only the combined
