@@ -1630,6 +1630,19 @@ default `per: 12` produces identical 600 ppi M11 regional RMSE and ink
 coverage. The candidate was reverted; shadow-mask differences need a better
 source lane/cut mapping, not a higher density setting in this helper.
 
+**M11 arc-to-cubic lane mapping trial (2026-11-05, rejected).** A candidate
+reparameterized each recovered centerline cubic by a 64-chord local arc table
+before evaluating tube lanes, normals, and radius slope. On the three traced
+post-shadow lanes, the Typst thin-node counts changed from baseline
+`40/22/30` to candidate `38/20/28`, against source `40/20/30`: lane 4/6
+became exact, while lanes 4/2 and 5/2 each lost two nodes. Maximum point
+errors against the source lane cubics increased from
+`0.000531/0.000573/0.000550 mm` to
+`0.000743/0.000835/0.000760 mm`. Local q-arc errors remained as large as
+20–26 fixed units. The candidate was removed without a raster trial; a
+generic arc-to-parameter inverse is not a sufficient replacement for the
+source offset-lane construction.
+
 **Strand-knot variable-width callback continuity (2026-11-05).** Commit
 `f3fb5f8` carries per-strand width callbacks through crossing-created gap and
 mask fragments using each fragment's distance range on the original strand.
