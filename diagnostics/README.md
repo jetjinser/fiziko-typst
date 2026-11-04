@@ -1651,6 +1651,22 @@ all-lane residual-corrected trace below replaces that conclusion.
 
 ### M11 self-shadow geometry in tube lighting
 
+The M11 lane trace now passes `radial-y-sign: 1` to `_tube-layout`, matching
+the production `tube()` calls used by `strand-knot`. The prior trace used the
+layout default `-1`, so its exported lane width/lightness did not represent
+the production cross-section even though its centerline geometry was valid.
+With a fresh trace and the 2026-11-04 pinned-source tube log, the unshadowed
+call-1–3 source width/lightness samples now agree within `0.00001 mm` and
+`0.0001` respectively. For calls 4–6, applying the separately verified source
+shadow labels gives per-lane effective-width MAE from `0.00076` to
+`0.00355 mm`; those residuals remain concentrated at shadowed and post-cut
+samples. The 60 source shadow cuts still match the splice model, including all
+27 next-attempt and terminal path lengths. This repairs the diagnostic's
+production configuration only; it does not change renderer output.
+Using that corrected lane trace with the newer 2026-11-04 pinned-source log,
+the source-arc q replay still matches all 40/20/30 thin-node trees and every
+q-control array on calls 4/lanes 2 and 6 and call 5/lane 2.
+
 The source trace records the complete six `tubeOutline` contours plus the
 shadow plane depth and light vector. Rebuilding each contour from the paired
 Typst tube path agrees with source to `0.0004 mm` mean distance or better.

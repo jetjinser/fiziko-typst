@@ -32,7 +32,8 @@
     let layout = _tube-layout(path, 0.8, hatch: "l", spacing: _source-spacing,
       coverage: auto, closed: false, per: 0, source-cubic-step: 4,
       w: _source-min-stroke,
-      min-w: _source-min-stroke, max-w: _source-max-shading)
+      min-w: _source-min-stroke, max-w: _source-max-shading,
+      radial-y-sign: 1)
     let calls = 0
     let dashes = 0
     let outer-nodes = 0
