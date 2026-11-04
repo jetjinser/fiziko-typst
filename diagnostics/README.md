@@ -1187,6 +1187,13 @@ Both candidates were reverted. The next useful target is reproducing the
 source q-bound span from the centerline arc construction, not loosening the
 intersection solver.
 
+Quantizing the radius-scaled projected vertices to 16.16 bp before adding the
+document centre was also tested and reverted. It left the first mass-2 cut at
+`q=4.0`, with thin-node totals `17/57/9` for masses 1/2/4. This rejects
+point-coordinate rounding alone as the missing source arc operation; any
+further reconstruction must preserve MetaPost's order of projection,
+path construction, and length evaluation together.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
