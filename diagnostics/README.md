@@ -3930,3 +3930,21 @@ count but five parent-aware decision mismatches, concentrated in narrow
 endpoint crossings. Do not change the global intersection tolerance: the
 q-control inputs still differ by small fixed-point amounts before the solver
 sees them.
+
+**S104 current recursive-q checkpoint (2026-11-05).** A newly regenerated
+pinned-source trace and current Typst metadata confirm that the retained
+fixed-width q callback still matches all 142 subdivision draws, row call
+vectors, path segment counts, and absolute RNG offsets; total brush calls are
+`1516/1516`. The current full-trace q audit pairs `1476/1696` source nodes,
+with `1213` exact width-control nodes and q-arc residual mean/max `58.733/933`
+units. On row 93 (`y=-6.37912`), the diagnostic injection of the exact traced
+source q cubics yields `19/19` endpoint pairs and exact width and arc controls
+on every pair. On row 99 (`y=-11.76086`), the same oracle yields `17/19`;
+the two unmatched source leaves are the short adjacent interval whose child
+endpoint becomes one fixed width unit too high under the half-time split.
+This fresh run confirms that the source q trace is a strong local oracle, but
+does not justify injecting source-specific curves into production. The
+general implementation target is the source's q-control construction and
+recursive child split arithmetic from the already matched callback/row state;
+accept only a candidate that preserves all 142 random schedules and improves
+the full-tree plus 600 ppi whole/hatch comparison.
