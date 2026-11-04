@@ -1250,6 +1250,18 @@ repeated-knot/q-index explanation and does not implicate the intersection
 solver. The candidate is retained for its source-trace improvement; render
 parity still needs a same-renderer run.
 
+The next remaining mass-1 cut is also localized. In the depth-3 right parent,
+source q curve 9 has fixed y controls `9796/9608/9421/9233`; Typst has
+`9793/9607/9420/9234`. The target is `9793`, so the Typst curve begins exactly
+on the ray while the source curve begins three units above it. A four-way
+intersection replay in `m11_coast_depth3_intersection.typ` gives local source
+q time `0.00267029` with either ray, but local Typst q time `0` with either
+ray. Adding the curve index 9 yields source/Typst parent cuts
+`9.00267029/9.0`. This isolates the residual to q-knot/control generation at
+the parent boundary, not ray construction or the fixed-point intersection
+solver. The paired controls are only a few units apart, but the endpoint lies
+on the threshold, so rounding changes the selected branch time.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated

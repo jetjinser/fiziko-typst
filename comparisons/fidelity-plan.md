@@ -160,6 +160,13 @@ right parent: the source cut is `9.00267` and produces depth-4 q segments
 `10/2`, while Typst cuts at `9.0` and produces `9/2`. The next probe should
 compare this parent's q controls and both ray-hit parameters, then run the
 paired crop gate when the renderer toolchain is available.
+That comparison is now isolated to source q curve 9's endpoint controls:
+source y controls are `9796/9608/9421/9233`, Typst `9793/9607/9420/9234`,
+with target `9793`. A four-way replay selects local q time `0.00267029` from
+the source curve with either ray, but `0` from the Typst curve with either
+ray. The remaining cut-time difference is therefore in q-knot/control
+generation at this boundary. Pair its source callback path time and arc before
+adjusting width arithmetic; then rerun the paired crop gate.
 
 The sequential q-control audit applies the source-to-page vertical flip and
 pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19
