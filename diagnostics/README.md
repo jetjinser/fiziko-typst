@@ -3589,3 +3589,12 @@ mass-2 source widths exactly, but changes mass-1 time `136` from the source
 the thin-node counts to `35/75/33` on masses 1/2/4, so that callback candidate
 was reverted too. The remaining one-unit split is tied to source point or
 lightness evaluation, not a uniform scalar-rounding rule.
+
+Applying the separately rounded two-term expression to the production M11
+coast callback also fails its gates. The Typst mass-1/2/4 thin-node counts
+become `13/97/33` against source `15/57/31`; whole/globe RMSE changes from
+`0.11478405/0.18928154` to `0.11483896/0.18950309`, while knot, eye, and
+refraction crops are unchanged. The production callback arithmetic was
+reverted. Its source-time 136 sample becomes 9792, so this expression does not
+repair the seam q endpoint (source control 9794); callback point/time mapping
+remains the leading discrepancy.
