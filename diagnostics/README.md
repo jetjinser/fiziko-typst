@@ -1160,7 +1160,17 @@ unit, versus 65 before. Brush-call totals remain exact. Counting only recursive
 masses 1/2/4. The Typst `.nodes` trace also contains one `outer` entry per
 mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
 callback grid still has one extra sample. Keep the arc-index correction; the
-paired raster gate remains outstanding.
+paired raster result is recorded below.
+
+**M11 open-input paired raster check (2026-11-04).** The parent of
+`f7be68b` and that commit were rendered with the pinned Nix devshell on the
+same 600 ppi grid. Whole RMSE changes `0.1147840424→0.1147840474` and globe
+RMSE `0.1892815201→0.1892815407`; knot, eye, and refraction metrics are
+unchanged. The open-path construction therefore has no measurable raster
+gain at this resolution, but preserves the source's path-closing order and
+aligns mass 2's callback grid. Current mass-1/4 recursive trees and the seam
+q-time remain unresolved; this gate does not validate those separate coast
+changes.
 
 A narrower fullcircle-boundary probe kept the global arc sample count and
 replaced only the nearest sample at each exact integer cubic boundary. The
