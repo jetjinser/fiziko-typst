@@ -1144,6 +1144,16 @@ mass, which accounts for the formerly reported totals `18/58/34`. Mass 2's
 callback grid still has one extra sample. Keep the arc-index correction; the
 paired raster gate remains outstanding.
 
+The first mass-2 decision divergence is now paired by the shared depth-first
+prefix rather than by raw row count. At depth 5, the source cuts at q time
+`3.95935`, producing a tiny right child of `0.45229 bp` and recursing;
+Typst's corresponding node reports `invalid-cut`, with the right ray reaching
+the q endpoint at time `4.0`. The parent lengths are close after unit
+conversion (`92.21991 bp / (72.27/25.4) = 32.41159 mm` source versus
+`32.52992 mm` Typst). This isolates the decision gap to the near-endpoint q
+intersection, rather than a gross parent-path length mismatch. Source trace
+lengths are MetaPost bp; Typst trace lengths are millimetres.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
