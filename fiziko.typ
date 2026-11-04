@@ -1338,6 +1338,41 @@
   }
   inside
 }
+#let _inside-poly-indexed(p, polygon, index) = {
+  if polygon.len() < 3 or p.at(1) < index.min-y or p.at(1) > index.max-y {
+    return false
+  }
+  let grid-size = index.grid-size
+  let edge-grid = index.edge-grid
+  let x-cell = if index.max-x > index.min-x {
+    int(calc.clamp(calc.floor((p.at(0) - index.min-x) /
+      (index.max-x - index.min-x) * grid-size), 0, grid-size - 1))
+  } else { 0 }
+  let y-cell = if index.max-y > index.min-y {
+    int(calc.clamp(calc.floor((p.at(1) - index.min-y) /
+      (index.max-y - index.min-y) * grid-size), 0, grid-size - 1))
+  } else { 0 }
+  // The ray test only needs edges at this height and to the right of p.
+  let candidates = ()
+  for ix in range(x-cell, grid-size) {
+    for j in edge-grid.at(y-cell).at(ix) {
+      if not candidates.contains(j) { candidates.push(j) }
+    }
+  }
+  let inside = false
+  for j in candidates {
+    let prev = polygon.at(j)
+    let curr = polygon.at(_mod(j + 1, polygon.len()))
+    let y0 = prev.at(1)
+    let y1 = curr.at(1)
+    if (y0 > p.at(1)) != (y1 > p.at(1)) {
+      let x = prev.at(0) + ((p.at(1) - y0) *
+        (curr.at(0) - prev.at(0)) / (y1 - y0))
+      if p.at(0) < x { inside = not inside }
+    }
+  }
+  inside
+}
 #let _shadowed-by-polygon(point, vertices, light) = {
   if vertices.len() < 3 { return false }
   let a = vertices.at(0)
@@ -2390,7 +2425,10 @@
       let dz = depth - shadow.depth
       let dx = dz * L.at(0) * L.at(2)
       let dy = dz * L.at(1) * L.at(2)
-      _inside-poly((point.at(0) - dx, point.at(1) - dy), shadow.polygon)
+      let projected = (point.at(0) - dx, point.at(1) - dy)
+      if shadow.keys().contains("edge-index") {
+        _inside-poly-indexed(projected, shadow.polygon, shadow.edge-index)
+      } else { _inside-poly(projected, shadow.polygon) }
     })
     if shadowed { 1.0 } else { calc.pow(1 - lam, gamma) }
   }
@@ -4984,11 +5022,14 @@
   }
   crossings
 }
-#let _path-intersects-polygon(path, polygon) = {
-  if path.any(point => _inside-poly(point, polygon)) { return true }
-  if path.len() < 2 or polygon.len() < 3 { return false }
-  let index = _polygon-edge-grid(polygon)
-  if _path-polygon-crossings(path, polygon, index: index).len() > 0 {
+#let _path-intersects-polygon(path, polygon, index: none) = {
+  if polygon.len() < 3 { return false }
+  let edge-index = if index == none { _polygon-edge-grid(polygon) } else { index }
+  if path.any(point => _inside-poly-indexed(point, polygon, edge-index)) {
+    return true
+  }
+  if path.len() < 2 { return false }
+  if _path-polygon-crossings(path, polygon, index: edge-index).len() > 0 {
     return true
   }
   false
@@ -5201,8 +5242,11 @@
           if segment.rank > rank {
             let shadow = _tube-shadow-plane(segment.path, widths.at(i),
               1.5 * current-width, source-cubic-step: source-cubic-step)
-            if _path-intersects-polygon(segment.path, shadow.polygon) {
-              shadows.push(shadow)
+            let edge-index = _polygon-edge-grid(shadow.polygon)
+            if _path-intersects-polygon(segment.path, shadow.polygon,
+                index: edge-index) {
+              shadows.push((polygon: shadow.polygon, depth: shadow.depth,
+                edge-index: edge-index))
             }
           }
         }

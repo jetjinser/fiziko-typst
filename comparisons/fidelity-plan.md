@@ -91,6 +91,15 @@ edge indices, and hit points in traversal order. Shared-vertex hits are
 deduplicated. This exposes the event data needed to build post-cut callback
 clocks, but the M11 lane renderer does not consume those events yet.
 
+The same edge index now serves point-in-polygon queries in tube shading. Each
+shadow plane built by `strand-knot` carries its precomputed index through the
+lane render, so shading samples test only polygon edges in the relevant
+horizontal band and to the right of the sample. Indexed results match the
+original ray-crossing rule on a 21 × 21 grid for both a 128-edge circle and a
+rectangle; a crossed-tube mask-mode evaluation and the full library entry
+document both complete. This preserves the current mask/shading behavior; it
+does not yet reproduce source `shadowCut` geometry or its callback clock.
+
 **M11 coast update (2026-11-04).** The table's earlier `54/52` total and
 mass-1 dash deficit describe the pre-rebase renderer. The current source-origin
 candidate starts merged closed outlines at the source `drawLandMass` origin,
