@@ -118,7 +118,8 @@ def cubic(points, t):
                  for a, b, c, d in zip(p0, p1, p2, p3))
 
 
-def export(source_log, typst_trace, output, dense=False, dense_factor=4):
+def export(source_log, typst_trace, output, dense=False, dense_factor=4,
+           show_segment_errors=False):
     cuts, widths, calls, offsets, post_lengths, source_arcs, source_curves = read_source(source_log)
     samples_per_cubic = SAMPLES_PER_CUBIC * dense_factor if dense else SAMPLES_PER_CUBIC
     lanes = typst_lane_map(typst_trace, dense=dense)
@@ -176,6 +177,10 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4):
         segment_maxima = sorted(
             ((max(values), index) for index, values in segment_errors.items()),
             reverse=True)[:4]
+        segment_summaries = {
+            index: {"mean": sum(values) / len(values), "max": max(values)}
+            for index, values in segment_errors.items()
+        }
         records.append({
             "call": key[0], "lane": key[1], "source-calls": calls[key],
             "rng-offset": offsets[key], "segments": post_lengths[key],
@@ -187,6 +192,7 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4):
             "geometry-error-max": max(point_errors),
             "geometry-error-mean": sum(point_errors) / len(point_errors),
             "geometry-error-segments": segment_maxima,
+            "geometry-error-by-segment": segment_summaries,
         })
 
     def scalar(value):
@@ -214,6 +220,10 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4):
               f"source-calls={r['source-calls']} rng-offset={r['rng-offset']} "
               f"geometry-error-max/mean={r['geometry-error-max']:.6f}/"
               f"{r['geometry-error-mean']:.6f}mm top={r['geometry-error-segments']}")
+        if show_segment_errors:
+            print("  per post-cut segment (mean/max mm): " + ", ".join(
+                f"{index}:{values['mean']:.8g}/{values['max']:.8g}"
+                for index, values in sorted(r["geometry-error-by-segment"].items())))
 
 
 if __name__ == "__main__":
@@ -227,6 +237,9 @@ if __name__ == "__main__":
                         help="read the densely sampled lane path from the trace")
     parser.add_argument("--dense-factor", type=int, default=4,
                         help="number of direct curve samples between input knots")
+    parser.add_argument("--show-segment-errors", action="store_true",
+                        help="print aligned source/Typst geometry error for every post-cut cubic")
     args = parser.parse_args()
     export(args.source_trace, args.typst_trace, args.output, dense=args.dense,
-           dense_factor=args.dense_factor)
+           dense_factor=args.dense_factor,
+           show_segment_errors=args.show_segment_errors)

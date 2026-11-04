@@ -1643,6 +1643,34 @@ errors against the source lane cubics increased from
 generic arc-to-parameter inverse is not a sufficient replacement for the
 source offset-lane construction.
 
+**M11 pre/post-shadow lane geometry audit (2026-11-05).** A dense comparison
+of the three known source/Typst lane pairs (`4/2`, `4/6`, `5/2`) against the
+current production layout finds pre-shadow mean point errors of
+`0.0000074/0.0000062/0.0000065 mm`; mean tangent errors are
+`0.0766/0.0776/0.0779°`, with maxima below `0.18°`. This rules out a large
+pre-shadow lane normal error on these paths. Reconstructing the post-shadow
+paths with the current splice map raises mean point error to
+`0.000181/0.000186/0.000214 mm`. The first q-tree divergence intervals
+(`4/2` segments 31–32 and `5/2` segments 19–20) have similar local errors,
+not the worst peaks, so a single local arc increment adjustment is not
+supported. The next comparison should pair post-`shadowCut` cubic endpoints
+and parameter ranges directly to the pre-cut dense lane, then correct the
+general splice/time mapping before changing q-arc integration. The new
+`diagnostics/audit_m11_lane_tangents.py` measures pre-cut position and tangent
+residuals; `extract_m11_typst_q_inputs.py --show-segment-errors` reports the
+post-cut per-cubic position residuals.
+
+Reproduce against a fresh trace in the repository devshell with:
+
+```sh
+nix develop path:./nix --command python diagnostics/audit_m11_lane_tangents.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace-current.json
+nix develop path:./nix --command python diagnostics/extract_m11_typst_q_inputs.py \
+  /tmp/m11-q-audit/trace.log build/m11-knot-tube-trace-current.json \
+  build/m11-production-q-inputs.typ --dense --dense-factor 16 \
+  --show-segment-errors
+```
+
 **Strand-knot variable-width callback continuity (2026-11-05).** Commit
 `f3fb5f8` carries per-strand width callbacks through crossing-created gap and
 mask fragments using each fragment's distance range on the original strand.
