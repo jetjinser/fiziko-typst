@@ -4037,6 +4037,20 @@ endpoint crossings. Do not change the global intersection tolerance: the
 q-control inputs still differ by small fixed-point amounts before the solver
 sees them.
 
+**M11 coastline exact-cubic arc-length trial (2026-11-05, rejected).** A
+candidate replaced the eight-chord horizon arc accumulator with lengths from
+the rotated MetaPost `fullcircle` cubic segments, measured by the existing
+fixed-point cubic arc estimator. Against a freshly generated source trace, the
+candidate changed source/Typst thin-node counts on masses 1/2/4 from the
+retained `15/17`, `57/57`, `31/31` to `15/15`, `57/53`, `31/33`. Parent-aware
+decision agreement fell to `1/3`, `15/23`, and `30/31`. The q-arc controls also
+became invalid at divergent descendants (for example, mass 1's first reported
+Typst q endpoint reached `472995907922` fixed units). This indicates the new
+arc values are incompatible with the current horizon time mapping; no raster
+trial was warranted. The helper and production change were removed. The
+retained eight-chord accumulator remains in place while the source-time to
+q-arc mapping is investigated.
+
 **S104 current recursive-q checkpoint (2026-11-05).** A newly regenerated
 pinned-source trace and current Typst metadata confirm that the retained
 fixed-width q callback still matches all 142 subdivision draws, row call
