@@ -76,7 +76,8 @@ gate. Items that need a prerequisite are listed after it.
 
 **M11 coast callback probe (2026-11-04).** Evaluating integer source-time
 callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst
-thin trees from `17/57/33` to `9/22/17`, against source `15/57/31`. The
+thin-node counts from `17/57/33` to `17/43/33`, against source `15/57/31`.
+The trace's `.thin` summary is a different statistic. The
 mass-1 exact-width count rose only `75/139 → 76/139`; mass 2 fell
 `83/170 → 81/170` while its maximum fixed-width error improved `6 → 4` units.
 The large tree regressions outweigh that local residual improvement, so the
