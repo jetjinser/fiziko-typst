@@ -3598,3 +3598,22 @@ refraction crops are unchanged. The production callback arithmetic was
 reverted. Its source-time 136 sample becomes 9792, so this expression does not
 repair the seam q endpoint (source control 9794); callback point/time mapping
 remains the leading discrepancy.
+
+### M11 sewn-path connector clock probe
+
+The pinned `drawLandMass` builds its outline as `visibleContours -- horizon
+subpath -- visibleContours ... -- cycle`; each `--` contributes a path
+segment. The current Typst outline clock advances through coast vertices and
+horizon cubic spans, while distinct points at one coast/horizon join can share
+a source time. A controlled candidate added one time unit on both sides of
+each horizon subpath to account for those sewn connectors.
+
+Regenerating the production coast trace against the pinned source recursion
+showed no change for masses 1 and 2: their source/Typst thin trees remained
+`15/17` and `57/57`, with mass 1's seam still splitting at q time `0.98155212`
+versus source `0.99816895`. Mass 4 became substantially worse, falling from 33 to 9
+Typst thin nodes against 31 source nodes (only 5/7 paired decisions agreed).
+The candidate was reverted without a raster render. Source path-time connector
+counts therefore do not by themselves explain the residual: the remaining
+port must account for how MetaPost assigns cubic subpath and cyclic join times
+to the callback/q knots, rather than adding a uniform unit at each seam.
