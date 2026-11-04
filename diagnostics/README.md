@@ -361,6 +361,8 @@ typst eval 'query(<m9-contour-walk>).first().value' \
   > /tmp/m9-cLine-trace/typst.json
 python3 diagnostics/compare_wood_contours.py \
   /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/typst.json
+python3 diagnostics/compare_m9_q_roots.py \
+  /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/typst.json
 ```
 
 `m9_field_fixedpoint_probe.typ` isolates the known source minimum cell
@@ -3966,11 +3968,23 @@ width-template replay does not repair that tree by itself. Next compare root
 q arc knots and recursive width crossings, then require M9 and S105 crop
 checks before retaining a production change.
 
-For that q comparison, use the actual source `cLine` path-time/arc table.
-`offsetPathTemplate` builds q.x from the arc length of MetaPost's smoothed
-path, while the contour-walk trace exposes sampled marching-squares vertices.
-Constructing q cubics directly from those vertices creates a different,
-piecewise-linear arc clock; its per-segment q controls are not a valid
-source/Typst parity measurement. The production brush-tree counts above remain
-valid, but root q controls still need a paired trace on corresponding path
-representations before attributing their recursion mismatch to q construction.
+The source `cLine` path is made from straight `--` segments between cell-edge
+intersections, so its q arc clock can be checked directly against the paired
+Typst vertices. A fresh pairing finds 22 vertices on each path; corresponding
+points differ by `0.00257/0.00818 mm` mean/max, and total lengths are
+`17.280857/17.265054 mm`. Both q templates reproduce their own per-segment
+path lengths within one fixed unit. The direct q replay comparison has 21/21
+segment pairs: arc-x controls differ by mean/max `678.548/2922` fixed units,
+while width controls differ by only `5.548/19`. The large arc-x residual is
+consistent with accumulated centerline vertex offsets. In this trace the
+mapped Typst level is `3.910147`; the exact source `CLLEVELFIX` value maps to
+`3.909302`. Replacing only the diagnostic's first Typst level with that source
+fixed value lowers mean/max contour-point error to `0.000530/0.001721 mm`,
+root-length error to `0.00102 mm`, root-cut point error to `0.00124 mm`, and
+q arc-x control error to mean/max `100.774/441` fixed units. Brush recursion
+counts remain 41/52 versus source 37/65, so this local level probe does not
+yet demonstrate a better recursive tree or rendered plate. The q comparator
+uses `q-nodes`, not the separate production-width trace, so it reports
+like-for-like q replay curves. The next implementation step is to reproduce
+the source contour-level bounds and random draw from the source masked field,
+then test all M9 panels and S105 before retaining that change.

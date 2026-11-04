@@ -1254,6 +1254,7 @@
         has-cut: crossing != none,
         cut-distance: if crossing == none { none } else { crossing.at(4) },
         cut-param: if crossing == none { none } else { crossing.at(7) },
+        q-curves-fixed: if qcurves == none { none } else { source-q-fixed(qcurves) },
         left-length: if crossing == none { 0.0 } else { crossing.at(2) },
         right-length: if crossing == none { 0.0 } else { crossing.at(3) },
         recurse: recurse))

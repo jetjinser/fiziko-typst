@@ -85,6 +85,29 @@ def main() -> None:
     if traceWoodLine = 1:
         message "WBNODE " & decimal(i) & " " & decimal(w0/mm) & " "
             & decimal(w1/mm) & " " & decimal(t) & " " & decimal(arclength(p)/mm);
+        if i = 0:
+            traceOuterQIndex := traceOuterQIndex + 1;
+            for traceQSegment := 0 step 1 until length(bt) - 1:
+                message "WBOQ " & decimal(traceOuterQIndex) & " "
+                    & decimal(traceQSegment) & " "
+                    & decimal(floor(xpart(point traceQSegment of bt)*256)) & " "
+                    & decimal(round((xpart(point traceQSegment of bt)*256-floor(xpart(point traceQSegment of bt)*256))*256)) & " "
+                    & decimal(floor(ypart(point traceQSegment of bt)*256)) & " "
+                    & decimal(round((ypart(point traceQSegment of bt)*256-floor(ypart(point traceQSegment of bt)*256))*256)) & " "
+                    & decimal(floor(xpart(postcontrol traceQSegment of bt)*256)) & " "
+                    & decimal(round((xpart(postcontrol traceQSegment of bt)*256-floor(xpart(postcontrol traceQSegment of bt)*256))*256)) & " "
+                    & decimal(floor(ypart(postcontrol traceQSegment of bt)*256)) & " "
+                    & decimal(round((ypart(postcontrol traceQSegment of bt)*256-floor(ypart(postcontrol traceQSegment of bt)*256))*256)) & " "
+                    & decimal(floor(xpart(precontrol (traceQSegment+1) of bt)*256)) & " "
+                    & decimal(round((xpart(precontrol (traceQSegment+1) of bt)*256-floor(xpart(precontrol (traceQSegment+1) of bt)*256))*256)) & " "
+                    & decimal(floor(ypart(precontrol (traceQSegment+1) of bt)*256)) & " "
+                    & decimal(round((ypart(precontrol (traceQSegment+1) of bt)*256-floor(ypart(precontrol (traceQSegment+1) of bt)*256))*256)) & " "
+                    & decimal(floor(xpart(point (traceQSegment+1) of bt)*256)) & " "
+                    & decimal(round((xpart(point (traceQSegment+1) of bt)*256-floor(xpart(point (traceQSegment+1) of bt)*256))*256)) & " "
+                    & decimal(floor(ypart(point (traceQSegment+1) of bt)*256)) & " "
+                    & decimal(round((ypart(point (traceQSegment+1) of bt)*256-floor(ypart(point (traceQSegment+1) of bt)*256))*256));
+            endfor;
+        fi;
         message "WBCUT " & decimal(i) & " "
             & decimal(xpart(point t of p)/mm) & " "
             & decimal(ypart(point t of p)/mm);
@@ -307,11 +330,12 @@ def main() -> None:
     source += """
 
 boolean traceWoodCells;
-numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall, traceQSegment;
+numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall, traceQSegment, traceOuterQIndex;
 traceWoodCells := false;
 traceWoodLine := 0;
 traceWoodBlock := 0;
 traceThinCall := 0;
+traceOuterQIndex := 0;
 """
     Path(sys.argv[2]).write_text(source)
 
