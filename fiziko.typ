@@ -4348,9 +4348,10 @@
 // crossing precision, ordered fullcircle arcs, and arc-conflict resolution.
 #let _globe-land-outline-data(coords, rotation, radius, center) = {
   if coords.len() < 3 { return none }
-  let path-coords = if coords.first() == coords.last() {
-    coords
-  } else { coords + (coords.first(),) }
+  // drawLandMass walks the source input path as given, then closes only the
+  // assembled visible contour with `-- cycle`; do not add a geographic edge
+  // from the final input vertex back to the first before horizon clipping.
+  let path-coords = coords
   let runs = _globe-visible-paths(path-coords, rotation, radius, center,
     crossing-steps: 5)
   if runs.len() == 0 { return none }

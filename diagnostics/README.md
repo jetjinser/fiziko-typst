@@ -1131,15 +1131,19 @@ The M11 `plates.typ` PDF compiles with this change. The paired raster gate is
 still pending because both Nix and Guix cannot reach their daemon sockets here.
 
 The coast trace now includes `source-time-end` so the cyclic q sampling range
-can be audited separately from the outline's last vertex time. For mass 2,
-the current callback grid spans 0–170 and produces 171 fixed-width samples,
-while the source root q template has 170 knots. Its last q knot is at source
-arc x `45974633` with width `8759` fixed units. The Typst widths at callback
-times 169 and 170 are `8763` and `8760`; its arc table places both at the same
-terminal arc position. This localizes the extra sample to the collapsed
-terminal interval in the parameter/arc mapping, but does not yet establish
-which callback knot the source omits. Pair the source q x knots against the
-Typst cumulative arc table before changing the sample schedule.
+can be audited separately from the outline's last vertex time. The source
+`drawLandMass` walks the supplied open geographic path, assembles its visible
+coast and horizon arcs, and only then closes the result with `-- cycle`.
+Typst had appended the first geographic point before horizon clipping, which
+added a visible input edge on mass 2. Removing that pre-closure changes its
+source-time end `170→169` and callback grid `171→170`, matching the source root
+path length 169 and 170 q knots. Pairing root fixed-width knots by source
+index now gives 83 exact widths out of 170 and a maximum error of 6 units;
+before the correction only 15 were exact and the maximum error was 814 units.
+The recursive tree remains 57/57 thin nodes and the brush uses 30/30 random
+draws. Masses 1 and 4 keep their previous path-time and tree counts. This
+resolves the extra mass-2 terminal knot; the residual q-width error and
+mass-1/4 tree differences remain. The paired raster gate is still pending.
 
 That pairing exposed a separate production indexing error. The arc-position
 array has a leading sentinel before its first point entry, but the cyclic
