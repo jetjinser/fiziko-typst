@@ -66,7 +66,7 @@ gate. Items that need a prerequisite are listed after it.
 
 | Order | Gap | Concrete next step | Evidence and acceptance |
 | ---: | --- | --- | --- |
-| 1 | **M11 shadow lane callback remapping** | Carry source cubic controls and path-time ranges through `shadowCut`/`strand-knot` clipping; rebuild each fragment's `offsetPathSubdivide`/`offsetPathGenerate` boundaries and `interpath` lane controls; then map post-cut callback times to uncut `currentTubePath` direction, endpoint-clamped widths, and q arc origins through recursive children. | The q replay and source boundary equation are independently reproduced: Typst q2/q3 controls match within 0.000099 mm and checked source lane controls within 0.000053 mm. However, the complete M11 render remains pixel-identical to committed HEAD because clipped shadow fragments do not retain aligned source cubic groups, so the boundary code is diagnostic-only at production call sites. Older replay evidence remains: injected source arcs reproduce all three trees and q controls, but quarter-fit replay trees still miss source calls. The first differing leaves on calls 4/2 and 5/2 produce a generated right-ray hit at q time 4.0 (endpoint); source finds interior hits at 3.93918/3.93916. Source green-angle replay from the uncut centerline matches within 0.0054° max. Increasing packet-search tolerance does not repair the tree. Integrate clipped cubic provenance first, then require all three trees and per-region image gates before retaining production behavior. |
+| 1 | **M11 shadow lane callback remapping** | Carry source cubic controls and path-time ranges through `shadowCut`/`strand-knot` clipping; rebuild each fragment's `offsetPathSubdivide`/`offsetPathGenerate` boundaries and `interpath` lane controls; then map post-cut callback times to uncut `currentTubePath` direction, endpoint-clamped widths, and q arc origins through recursive children. | A diagnostic reconstruction from the original 1/16 M11 samples recovers the traced clipped center cubics within `0.000033 mm`, q2/q3 boundaries within `0.000065 mm`, and checked lane controls within `0.000041 mm`. A production trial using those lanes regressed same-run 600 ppi M11 whole/knot RMSE from `0.114799/0.078545` to `0.117208/0.097408`; M4/M6 remained pixel-identical. Keeping the old shadow silhouette and old tube edges while changing only inner lanes still gave knot RMSE `0.100047`, and the paired trace reduced six-interval brush calls from 212 to 192 versus 224 source. The production trial is reverted: accurate cubic lane controls alone do not reproduce source thin-brush recursion. The next probe should compare source callback widths and recursive q children on those exact lane cubics, then only integrate a brush path representation that recovers the source call vectors. Older replay evidence remains: injected source arcs reproduce q controls, but quarter-fit replay trees still miss source calls; source green-angle replay from the uncut centerline matches within `0.0054°` max. |
 | 2 | **S104 recursive center/q subpath mapping** | Carry source q controls and center-path parameter mapping together through each recursive child; preserve the exact scanline crossing schedule. | The retained source-fixed callback candidate pairs all 142 rows: subdivision draws, brush calls (`1516/1516`), path-segment counts, and absolute RNG offsets match the pinned source. On row 93, all 19 source thin nodes pair and width controls are exact; source-rounded `pathSubdivide` points improve q-arc controls from mean/max `10.932/17` to `10.780/16` units. Across the full trace, 1,476/1,696 source nodes pair, with 1,213 paired nodes having exact width controls; maximum arc residual remains 933 units on rows with divergent trees. Same-run 600 ppi whole/hatch RMSE is `0.20640447/0.07183428`; stipple is unchanged. Remaining work is source-order centerline mapping across divergent rows without disturbing the exact random schedule or regressing the image gate. Do not revive the rejected fixed-scanline or sampled-q integrations. The exact source-q replay remains a local oracle for node 172's `1.50017` cut at x `39.539 mm`.
 
 | 3 | **M11 knot phase restarts in production** | Carry source callback q-width knots and phase restart points into the real lane renderer, preserving exact source call offsets. | The source-rounded replay matches all 19 leaves/38 calls on k=6, but it is diagnostic-only: current production trace passes no q curves to `_ink-loops`. A temporary candidate that derives fixed q widths from sampled lane widths changes aggregate calls 212→208 against source 224 and leaves per-interval call-vector L1 error unchanged; it was removed without a raster trial. Require source callback knots, lane call vectors, and M11/M4/M6 image gates before retaining an integration. |
@@ -81,19 +81,19 @@ and call-indexed q2/q3 boundary controls. The independent
 `diagnostics/compare_m11_offset_curves.py` replay of the upstream
 `offsetPathGenerate` construction matches all 1,536 traced boundary control
 points with mean error `0.0000218–0.0000282 mm` and maximum `0.0000990 mm`.
-The Typst port in `_mp-offset-boundary` reproduces those controls with the same
-maximum error. Its interpolated lane controls match the traced source lanes
-with maximum error `0.000053 mm` on the checked lanes. Production M11 still
-does not exercise this construction: `strand-knot` calls `tube` on paths
-already clipped at shadow-crossing midpoints, whose endpoints are not aligned
-to the four-sample source-cubic groups. A paired 600 ppi comparison confirms
-the attempted whole-path integration produces pixel-identical output to the
-committed baseline; M4 and M6 are also unchanged. The next concrete gap is to
-preserve source cubic controls and source-time ranges through the clipping
-operation, reconstruct each clipped centerline cubic, then apply the offset
-boundary and lane interpolation before checking q cuts, brush recursion, and
-the three raster gates. Do not count the equation port as a production
-geometry improvement until that clipped-path flow is exercised.
+The Typst port in `_mp-offset-boundary` reproduces those controls with maximum
+error `0.000099 mm`. The diagnostic then reconstructs each clipped centerline
+cubic from the original M11 samples, matching traced input controls within
+`0.000033 mm`; its resulting boundaries match within `0.000065 mm` and checked
+lane controls within `0.000041 mm`. Passing those lanes into the production
+tube renderer regresses the same-run 600 ppi M11 whole/knot RMSE from
+`0.114799/0.078545` to `0.117208/0.097408`, with M4/M6 unchanged. Disabling
+the new edge and shadow geometry while keeping the internal lanes still
+regresses knot RMSE to `0.100047`. The source lane geometry is therefore
+validated, but its conversion to Typst brush paths changes recursive call
+counts and is not retained in production. The remaining concrete gap is
+reproducing source callback widths and recursive q children on these exact
+cubics; require source call-vector and regional raster gates before reintegrating.
 
 **S104 source-q row probe (2026-11-04).** The first focused row, source
 `y=-11.76086` / Typst row 99, has the same 19 thin-node count but only 13

@@ -96,15 +96,17 @@ nix develop path:./nix --command typst eval \
   --in diagnostics/m11_source_offset_check.typ --root .
 ```
 
-The checker compares all q2/q3 cubic controls and the traced lane controls.
-Current maximum errors are `0.000099 mm` for either boundary and `0.000053 mm`
-for checked lanes. This is a source-equation replay, not yet a production M11
-improvement: `strand-knot` clips the path before `tube` receives it, and the
-fragment does not retain source cubic controls aligned to the source's
-four-sample subdivisions. A paired 600 ppi M11 render is pixel-identical to
-committed HEAD. The production follow-up is to preserve cubic provenance and
-source-time ranges through clipping, then compare the clipped source boundary
-and brush recursion before accepting any raster change.
+The checker compares reconstructed center cubics, q2/q3 boundaries, and traced
+lane controls. Current maximum errors are `0.000033 mm` for the clipped input
+cubics, `0.000065 mm` for their boundaries, and `0.000041 mm` for checked
+lanes. The lane curves were tried in the renderer, but the 600 ppi M11
+whole/knot RMSE regressed `0.114799/0.078545 → 0.117208/0.097408`; M4/M6
+pixels were unchanged. Keeping only the inner source lanes still regressed
+knot RMSE to `0.100047`. The integration was removed. The remaining difference
+is in how the source cubic lane becomes thin-brush callbacks and recursive q
+children, not in the traced lane control geometry. Use the fixture and
+`m11_source_offset_check.typ` as geometric oracles before another rendering
+trial.
 
 ## WoodBlock source-field pilot
 
