@@ -3710,3 +3710,15 @@ q-start / parent-cut mapping error in addition to the isolated path-time-43
 rounding difference. `audit_m11_coast_q_children.py` confirms the source tree
 itself is internally continuous at all 15 recursive cuts; changing the
 intersection tolerance would not repair the mismatched child input.
+
+Two trace-only counterfactuals isolate the mass-4 trigger. Replacing only
+source-time 43's generated fixed width `10331` with the traced source value
+`10330` changes the Typst mass-4 tree from 7 to 31 thin nodes; all 31 recursive
+decisions then pair with source. Applying 16.16 rounding through the complete
+normal/lightness calculation and both width terms also yields mass-4 `31/31`,
+but changes masses 1/2 to `13/97` nodes against source `15/57`. Neither
+counterfactual is retained: the single-sample value is a causal probe, while
+the global source-arithmetic candidate still fails two other coast trees and
+needs the same-plate raster gate. The next step is to identify a principled
+source-time/geometry condition that applies the needed correction without
+changing unrelated callback knots.
