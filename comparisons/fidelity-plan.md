@@ -1660,21 +1660,23 @@ general splice/time mapping before changing q-arc integration. The new
 residuals; `extract_m11_typst_q_inputs.py --show-segment-errors` reports the
 post-cut per-cubic position residuals.
 
-**Sampling-resolution qualification (2026-11-05).** The post-cut extractor
-evaluates the Typst lane by linear interpolation between `dense-points`; the
-trace currently stores 16 subdivisions for each interval in `piece.times`.
-For the paired 36-cubic lanes this gives 2,304 intervals. A diagnostic query
-with 64 subdivisions produced 9,216 intervals for the same lane, confirming
-that the existing `0.000181/0.000186/0.000214 mm` post-cut residuals include
-the dense-polyline interpolation error. They are not yet evidence of a
-shadowCut time-map defect. Keep the pre-cut tangent comparison as a geometry
-check, but do not use the post-cut residual to change the splice map until the
-16-versus-64 subdivision convergence is measured with the extractor. The
-64-subdivision Typst query completed; the Python extractor could not be run in
-this shell because Python is absent from `PATH` and both `nix develop` and
-`guix shell` were denied access to their daemon sockets. The exact reproducible
-rerun remains the pair of commands above with `--dense-factor 64` for the
-64-subdivision trace.
+**M11 dense-lane convergence and evolving cut-time audit (2026-11-05).**
+Increasing the lane trace from 16 to 64 subdivisions per `piece.times`
+interval (2,304 to 9,216 intervals on the paired lanes) leaves the old
+post-cut mean/max errors unchanged to the reported precision:
+`0.000181/0.000531`, `0.000186/0.000573`, and `0.000214/0.000550 mm`.
+Polyline density is not the cause. The trace schema records both
+`pathShadowCut` (field 4) and `xpart(pathShadowIntersection)` (field 5), the
+current lane time. Replacing field 4 with field 5 in the existing sequential
+splice model fails its source path-length invariant: for call/lane `4/2` it
+reconstructs 39 post-cut cubics where `M11POSTPARAM` records 40. The second
+lane time is measured after the first cut has changed the path parameter and
+the current splice model still does not reproduce the resulting knot topology.
+The field-5-only trial was reverted; do not infer the right source-time map
+from either field in isolation. Next pair the evolving lane times with the
+post-cut cubic endpoints and derive the knot mapping that preserves all
+recorded path lengths before using it for q replay. Production rendering is
+unchanged.
 
 Reproduce against a fresh trace in the repository devshell with:
 
