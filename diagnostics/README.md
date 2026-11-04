@@ -1754,6 +1754,25 @@ does not insert these knots before brush recursion. Use `M11POSTCURVEA/B` to
 compare the reparameterized path; do not tune lighting from the uncut path
 comparison alone.
 
+**Source offset-curve construction audit (2026-11-04).** Re-running
+`compare_m11_lane_geometry.py` on the pinned source trace and current Typst
+trace confirms the key lanes pair unambiguously: source call/lane `4/2` maps to
+Typst strand/segment/lane `1/0/5` at `0.000496 mm` mean point-to-curve distance;
+`4/6` maps to `1/0/1` at `0.000480 mm`; and `5/2` maps to `1/2/5` at
+`0.000482 mm`. Nearby lanes are about `0.2 mm` away, so these residuals are
+not lane-pair ambiguity. The source implementation first applies
+`offsetPathSubdivide` at `1/4` intervals, then builds the two tube boundaries
+with `offsetPathGenerate`: it estimates offset corners from adjacent tangent
+directions and local subpath arc length, intersects the two offset rays at
+corners when the angle/geometry checks pass, and scales each source cubic's
+control handles to join successive offset points. `tubeGenerate` then forms
+each longitudinal lane with MetaPost `interpath` between those boundary
+cubics. Typst currently constructs lanes as `center-at(t) + normal-at(t) *
+u * radius(t)`. That explains why denser samples lower point error but do not
+reproduce the exact q-arc threshold decisions. The next geometry port should
+implement and pair the source boundary cubics and `interpath` lane controls;
+only then should their post-`shadowCut` subpaths feed the q-template replay.
+
 `analyze_m11_shadow_callbacks.py` pairs each pre/post path length with the
 integer `offsetPathTime` callback samples (`M11WIDTHINPUT`/`M11LIGHT`). On all
 nine expanded call-4–6 lanes, the post-cut path extends 3–5 time units past
