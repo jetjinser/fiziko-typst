@@ -1202,6 +1202,14 @@ The next useful comparison is the ordered parent q-knot list against the
 Typst source-time bounds, to identify which interval is duplicated or omitted
 before changing the ray intersection or cut search.
 
+The earlier depth-1 right parent has matching endpoint geometry and matching
+q-map size (41 segments), but its cut parameter is already different: source
+`S101 CUT 1` is `23.71552`, while the paired Typst node reports `22.71739`.
+This is the first confirmed cut-time divergence on the mass-1 depth-first
+prefix; it precedes the depth-2 child-count difference above. Any next probe
+should first compare that parent’s ordered q curves and ray inputs at the two
+cut parameters, then explain why its children have different segment counts.
+
 A closed-endpoint probe tested whether the remaining repeated-knot mismatch
 comes from merging the visible runs at the original polygon vertex. In the
 mass-1 source root, q knots 107–109 are identical in fixed x, width, and

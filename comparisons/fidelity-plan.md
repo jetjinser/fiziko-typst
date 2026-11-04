@@ -153,6 +153,10 @@ the depth-2 right child: source has 18 q segments, Typst 19, although both cut
 at q time `7.14285`. Its depth-3 children then have 8/11 source segments
 versus 8/12 Typst segments. Compare the ordered q knots at this parent to find
 the extra interval before modifying intersection logic.
+The earlier depth-1 right parent has 41 q segments on both sides and matching
+endpoints, but its cut differs: source `23.71552`, Typst `22.71739`. Trace the
+parent q curves and ray inputs at these cut parameters before attempting a
+production correction.
 
 The sequential q-control audit applies the source-to-page vertical flip and
 pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19
