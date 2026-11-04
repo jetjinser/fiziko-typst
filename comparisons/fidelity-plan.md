@@ -1601,6 +1601,16 @@ to recovering the source q arc clock from generated lane geometry. The traced
 arc table remains an oracle only; no source-specific table is enabled in
 production.
 
+The current-checkout rerun shows the arc-increment errors alternate in sign:
+their per-segment maxima are 24–26 fixed units, but total endpoint drift is
+only 2–11 units. The quarter-sample q replay still misses two thin nodes on
+calls 4/lane 2 and 5/lane 2 (38/40 and 28/30), with first decision differences
+at nodes 33 and 20; call 4/lane 6 stays exact at 20/20. This rules out a
+single whole-lane length scale as a general correction. The next diagnostic
+should compare local arc increments around those branch points and establish
+whether their residual is introduced by lane-point quantization or by
+post-shadow segment reconstruction.
+
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's
 default `per: 12` produces identical 600 ppi M11 regional RMSE and ink

@@ -2244,6 +2244,19 @@ tables alongside the source arc table. The remaining production problem is to
 derive the source arc clock from renderer geometry, since injecting the source
 trace's arc table is an oracle and is not a reusable implementation.
 
+A 2026-11-05 rerun against the current `m11_knot_tube_trace.typ` makes the
+local error pattern explicit. Quarter-sample reconstructed arc increments
+differ from source by up to `24`, `26`, and `24` fixed units on calls 4/lanes 2
+and 6, and 5/lane 2; the cumulative endpoint drifts are only `5`, `11`, and
+`2` units because the per-segment errors change sign. Despite those small final
+drifts, the generated q trees remain `38/20/28` against source `40/20/30`:
+the first divergences are nodes `33` and `20`, where the width-equality
+recursion decision changes. A single endpoint scale cannot correct these
+local arc-clock errors. The next probe should pair source and reconstructed
+arc increments around those exact nodes and identify whether the residual
+comes from lane-point quantization or the post-shadow segment reconstruction;
+do not promote global sampling-density or endpoint-scale adjustments.
+
 Rebuild the actual Typst lane trace and compare generated, fifth-fit, and
 source-arc q trees with:
 
