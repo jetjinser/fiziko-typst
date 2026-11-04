@@ -85,9 +85,25 @@ arc controls, and the largest remaining q-control residual is 3 units on the
 dashes, matching the non-injected replay. The two unmatched source nodes are
 the short interval from x=36.48710 to 36.51228 mm: the replay keeps that span
 inside an adjacent child. This isolates the next task to center-path child
-mapping around a very short interval. The source-q fixture and selectable
+mapping around a very short interval. A width-control audit finds one-unit
+residuals across the split q controls for source nodes 33/36. At their shared
+endpoint the source stores 12513 in 16.16 bp units while the replay stores
+12514. That rise puts the candidate endpoint above the source target and
+removes the interior crossing that creates nodes 34/35.
+The source-q fixture and selectable
 node collection are diagnostic only; no production rendering change or raster
 gain is claimed.
+
+The fixed-point q split was then tested as a production-wide replacement for
+floating interpolation. It makes this source-q row exact (19/19 endpoint and
+control matches) while retaining all 142 row call schedules, but full generated
+q-tree endpoint pairs fall from 1,476 to 1,462; whole/hatch RMSE regresses from
+`0.20640447/0.07183428` to `0.20640963/0.07186350`. Restricting integer
+arithmetic to exact half-parameter splits raises endpoint pairs to 1,467, but
+still regresses whole/hatch RMSE to `0.20640904/0.07186017`. Both candidates
+were reverted. The short-row result identifies a q-subpath rounding issue,
+but the correction must preserve the broader generated-q tree and raster
+gates.
 
 **M11 coast callback probe (2026-11-04).** Evaluating integer source-time
 callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst

@@ -3215,8 +3215,22 @@ nix develop path:./nix --command python \
 ```
 
 This yields 17/19 endpoint pairs and 15 exact width/arc-control pairs; the two
-unpaired source nodes span a short interval near x=36.5 mm. It is a diagnostic
-oracle for center-path child mapping, not a production q integration.
+unpaired source nodes span a short interval near x=36.5 mm. The remaining
+width controls on source nodes 33/36 differ by one 16.16 unit at several
+points. At the shared knot, the source stores 12513 while the replay stores
+12514; that shifts the endpoint above the source target and removes the
+crossing for nodes 34/35. This is a diagnostic oracle for center-path child
+mapping, not a production q integration.
+
+A production-wide integer fixed-point q-split trial made this injected row
+exact at 19/19 source nodes and retained the exact 142-row RNG/call schedule.
+Across generated q curves, however, endpoint pairs regressed from 1476 to
+1462, while the 600 ppi S104 whole/hatch RMSE regressed from
+`0.20640447/0.07183428` to `0.20640963/0.07186350`. The global change was
+reverted. Restricting the fixed arithmetic to exact half-parameter splits
+raised generated-q endpoint pairs to 1467, but still regressed whole/hatch
+RMSE to `0.20640904/0.07186017`; this variant was also reverted. The current
+source-q audit command above reports the retained 17/19 diagnostic baseline.
 
 A second probe applied the rounded source cubic only to thin-recursion cuts,
 leaving the already matching outer cuts unchanged. On row 93 it moves node

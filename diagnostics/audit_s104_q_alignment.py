@@ -73,6 +73,7 @@ def main() -> int:
     row_reports = []
     x_errors = []
     x_node_reports = []
+    y_node_reports = []
     unmatched_source = []
     considered_rows = 0
     for row_index, (src_row, typ_row) in enumerate(zip(src_rows, typ_rows), 1):
@@ -124,6 +125,24 @@ def main() -> int:
             if all(delta == 0 for delta in deltas[0::2]):
                 totals["exact-arc-controls"] += 1
             x_errors.extend(abs(delta) for delta in deltas[0::2])
+            y_errors = [abs(delta) for delta in deltas[1::2]]
+            y_node_reports.append({
+                "row": source_y,
+                "source-node": serial,
+                "max-error-fixed": max(y_errors, default=0),
+                "mean-error-fixed": (
+                    sum(y_errors) / len(y_errors) if y_errors else 0
+                ),
+                "controls": [
+                    (curve, point,
+                     source_controls[curve, point, 1],
+                     typ_curves[curve][point][1])
+                    for curve in range(source_curve_count)
+                    for point in range(4)
+                    if source_controls[curve, point, 1]
+                    != typ_curves[curve][point][1]
+                ],
+            })
             node_x_errors = [abs(delta) for delta in deltas[0::2]]
             x_node_reports.append({
                 "row": source_y,
@@ -150,6 +169,15 @@ def main() -> int:
         print(f"absolute q-arc control error in 16.16 bp units: "
               f"mean={sum(x_errors) / len(x_errors):.3f}, "
               f"max={max(x_errors)}")
+    if y_node_reports:
+        print("largest q-width control residuals:")
+        for node in sorted(y_node_reports,
+                           key=lambda item: item["max-error-fixed"],
+                           reverse=True)[:args.largest_arc_errors or 5]:
+            print(f"  row={node['row']:.5f} source-node={node['source-node']} "
+                  f"max/mean={node['max-error-fixed']}/"
+                  f"{node['mean-error-fixed']:.2f} units "
+                  f"differing-controls={node['controls']}")
     if args.largest_arc_errors > 0:
         print("largest paired q-arc control residuals:")
         for node in sorted(x_node_reports,
