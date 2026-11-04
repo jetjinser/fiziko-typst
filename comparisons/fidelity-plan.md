@@ -1721,6 +1721,17 @@ parameter origin; only the separately projected endpoint check establishes
 geometric correspondence. Do not use that stale time pairing to tune
 production.
 
+**M11 projected shadow sample pairing (2026-11-05).** The diagnostic's source
+to Typst shadow outline map was wrong for all three occluded calls. Correcting
+it and evaluating both source and Typst outlines at the source-recorded
+light-sample positions, with the same traced depth and light vector, yields
+identical classifications for all 1,004 samples across calls 4/5/6: 154
+shadowed and 850 unshadowed. The paired silhouettes therefore need no
+geometry correction at these recorded sample positions. This is a sampled
+classification check only; it leaves the lane's `shadowCut` parameter splice,
+callback phase and recursive brush path unresolved. The revised comparison
+is in `diagnostics/compare_m11_shadow_polygons.py`.
+
 Run the endpoint audit against a 64-subdivision lane trace with:
 
 ```sh

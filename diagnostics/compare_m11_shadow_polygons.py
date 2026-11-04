@@ -13,9 +13,9 @@ from pathlib import Path
 
 # Under-layer source tube call -> (upper-layer tube outline id, Typst path id).
 SHADOW_PAIRS = {
-    4: (4, (1, 1)),
-    5: (6, (1, 2)),
-    6: (2, (0, 1)),
+    4: (4, (0, 0)),
+    5: (6, (0, 2)),
+    6: (2, (1, 1)),
 }
 OUTLINE_PAIRS = {
     (1, 2): (1, 1),
@@ -85,8 +85,10 @@ def main():
     args = parser.parse_args()
     outlines, samples, hits, depths = read_source(args.source_log)
 
-    for call, (outline_id, _) in SHADOW_PAIRS.items():
-        tp = fp = fn = tn = 0
+    typst = read_typst(args.typst_trace) if args.typst_trace else None
+    for call, (outline_id, typst_id) in SHADOW_PAIRS.items():
+        source_counts = [0, 0, 0, 0]
+        typst_counts = [0, 0, 0, 0]
         for (sample_call, lane), points in samples.items():
             if sample_call != call:
                 continue
@@ -96,23 +98,26 @@ def main():
             polygon = outlines[(1, outline_id)]
             for x, y in points:
                 truth = (call, lane, x, y) in hits
-                predicted = inside((x - dx, y - dy), polygon)
-                if truth and predicted:
-                    tp += 1
-                elif truth:
-                    fn += 1
-                elif predicted:
-                    fp += 1
-                else:
-                    tn += 1
+                source_predicted = inside((x - dx, y - dy), polygon)
+                classify(source_counts, truth, source_predicted)
+                if typst is not None:
+                    classify(typst_counts, truth,
+                             inside((x - dx, y - dy), typst[typst_id]))
+        tp, fp, fn, tn = source_counts
         precision = tp / max(1, tp + fp)
         recall = tp / max(1, tp + fn)
         print(f"source-call={call} outline=(1,{outline_id}) "
               f"tp/fp/fn/tn={tp}/{fp}/{fn}/{tn} "
               f"precision/recall={precision:.6f}/{recall:.6f}")
+        if typst is not None:
+            tp, fp, fn, tn = typst_counts
+            precision = tp / max(1, tp + fp)
+            recall = tp / max(1, tp + fn)
+            print(f"  Typst silhouette={typst_id} "
+                  f"tp/fp/fn/tn={tp}/{fp}/{fn}/{tn} "
+                  f"precision/recall={precision:.6f}/{recall:.6f}")
 
-    if args.typst_trace:
-        typst = read_typst(args.typst_trace)
+    if typst is not None:
         for source_id, typst_id in OUTLINE_PAIRS.items():
             source = outlines[source_id]
             candidate = [tuple(point) for point in typst[typst_id]]
@@ -123,6 +128,17 @@ def main():
                   f"{sum(forward) / len(forward):.6f}/{max(forward):.6f}mm "
                   f"typst-to-source mean/max="
                   f"{sum(reverse) / len(reverse):.6f}/{max(reverse):.6f}mm")
+
+
+def classify(counts, truth, predicted):
+    if truth and predicted:
+        counts[0] += 1
+    elif predicted:
+        counts[1] += 1
+    elif truth:
+        counts[2] += 1
+    else:
+        counts[3] += 1
 
 
 if __name__ == "__main__":

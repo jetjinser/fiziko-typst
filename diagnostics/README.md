@@ -1956,6 +1956,21 @@ claim. The inverse map is still useful; the all-pairs geometry scan is not an
 acceptable renderer path. A production retry needs spatially indexed shadow
 edges or source-order intersection events computed once and shared by lanes.
 
+**M11 projected shadow hit pairing (2026-11-05).**
+`compare_m11_shadow_polygons.py` now compares each source-recorded light sample
+against the geometrically paired Typst silhouette using the same traced depth
+and light projection. The shadow-pair table had three incorrect Typst IDs;
+after correcting them, the source and Typst classifications agree on all
+1,004 samples from calls 4/5/6 (154 shadowed, 850 unshadowed). This validates
+the paired silhouette's projected inside/outside result at the traced samples;
+it does not validate lane cut times, brush recursion, or unsampled pixels.
+Those remain the source of the M11 shadow discrepancy. Reproduce with:
+
+```sh
+nix develop path:./nix --command python diagnostics/compare_m11_shadow_polygons.py \
+  /tmp/m11-connector-trace/trace.log /tmp/m11-knot-tube-trace-64-flat.json
+```
+
 `_path-polygon-crossings` now accepts a polygon translation together with the
 edge grid built for the unshifted polygon. Because a uniform translation
 preserves every edge's grid-cell assignment, lane-specific `shadowCut` planes
