@@ -141,22 +141,25 @@ removed without image claims. Keep the inverse path-time map, but compute
 shadow intersections with a spatial index or shared source-order events before
 retrying the renderer integration.
 
-A 2026-11-04 closed-endpoint probe found three identical mass-1 source q knots
-where the current Typst outline has two. Preserving the closed endpoint during
-visible-run merging restores the local repeated width sample, but adds one
-root q sample on masses 1 and 2 (139→140 and 171→172); thin-node counts and
-brush calls stay unchanged. The candidate was reverted. Keep the coast task
-focused on pairing the complete source-time/q-segment sequence and locating
-the compensating extra Typst interval before changing the cyclic join.
-Endpoint pairing now locates the first confirmed mass-1 count divergence in
-the depth-2 right child: source has 18 q segments, Typst 19, although both cut
-at q time `7.14285`. Its depth-3 children then have 8/11 source segments
-versus 8/12 Typst segments. Compare the ordered q knots at this parent to find
-the extra interval before modifying intersection logic.
-The earlier depth-1 right parent has 41 q segments on both sides and matching
-endpoints, but its cut differs: source `23.71552`, Typst `22.71739`. Trace the
-parent q curves and ray inputs at these cut parameters before attempting a
-production correction.
+The initial 2026-11-04 closed-endpoint probe restored the third repeated
+mass-1 q knot, but added a root sample on masses 1 and 2; that version was
+reverted. A refined candidate preserves the endpoint and uses the resulting
+`path-time` as the cyclic `source-time-end`, removing the synthetic extra
+cycle interval. Mass 1 then returns to 139 root q samples and monotone
+`(arc,width)` alignment improves from 135/139 to 136/139. Its depth-1 right
+cut moves from `22.71739` to `23.71739`, within `0.00187` of source `23.71552`.
+The root, depth-1, depth-2, and depth-3 q-segment counts now match the source
+through `138`, `98/41`, `24/18`, and `1/24/8/11`; thin-node counts and brush
+calls stay unchanged on M1/M2/M4. Mass 2 retains its existing one-sample excess
+(`171` versus `170`). Keep the source-level correction; its paired 600 ppi
+raster gate remains outstanding because the current shell lacks MetaPost and
+Ghostscript.
+
+The refined mass-1 trace's next count difference occurs after the depth-3
+right parent: the source cut is `9.00267` and produces depth-4 q segments
+`10/2`, while Typst cuts at `9.0` and produces `9/2`. The next probe should
+compare this parent's q controls and both ray-hit parameters, then run the
+paired crop gate when the renderer toolchain is available.
 
 The sequential q-control audit applies the source-to-page vertical flip and
 pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19

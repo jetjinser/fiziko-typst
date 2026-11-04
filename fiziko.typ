@@ -806,6 +806,7 @@
       source-path-time(path, cut), frame-index(cut).at(0),
       qsplit.left, qsplit.right, mapsplit.left, mapsplit.right, qtime,
       (status: "split", right-time: right-time, left-time: left-time,
+        right-x: right-x, left-x: left-x,
         qtime: qtime, source-time: source-time, cut: cut, arc: arc,
         total: total, midpoint: midpoint, target: height))
   }
@@ -4361,7 +4362,9 @@
     rotation: rotation)).visible
   let source-origin-rotated = runs.len() > 1 and start-visible and end-visible
   if source-origin-rotated {
-    let merged = runs.last().slice(0, runs.last().len() - 1) + runs.first()
+    // Both cyclic runs carry the explicit polygon endpoint. Keep its repeated
+    // knot because the source q template consumes that zero-length path time.
+    let merged = runs.last() + runs.first()
     runs = (merged, ..runs.slice(1, runs.len() - 1))
   }
   let rim-time(point) = _mod(
@@ -4504,9 +4507,11 @@
     outline-times = rotated-times
     outline-arc-positions = rotated-arcs
   }
+  // The repeated closed endpoint above already accounts for the cyclic knot;
+  // adding another terminal interval would shift later q callback times.
   (points: outline, source-times: outline-times,
     source-arc-positions: outline-arc-positions,
-    source-time-end: path-time + if source-origin-rotated { 1 } else { 0 },
+    source-time-end: path-time,
     runs: runs, arcs: arcs)
 }
 

@@ -1225,6 +1225,31 @@ map; the production edit was reverted without a raster run. The next probe
 must locate the compensating extra Typst interval and pair the complete
 source-time sequence, rather than preserving the closed endpoint globally.
 
+A refined candidate keeps that explicit closed endpoint but sets the cyclic
+`source-time-end` to the resulting `path-time`, instead of adding another
+synthetic closing interval. This preserves the third repeated mass-1 knot
+without increasing the root q sample count: source and Typst both have 139.
+Monotone alignment of their root `(arc, width)` samples pairs 136/139 knots,
+up from 135/139 on the baseline; three terminal knots on each side still do
+not pair. The M1 depth-1 right cut moves from `22.71739` to `23.71739`, within
+`0.00187` of source `23.71552`. Its q-map has 41 segments on both sides, and
+mass-1 depth-2/3 child segment counts now match source (24/18 and 1/24/8/11).
+Mass 2 remains one root q sample over source (171 vs 170); thin-node counts
+and brush-call totals are unchanged on M1/M2/M4. Keep this source-level
+correction as a candidate; the paired 600 ppi raster gate is still outstanding
+because MetaPost and Ghostscript are unavailable in the current shell.
+
+The private node trace now records the two raw ray-hit parameters and their q
+x positions in `split-debug`. This lets the next replay distinguish q-curve
+parameterization from the ray-intersection solver at the depth-1 parent.
+On the refined candidate, Typst's two raw hit times are `23.71739` and
+`20.82834`, versus source fixed-point hits `23.71552` and `20.82666`; the
+baseline Typst hits were `22.71739` and `19.82834`, each almost one full q
+segment early. The shared near-one-segment shift on both rays supports the
+repeated-knot/q-index explanation and does not implicate the intersection
+solver. The candidate is retained for its source-trace improvement; render
+parity still needs a same-renderer run.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated
