@@ -1174,6 +1174,15 @@ schedule as a general coast-tree fix. The initial q-segment construction and
 its mass-specific cyclic mapping still need to be paired before changing
 sample placement.
 
+A second boundary probe inserted each exact integer fullcircle boundary while
+keeping every point from the global sample grid. This moves mass 1's depth-3
+right q cut from `9.0` to `9.00357056` (source `9.00267`) and its thin-node
+count from 17 to 15 (source 15). However, mass 2 drops from 57 to 39 thin nodes
+(source 57), while mass 4 remains at 33 (source 31); brush-call totals are
+unchanged. The global insertion candidate was reverted. The localized mass-1
+gain does not justify a general sampling change; the next probe must map each
+source path-time boundary to its actual cubic segment and cyclic origin.
+
 A coast-width arithmetic probe evaluated the source expression as two
 separately rounded dimensional terms, `(2/3 * minStrokeWidth) +
 (1/3 * minStrokeWidth * lightness)`, rather than rounding only the combined
