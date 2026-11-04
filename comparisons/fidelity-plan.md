@@ -94,9 +94,10 @@ silhouette filter in `shadows-for`.
 
 The index is now reusable through `_polygon-edge-grid`, and
 `_path-polygon-crossings` returns path-segment indices, local crossing times,
-edge indices, and hit points in traversal order. Shared-vertex hits are
-deduplicated. This exposes the event data needed to build post-cut callback
-clocks.
+edge indices, local fractions on the shadow edges, accumulated outline
+parameters, and hit points. Shared-vertex hits are deduplicated. The outline
+parameter is not yet a MetaPost shadow-path time; reconstructing that scale is
+still required for a source-ordered callback clock.
 
 `_path-polygon-crossings` now also accepts a uniform polygon shift while
 reusing the unshifted edge grid. The focused circle/concave-outline diagnostic

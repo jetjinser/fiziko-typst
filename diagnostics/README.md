@@ -1809,7 +1809,11 @@ preserves every edge's grid-cell assignment, lane-specific `shadowCut` planes
 can reuse that grid while testing against translated edge coordinates. The
 focused `m11_shifted_shadow_index.typ` diagnostic compares translated-grid
 results with rebuilding the translated polygon grid: both the 128-edge circle
-and a concave outline return identical ordered crossing records. This removes
+and a concave outline return identical ordered crossing records. Each crossing
+also records its local fraction on the polygon edge and the accumulated
+polyline segment parameter. These are outline-local coordinates, not MetaPost
+shadow-path times; they expose the scale that a source-time reconstruction
+still needs to determine. This removes
 the per-lane grid-build prerequisite from the callback-clock scan. The indexed
 grid remains available for a production callback-clock scan.
 

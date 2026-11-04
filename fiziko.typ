@@ -5015,11 +5015,11 @@
         let tb = _dot(_sub(point, b), db) / _dot(db, db)
         if (ta >= -1e-6 and ta <= 1 + 1e-6
           and tb >= -1e-6 and tb <= 1 + 1e-6) {
-          segment-crossings.push((ta, j, point))
+          segment-crossings.push((ta, j, tb, point))
         }
       }
     }
-    for (ta, j, point) in segment-crossings.sorted() {
+    for (ta, j, tb, point) in segment-crossings.sorted() {
       let duplicate = crossings.any(event => {
         let same-segment = (event.at("path-segment") == i and
           calc.abs(event.at("path-fraction") - ta) <= 1e-8)
@@ -5030,7 +5030,8 @@
       })
       if not duplicate {
         crossings.push((path-segment: i, path-fraction: ta,
-          polygon-edge: j, point: point))
+          polygon-edge: j, polygon-fraction: tb,
+          polygon-segment-time: j + tb, point: point))
       }
     }
   }

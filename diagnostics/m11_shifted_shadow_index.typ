@@ -21,4 +21,9 @@
     exact: direct == reused, direct: direct, reused: reused)
 })
 #assert(results.all(result => result.exact), message: "translated edge-grid crossings differ")
+#assert(results.all(result => result.direct.all(event =>
+  event.keys().contains("polygon-fraction")
+  and event.at("polygon-fraction") >= -1e-6
+  and event.at("polygon-fraction") <= 1 + 1e-6)),
+  message: "crossings must retain their local shadow-edge parameter")
 #metadata(results) <m11-shifted-shadow-index>
