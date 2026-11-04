@@ -401,7 +401,8 @@ def pair_dash_leaves(source_dashes, typst_nodes):
     }
 
 
-def summarize(source_log: Path, typst_json: Path, height: int, field_scale: float):
+def summarize(source_log: Path, typst_json: Path, height: int, field_scale: float,
+              q_replay: bool = False):
     (source_level, source_points, source_cells, source_nodes, source_leaves,
      source_thin_nodes, source_thin_dashes, source_thin_calls) = read_source(
         source_log, height
@@ -444,9 +445,11 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
         ),
         "cell-range-max-error": max(range_errors) if range_errors else None,
     }
-    if source_nodes and "brush-nodes" in trace:
+    trace_prefix = "q-" if q_replay else "brush-"
+    trace_nodes_key = trace_prefix + "nodes"
+    if source_nodes and trace_nodes_key in trace:
         source_root = source_nodes[0]
-        typst_nodes = trace["brush-nodes"]
+        typst_nodes = trace[trace_nodes_key]
         typst_root = next((node for node in typst_nodes
                            if node["stage"] == "outer" and node["depth"] == 0), None)
         summary.update({
@@ -481,8 +484,8 @@ def summarize(source_log: Path, typst_json: Path, height: int, field_scale: floa
                 source_thin_calls, source_thin_nodes, source_thin_dashes,
                 typst_nodes,
             ),
-            "typst-thin-brush-dash-leaves": trace.get("brush-dashes"),
-            "typst-brush-rng-calls": trace.get("brush-rng-calls"),
+            "typst-thin-brush-dash-leaves": trace.get(trace_prefix + "dashes"),
+            "typst-brush-rng-calls": trace.get(trace_prefix + "rng-calls"),
         })
         if typst_root and typst_root["cut-point"] is not None:
             summary["root-cut-distance-mm"] = math.dist(
@@ -502,9 +505,12 @@ def main():
                         help="woodBlock internal width (default: 33 mm)")
     parser.add_argument("--field-scale", type=float, default=24,
                         help="Typst field scale relative to source (default: 24)")
+    parser.add_argument("--q-replay", action="store_true",
+                        help="pair against the opt-in source q-template replay")
     args = parser.parse_args()
     print(json.dumps(summarize(args.source_log, args.typst_json,
-                               args.height, args.field_scale), indent=2))
+                               args.height, args.field_scale,
+                               q_replay=args.q_replay), indent=2))
 
 
 if __name__ == "__main__":

@@ -409,6 +409,29 @@ S105 and M11 pixels are identical. The renderer edit was reverted. This
 isolates the remaining mismatch to width/path-time construction or recursive
 geometry, rather than q-knot endpoint quantization.
 
+The source `WBQCTRL` knots clarify the axis mapping. MetaPost constructs q
+from forward `iL` arc lengths, then brushes `reverse(iL)`; the q y values still
+come from the cell-width callback sequence used by that reversed brush. The
+opt-in `q-nodes` trace now builds exactly that combination with
+`_source-width-q-curves`. On source call 1 / thin depth 0, all 14 q cubics pair
+to the source controls: maximum x/y residuals are `0.0063/0.000097 mm`.
+Compared with the current reversed-path q builder, the M9 thin-tree replay
+improves from 44 to 46 parent-paired nodes, from 37 to 46 pairs within 0.1 mm,
+and from 39/44 to 43/46 matching recurse decisions. Dash endpoint pairs within
+0.1 mm rise from 8/12 to 11/12; both traces still use 12 dashes and 24 random
+calls. Reproduce the q replay by adding `--q-replay` to
+`compare_wood_contours.py`; omit it for the production-width baseline.
+
+That diagnostic result did not make the full production renderer better. A
+candidate brushed each complete contour with the forward-arc q template, then
+clipped its ink to the M9 rectangular board. On same-checkout 600 ppi renders,
+M9 RMSE regressed `0.21138138 → 0.21201468`; all four panel crops regressed,
+although ink coverage moved closer to source (`3.7073% → 3.7599%`, source
+`4.2032%`). S105 and M11 pixels were identical to baseline. The rendering
+branch was reverted; the q helper and diagnostic replay remain available.
+The remaining production gap is preserving source q time through the clipped
+contour renderer without changing its full-path brush geometry adversely.
+
 A fresh pinned-source trace identifies an earlier geometric mismatch that
 should be resolved before those local branch decisions. MetaPost's
 `woodBlock` draws `isoLines` into an intermediate picture, then clips that

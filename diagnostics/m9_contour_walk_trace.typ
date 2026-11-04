@@ -1,5 +1,5 @@
 // Typst's first M9 contour and the 1 mm cells crossed by each path segment.
-#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, _mp-scalar-rounded, _mp-unit, stroke-ink
+#import "../fiziko.typ": _woodblock-field, _wood-source-levels, _wood-source-width, _source-width-q-curves, _source-min-stroke, _source-dash-length, _metapost-rng-sequence, _mp-scalar-rounded, _mp-unit, stroke-ink
 #import "../contour.typ": marching-squares
 
 #let model = _woodblock-field(33, 55, 1, source-res: 1)
@@ -94,6 +94,11 @@
   min-w: _source-min-stroke, period: _source-dash-length,
   _source-rounding: true, _with-stats: true, _trace-nodes: true,
   _path-time: true, _source-width-fixed: source-width-fixed)
+#let q-curves-fixed = _source-width-q-curves(paired-path.points, width)
+#let q-trace = stroke-ink(brush-path, width, closed: false, per: 0,
+  min-w: _source-min-stroke, period: _source-dash-length,
+  _source-rounding: true, _with-stats: true, _trace-nodes: true,
+  _path-time: true, _source-q-curves-fixed: q-curves-fixed)
 #metadata((contour-count: paths.len(), level-count: levels.len(),
   field-range: (calc.min(..values), calc.max(..values)),
   sample-values: sample-values,
@@ -111,5 +116,10 @@
   brush-thin-leaves: brush-trace.at(2).thin,
   brush-dashes: brush-trace.at(2).dashes,
   brush-widths: brush-trace.at(3).widths,
-  brush-nodes: brush-trace.at(2).nodes))
+  brush-nodes: brush-trace.at(2).nodes,
+  q-rng-calls: q-trace.at(1),
+  q-outer-leaves: q-trace.at(2).outer,
+  q-thin-leaves: q-trace.at(2).thin,
+  q-dashes: q-trace.at(2).dashes,
+  q-nodes: q-trace.at(2).nodes))
 <m9-contour-walk>

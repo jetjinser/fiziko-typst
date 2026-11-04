@@ -605,6 +605,15 @@ injection remains reverted because its full-page image gate regressed.
   reverted. Endpoint quantization alone is therefore not the missing wood
   recursion state. Continue tracing the mapped source q time and recursive
   path geometry, rather than changing global cut thresholds.
+  A new opt-in M9 q replay now generates x knots from forward cLine arc length
+  while retaining the reversed brush's callback-width sequence. Its first
+  thin-call q controls match all 14 source cubics within `0.0063 mm` in x and
+  `0.000097 mm` in width; tree pairing improves to 46 nodes (all within
+  0.1 mm) and 43/46 matching decisions. A production full-contour brush with
+  rectangular clipping nevertheless regresses M9 RMSE `0.21138138 →
+  0.21201468` across all four crops, so that renderer branch was reverted.
+  S105/M11 are pixel-identical. Keep the q replay as evidence and resolve how
+  to carry its time map across the existing clipped-path production topology.
   Brush recursion remains open (current 41 outer/52 thin versus 37/65 source),
   and only the full diagnostic contour currently has the complete source-time
   state mapping.

@@ -1530,6 +1530,7 @@
                 _trace-nodes: false, _path-time: false,
                 _param-times: none, _param-end: none,
                 _source-width-fixed: none,
+                _source-q-curves-fixed: none,
                 _source-arc-positions: none) = {
   let src = pts.map(p => _add(p, shift))
   let fr0 = _frame(_prepare(src, per, closed), closed)
@@ -1551,6 +1552,7 @@
     trace-nodes: _trace-nodes, source-rounding: _source-rounding,
     param-times: _param-times, param-end: _param-end,
     source-width-fixed: _source-width-fixed,
+    source-q-curves-fixed: _source-q-curves-fixed,
     source-arc-positions: _source-arc-positions)
   let drawing = place(top + left,
     _fill(if _with-rng or _with-stats { ink.at(0) } else { ink }, fill))
@@ -3687,6 +3689,31 @@
     let variation = _mp-scalar-rounded(variation)
     _mp-rounded((_source-min-stroke / 16) / (1 / 64 + 2 * variation))
   }
+}
+
+// Rebuild MetaPost's straight offsetPathTemplate q path. Its x coordinate
+// advances along the forward source path, while callers may supply a width
+// callback whose source cell state follows the reversed brush path.
+#let _source-width-q-curves(points, width) = {
+  if points.len() < 2 { return () }
+  let arcs = (0.0,)
+  for i in range(points.len() - 1) {
+    arcs.push(arcs.last() + _dist(points.at(i), points.at(i + 1)))
+  }
+  let knots = range(points.len()).map(i => (
+    arcs.at(i), width(float(i) / (points.len() - 1))))
+  let line-cubic(a, b) = (
+    a,
+    (a.at(0) + _mp-rounded((b.at(0) - a.at(0)) / 3),
+     a.at(1) + _mp-rounded((b.at(1) - a.at(1)) / 3)),
+    (a.at(0) + _mp-rounded(2 * (b.at(0) - a.at(0)) / 3),
+     a.at(1) + _mp-rounded(2 * (b.at(1) - a.at(1)) / 3)),
+    b,
+  )
+  range(knots.len() - 1).map(i => line-cubic(
+    knots.at(i), knots.at(i + 1)).map(point => (
+      int(calc.round(point.at(0) / _mp-unit * 65536)),
+      int(calc.round(point.at(1) / _mp-unit * 65536)))))
 }
 
 /// Return sampled contour polylines for selected scalar-field levels.
