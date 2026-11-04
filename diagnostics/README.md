@@ -1127,6 +1127,21 @@ terminal interval in the parameter/arc mapping, but does not yet establish
 which callback knot the source omits. Pair the source q x knots against the
 Typst cumulative arc table before changing the sample schedule.
 
+That pairing exposed a separate production indexing error. The arc-position
+array has a leading sentinel before its first point entry, but the cyclic
+rotation used the point index directly. The origin therefore came from arc
+index 1 instead of index 2, and the rotated cumulative lengths were one coast
+edge behind the rotated points. Using the sentinel-aware origin and slice
+aligns the arc table with the geometry: the first ten mass-2 coast arc
+increments now agree with their point-to-point chord lengths. Mapping the 170
+source q x knots through this corrected
+arc/time table reduces mass-2 callback-width residual from mean/max
+`13.021/357.310` to `1.314/5.985` 16.16 units; 91 knots are now within one
+unit, versus 65 before. Brush-call totals remain exact. The root recursive
+trees are still source/Typst `15/18`, `57/58`, and `31/34` for masses 1/2/4,
+and the mass-2 callback grid still has one extra sample. Keep the arc-index
+correction; the paired raster gate remains outstanding.
+
 To reproduce the reduced endpoint probe:
 
 ```sh

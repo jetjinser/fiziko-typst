@@ -4489,11 +4489,13 @@
     // second point after the last+first visible-run merge above. Rebase the
     // closed outline there, keeping the intervening horizon sample at the
     // end of source time rather than treating it as knot zero.
-    let origin-arc = outline-arc-positions.at(1)
+    // The arc table starts with a sentinel before the first point entry, so
+    // source point 1 is stored at arc index 2.
+    let origin-arc = outline-arc-positions.at(2)
     let total-arc = outline-arc-positions.last()
     let rotated-points = outline.slice(1) + outline.slice(0, 1)
     let rotated-times = outline-times.slice(1).map(t => t - 1) + (path-time,)
-    let rotated-arcs = outline-arc-positions.slice(1, outline.len())
+    let rotated-arcs = outline-arc-positions.slice(2, outline.len() + 1)
       .map(a => a - origin-arc)
     rotated-arcs.push(total-arc - origin-arc)
     rotated-arcs.push(total-arc)
