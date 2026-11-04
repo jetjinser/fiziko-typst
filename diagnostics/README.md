@@ -3948,3 +3948,17 @@ general implementation target is the source's q-control construction and
 recursive child split arithmetic from the already matched callback/row state;
 accept only a candidate that preserves all 142 random schedules and improves
 the full-tree plus 600 ppi whole/hatch comparison.
+
+**M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
+M9 source run paired with `m9_contour_walk_trace.typ` finds 19 source contour
+cells and 21 Typst cells on the first contour (cell-sequence edit distance 2).
+The paired path itself is close: mean/max point-to-path distance is
+`0.00197/0.00465 mm`; source/Typst brush-root lengths are `17.2808/17.2651 mm`.
+The source/Typst brush traces have 37/41 outer nodes and 65/52 thin nodes.
+Both consume 24 random values and draw 12 dashes. Thus the immediate mismatch
+is still contour/recursive geometry, not the per-contour RNG cursor or dash
+count. The existing exact source width-template replay does not repair that
+tree by itself; avoid treating a close rendered centerline as proof of brush
+recursion parity. Next compare the two extra/missing cell transitions and the
+root q arc knots, then require M9 and S105 crop checks before retaining a
+production change.
