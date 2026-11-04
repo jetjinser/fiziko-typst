@@ -1578,3 +1578,14 @@ the prior `0.11478405/0.18928154/0.07840452`. Keep the inverse mapping: it
 restores the source recursive tree without a material raster change. The
 remaining q.x residual and mismatches in other recursive levels still need a
 source-accurate path-time and fixed-point propagation model.
+
+**S104 fixed-scanline full-row audit (2026-11-05).** A fresh Typst trace was
+paired with the pinned 142-row MetaPost log. Reconstructing each hatch segment
+with the source 16.16 rotation, half-open crossing rule and fixed-point
+intersection yields an average summed endpoint error of `0.000089 mm`, versus
+`0.000520 mm` for current Typst endpoints; worst reconstructed row is
+`0.000826 mm`. This confirms the source scanline geometry can be recovered
+across the panel, but the prior production integration worsened recursive
+call/tree agreement and the 600 ppi image gate. Do not apply the endpoint
+correction alone: preserve its geometry while propagating matching q curves
+and center-path parameterization through recursion.

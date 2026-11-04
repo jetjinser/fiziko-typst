@@ -3380,6 +3380,14 @@ to 422. At 600 ppi, whole/hatch RMSE regressed from 0.207029/0.075285 to
 S104 task is to carry row scheduling, recursive center-path parameterization,
 and q controls together, then pass both tree and image gates.
 
+Rechecking the same reconstruction against all 142 current paired rows gives
+an average summed endpoint error of `0.000089 mm` against the pinned source;
+the current Typst scanline endpoints average `0.000520 mm`. The fixed-point
+candidate is closer on all rows, but its worst row remains `0.000826 mm` and
+its production integration still fails the recursive-tree and raster gates.
+This isolates the remaining issue: improved root endpoints must be propagated
+through the corresponding source q subpath and recursive center-path mapping.
+
 A further diagnostic supplied each subdivided Typst vertex width to
 `_ink-loops` as a source-rounded 16.16 q-template knot, letting it rebuild q
 abscissae from the row's polyline arc. On the Typst row paired to source row
