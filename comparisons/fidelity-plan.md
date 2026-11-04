@@ -119,9 +119,16 @@ circle map's exact point `(19,37) mm` matches the source knot, while Typst's
 sample interpolation is `0.052807 mm` away; exact evaluation improves the
 callback width from `10676` to `10674`, still one fixed unit above source
 `10673`. Keep it diagnostic-only because the earlier global exact-point trial
-regressed mass 2 recursion. Next compare the source and Typst connector/cubic
-path-time intervals at the cyclic join, then validate all six mass trees
-before any production change.
+regressed mass 2 recursion. A new source path trace records the actual mass-4
+centerline cubics: the fixed-point arc lengths for segments 48 and 49 match the
+source q.x increments within `0.000006 mm`, while Typst's sampled arc table
+differs by `0.060720` and `0.054201 mm`. Typst's ideal-circle start also differs
+from the traced source cubic start by `0.023 bp` along the tangent. This
+pinpoints the remaining issue in reconstructing MetaPost's horizon arc
+endpoint/angle and cyclic path-time geometry, rather than in q intersection or
+source arclength integration. The next production candidate must derive those
+source cubics from the input path, then pass all six coast trees and the M11
+raster gate.
 
 **M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
 trace now includes each subdivided centerline cubic, q1 offset-template knot,

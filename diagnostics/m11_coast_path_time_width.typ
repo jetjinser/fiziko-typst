@@ -111,9 +111,26 @@
 #let first-fraction = circle-a.param - first-curve
 #let first-cubic-right = _mp-cubic-split(
   circle-cubic(first-curve), first-fraction).right
+#let first-cubic-right-local = first-cubic-right.map(point => (
+  (point.at(0) - center.at(0)) / (25.4 / 72),
+  (center.at(1) - point.at(1)) / (25.4 / 72),
+))
 #let source-model-arc-48-49 = _mp-fixed-cubic-arc(
   first-cubic-right.map(point => point.map(axis => axis * 1mm)))
 #let source-model-arc-48-49-mm = source-model-arc-48-49 / 65536 * _mp-unit
+#let bp-mm = 25.4 / 72
+#let source-local-cubic(controls) = controls.map(point => (
+  (center.at(0) + point.at(0) * bp-mm) * 1mm,
+  (center.at(1) - point.at(1) * bp-mm) * 1mm,
+))
+#let traced-cubic-48 = source-local-cubic((
+  (-12.65675, -40.59203), (-8.59592, -41.85849),
+  (-4.33202, -42.5196), (0, -42.5196)))
+#let traced-cubic-49 = source-local-cubic((
+  (0, -42.5196), (5.89757, -42.5196),
+  (11.66862, -41.29402), (16.97319, -38.98431)))
+#let traced-arc-48-49 = _mp-fixed-cubic-arc(traced-cubic-48) / 65536 * _mp-unit
+#let traced-arc-49-50 = _mp-fixed-cubic-arc(traced-cubic-49) / 65536 * _mp-unit
 #metadata((mass: 4, source-time: source-time, source-width-fixed: 10330,
   point: point, fixed-point: fixed-point,
   width-float: width(point),
@@ -123,7 +140,10 @@
   query-time: query-time, outline-point-at-time: outline-point-at-time,
   circle-map: (circle-a, circle-b), circle-param: circle-param,
   exact-circle-point: exact-circle-point,
+  mapped-cubic-right-local: first-cubic-right-local,
   source-model-arc-48-49-mm: source-model-arc-48-49-mm,
+  traced-arc-48-49-mm: traced-arc-48-49,
+  traced-arc-49-50-mm: traced-arc-49-50,
   sampled-point-width: width(outline-point-at-time),
   exact-circle-point-width: width(exact-circle-point),
   exact-circle-fixed-width: width(exact-circle-point.map(_mp-rounded), fixed: true)))

@@ -3792,9 +3792,7 @@ arc offset. The largest indexed mass-4 q.x residual is at source time 49
 and Typst's source-time-mapped point `(19.05263, 36.99566) mm` differ by
 `0.05280670 mm`; this is a cyclic/coast-to-horizon mapping issue, not a uniform
 arc-length scale error. At source time 43, the corresponding q.x residuals are
-smaller for masses 1 and 2 (`-0.00023816` and `-0.00007148 mm`). The next arc
-probe should pair each source path-time interval's endpoints and q.x increment
-to find where mass 4's cumulative offset first appears.
+smaller for masses 1 and 2 (`-0.00023816` and `-0.00007148 mm`).
 
 That interval comparison localizes the mass-4 residual to its final horizon
 and cyclic intervals. Source q.x versus Typst arc increments are `4.53375183`
@@ -3811,6 +3809,26 @@ knot. Interpolating the nearby outline samples instead gives
 `10673`; point evaluation explains part of the local error but does not
 reproduce the full q arc or width arithmetic. Keep exact-point evaluation
 diagnostic-only: the earlier global trial regressed mass 2 recursion.
+
+The source instrumenter now accepts `--path-cubics` to record the actual
+MetaPost centerline controls for mass 4. On its 51-segment path, source
+segments 48 and 49 are the two horizon cubics ending at the south pole and
+continuing to the next coast point. `_mp-fixed-cubic-arc` on those traced
+controls gives `4.53374566` and `6.15948084 mm`, matching the source q.x
+increments (`4.53375183` and `6.15948236 mm`) within the trace's decimal
+printing precision. Typst's sampled arc table instead gives `4.59447185` and
+`6.10528111 mm` for those intervals. This confirms that source q.x follows the
+source path cubics; the error is in Typst's reconstructed horizon path/time
+geometry, not the source arclength integrator.
+
+The current ideal-circle parameter map does not reproduce the first traced
+cubic exactly: its derived start is `(-12.67867,-40.58546) bp`, while the
+source path starts at `(-12.65675,-40.59203) bp`. The source controls still
+describe a circular horizon arc, but its start parameter differs slightly
+from Typst's radial-angle estimate. A generic fix must recover MetaPost's
+source endpoint/angle construction and preserve the cyclic connectors; simply
+integrating the ideal circle subpath repeats the wrong geometry. The source
+path trace can be reproduced with `instrument_m11_coasts.py ... --path-cubics`.
 
 A fresh paired recursion trace at the current commit confirms mass 4 remains
 `31/7` source/Typst thin nodes. The first parent-aware branch divergence is a

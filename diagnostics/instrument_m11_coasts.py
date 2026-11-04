@@ -14,8 +14,9 @@ def replace_once(source: str, old: str, new: str, name: str) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: instrument_m11_coasts.py UPSTREAM_FIZIKO_MP OUTPUT_MP")
+    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] != "--path-cubics"):
+        raise SystemExit("usage: instrument_m11_coasts.py UPSTREAM_FIZIKO_MP OUTPUT_MP [--path-cubics]")
+    trace_path_cubics = len(sys.argv) == 4
     source = Path(sys.argv[1]).read_text()
     source = replace_once(
         source,
@@ -43,12 +44,30 @@ def main() -> None:
                     )
                 ), 0);
 """
+    path_trace = ""
+    if trace_path_cubics:
+        path_trace = '''            if i = 4:
+                message "M11-PATHLEN " & decimal(i) & " " & decimal(length(lm));
+                for tracePathSegment = 0 upto floor(length(lm))-1:
+                    message "M11-PATHC " & decimal(i) & " " & decimal(tracePathSegment) & " "
+                        & decimal(xpart(point tracePathSegment of lm)) & " "
+                        & decimal(ypart(point tracePathSegment of lm)) & " "
+                        & decimal(xpart(postcontrol tracePathSegment of lm)) & " "
+                        & decimal(ypart(postcontrol tracePathSegment of lm)) & " "
+                        & decimal(xpart(precontrol (tracePathSegment+1) of lm)) & " "
+                        & decimal(ypart(precontrol (tracePathSegment+1) of lm)) & " "
+                        & decimal(xpart(point (tracePathSegment+1) of lm)) & " "
+                        & decimal(ypart(point (tracePathSegment+1) of lm));
+                endfor;
+            fi;
+'''
     source = replace_once(
         source,
         coast,
         '            message "M11-COAST-BEGIN " & decimal(i);\n'
         "            traceCoastWidth := true;\n"
         "            traceCoastRng := 0;\n"
+        + path_trace
         + coast
         + "            traceCoastWidth := false;\n"
         + '            message "M11-COAST " & decimal(i) & " " & decimal(traceCoastRng);\n'
