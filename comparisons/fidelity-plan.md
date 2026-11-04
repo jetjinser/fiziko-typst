@@ -84,9 +84,8 @@ arc controls, and the largest remaining q-control residual is 3 units on the
 16.16 bp grid. RNG use remains 16 calls from absolute offset 74, with 8
 dashes, matching the non-injected replay. The two unmatched source nodes are
 the short interval from x=36.48710 to 36.51228 mm: the replay keeps that span
-inside an adjacent child. This isolates the next task to center-path child
-mapping around a very short interval. A follow-up pinpoints the one-unit
-trigger: on source node 32, MetaPost selects q-time `0.5` (the intersection
+inside an adjacent child. A follow-up pinpoints the one-unit trigger: on
+source node 32, MetaPost selects q-time `0.5` (the intersection
 candidates are `0.50023` and `0.5`, with the latter nearer the target), and the
 Typst source-q replay also cuts at `0.5`. Both use target width `12513/65536
 bp`; the source child starts at width `12513`, while Typst's `_mp-cubic-split`

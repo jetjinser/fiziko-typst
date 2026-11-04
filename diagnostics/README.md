@@ -3227,10 +3227,12 @@ nix develop path:./nix --command python \
 This yields 17/19 endpoint pairs and 15 exact width/arc-control pairs; the two
 unpaired source nodes span a short interval near x=36.5 mm. The remaining
 width controls on source nodes 33/36 differ by one 16.16 unit at several
-points. At the shared knot, the source stores 12513 while the replay stores
-12514; that shifts the endpoint above the source target and removes the
-crossing for nodes 34/35. This is a diagnostic oracle for center-path child
-mapping, not a production q integration.
+points. A paired cut audit shows source node 32 and the Typst replay both select
+q-time `0.5` with target width `12513/65536 bp`; the source child begins at
+12513, while `_mp-cubic-split` produces 12514. That shifts the endpoint above
+the target and removes the crossing for nodes 34/35. This is a diagnostic
+oracle for fixed-point cubic subpath splitting, not a production q integration;
+the q-time-to-center-path mapping is not the cause of this focused mismatch.
 
 A production-wide integer fixed-point q-split trial made this injected row
 exact at 19/19 source nodes and retained the exact 142-row RNG/call schedule.
