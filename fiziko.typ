@@ -4358,7 +4358,8 @@
   let end-visible = (globe-project(
     path-coords.last().at(0), path-coords.last().at(1),
     rotation: rotation)).visible
-  if runs.len() > 1 and start-visible and end-visible {
+  let source-origin-rotated = runs.len() > 1 and start-visible and end-visible
+  if source-origin-rotated {
     let merged = runs.last().slice(0, runs.last().len() - 1) + runs.first()
     runs = (merged, ..runs.slice(1, runs.len() - 1))
   }
@@ -4483,9 +4484,26 @@
     } else { closing-arc-length }
     outline-arc-positions.push(outline-arc-positions.last() + closure)
   }
+  if source-origin-rotated and outline.len() > 1 {
+    // drawLandMass starts at the original polygon vertex, which is the
+    // second point after the last+first visible-run merge above. Rebase the
+    // closed outline there, keeping the intervening horizon sample at the
+    // end of source time rather than treating it as knot zero.
+    let origin-arc = outline-arc-positions.at(1)
+    let total-arc = outline-arc-positions.last()
+    let rotated-points = outline.slice(1) + outline.slice(0, 1)
+    let rotated-times = outline-times.slice(1).map(t => t - 1) + (path-time,)
+    let rotated-arcs = outline-arc-positions.slice(1, outline.len())
+      .map(a => a - origin-arc)
+    rotated-arcs.push(total-arc - origin-arc)
+    rotated-arcs.push(total-arc)
+    outline = rotated-points
+    outline-times = rotated-times
+    outline-arc-positions = rotated-arcs
+  }
   (points: outline, source-times: outline-times,
     source-arc-positions: outline-arc-positions,
-    source-time-end: path-time,
+    source-time-end: path-time + if source-origin-rotated { 1 } else { 0 },
     runs: runs, arcs: arcs)
 }
 

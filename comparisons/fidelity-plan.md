@@ -74,6 +74,16 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Carry source `st`/cell-range state and callback parameterization through recursive brush cuts, first on the exact M9 contour, then validate S105. | Source traversal and full-path width samples are close; production has 11/48 outer/thin nodes vs 37/65 on the diagnostic first path. Several generic spline, endpoint-extension, and arithmetic candidates regressed. Accept only exact/closer paired tree decisions and non-regressing M9/S105 crops. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M11 coast update (2026-11-04).** The table's earlier `54/52` total and
+mass-1 dash deficit describe the pre-rebase renderer. The current source-origin
+candidate starts merged closed outlines at the source `drawLandMass` origin,
+rebases callback time and arc positions, and includes its closing interval.
+Its six visible-mass brush-call totals now match source exactly
+(`12/30/6/2/2/2`, aggregate 54). Mass-1 and mass-4 q-knot counts match source;
+mass 2 remains one knot over. Tree counts and the seam q-time still differ, and
+the paired raster gate remains outstanding; details are in
+[the coast trace audit](../diagnostics/README.md#m11-coast-cyclic-origin-correction).
+
 These are evidence-backed investigations, not claims that all seven can be
 made raster improvements. The first two have the strongest bounded replay
 oracles; continue with the smallest isolated case, preserve paired baseline

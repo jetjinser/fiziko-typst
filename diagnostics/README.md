@@ -1097,6 +1097,25 @@ arc positions, and rounded width grid. These fields are diagnostic-only; they
 provide the inputs to pair the root q construction before changing production
 coast geometry again.
 
+#### M11 coast cyclic-origin correction
+
+The first/last-visible-run merge had changed the cyclic origin of the closed
+outline. For mass 1, source q knot zero is at `(11.91452, 40.74515) bp`, which
+maps to Typst outline point 1 `(23.203092, 7.625910) mm`; the old Typst origin
+was point 0, one source path time earlier. When the runs are merged, the
+production outline now rotates to that source start, rebases its path-time and
+arc tables, and includes the final cycle interval in the source-time end. The
+fresh Typst trace then has 139 mass-1 callback knots, matching the 139 source
+q knots; mass 4 also matches at 52. Mass 2 has 171 Typst versus 170 source
+knots, so its parameter map still needs work. More importantly, source and
+Typst random draws now match per visible mass: `12/30/6/2/2/2` (54 total),
+against source `M11-COAST` counters `6/15/3/1/1/1` (each dash consumes two
+draws). The mass-1 missing dash is restored. Recursive node counts remain
+source `15/57/31` versus Typst `18/56/34` on masses 1/2/4; the near-seam child
+still cuts at q time `0.98155212` versus source `0.99816895`. The full M11
+Typst plate compiles to one page. A fresh paired raster gate remains to be run
+because the Nix and Guix daemon sockets are unavailable in this environment.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
