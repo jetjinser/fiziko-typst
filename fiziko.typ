@@ -4399,8 +4399,10 @@
   let end-visible = (globe-project(
     path-coords.last().at(0), path-coords.last().at(1),
     rotation: rotation)).visible
-  let source-origin-rotated = runs.len() > 1 and start-visible and end-visible
-  if source-origin-rotated {
+  let source-runs-merged = runs.len() > 1 and start-visible and end-visible
+  let source-origin-rotated = source-runs-merged or (
+    runs.len() == 1 and not start-visible)
+  if source-runs-merged {
     // Both cyclic runs carry the explicit polygon endpoint. Keep its repeated
     // knot because the source q template consumes that zero-length path time.
     let merged = runs.last() + runs.first()
@@ -4541,10 +4543,11 @@
     outline-arc-positions.push(outline-arc-positions.last() + closure)
   }
   if source-origin-rotated and outline.len() > 1 {
-    // drawLandMass starts at the original polygon vertex, which is the
-    // second point after the last+first visible-run merge above. Rebase the
-    // closed outline there, keeping the intervening horizon sample at the
-    // end of source time rather than treating it as knot zero.
+    // drawLandMass starts at the first source-visible vertex. For a closed
+    // polygon whose input starts hidden, that is the point after the leading
+    // horizon-entry sample; with a wrapped visible run, it is the original
+    // polygon vertex after merging the last and first runs. Rebase the closed
+    // outline there, keeping the cyclic endpoint at the end of source time.
     // The arc table starts with a sentinel before the first point entry, so
     // source point 1 is stored at arc index 2.
     let origin-arc = outline-arc-positions.at(2)

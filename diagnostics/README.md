@@ -3641,3 +3641,32 @@ q.x mismatch is therefore not explained by adding a single straight connector
 length at the visible coast/horizon boundary; the initial source-time-to-arc
 map and the projected horizon subpath's actual MetaPost arclength still need
 to be paired knot by knot.
+
+### M11 mass-4 cyclic source origin
+
+The fresh `M11COAST` path trace shows that mass 4's first input vertex is
+hidden. MetaPost therefore starts `drawLandMass` at the first visible source
+vertex, which pairs to Typst outline point 1; the old Typst time map assigned
+time 0 to the preceding horizon-entry sample. The source path-time and Typst
+path-time lengths both equal 51, but the paired start carried a `-1` time
+offset. Mass 4 is the only visible comparison mass with this one-run,
+hidden-start topology.
+
+`_globe-land-outline-data` now rotates that closed outline so the first
+source-visible vertex is both point 0 and time 0, while leaving the final
+cyclic endpoint at the source time end. The source path start then pairs to
+Typst point 0 within `0.000058 mm`; median/max pointwise path-time error across
+the 66 outline points is `0/0.9375`, down from the previous `-1` offset and
+`2.0` maximum. On the 52 root q knots, mean absolute q.x error falls from
+`0.88434` to `0.00182 mm`; mean absolute width error changes slightly from
+`0.00000183` to `0.00000253 mm`, while its maximum falls from `0.00143` to
+`0.0000151 mm`. Source and Typst both use 6 root calls and 3 dashes.
+
+The recursive tree is still unresolved: mass 4 changes from 33 Typst thin
+nodes to 7, against 31 source nodes. The first divergence is the second child
+cut, where source splits at q time `0.05556` and Typst at `0.43423`; the root
+cut itself agrees at `30.23958`. A same-toolchain paired 600 ppi render shows
+no component regression: whole RMSE changes `0.114784047→0.114782776`, globe
+`0.189281541→0.189276409`, while knot, eye, and refraction RMSEs are unchanged.
+Retain the source-origin correction for its path-time and root-q alignment;
+continue tracing the recursive q split before claiming mass-4 brush parity.

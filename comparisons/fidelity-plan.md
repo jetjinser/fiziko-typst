@@ -1445,3 +1445,16 @@ candidate reduces mass 4's Typst thin tree from 33 to 9 against 31 source
 nodes. It was reverted. The geometry trace still needs direct matching of
 MetaPost's cubic subpath arclength and cyclic endpoint ordering; a straight
 connector correction alone is not sufficient.
+
+**M11 mass-4 source origin (2026-11-04).** A fresh `M11COAST` trace confirms
+that the first input point is hidden and the source path starts at the first
+visible vertex. The Typst outline previously began at the preceding horizon
+entry point, one path-time early. Rotating this single-run hidden-start outline
+aligns the source start to Typst point 0 within `0.000058 mm` and reduces
+mass-4 root q.x mean absolute error `0.88434→0.00182 mm`. Source and Typst
+both retain 6 root calls and 3 dashes. The 600 ppi pair has effectively unchanged
+whole/globe RMSE (`0.114784047/0.189281541→0.114782776/0.189276409`), with other
+component metrics unchanged. Keep the origin mapping; recursive mass-4
+decisions remain worse (`31/7` thin nodes), with the first child cut at source
+q time `0.05556` versus Typst `0.43423`. The next target is fixed-point q
+subpath propagation after the matching root cut (`30.23958`).
