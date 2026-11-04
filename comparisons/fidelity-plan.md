@@ -103,24 +103,26 @@ A follow-up source-oriented cyclic shift starts at the visible coast vertex
 after an explicit horizon intersection and aligns the arc table with the
 rotated points. This puts source q knot zero at Typst time zero for masses 1,
 2 and 4. On mass 4 it reproduces the source root cut at `14.29183 mm` (source
-`14.292 mm`) and the first traced q controls. However, its complete recursive
-tree is worse: mass 1 calls rise `10→12`, mass 2 has 58 nodes versus 57 source,
-and mass 4 falls to 8 nodes versus 31 source. The candidate was reverted
-without a render. The root state is now aligned, but child path-time mapping
-still diverges; the next comparison should pair the source and Typst child
-callbacks at the first mass-4 split.
+`14.292 mm`). However, its complete recursive tree is worse: mass 1 calls rise
+`10→12`, mass 2 has 58 nodes versus 57 source, and mass 4 falls to 8 nodes
+versus 31 source. The candidate was reverted without a render.
 
-That first-child comparison narrows the mismatch further. The source records a
-second mass-4 cut at child q time `31`; the shifted Typst replay finds the same
-q endpoint but maps it back to parent path time `30.239578`, then rejects it as
-an invalid cut. The source continues recursing below that node. In the source,
-`thinBrushGenerate` passes the same cut time to `subpath` for both the center
-path and q template; recursive calls then use the resulting child-local path
-parameter. The Typst trace instead carries the q map back to the original
-parent time. Instrument the source child path length and callback clock, then
-map child-local q time to the child center path before applying endpoint
-guards. Keep this as a replay-only target until its source child tree matches;
-do not enable the root shift alone.
+The source's first mass-4 child reports q time `31` and then `LEAFNODE`; the
+shifted Typst replay maps the endpoint to parent time `30.239578` and rejects
+the cut. Those are matching leaf decisions, so this endpoint is not the tree
+mismatch. The next source child cuts at q time `13.29167` and recurses, while
+Typst cuts at `13.27380`. The source then recurses at the next level's second
+child, cutting at `0.05556`; Typst finds `0.43427`, the first large parameter
+divergence. The recursive-tree gap is therefore downstream of the matching
+endpoint leaf.
+
+The root q knot audit also shows why matching the first cut was insufficient.
+Mass 4 has 52 source and Typst q knots; the fixed y-width differences are at
+most 3 units, but cumulative x/arc differences reach 11,416 fixed units at
+knot 49, then 1,347 and 1,703 units at the final two knots. The next probe
+must trace source and Typst arc positions through the closing horizon arc,
+then pair q knots in the recursive second child before modifying production
+recursion.
 
 The latest M11 callback-time integration attempt used sampled lane/shadow
 polygon intersections inside `_tube-layout`; despite bounding-box rejection,
