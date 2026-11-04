@@ -1826,6 +1826,16 @@ same-commit 600 ppi comparison against `eae87f5` regressed whole-plate RMSE from
 crossing helper remains; a retry needs a closer source shadow-path time map and
 cubic cut geometry, then must clear the same image gates.
 
+The pinned source trace makes the total shadow-path time scale observable:
+initial `M11CUT` records satisfy `shadowPath.length = 2 * currentPath.length +
+2` on all 27 traced lanes. The Typst mask builder now carries the source
+segment time range and this predicted total length on each shadow plane. A
+candidate that scaled polygon-edge parameters by this total source length
+produced a byte-identical 600 ppi PNG to the unscaled callback candidate, so
+total-length normalization alone does not change the cut sequence or explain
+the raster regression. The remaining mapping must account for local
+edge-to-cubic parameter distribution and exact cubic cut geometry.
+
 The instrumenter also emits `M11WIDTHFIX` as two base-256 digits. These encode
 the raw source 16.16 MetaPost bp value of
 `maxShadingStrokeWidth * lightness`; the extractor converts it to millimetres

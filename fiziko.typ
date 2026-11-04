@@ -5232,7 +5232,8 @@
     for i in range(n) {
       let sorted = _sort-crossings(strand-crossings.at(i))
       if sorted.len() == 0 {
-        strand-segments.at(i).push((path: strands.at(i), rank: 0))
+        strand-segments.at(i).push((path: strands.at(i), rank: 0,
+          source-time-range: (path-times.at(i).first(), path-times.at(i).last())))
         layer-ranks.push(0)
       } else {
         for k in range(sorted.len()) {
@@ -5244,7 +5245,8 @@
           } else { (crossing.at(0) + sorted.at(k + 1).at(0)) / 2 }
           let part = _polyline-time-range(
             strands.at(i), path-times.at(i), start, finish)
-          strand-segments.at(i).push((path: part, rank: crossing.at(1)))
+          strand-segments.at(i).push((path: part, rank: crossing.at(1),
+            source-time-range: (start, finish)))
           layer-ranks.push(crossing.at(1))
         }
       }
@@ -5257,11 +5259,15 @@
           if segment.rank > rank {
             let shadow = _tube-shadow-plane(segment.path, widths.at(i),
               1.5 * current-width, source-cubic-step: source-cubic-step)
+            let source-center-units = (segment.source-time-range.at(1)
+              - segment.source-time-range.at(0)) * source-cubic-step
+            let source-shadow-time-length = 2 * source-center-units + 2
             let edge-index = _polygon-edge-grid(shadow.polygon)
             if _path-intersects-polygon(segment.path, shadow.polygon,
                 index: edge-index) {
               shadows.push((polygon: shadow.polygon, depth: shadow.depth,
-                edge-index: edge-index))
+                edge-index: edge-index,
+                source-shadow-time-length: source-shadow-time-length))
             }
           }
         }
