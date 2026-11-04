@@ -79,6 +79,26 @@ made raster improvements. The first two have the strongest bounded replay
 oracles; continue with the smallest isolated case, preserve paired baseline
 metrics, and record a rejected candidate when the production gate fails.
 
+### M11 coast root-time audit
+
+A fresh pairing of source root q knot zero against the production Typst outline
+maps masses 1, 2 and 4 to outline index 1 at path time 1, with position errors
+`0.000137/0.000117/0.000073 mm`. Masses 5, 7 and 8 map to index 0 at time 0,
+with errors no greater than `0.000164 mm`. The source root width equals the
+Typst width sample at index 1 for masses 1 and 4, and differs by one 16.16 unit
+for mass 2. This confirms a path-time origin mismatch whose source start
+depends on the assembled visible contour; rotating to the geographic input's
+first projected point is not valid.
+
+Two diagnostic fixes were rejected before rendering. Rotating each outline to
+the first geographic point increased mass 1's call count from 10 to 16.
+Changing the arc table from its current sentinel convention to one entry per
+outline point preserved mass 1's tree but changed Typst node counts from
+`56→34` on mass 2 and `34→10` on mass 4, against source counts 57 and 31.
+Both experiments were reverted. The next probe must reproduce the source
+`drawLandMass` result-path start and carry that origin through both q width and
+arc coordinates before changing coast recursion.
+
 The latest M11 callback-time integration attempt used sampled lane/shadow
 polygon intersections inside `_tube-layout`; despite bounding-box rejection,
 the 600 ppi M11 run produced no PDF within 85 seconds. That production edit was
