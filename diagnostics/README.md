@@ -1191,6 +1191,21 @@ interval is therefore already present in the parameter map before the seam
 leaf. Keep this trace field for the next probe, which should find where the
 source-time/q-segment counts first diverge during outer-path splitting.
 
+A closed-endpoint probe tested whether the remaining repeated-knot mismatch
+comes from merging the visible runs at the original polygon vertex. In the
+mass-1 source root, q knots 107–109 are identical in fixed x, width, and
+centerline callback values (`x=226.64926 bp`, width `0.15678 mm`). The current
+Typst outline has only two repeated points at the paired location; its fixed
+width samples are `10275, 10275, 10259`. Keeping both endpoints when joining
+the last and first visible runs produces three repeated points and changes
+those samples to `10275, 10275, 10275`, but increases the outline and root q
+sample counts from 156/139 to 157/140. Source root q counts are 139, and the
+M1/M2/M4 thin-node counts and brush-call totals do not change. This local
+match therefore adds an unsupported knot elsewhere in the cyclic parameter
+map; the production edit was reverted without a raster run. The next probe
+must locate the compensating extra Typst interval and pair the complete
+source-time sequence, rather than preserving the closed endpoint globally.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated

@@ -141,6 +141,14 @@ removed without image claims. Keep the inverse path-time map, but compute
 shadow intersections with a spatial index or shared source-order events before
 retrying the renderer integration.
 
+A 2026-11-04 closed-endpoint probe found three identical mass-1 source q knots
+where the current Typst outline has two. Preserving the closed endpoint during
+visible-run merging restores the local repeated width sample, but adds one
+root q sample on masses 1 and 2 (139→140 and 171→172); thin-node counts and
+brush calls stay unchanged. The candidate was reverted. Keep the coast task
+focused on pairing the complete source-time/q-segment sequence and locating
+the compensating extra Typst interval before changing the cyclic join.
+
 The sequential q-control audit applies the source-to-page vertical flip and
 pairs recursive nodes by center-path endpoints. On row `-6.37912`, all 19
 source/Typst nodes pair; every width q control is identical, and the maximum
