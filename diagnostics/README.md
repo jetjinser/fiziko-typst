@@ -1154,6 +1154,17 @@ conversion (`92.21991 bp / (72.27/25.4) = 32.41159 mm` source versus
 intersection, rather than a gross parent-path length mismatch. Source trace
 lengths are MetaPost bp; Typst trace lengths are millimetres.
 
+An isolated fixed-point replay narrowed down the intersection behavior. On
+the final q cubic, the zero-tolerance solver returns no hit, while tolerance
+step `3` returns ray/q parameters `0.99014282/0.95935059` for both the source
+controls and Typst controls when paired with the source ray. The full-path
+search currently accepts the exact endpoint hit on its zero-tolerance pass
+and stops before trying that interior result. A temporary endpoint-fallback
+candidate did select `q=3.95935059` and recurse at the first mass-2 divergence,
+but it changed thin-node totals to `19/65/33` (source `15/57/31`) for masses
+1/2/4. The candidate was reverted. A viable port needs to reproduce
+MetaPost's first-hit choice without promoting these other near-endpoint hits.
+
 To reproduce the reduced endpoint probe:
 
 ```sh
