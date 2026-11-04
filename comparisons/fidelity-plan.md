@@ -617,6 +617,17 @@ injection remains reverted because its full-page image gate regressed.
   Brush recursion remains open (current 41 outer/52 thin versus 37/65 source),
   and only the full diagnostic contour currently has the complete source-time
   state mapping.
+  The q replay localizes its three remaining thin-branch decision mismatches
+  to source calls 10, 17, and 18. Their paired endpoints differ by only
+  `0.00323`, `0.00209`, and `0.00235 mm`. Calls 10 and 17 are source dash
+  leaves but Typst splits them; call 18 is a source split but a Typst dash
+  leaf. The source width levels sit on the 16.16 threshold grid (for example,
+  call 10 has source `w2 = 0.04979 mm`, while the paired Typst width range is
+  `0.0497870–0.0556383 mm`). This makes the next bounded check the exact source
+  width/threshold arithmetic at those three recursive nodes, including the
+  callback's cell-corner values. Do not change global thresholds: all 46 q
+  nodes already pair within `0.1 mm`, and the full-contour raster candidate
+  regressed.
   Typst thin-node traces now include endpoint widths: at paired call 10 they
   match the source endpoints in reversed spatial order within
   `0.000018/0.000014 mm`. This rules out a wholesale orientation error there;
