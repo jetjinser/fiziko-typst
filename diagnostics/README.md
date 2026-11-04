@@ -387,9 +387,12 @@ positions from seed 1, applying the traced 28-call brush consumption after
 each accepted knot; its first three cumulative knot terms match the source
 trace exactly. It also exports a 72-sample fixed-point grid using those
 derived positions. Pair those values with the first 72 `CLVFIX` records and
-subtract the matching first-block `CLCOL` offset for each column; `CLCOL`
-records the source column jitter as two base-256 digits. This comparison is diagnostic
-only and does not alter rendering. To reproduce the summary:
+compare directly after dividing Typst's `wfield` by its 24x contour scale.
+`CLVFIX` is emitted after adding the source column jitter, and the Typst
+`model.field` adds the paired seeded offset too; subtracting `CLCOL` from only
+the source side incorrectly adds the entire offset to the measured error.
+`CLCOL` records that jitter as two base-256 digits. This comparison is
+diagnostic only and does not alter rendering. To reproduce the summary:
 
 The max-cell trace `(6,42)` shows a narrow path forward: running the
 fixed-point evaluator with the current model's knot coordinates reproduces all

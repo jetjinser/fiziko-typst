@@ -936,8 +936,11 @@ injection remains reverted because its full-page image gate regressed.
   Compare the source and Typst cell-corner samples before considering a local
   correction; the global level bias remains reverted.
   `CLVFIX` now captures exact 16.16 source values for the first 72 lattice
-  samples. Against Typst after undoing its 24x contour scale, mean/max absolute
-  errors are `1.23e-5/6.10e-5`; source cell `(3,16)` has range `0.033203125`
+  samples. The corrected comparison now removes Typst's 24x contour scale and
+  compares both fields with their shared column jitter intact; current same-run
+  mean/max absolute errors are `1.29e-5/6.66e-5`. The earlier checker removed
+  `CLCOL` only from the source side, overstating errors by the column offset.
+  Source cell `(3,16)` has range `0.033203125`
   versus Typst `0.033157349`. This supports investigating source arithmetic at
   field corners, with M9 and S105 renders required before retaining a change.
   A field-operation 16.16 probe improved the 72 grid samples (mean/max
