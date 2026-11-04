@@ -3269,3 +3269,14 @@ remain exact. A paired 600 ppi S104 render improves whole/hatch RMSE from
 An additional candidate that rounded each cumulative segment length to 16.16
 slightly worsened the focused arc-control mean to `11.197` units and rendered
 marginally worse, so only source point interpolation is retained.
+
+A separate fixed-point arc probe measured each straight segment between the
+source-rounded hatch points with MetaPost's integer Pythagorean primitive,
+then accumulated the resulting 16.16 lengths into the generated q template.
+The 142-row trace kept its `1374` brush calls, `564` subdivision requests and
+`636` path segments, but exact source/Typst thin-node counts fell from `118/142`
+rows to `117/142`; the generated thin-node total stayed `1648` against `1696`
+source nodes. The candidate changes tree shape without improving row-count
+agreement, so it was reverted without a raster trial. This rules out simply
+replacing floating segment lengths with fixed-point `pyth-add` as the missing
+S104 arc mapping.
