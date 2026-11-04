@@ -3225,8 +3225,9 @@ nix develop path:./nix --command python \
   /tmp/s104-hatch-sequential-q.json
 ```
 
-On the current trace, 1,475 of 1,696 source nodes pair within 0.005 mm; among
-these, 1,209 have every width control identical. The focused first-mismatch
+Before source-rounded `pathSubdivide` point interpolation, 1,475 of 1,696
+source nodes paired within 0.005 mm; among these, 1,209 had every width
+control identical. The focused first-mismatch
 row `-6.37912` pairs all 19 nodes with exact width controls; accumulated-arc
 controls differ by a mean of 10.932 and a maximum of 17 units on the 16.16 bp
 grid. To inspect where those residuals cluster, add
