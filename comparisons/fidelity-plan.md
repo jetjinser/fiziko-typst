@@ -1665,18 +1665,29 @@ Increasing the lane trace from 16 to 64 subdivisions per `piece.times`
 interval (2,304 to 9,216 intervals on the paired lanes) leaves the old
 post-cut mean/max errors unchanged to the reported precision:
 `0.000181/0.000531`, `0.000186/0.000573`, and `0.000214/0.000550 mm`.
-Polyline density is not the cause. The trace schema records both
-`pathShadowCut` (field 4) and `xpart(pathShadowIntersection)` (field 5), the
-current lane time. Replacing field 4 with field 5 in the existing sequential
-splice model fails its source path-length invariant: for call/lane `4/2` it
-reconstructs 39 post-cut cubics where `M11POSTPARAM` records 40. The second
-lane time is measured after the first cut has changed the path parameter and
-the current splice model still does not reproduce the resulting knot topology.
-The field-5-only trial was reverted; do not infer the right source-time map
-from either field in isolation. Next pair the evolving lane times with the
-post-cut cubic endpoints and derive the knot mapping that preserves all
-recorded path lengths before using it for q replay. Production rendering is
-unchanged.
+Polyline density is not the cause. Directly projecting each traced post-cut
+cubic endpoint onto the paired 64-subdivision Typst lane shows that the
+noninteger endpoint times match the first `M11CUT` parameter ±0.05 to within
+one dense sample. For `4/2`, the first cut `21.78946` yields endpoints at
+`21.73828/21.83984`; after the first cut adds two segments, the second cut
+`28.06259` maps to source-lane times `26.01172/26.11328`. The same pattern
+holds for both cuts in `4/6` and `5/2`. This confirms the first field is the
+evolving lane cut clock, despite its `pathShadowCut` name. Replacing it with
+the second parameter (`xpart(pathShadowIntersection)`) makes the `4/2` splice
+map one segment short (39 vs the traced 40) and was reverted. The remaining
+`~0.0002 mm` mean residual therefore comes from how post-cut connector cubics
+are reconstructed from the shadow path, not from a denser sample grid or a
+simple field swap. `diagnostics/audit_m11_postshadow_endpoints.py` records the
+endpoint-to-lane projection and its noninteger cut-boundary matches. Production
+rendering is unchanged.
+
+Run the endpoint audit against a 64-subdivision lane trace with:
+
+```sh
+nix develop path:./nix --command python diagnostics/audit_m11_postshadow_endpoints.py \
+  /tmp/m11-q-audit/trace.log /tmp/m11-knot-tube-trace-64-flat.json \
+  --samples-per-cubic 256
+```
 
 Reproduce against a fresh trace in the repository devshell with:
 

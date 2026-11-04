@@ -1828,9 +1828,13 @@ records do the same for source lanes
 k=2, 6, and 8; `M11PARAM` records list the current lane, centerline, and
 `tubeWidth` path lengths. `M11POSTPARAM` and `M11POSTCURVEA/B` capture each
 lane after `shadowCut`, immediately before `brushGenerate`. `M11CUTSHADOW`
-records lane depth, occluder depth, and light vector for each shifted shadow;
-`M11CUT` records each intersection's lane time, shadow-path time, and the
-current path lengths before the cut.
+records lane depth, occluder depth, and light vector for each shifted shadow.
+`M11CUT` records both intersection parameters and the current path lengths
+before the cut. Although its `pathShadowCut` name is ambiguous, the first
+parameter (`ypart(pathShadowIntersection)`) is the evolving lane cut clock:
+post-cut cubic endpoints land at this value ±0.05 after accounting for earlier
+inserted segments. The second parameter (`xpart(...)`) is not a drop-in
+replacement for that clock.
 
 The six source midpoint paths pair to the reconstructed Typst cubics with
 control-point MAE of 0.000010–0.000013 mm and maximum error below 0.000055 mm.
