@@ -3617,3 +3617,27 @@ The candidate was reverted without a raster render. Source path-time connector
 counts therefore do not by themselves explain the residual: the remaining
 port must account for how MetaPost assigns cubic subpath and cyclic join times
 to the callback/q knots, rather than adding a uniform unit at each seam.
+
+### M11 coast connector arclength probe
+
+The integer-time q-knot audit compares source `S101-QKNOT` x values with the
+Typst cumulative-arc table interpolated at the same source path time. Root
+width samples have the expected source counts on masses 1/2/4 (`139/170/52`),
+but arc residuals are concentrated at cyclic endpoints and the coast/horizon
+joins. Baseline mean absolute q.x error is `0.00391/0.02388/0.88434 mm` for
+masses 1/2/4; the large mass-4 value also shows that its callback-time map is
+not aligned with the current Typst outline order.
+
+Because MetaPost `drawLandMass` sews each coast endpoint to a horizon subpath
+with a straight `--` segment, a candidate added the coast-to-horizon endpoint
+distance to the q arc table at each horizon arc's first sample. This is a
+separate geometry correction from the rejected connector-time increments.
+It barely changed mass 1's mean/max absolute q.x error (`0.0039089/0.37078`
+to `0.0039020/0.36982 mm`), while mass 2 worsened (`0.02388/0.12764` to
+`0.03607/0.14180 mm`). The source/Typst thin-node counts changed from
+`15/17, 57/57, 31/33` to `15/17, 57/55, 31/9`; mass 4's recursion regression
+is decisive. The candidate was reverted without a raster trial. The remaining
+q.x mismatch is therefore not explained by adding a single straight connector
+length at the visible coast/horizon boundary; the initial source-time-to-arc
+map and the projected horizon subpath's actual MetaPost arclength still need
+to be paired knot by knot.

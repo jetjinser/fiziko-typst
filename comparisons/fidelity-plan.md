@@ -1436,3 +1436,12 @@ image, and record geometry, dark coverage and ink coverage together. Keep any
 visual-only parameter calibration in its own mode. The Typst-only pixel
 regression suite remains a change detector; source parity is measured by
 `compare.sh` and reviewed source/Typst/difference images.
+
+**M11 coast q.x follow-up (2026-11-04).** A source-time-aligned root-knot
+comparison finds mass-1/2/4 q.x mean absolute errors of
+`0.00391/0.02388/0.88434 mm`. Adding the sewn coast-to-horizon connector length
+at each arc start only changes them to `0.00390/0.03607/0.88404 mm`; the same
+candidate reduces mass 4's Typst thin tree from 33 to 9 against 31 source
+nodes. It was reverted. The geometry trace still needs direct matching of
+MetaPost's cubic subpath arclength and cyclic endpoint ordering; a straight
+connector correction alone is not sufficient.
