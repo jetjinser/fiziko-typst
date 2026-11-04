@@ -400,6 +400,13 @@ enddef;''')
                                 fi;
                                 tracePostXFrac := (xpart tracePostPoint - floor(xpart tracePostPoint))*256;
                                 tracePostYFrac := (ypart tracePostPoint - floor(ypart tracePostPoint))*256;
+                                message "M11POSTRAW " & decimal(traceTubeCall) & " "
+                                    & decimal(k) & " " & decimal(traceCurveIndex) & " "
+                                    & decimal(tracePostControl) & " "
+                                    & decimal(xpart tracePostPoint) & " "
+                                    & decimal(ypart tracePostPoint) & " "
+                                    & decimal(tracePostXFrac) & " "
+                                    & decimal(tracePostYFrac);
                                 message "M11POSTFIX " & decimal(traceTubeCall) & " "
                                     & decimal(k) & " " & decimal(traceCurveIndex) & " "
                                     & decimal(tracePostControl) & " "
@@ -445,6 +452,24 @@ enddef;''')
                 & decimal(redpart(lightDirectionVectorXYZ)) & " "
                 & decimal(greenpart(lightDirectionVectorXYZ)) & " "
                 & decimal(bluepart(lightDirectionVectorXYZ));
+            if (traceCurrentK = 2) or (traceCurrentK = 6) or (traceCurrentK = 8):
+                message "M11SHIFTPARAM " & decimal(traceTubeCall) & " "
+                    & decimal(traceCurrentK) & " " & decimal(j) & " "
+                    & decimal(length(shiftedShadowPath));
+                for traceShadowCurve := 0 step 1 until length(shiftedShadowPath) - 1:
+                    message "M11SHIFTEDSHADOW " & decimal(traceTubeCall) & " "
+                        & decimal(traceCurrentK) & " " & decimal(j) & " "
+                        & decimal(traceShadowCurve) & " "
+                        & decimal(xpart(point traceShadowCurve of shiftedShadowPath)/mm) & " "
+                        & decimal(ypart(point traceShadowCurve of shiftedShadowPath)/mm) & " "
+                        & decimal(xpart(postcontrol traceShadowCurve of shiftedShadowPath)/mm) & " "
+                        & decimal(ypart(postcontrol traceShadowCurve of shiftedShadowPath)/mm) & " "
+                        & decimal(xpart(precontrol (traceShadowCurve+1) of shiftedShadowPath)/mm) & " "
+                        & decimal(ypart(precontrol (traceShadowCurve+1) of shiftedShadowPath)/mm) & " "
+                        & decimal(xpart(point (traceShadowCurve+1) of shiftedShadowPath)/mm) & " "
+                        & decimal(ypart(point (traceShadowCurve+1) of shiftedShadowPath)/mm);
+                endfor;
+            fi;
         fi;''')
     current_tube_path = "            currentTubePath := interpath (1/2, q, p);"
     if source.count(current_tube_path) != 1:
@@ -477,6 +502,7 @@ enddef;''')
         "    traceKnotActive := true;\n"
         '    message "M11TSTART " & decimal(traceCallBlocks) & " "'
         ' & decimal(traceCallRemainder);\n'
+        '    message "M11UNITS " & decimal(mm);\n'
         "    for sNa := 1 step 1 until knotName.nStrands:")
     # MetaPost permits implicit multiplication, as in `1/2uniformdeviate(...)`;
     # a word-boundary matcher misses that call because the preceding `2` is a

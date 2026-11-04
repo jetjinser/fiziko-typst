@@ -1684,6 +1684,26 @@ simple field swap. `diagnostics/audit_m11_postshadow_endpoints.py` records the
 endpoint-to-lane projection and its noninteger cut-boundary matches. Production
 rendering is unchanged.
 
+**M11 shadow-cut endpoint preservation (2026-11-05).** A direct comparison of
+the pre-cut source lane cubic with the emitted post-shadow cubic endpoints
+shows that `shadowCut` preserves its trimmed endpoints within
+`0.000004–0.000017 mm` on paired calls 4/2, 4/6, and 5/2. Later cuts are mapped
+back through earlier inserted gaps. This rules out endpoint displacement as
+the source of the post-shadow mismatch; connector control reconstruction and
+callback time mapping remain open. The earlier nearest-sample endpoint check
+overstated the endpoint error because it did not project onto lane segments;
+`audit_m11_postshadow_endpoints.py` now uses continuous segment projection.
+The source instrumenter also emits `M11SHIFTEDSHADOW` cubic records at each
+tube recursion call to support direct pairing of shifted shadow geometry.
+Production rendering is unchanged.
+
+Run the source endpoint check with:
+
+```sh
+nix develop path:./nix --command python diagnostics/audit_m11_shadow_cut_preservation.py \
+  /tmp/m11-q-audit/trace.log
+```
+
 Run the endpoint audit against a 64-subdivision lane trace with:
 
 ```sh

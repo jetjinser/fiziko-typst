@@ -49,11 +49,14 @@ def read_source(path):
     post_lengths = {}
     source_arcs = defaultdict(dict)
     post_curves = defaultdict(lambda: defaultdict(dict))
+    mm_per_bp = None
     for line_index, line in enumerate(path.read_text().splitlines()):
         f = line.split()
         if not f:
             continue
-        if f[0] == "M11CUT":
+        if f[0] == "M11UNITS":
+            mm_per_bp = 1 / float(f[1])
+        elif f[0] == "M11CUT":
             key = (int(f[1]), int(f[2]))
             cuts[key].append((float(f[4]), int(round(float(f[6])))))
         elif f[0] == "M11WIDTHFIX":
@@ -75,9 +78,9 @@ def read_source(path):
             curve, control = int(f[3]), int(f[4])
             post_curves[key][curve][control] = (
                 (int(f[5]) + int(f[6]) / 256 + int(f[7]) / 65536)
-                * 25.4 / 72,
+                * (mm_per_bp if mm_per_bp is not None else 1 / 2.83464),
                 (int(f[8]) + int(f[9]) / 256 + int(f[10]) / 65536)
-                * 25.4 / 72,
+                * (mm_per_bp if mm_per_bp is not None else 1 / 2.83464),
             )
     offsets = {}
     cursor = 4639
