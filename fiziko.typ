@@ -3038,8 +3038,11 @@
     }
     let source-fixed-width(t, end-fade, scale) = _flat-surface-source-width(
       t, line-length, total-width, row-fraction, shade, end-fade, scale)
-    let pts = subdivision-times.map(t => _add(s.at(0),
-      _mul(_sub(s.at(1), s.at(0)), t)))
+    let source-fixed = rng == "metapost" and style == "hatch"
+    // MetaPost pathSubdivide rounds each line point with scaled arithmetic.
+    let pts = subdivision-times.map(t => if source-fixed {
+      _mp-fixed-mix-point(s.at(0), s.at(1), t)
+    } else { _add(s.at(0), _mul(_sub(s.at(1), s.at(0)), t)) })
     if style == "stipples" {
       items.push(stroke-stipple-brush(pts,
         t => width(t, 5 / 6, dot-size / _source-min-stroke),
@@ -3049,7 +3052,6 @@
         seed: seed + s.at(2)))
     } else {
       if rng == "metapost" {
-        let source-fixed = style == "hatch"
         let active-width(t) = if source-fixed {
           source-fixed-width(t, 6 / 7, 2)
         } else { width(t, 6 / 7, 2) }

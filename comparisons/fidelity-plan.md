@@ -104,6 +104,20 @@ and absolute random-draw positions. Integrating that source-fixed width q into
 remaining S104 differences include a small ink-coverage increase and local
 q-arc/geometry errors.
 
+The S104 `rng: "metapost"` hatch now evaluates every `pathSubdivide` point
+with MetaPost's 16.16 linear interpolation before constructing q curves. This
+retains all `142/142` call, subdivision, path-segment, and absolute RNG-offset
+matches. The focused first-mismatch row improves from `10.932/17` to
+`10.780/16` mean/max q-arc residual units; across the full trace, paired
+nodes improve `1475 → 1476`, exact width-control nodes `1209 → 1213`, and mean
+arc residual `59.525 → 58.733` (maximum remains 933 on rows with divergent
+trees). Its paired 600 ppi whole/hatch RMSE improves
+`0.20640646/0.07184556 → 0.20640447/0.07183428`, with stipple unchanged.
+Rounding cumulative segment lengths in the same candidate worsened its
+focused q residual and image score, so that part was discarded. The retained
+change is the source-faithful point interpolation; the residual q arc mapping
+still requires source-order centerline state across recursive children.
+
 ### Accepted wood width-template alignment
 
 The source-field `contour-brush: "cell-range"` path now passes explicit

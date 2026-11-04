@@ -3115,3 +3115,17 @@ coverage increases slightly from `14.3591%` to `14.3722%` against `14.0655%`
 source. The source-fixed q callback is now integrated for `rng: "metapost"`
 hatch rendering. The local q-control audit still finds small arc-coordinate
 errors and some unmatched nodes after recursive geometry diverges.
+
+The hatch line's `pathSubdivide` samples now pass through the same 16.16
+point interpolation used by the source before the brush builds its q arc
+knots. On the focused row `-6.37912`, width controls remain exact and the
+paired arc-control error improves from mean/max `10.932/17` to `10.780/16`
+units. Across all rows, paired q nodes improve `1475 → 1476`, exact width
+control nodes `1209 → 1213`, and mean arc-control error `59.525 → 58.733`
+units; maximum remains 933 in rows whose trees diverge. All `142/142` call
+counts, subdivision requests, path segment counts, and absolute RNG offsets
+remain exact. A paired 600 ppi S104 render improves whole/hatch RMSE from
+`0.20640646/0.07184556` to `0.20640447/0.07183428`; stipple RMSE is unchanged.
+An additional candidate that rounded each cumulative segment length to 16.16
+slightly worsened the focused arc-control mean to `11.197` units and rendered
+marginally worse, so only source point interpolation is retained.

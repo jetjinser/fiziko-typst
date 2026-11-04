@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-fixed-mix-point, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -43,7 +43,7 @@
   let fixed-width-q-subdivision-times = _mp-path-subdivision-times(
     fixed-width-q-requested-subdivisions)
   let fixed-width-q-points = fixed-width-q-subdivision-times.map(t =>
-    _add(segment.at(0), _mul(_sub(segment.at(1), segment.at(0)), t)))
+    _mp-fixed-mix-point(segment.at(0), segment.at(1), t))
   let fixed-width-q-frames = _frame(fixed-width-q-points, false)
   let fixed-width-q-fractions = _path-fractions(
     fixed-width-q-frames.map(e => e.at(0)), false)
