@@ -1160,6 +1160,13 @@ fixed-unit error sum rose from 3,501 to 3,504 (maximum unchanged at 562).
 The candidate was reverted without a raster run: quantizing the current
 Typst-derived normals does not improve their source agreement.
 
+A recursive q-map probe rounded the mapped centerline source time to 16.16,
+including the time-span product, before splitting the center path. It left all
+M11 coast recursion-node counts and brush calls unchanged; the mass-1 seam
+leaf's centerline endpoints and q controls were also unchanged. Revert this
+candidate: the seam mismatch is already present in the q/ray inputs, so
+rounding the later center-path mapping cannot repair it.
+
 To check whether the remaining seam cut came from treating the cumulative
 arc table's sample index as source path time, a diagnostic carried each
 outline point's explicit `source-times` beside its arc value and interpolated
