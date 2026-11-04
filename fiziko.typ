@@ -4890,11 +4890,50 @@
 
 #let _path-intersects-polygon(path, polygon) = {
   if path.any(point => _inside-poly(point, polygon)) { return true }
+  if path.len() < 2 or polygon.len() < 3 { return false }
+  // Index polygon edges into a uniform grid so each path segment checks only
+  // nearby edges. Strand shadow silhouettes can have hundreds of edges, so
+  // scanning every edge for every path segment wastes work on distant pairs.
+  let min-x = calc.min(..polygon.map(point => point.at(0)))
+  let max-x = calc.max(..polygon.map(point => point.at(0)))
+  let min-y = calc.min(..polygon.map(point => point.at(1)))
+  let max-y = calc.max(..polygon.map(point => point.at(1)))
+  let grid-size = calc.max(1, int(calc.ceil(calc.sqrt(polygon.len()))))
+  let x-cell(x) = if max-x > min-x {
+    int(calc.clamp(calc.floor((x - min-x) / (max-x - min-x) * grid-size),
+      0, grid-size - 1))
+  } else { 0 }
+  let y-cell(y) = if max-y > min-y {
+    int(calc.clamp(calc.floor((y - min-y) / (max-y - min-y) * grid-size),
+      0, grid-size - 1))
+  } else { 0 }
+  let edge-grid = range(grid-size).map(_ => range(grid-size).map(_ => ()))
+  for j in range(polygon.len()) {
+    let a = polygon.at(j)
+    let b = polygon.at(_mod(j + 1, polygon.len()))
+    for iy in range(y-cell(calc.min(a.at(1), b.at(1))),
+        y-cell(calc.max(a.at(1), b.at(1))) + 1) {
+      for ix in range(x-cell(calc.min(a.at(0), b.at(0))),
+          x-cell(calc.max(a.at(0), b.at(0))) + 1) {
+        edge-grid.at(iy).at(ix).push(j)
+      }
+    }
+  }
   let hit = false
   for i in range(path.len() - 1) {
     let a = path.at(i)
     let da = _sub(path.at(i + 1), a)
-    for j in range(polygon.len()) {
+    let candidates = ()
+    for iy in range(y-cell(calc.min(a.at(1), path.at(i + 1).at(1))),
+        y-cell(calc.max(a.at(1), path.at(i + 1).at(1))) + 1) {
+      for ix in range(x-cell(calc.min(a.at(0), path.at(i + 1).at(0))),
+          x-cell(calc.max(a.at(0), path.at(i + 1).at(0))) + 1) {
+        for j in edge-grid.at(iy).at(ix) {
+          if not candidates.contains(j) { candidates.push(j) }
+        }
+      }
+    }
+    for j in candidates {
       let b = polygon.at(j)
       let db = _sub(polygon.at(_mod(j + 1, polygon.len())), b)
       let point = line-intersect(a, da, b, db)
