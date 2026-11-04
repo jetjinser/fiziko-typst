@@ -3501,3 +3501,14 @@ reverted. An earlier unscoped interpolation crossed the coast gaps between
 mass-2 arcs, changed 97 callback widths, and raised its thin-node count to 111;
 that candidate was also reverted. The retained map is diagnostic metadata
 only and does not alter generated widths or drawing output.
+
+`m11_coast_callback_rounding.typ` compares floating-point callback widths with
+source-point rounding, 16.16 normal/lightness arithmetic, and separately
+rounded width terms at the nine affected source times. Point/scalar rounding
+alone leaves all nine outputs unchanged. Separately rounding
+`(2/3 * minStrokeWidth) + (1/3 * minStrokeWidth * lightness)` matches the eight
+mass-2 source widths exactly, but changes mass-1 time `136` from the source
+`9796` to `9795`. Applying that expression only to exact arc callbacks moves
+the thin-node counts to `35/75/33` on masses 1/2/4, so that callback candidate
+was reverted too. The remaining one-unit split is tied to source point or
+lightness evaluation, not a uniform scalar-rounding rule.
