@@ -108,6 +108,21 @@ children, not in the traced lane control geometry. Use the fixture and
 `m11_source_offset_check.typ` as geometric oracles before another rendering
 trial.
 
+## M11 coast cubic time and recursive decisions
+
+`instrument_m11_coasts.py --path-cubics` adds the actual mass-4 coastline
+control points to the source MetaPost trace. `m11_coast_path_time_width.typ`
+compares the traced controls, their fixed-point cubic arclengths, the source
+path-time map, and the fullcircle parameter at a coastline endpoint. The
+source cubic arcs match q.x increments within `0.000006 mm`; sampled path
+intervals were off by about `0.061 mm`. The angle-based fullcircle parameter
+was also early by `0.00068` time units. `_globe-land-outline-data` now inverts
+the fullcircle cubic parameter from each coast point with a clamped Newton
+iteration. For M11 mass 4 this restores all 31 recursive thin-node decisions
+to source parity; 600 ppi nominal/calibrated whole and globe RMSE remain
+effectively unchanged. This is an active production implementation, validated
+on M11; other coast masses retain their previous traced tree behavior.
+
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`

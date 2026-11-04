@@ -109,6 +109,32 @@
 }
 #let first-curve = int(calc.floor(circle-a.param))
 #let first-fraction = circle-a.param - first-curve
+#let coast-start-index = range(data.source-times.len()).find(i =>
+  data.source-times.at(i) == circle-a.time)
+#let coast-start-point = data.points.at(coast-start-index)
+#let target-circle-point = (
+  (coast-start-point.at(0) - center.at(0)) / diameter,
+  (center.at(1) - coast-start-point.at(1)) / diameter,
+)
+#let corrected-start-param = circle-a.param
+#for iteration in range(8) {
+  let epsilon = 0.00001
+  let p = _mp-circle-point(corrected-start-param)
+  let before = _mp-circle-point(corrected-start-param - epsilon)
+  let after = _mp-circle-point(corrected-start-param + epsilon)
+  let derivative = (
+    (after.at(0) - before.at(0)) / (2 * epsilon),
+    (after.at(1) - before.at(1)) / (2 * epsilon),
+  )
+  let residual = (p.at(0) - target-circle-point.at(0),
+    p.at(1) - target-circle-point.at(1))
+  let delta = (
+    (residual.at(0) * derivative.at(0)
+      + residual.at(1) * derivative.at(1))
+      / (derivative.at(0) * derivative.at(0)
+        + derivative.at(1) * derivative.at(1)))
+  corrected-start-param -= delta
+}
 #let first-cubic-right = _mp-cubic-split(
   circle-cubic(first-curve), first-fraction).right
 #let first-cubic-right-local = first-cubic-right.map(point => (
@@ -118,6 +144,12 @@
 #let source-model-arc-48-49 = _mp-fixed-cubic-arc(
   first-cubic-right.map(point => point.map(axis => axis * 1mm)))
 #let source-model-arc-48-49-mm = source-model-arc-48-49 / 65536 * _mp-unit
+#let corrected-fraction = corrected-start-param - first-curve
+#let corrected-cubic-right = _mp-cubic-split(
+  circle-cubic(first-curve), corrected-fraction).right
+#let corrected-arc-48-49 = _mp-fixed-cubic-arc(
+  corrected-cubic-right.map(point => point.map(axis => axis * 1mm)))
+#let corrected-arc-48-49-mm = corrected-arc-48-49 / 65536 * _mp-unit
 #let bp-mm = 25.4 / 72
 #let source-local-cubic(controls) = controls.map(point => (
   (center.at(0) + point.at(0) * bp-mm) * 1mm,
@@ -140,6 +172,10 @@
   query-time: query-time, outline-point-at-time: outline-point-at-time,
   circle-map: (circle-a, circle-b), circle-param: circle-param,
   exact-circle-point: exact-circle-point,
+  coast-start-point: coast-start-point,
+  corrected-start-param: corrected-start-param,
+  corrected-start-point: _mp-circle-point(corrected-start-param),
+  corrected-arc-48-49-mm: corrected-arc-48-49-mm,
   mapped-cubic-right-local: first-cubic-right-local,
   source-model-arc-48-49-mm: source-model-arc-48-49-mm,
   traced-arc-48-49-mm: traced-arc-48-49,

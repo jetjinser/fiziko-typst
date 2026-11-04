@@ -1561,3 +1561,20 @@ at its left-ray x bound and one unit below ray height `10337`; Typst starts at
 x `45.81152 bp`, width `10337`. Its endpoint lies outside the ray's x range,
 so the source's first interior crossing disappears. Reconstruct the fractional
 q.x/width at the recursive boundary before changing intersection tolerances.
+
+**M11 coast cubic-time inversion (2026-11-05).** A fresh source trace exports
+the mass-4 coastline's actual cubic controls. Integrating those controls with
+the fixed MetaPost cubic-arc routine reproduces source q.x increments at times
+48–49 and 49–50 to within `0.000006 mm`; the former sampled path intervals
+miss them by `0.061 mm`. The time-49 endpoint lies at the fullcircle knot
+`(19,37) mm`, but the angle/45 estimate is about `0.00068` circle-time early.
+Inverting the fullcircle cubic parameter from the coast endpoint removes that
+parameter error. Using that inverse in `_globe-land-outline-data` restores the
+mass-4 recursive thin tree from 7 nodes to 31/31 source nodes, with all 31
+decisions paired and agreeing. Other traced masses and all brush call totals
+are unchanged. The 600 ppi M11 nominal and calibrated raster metrics are
+identical: whole/globe/knot RMSE `0.11478531/0.18928662/0.07840452`, versus
+the prior `0.11478405/0.18928154/0.07840452`. Keep the inverse mapping: it
+restores the source recursive tree without a material raster change. The
+remaining q.x residual and mismatches in other recursive levels still need a
+source-accurate path-time and fixed-point propagation model.

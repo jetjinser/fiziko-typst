@@ -4486,9 +4486,30 @@
     let merged = runs.last() + runs.first()
     runs = (merged, ..runs.slice(1, runs.len() - 1))
   }
-  let rim-time(point) = _mod(
-    calc.atan2(point.at(0) - center.at(0),
+  let rim-time(point) = {
+    let initial = _mod(calc.atan2(point.at(0) - center.at(0),
       center.at(1) - point.at(1)) / 45deg, 8)
+    let target = ((point.at(0) - center.at(0)) / (2 * radius),
+      (center.at(1) - point.at(1)) / (2 * radius))
+    let segment = int(calc.floor(_mod(initial - 2, 8)))
+    let parameter = _mod(initial - 2, 8)
+    for iteration in range(8) {
+      let epsilon = 0.00001
+      let p = _mp-circle-point(parameter)
+      let before = _mp-circle-point(parameter - epsilon)
+      let after = _mp-circle-point(parameter + epsilon)
+      let derivative = ((after.at(0) - before.at(0)) / (2 * epsilon),
+        (after.at(1) - before.at(1)) / (2 * epsilon))
+      let residual = (p.at(0) - target.at(0), p.at(1) - target.at(1))
+      let delta = (
+        (residual.at(0) * derivative.at(0)
+          + residual.at(1) * derivative.at(1))
+          / (derivative.at(0) * derivative.at(0)
+            + derivative.at(1) * derivative.at(1)))
+      parameter = calc.clamp(parameter - delta, segment, segment + 1)
+    }
+    _mod(parameter + 2, 8)
+  }
   let arcs = ()
   for i in range(runs.len()) {
     let run = runs.at(i)
