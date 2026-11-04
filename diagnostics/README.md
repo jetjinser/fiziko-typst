@@ -3684,3 +3684,15 @@ the first source intersection at `0.05556` is therefore absent and Typst
 selects the later hit at `0.43423`. The next fix must recover the fractional
 source q.x and width at this recursive boundary, rather than changing the
 intersection search tolerance.
+
+`m11_coast_path_time_width.typ` isolates the source callback width at integer
+path-time 43. The pinned source trace reports fixed width 10330 (16.16 bp
+units). Interpolating the current Typst outline at the mapped source time
+produces point `(13.7129754, 35.8870694)`; the callback still evaluates to
+10331 after leaving it floating, rounding the point to MetaPost's dimensional
+grid, or also rounding the normal and lightness arithmetic to 16.16. This
+confirms that the one-unit error is not explained by scalar rounding alone.
+The next probe should compare the source `point 43 of lm` coordinate and its
+`sphereAnglesToNormalVector` / `normalVectorToLightness` intermediates against
+the Typst callback at the same time. The fixture is diagnostic only; it does
+not change production rendering.
