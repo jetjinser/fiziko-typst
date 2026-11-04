@@ -81,6 +81,31 @@ metrics. All 20 cases rendered successfully. M11 brush call counts remain
 `224` source versus `226` Typst; this width-arithmetic fix improves the raster
 but does not yet match recursive call trees.
 
+## M11 source tube offset boundaries
+
+`instrument_m11_tube_outlines.py` adds source cubic, offset-template, boundary,
+and lane-control traces to the pinned MetaPost run. Replay the source equation
+and export the paired controls, then evaluate the Typst implementation:
+
+```sh
+guix shell python -- python3 diagnostics/compare_m11_offset_curves.py \
+  /tmp/m11-tube-outline-trace/trace.log \
+  --json-output build/m11-source-offset-curves.json
+nix develop path:./nix --command typst eval \
+  'query(<m11-source-offset-check>).first().value' \
+  --in diagnostics/m11_source_offset_check.typ --root .
+```
+
+The checker compares all q2/q3 cubic controls and the traced lane controls.
+Current maximum errors are `0.000099 mm` for either boundary and `0.000053 mm`
+for checked lanes. This is a source-equation replay, not yet a production M11
+improvement: `strand-knot` clips the path before `tube` receives it, and the
+fragment does not retain source cubic controls aligned to the source's
+four-sample subdivisions. A paired 600 ppi M11 render is pixel-identical to
+committed HEAD. The production follow-up is to preserve cubic provenance and
+source-time ranges through clipping, then compare the clipped source boundary
+and brush recursion before accepting any raster change.
+
 ## WoodBlock source-field pilot
 
 `wooden-thing(..., source-field: true)` and `wood(..., source-field: true)`

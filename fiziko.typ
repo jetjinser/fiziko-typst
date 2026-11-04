@@ -260,6 +260,86 @@
   let l = _len(a)
   if l == 0 { (0.0, 0.0) } else { (a.at(0) / l, a.at(1) / l) }
 }
+#let _cross(a, b) = a.at(0) * b.at(1) - a.at(1) * b.at(0)
+#let _rotate-vector(v, angle) = (
+  v.at(0) * calc.cos(angle * 1deg) - v.at(1) * calc.sin(angle * 1deg),
+  v.at(0) * calc.sin(angle * 1deg) + v.at(1) * calc.cos(angle * 1deg),
+)
+#let _mp-cubic-arclength-mm(curve) = {
+  let raw = curve.map(point => point.map(axis => axis / _mp-unit))
+  _mp-fixed-cubic-arc-raw(raw) / 65536 * _mp-unit
+}
+#let _mp-offset-boundary(curves, offsets) = {
+  assert(curves.len() > 0 and offsets.len() == curves.len() + 1,
+    message: "offset boundary needs one width per cubic knot")
+  let joins = ()
+  for i in range(curves.len() + 1) {
+    let point = if i < curves.len() { curves.at(i).at(0) }
+      else { curves.last().at(3) }
+    let incoming = if i > 0 { curves.at(i - 1).at(2) } else { point }
+    let outgoing = if i < curves.len() { curves.at(i).at(1) } else { point }
+    if _dist(incoming, point) == 0 {
+      incoming = _add(point, _sub(point, outgoing))
+    }
+    if _dist(outgoing, point) == 0 {
+      outgoing = _add(point, _sub(point, incoming))
+    }
+    let in-normal = _rotate-vector(_unit(_sub(incoming, point)), -90)
+    let out-normal = _rotate-vector(_unit(_sub(point, outgoing)), -90)
+    let local-length = 0.0
+    if i > 0 {
+      let previous-half = _mp-cubic-split(curves.at(i - 1), 0.5).right
+      local-length += _mp-cubic-arclength-mm(previous-half)
+    }
+    if i < curves.len() {
+      let next-half = _mp-cubic-split(curves.at(i), 0.5).left
+      local-length += _mp-cubic-arclength-mm(next-half)
+    }
+    let radius = offsets.at(i)
+    let a1 = _add(_add(point, _mul(in-normal, radius)),
+      _mul(_unit(_sub(point, incoming)), local-length))
+    let b1 = _add(_add(point, _mul(in-normal, radius)),
+      _mul(_unit(_sub(incoming, point)), local-length))
+    let a2 = _add(_add(point, _mul(out-normal, radius)),
+      _mul(_unit(_sub(point, outgoing)), local-length))
+    let b2 = _add(_add(point, _mul(out-normal, radius)),
+      _mul(_unit(_sub(outgoing, point)), local-length))
+    let d1 = _sub(b1, a1)
+    let d2 = _sub(b2, a2)
+    let denominator = _cross(d1, d2)
+    let hit = if calc.abs(denominator) > 1e-15 {
+      let delta = _sub(a2, a1)
+      let t = _cross(delta, d2) / denominator
+      let u = _cross(delta, d1) / denominator
+      (t: t, u: u, point: _add(a1, _mul(d1, t)))
+    } else { none }
+    let in-angle = calc.atan2(in-normal.at(0), in-normal.at(1)) / 1deg
+    let out-angle = calc.atan2(out-normal.at(0), out-normal.at(1)) / 1deg
+    let turn = calc.abs(in-angle - out-angle)
+    let corner = (turn > 2 and hit != none and hit.t > 0 and hit.t <= 1
+      and hit.u >= -1e-8 and hit.u <= 1 + 1e-8)
+    joins.push(if corner { hit.point }
+      else { _add(point, _mul(in-normal, radius)) })
+  }
+  range(curves.len()).map(i => {
+    let curve = curves.at(i)
+    let p0 = curve.at(0)
+    let p1 = curve.at(1)
+    let p2 = curve.at(2)
+    let p3 = curve.at(3)
+    let start = joins.at(i)
+    let end = joins.at(i + 1)
+    let q-x = _mp-cubic-arclength-mm(curve)
+    let q-angle = calc.atan2(q-x, offsets.at(i + 1) - offsets.at(i)) / 1deg
+    let local-end = _add(p3,
+      _mul(_rotate-vector(_unit(_sub(p3, p2)), 90), offsets.at(i + 1)))
+    let scale = _dist(start, local-end) / calc.max(1e-15, _dist(p0, p3))
+    let control1 = _add(start, _mul(_rotate-vector(_sub(p1, p0), q-angle), scale))
+    let control2 = _add(local-end,
+      _mul(_rotate-vector(_sub(p2, p3), q-angle), scale))
+    (start, control1, control2, end)
+  })
+}
 #let _normal(a) = {
   let u = _unit(a)
   (-u.at(1), u.at(0))
@@ -4217,8 +4297,6 @@
 // ---------------------------------------------------------------------------
 // geometric optics
 // ---------------------------------------------------------------------------
-
-#let _cross(a, b) = a.at(0) * b.at(1) - a.at(1) * b.at(0)
 
 /// Find the nearest positive ray hit on a closed polygonal boundary.
 /// The returned tuple is (distance, point, outward-normal).

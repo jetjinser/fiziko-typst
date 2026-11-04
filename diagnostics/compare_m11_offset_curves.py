@@ -8,6 +8,7 @@ points are read from the instrumented MetaPost 2.11 trace in millimetres.
 """
 
 import argparse
+import json
 import math
 from collections import defaultdict
 from pathlib import Path
@@ -17,6 +18,7 @@ def read_trace(path):
     points = defaultdict(dict)
     offsets = defaultdict(dict)
     output = defaultdict(lambda: defaultdict(dict))
+    lanes = defaultdict(lambda: defaultdict(dict))
     for line in path.read_text().splitlines():
         fields = line.split()
         if not fields:
@@ -37,6 +39,16 @@ def read_trace(path):
         elif tag == "M11OFFSET":
             call, index = int(fields[1]), int(fields[2])
             offsets[call][index] = (float(fields[3]), float(fields[4]))
+        elif tag in ("M11CURVEA", "M11CURVEB"):
+            call, lane, curve = int(fields[1]), int(fields[2]), int(fields[3])
+            controls = [
+                (float(fields[4]), float(fields[5])),
+                (float(fields[6]), float(fields[7])),
+            ]
+            if tag == "M11CURVEA":
+                lanes[call][lane][curve] = controls
+            else:
+                lanes[call][lane][curve].extend(controls)
         elif tag in ("M11EDGECURVEA", "M11EDGECURVEB"):
             # q2/q3 logging happens just after traceBoundaryCall increments.
             call = int(fields[1]) - 1
@@ -49,7 +61,7 @@ def read_trace(path):
                 output[call][side][curve] = controls
             else:
                 output[call][side][curve].extend(controls)
-    return points, offsets, output
+    return points, offsets, output, lanes
 
 
 def add(a, b):
@@ -175,9 +187,10 @@ def offset_path(curves, radii):
     return result
 
 
-def compare(path):
-    points, offsets, output = read_trace(path)
+def compare(path, json_output=None):
+    points, offsets, output, lanes = read_trace(path)
     compared = 0
+    fixture = []
     for call in sorted(set(points) & set(offsets) & set(output)):
         curves = [points[call][i] for i in sorted(points[call])]
         offset_points = [offsets[call][i] for i in sorted(offsets[call])]
@@ -188,6 +201,14 @@ def compare(path):
             raise ValueError(f"call {call}: diagnostic only supports constant offset width")
         if not all(len(curve) == 4 for curve in curves):
             raise ValueError(f"call {call}: incomplete cubic controls")
+        fixture_call = {
+            "call": call,
+            "curves": curves,
+            "offsets": [point[1] for point in offset_points],
+            "positive": [],
+            "negative": [],
+            "lanes": [],
+        }
         for side in (2, 3):
             radii = [point[1] * (1 if side == 2 else -1)
                      for point in offset_points]
@@ -200,14 +221,29 @@ def compare(path):
                       for actual, source in zip(candidate, expected)
                       for a, b in zip(actual, source)]
             compared += len(errors)
+            fixture_call["positive" if side == 2 else "negative"] = expected
             print(f"call={call} side={side} segments={len(candidate)} "
                   f"controls={len(errors)} mean={sum(errors)/len(errors):.8g} "
                   f"max={max(errors):.8g} mm")
+        source_call = call + 1
+        for lane in (2, 6):
+            lane_curves = lanes[source_call][lane]
+            if lane_curves:
+                fixture_call["lanes"].append({
+                    "lane": lane,
+                    "divisions": 8,
+                    "curves": [lane_curves[i] for i in sorted(lane_curves)],
+                })
+        fixture.append(fixture_call)
     if compared == 0:
         raise ValueError("trace contains no paired source offset curves")
+    if json_output is not None:
+        json_output.write_text(json.dumps(fixture, separators=(",", ":")) + "\n")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_trace", type=Path)
-    compare(parser.parse_args().source_trace)
+    parser.add_argument("--json-output", type=Path)
+    args = parser.parse_args()
+    compare(args.source_trace, args.json_output)
