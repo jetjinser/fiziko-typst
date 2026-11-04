@@ -54,6 +54,8 @@ def main() -> int:
                         help="maximum summed endpoint distance in mm")
     parser.add_argument("--source-y", type=float,
                         help="restrict the audit to one source row coordinate")
+    parser.add_argument("--largest-arc-errors", type=int, default=0,
+                        help="print the largest paired q-arc control residuals")
     args = parser.parse_args()
 
     src_rows = source_rows(args.source_log)
@@ -66,6 +68,7 @@ def main() -> int:
     totals = defaultdict(int)
     row_reports = []
     x_errors = []
+    x_node_reports = []
     considered_rows = 0
     for row_index, (src_row, typ_row) in enumerate(zip(src_rows, typ_rows), 1):
         source_y = src_row["row"]
@@ -114,6 +117,19 @@ def main() -> int:
             if all(delta == 0 for delta in deltas[0::2]):
                 totals["exact-arc-controls"] += 1
             x_errors.extend(abs(delta) for delta in deltas[0::2])
+            node_x_errors = [abs(delta) for delta in deltas[0::2]]
+            x_node_reports.append({
+                "row": source_y,
+                "source-node": serial,
+                "endpoint-error-mm": distance,
+                "max-error-fixed": max(node_x_errors, default=0),
+                "mean-error-fixed": (
+                    sum(node_x_errors) / len(node_x_errors)
+                    if node_x_errors else 0
+                ),
+                "source-start": source_ends[:2],
+                "source-end": source_ends[2:],
+            })
         row_reports.append((row_index, source_y, typ_row.get("row"),
                             len(endpoints.get(source_y, {})), row_matched))
 
@@ -127,6 +143,16 @@ def main() -> int:
         print(f"absolute q-arc control error in 16.16 bp units: "
               f"mean={sum(x_errors) / len(x_errors):.3f}, "
               f"max={max(x_errors)}")
+    if args.largest_arc_errors > 0:
+        print("largest paired q-arc control residuals:")
+        for node in sorted(x_node_reports,
+                           key=lambda item: item["max-error-fixed"],
+                           reverse=True)[:args.largest_arc_errors]:
+            print(f"  row={node['row']:.5f} source-node={node['source-node']} "
+                  f"max/mean={node['max-error-fixed']}/"
+                  f"{node['mean-error-fixed']:.2f} units "
+                  f"endpoint-error={node['endpoint-error-mm']:.6f} mm "
+                  f"start={node['source-start']} end={node['source-end']}")
     print("rows with unmatched source nodes:")
     for index, source_y, typ_row, source_count, matched in row_reports:
         if source_count > matched:

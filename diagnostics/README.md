@@ -3090,7 +3090,11 @@ On the current trace, 1,475 of 1,696 source nodes pair within 0.005 mm; among
 these, 1,209 have every width control identical. The focused first-mismatch
 row `-6.37912` pairs all 19 nodes with exact width controls; accumulated-arc
 controls differ by a mean of 10.932 and a maximum of 17 units on the 16.16 bp
-grid.
+grid. To inspect where those residuals cluster, add
+`--source-y=-6.37912 --largest-arc-errors=5`; the largest values are nodes
+164 and 180–182 at 17 units, with centerline endpoint errors below
+`0.00020 mm`. This keeps the unresolved arc mapping distinct from the already
+exact width controls and row-call schedule.
 
 The comparator independently checks per-row brush calls, subdivision
 requests, generated path segment counts and absolute random-draw offsets:
