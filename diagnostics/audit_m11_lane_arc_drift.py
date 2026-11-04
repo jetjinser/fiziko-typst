@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Report local and cumulative M11 lane q-arc errors against source."""
+
+import argparse
+import json
+from collections import defaultdict
+from pathlib import Path
+
+
+def source_arcs(path):
+    records = defaultdict(dict)
+    for line in path.read_text().splitlines():
+        fields = line.split()
+        if len(fields) == 7 and fields[0] == "M11POSTARC":
+            call, lane, segment = map(int, fields[1:4])
+            records[call, lane][segment + 1] = (
+                int(fields[4]) * 65536 + int(fields[5]) * 256
+                + int(fields[6])
+            )
+    for key, points in records.items():
+        if sorted(points) != list(range(1, len(points) + 1)):
+            raise ValueError(f"non-contiguous source arc knots for {key}")
+    return records
+
+
+def audit(log, replay):
+    source = source_arcs(log)
+    for item in replay:
+        key = item["call"], item["lane"]
+        if key not in source:
+            continue
+        expected = [0] + [source[key][i] for i in range(1, len(source[key]) + 1)]
+        traced = item["source-arc-fixed"]
+        actual = item["arc-fixed"]
+        if traced != expected:
+            raise ValueError(f"replay source arc table differs from source for {key}")
+        if len(actual) != len(expected):
+            raise ValueError(f"arc knot count differs for {key}: {len(actual)} vs {len(expected)}")
+
+        drift = [got - ref for got, ref in zip(actual, expected)]
+        increment_errors = [drift[i + 1] - drift[i]
+                            for i in range(len(drift) - 1)]
+        largest = sorted(enumerate(increment_errors),
+                         key=lambda pair: abs(pair[1]), reverse=True)[:5]
+        print(f"call={key[0]} lane={key[1]} segments={len(increment_errors)} "
+              f"endpoint-drift={drift[-1]} "
+              f"local-error-range={min(increment_errors)}/{max(increment_errors)} "
+              f"max-abs={max(map(abs, increment_errors))}")
+        print("  largest segment errors (zero-based segment, fixed units): "
+              + ", ".join(f"{i}:{value:+d}" for i, value in largest))
+        for node_index in ((32,) if key == (4, 2) else
+                           (19,) if key == (5, 2) else ()):
+            node = [node for node in item["q-nodes"]
+                    if node["stage"] == "thin"][node_index]
+            print(f"  first divergent thin node {node_index + 1}: "
+                  f"depth={node['depth']} q-map={node['q-map']}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source_log", type=Path)
+    parser.add_argument("replay_json", type=Path)
+    args = parser.parse_args()
+    audit(args.source_log, json.loads(args.replay_json.read_text()))
+
+
+if __name__ == "__main__":
+    main()

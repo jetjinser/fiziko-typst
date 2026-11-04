@@ -1609,7 +1609,9 @@ at nodes 33 and 20; call 4/lane 6 stays exact at 20/20. This rules out a
 single whole-lane length scale as a general correction. The next diagnostic
 should compare local arc increments around those branch points and establish
 whether their residual is introduced by lane-point quantization or by
-post-shadow segment reconstruction.
+post-shadow segment reconstruction. `diagnostics/audit_m11_lane_arc_drift.py`
+now validates the source arc table and reports per-segment error extrema,
+endpoint drift, and the first divergent node's q-time interval.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's

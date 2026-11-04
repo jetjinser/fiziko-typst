@@ -2256,6 +2256,13 @@ local arc-clock errors. The next probe should pair source and reconstructed
 arc increments around those exact nodes and identify whether the residual
 comes from lane-point quantization or the post-shadow segment reconstruction;
 do not promote global sampling-density or endpoint-scale adjustments.
+Reproduce the local increment report with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/audit_m11_lane_arc_drift.py \
+  /tmp/m11-q-audit/trace.log build/m11-production-q-replay.json
+```
 
 Rebuild the actual Typst lane trace and compare generated, fifth-fit, and
 source-arc q trees with:
