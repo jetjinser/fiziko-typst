@@ -201,6 +201,22 @@ width-control nodes. Their 600 ppi whole/hatch RMSEs were respectively
 `0.20640897/0.07185974` and `0.20640899/0.07185985`; both remain worse than the
 retained baseline. These scoped variants were also reverted.
 
+**S104 half-time q-knot lock probe (2026-11-05).** A narrower trial changed a
+recursive q split only when its quantized time was exactly `0.5` and its
+computed width missed the fixed 16.16 target by one unit. On the injected
+source-q row `-11.76086`, this raises endpoint pairs `17/19 → 19/19`, exact
+width-control nodes `15 → 18`, and exact arc-control nodes `15 → 17`; the
+remaining q-arc error is mean/max `0.125/3` units. On the same 142-row
+fixed-width-q trace, all call vectors, subdivision requests, path-segment
+counts, and absolute RNG offsets still match exactly. However, full-tree
+width-control matches fall from `1,213` to `1,207` of 1,476 paired nodes;
+q-arc residual remains `58.733/933` units. The local oracle improvement does
+not carry to the generated tree, so the source edit was reverted without a
+raster trial. The row-99 tie needs the source subpath arithmetic, not a
+post-split endpoint clamp. `audit_s104_q_alignment.py` now errors if the
+requested node-field is absent from a trace instead of silently reporting
+zero pairs.
+
 **M11 coast callback probe (2026-11-04).** Evaluating integer source-time
 callbacks at the exact cubic fullcircle points changed the mass-1/2/4 Typst
 thin-node counts from `17/57/33` to `17/43/33`, against source `15/57/31`.

@@ -67,6 +67,14 @@ def main() -> int:
     typ_rows = typ_doc["rows"]
     if len(src_rows) != len(typ_rows):
         raise ValueError(f"row counts differ: source {len(src_rows)}, Typst {len(typ_rows)}")
+    missing_field_rows = [index for index, row in enumerate(typ_rows, 1)
+                          if args.node_field not in row]
+    if missing_field_rows:
+        available = sorted(set().union(*(row.keys() for row in typ_rows)))
+        raise ValueError(
+            f"Typst trace has no node field {args.node_field!r}; "
+            f"available fields: {available}"
+        )
 
     endpoints, controls = source_q_records(args.source_log, args.y_sum)
     totals = defaultdict(int)
