@@ -110,6 +110,15 @@ without a render. The root state is now aligned, but child path-time mapping
 still diverges; the next comparison should pair the source and Typst child
 callbacks at the first mass-4 split.
 
+That first-child comparison narrows the mismatch further. The source records a
+second mass-4 cut at child q time `31`; the shifted Typst replay finds the same
+q endpoint but maps it back to parent path time `30.239578`, then rejects it as
+an invalid cut. The source continues recursing below that node. This indicates
+the q geometry and root intersection are no longer the cause: the child q
+parameter map must preserve the partial final cubic's endpoint when the parent
+split falls inside that cubic. Keep this as a replay-only target until its
+source child tree matches; do not enable the root shift alone.
+
 The latest M11 callback-time integration attempt used sampled lane/shadow
 polygon intersections inside `_tube-layout`; despite bounding-box rejection,
 the 600 ppi M11 run produced no PDF within 85 seconds. That production edit was
