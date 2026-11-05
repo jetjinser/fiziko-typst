@@ -232,14 +232,18 @@ source arclength integration. The next production candidate must derive those
 source cubics from the input path, then pass all six coast trees and the M11
 raster gate.
 
-**M11 source offset-control replay (2026-11-04).** The pinned MetaPost 2.11
-trace now includes each subdivided centerline cubic, q1 offset-template knot,
-and call-indexed q2/q3 boundary controls. The independent
+**M11 source offset-control replay (updated 2026-11-06).** The pinned MetaPost
+2.11 trace includes each subdivided centerline cubic, q1 offset-template knot,
+and call-indexed q2/q3 boundary controls, now recorded as exact 16.16 mm values
+alongside decimal records. The independent
 `diagnostics/compare_m11_offset_curves.py` replay of the upstream
-`offsetPathGenerate` construction matches all 1,536 traced boundary control
-points with mean error `0.0000218–0.0000282 mm` and maximum `0.0000990 mm`.
-The Typst port in `_mp-offset-boundary` reproduces those controls with maximum
-error `0.000099 mm`. The diagnostic then reconstructs each clipped centerline
+`offsetPathGenerate` construction has `0.000022–0.000027 mm` mean control-point
+error and up to `0.000095 mm` maximum error across six tube calls. Evaluating
+the Typst port in `_mp-offset-boundary` on the same fixed q0 inputs yields the
+same residual, separating this from trace decimal precision. A candidate that
+uses the following q-segment angle for the second control handle produces no
+measurable change on these constant-width intervals; the production code is
+unchanged. The diagnostic then reconstructs each clipped centerline
 cubic from the original M11 samples, matching traced input controls within
 `0.000033 mm`; its resulting boundaries match within `0.000065 mm` and checked
 lane controls within `0.000041 mm`. Passing those lanes into the production
