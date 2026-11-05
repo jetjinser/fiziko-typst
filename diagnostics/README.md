@@ -3221,7 +3221,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW|HATCHPT|HATCHARC)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -3231,6 +3231,12 @@ subdivision request. `S104-RNG-ABS-ROW` records the absolute random-call
 offset immediately before that draw; the counter wraps only after 4,000 calls
 to stay within MetaPost's numeric range. The selected hatch panel completes
 before the wrap.
+
+For the focused source row `-6.37912`, `S104-HATCHPT` records each subdivided
+hatch point in 16.16 millimetres and `S104-HATCHARC` records MetaPost's
+cumulative `arclength` at the same knot in 16.16 bp. These records let the q
+template's source arc knots be compared directly with Typst's fixed-width
+callback knots before any brush recursion.
 
 On row 93 (`y=-6.37912`), rebuilding q x knots from fixed-point cubic arc
 lengths of the sampled straight segments does not change the q-candidate tree:
@@ -4208,11 +4214,35 @@ A refreshed source run with `S104-PCURVE` controls confirms that row 93's
 remaining local q-arc residual is not caused by centerline curvature. Source
 node 164 has three straight cubic segments; its paired Typst node endpoints
 differ by `0.000171 mm`, all width controls are exact, and q-arc controls
-differ by at most 16 fixed units. The root line and subdivision schedule are
-already paired, so this local residual enters in how the q arc coordinates
-survive recursive subpath cuts. Keep the next probe focused on source q
-parameter mapping through those cuts rather than changing the hatch geometry
-or width law.
+differ by at most 16 fixed units. A native MetaPost replay of source node 164's
+q path with `subpath (0, 2.40022)` reproduces source node 165's child controls
+exactly. The child split itself is therefore faithful on this branch; the
+residual already exists in the first thin node's q input, after the outer
+brush cut. Keep the next probe focused on mapping the source root q template
+through that outer cut rather than changing the thin child splitter.
+
+The source instrumenter now also emits fixed 16.16 `S104-HATCHPT` and
+`S104-HATCHARC` records for row `-6.37912`. Its root q arc knots are
+`[0, 2298558, 4597113, 6895671, 6895777]`; the Typst row's
+`source-arc-fixed` knots are `[0, 2298550, 4597100, 6895650, 6895754]`.
+At source node 164, q x controls begin at `1941582` and end at `4956825`,
+while Typst begins at `1941576` and ends at `4956809`; every paired width
+control is exact. This pins the first mismatch to the root callback/outer-cut
+mapping, before thin recursion, and supplies a fixed-point oracle for that
+mapping.
+
+To replay the source node-164 q split with MetaPost's native `subpath`, use:
+
+```sh
+mkdir -p /tmp/s104-node164-probe
+cp diagnostics/s104_node164_q_split_probe.mp /tmp/s104-node164-probe/trace.mp
+nix develop path:./nix --command bash -c \
+  'cd /tmp/s104-node164-probe && mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp'
+rg '^FIX' /tmp/s104-node164-probe/trace.log
+```
+
+The four returned controls for the last child cubic match source node 165's
+`S104-TXCTRL`/`S104-TCTRL` records exactly.
 
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
 M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to

@@ -393,6 +393,16 @@ def main() -> None:
         "                message \"FSSUB \" & decimal(arclength(aHatch)) & \" \""
         " & decimal(length(aHatch)) & \" \" & decimal(traceSubdivisions);",
     )
+    source = source.replace(
+        ' & decimal(length(aHatch)) & " " & decimal(traceSubdivisions);',
+        ' & decimal(length(aHatch)) & " " & decimal(traceSubdivisions);\n'
+        '                if abs(i + 6.37912) < 0.00001:\n'
+        '                    for traceHatchPoint := 0 step 1 until length(aHatch):\n'
+        '                        traceHatchPointRecord(traceHatchPoint, point traceHatchPoint of aHatch);\n'
+        '                        traceHatchArcRecord(traceHatchPoint, arclength(subpath(0,traceHatchPoint) of aHatch));\n'
+        '                    endfor;\n'
+        '                fi;',
+    )
     end_anchor = "            fi;\n        endfor;\n    );\n    clip hatchImage to surfPath;"
     if source.count(end_anchor) != 1:
         raise ValueError(f"expected one flatSurface row end hook, found {source.count(end_anchor)}")
@@ -417,11 +427,34 @@ boolean traceThinCutActive;
 numeric traceHatchRow;
 numeric traceThinSerial;
 numeric traceCutSerial;
+numeric traceHatchPoint;
 traceFlatHatch := false;
 traceThinCutActive := false;
 traceHatchRow := 0;
 traceThinSerial := 0;
 traceCutSerial := 0;
+vardef traceHatchPointRecord (expr index, z) =
+    save xw, xh, xl, yw, yh, yl;
+    numeric xw, xh, xl, yw, yh, yl;
+    xw := floor(xpart z / mm);
+    xh := floor((xpart z / mm - xw) * 256);
+    xl := round(((xpart z / mm - xw) * 256 - xh) * 256);
+    yw := floor(ypart z / mm);
+    yh := floor((ypart z / mm - yw) * 256);
+    yl := round(((ypart z / mm - yw) * 256 - yh) * 256);
+    message "S104-HATCHPT " & decimal(index) & " "
+        & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
+        & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
+enddef;
+vardef traceHatchArcRecord (expr index, arc) =
+    save aw, ah, al;
+    numeric aw, ah, al;
+    aw := floor(arc);
+    ah := floor((arc - aw) * 256);
+    al := round(((arc - aw) * 256 - ah) * 256);
+    message "S104-HATCHARC " & decimal(index) & " "
+        & decimal(aw) & " " & decimal(ah) & " " & decimal(al);
+enddef;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
     traceRngAbsolute := traceRngAbsolute + 1;
