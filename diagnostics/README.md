@@ -4614,6 +4614,15 @@ nix develop path:./nix --command python diagnostics/audit_s104_q_alignment.py \
   --source-y=-10.86390 --node-field source-q-nodes
 ```
 
+A direction-only callback probe replaced `row/count` with
+`(count-row)/count`, the candidate counterpart to source `distFromEdge` after
+the page-axis flip. For row 98 this gives `0.3146853`, matching the source's
+printed `0.31468`, but the production q controls remain exactly unchanged.
+The sine symmetry and 16.16 quantization therefore do not explain the one-unit
+width residual. Revert this probe; trace the source and candidate scalar inputs
+to the width callback (`hatchLength`, `totalWidth`, and the sampled callback
+value) before changing the production width law.
+
 The line-cubic builder was checked separately with MetaPost `--` paths for
 integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
 Typst port's nearest-rounded `delta/3` and `2*delta/3` construction, so changing
