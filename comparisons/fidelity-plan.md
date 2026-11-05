@@ -1701,6 +1701,13 @@ only and does not yet justify a production q-clock rule or raster trial. A
 `38/22/28`, and `40/22/30` against source `40/20/30`, despite endpoint drift
 falling from thousands of units at one chord to at most nine at sixteen.
 Recursive decisions therefore do not converge with arc-density alone.
+At call 4/lane 6's first divergent node, a 64-chord replay maps to source
+segments 6–8; their local arc errors are only `+1/+2/-11` fixed units. The
+paired node has exact width controls and at most 14 units of q-arc control
+error, yet the source stops while the replay recurses. The mismatch is thus
+highly sensitive to cumulative q-arc placement and its intersection decision,
+not to width-control generation. The lane audit and tree comparator now print
+these local q-map/control residuals directly.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's

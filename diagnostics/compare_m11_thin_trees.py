@@ -125,6 +125,20 @@ def main():
                   f"{right['right-length']:.5f} recurse={right['recurse']} "
                   f"q-controls-exact={exact_q} "
                   f"overall-exact-q-controls={exact_q_count}/{len(source_q)}")
+            candidate_q = right.get("q-curves-fixed")
+            if (first < len(source_q) and candidate_q is not None
+                    and len(source_q[first]) == len(candidate_q)
+                    and all(len(a) == len(b) for a, b in
+                            zip(source_q[first], candidate_q))):
+                deltas = [[candidate_q[curve][control][axis]
+                           - source_q[first][curve][control][axis]
+                           for axis in (0, 1)]
+                          for curve in range(len(candidate_q))
+                          for control in range(4)]
+                max_x = max(abs(delta[0]) for delta in deltas)
+                max_y = max(abs(delta[1]) for delta in deltas)
+                print(f"  q-control residuals: max-x={max_x} "
+                      f"max-width={max_y} fixed units")
 
 
 if __name__ == "__main__":

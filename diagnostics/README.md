@@ -2297,6 +2297,15 @@ lane's largest errors (`-26` and `+19`), so correcting only the largest local
 arc residuals would not address its tree mismatch. This lane also confirms the
 three lanes diverge at distinct parts of the post-shadow path.
 
+The tree comparator now reports control residuals at its first decision
+mismatch. For call 4/lane 6, all width controls on that node are exact; the
+three paired q cubics differ only in the arc axis, by at most 14 fixed units.
+The source node stops while the replay recurses, showing that a small
+cumulative q-arc displacement can change the intersection decision even when
+the width template is exact. Continue from the arc-to-parameter reconstruction
+at this boundary; changing callback widths or the general width interpolation
+would target the wrong input.
+
 The q-replay's recursive arc-offset result must not be mistaken for a current
 production q tree. `m11_knot_tube_trace.typ` calls `_ink-loops` without
 `source-width-fixed` or `source-q-curves-fixed`; its baseline trace therefore
