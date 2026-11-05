@@ -73,7 +73,8 @@ def main():
                         choices=("q-nodes", "fifth-arc-q-nodes", "blended-arc-q-nodes",
                                  "polyline-arc-q-nodes", "cubic-arc-q-nodes",
                                  "source-arc-q-nodes",
-                                 "connector-q-nodes", "exact-curve-q-nodes"))
+                                 "connector-q-nodes", "exact-curve-q-nodes",
+                                 "hobby-connector-q-nodes"))
     parser.add_argument("--polyline-steps", type=int, default=16,
                         choices=(1, 2, 4, 8, 16, 32, 64),
                         help="chords per lane segment for polyline arc replay")

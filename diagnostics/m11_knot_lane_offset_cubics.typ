@@ -1,6 +1,6 @@
 // Reconstruct pre-shadow M11 knot lanes from source-sampled centerline points
 // using the production MetaPost offsetPathGenerate port.
-#import "../fiziko.typ": _mp-cubic-split, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-mix-point, _mp-offset-boundary, _mp-unit, _polyline-time-range, _source-path-time-splice, _tube-layout
+#import "../fiziko.typ": _hobby-given-cubic, _mp-cubic-split, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-mix-point, _mp-offset-boundary, _mp-unit, _polyline-time-range, _source-path-time-splice, _sub, _tube-layout
 #import "../comparisons/m11-knot-paths.typ": upstream-m11-knot-paths
 #import "../comparisons/m11-knot-curves.typ": upstream-m11-knot-curves
 #import "../build/m11-shadow-splice-cases.typ": m11-shadow-cases
@@ -83,19 +83,50 @@
     }
     arcs
   }
+  let hobby-segment-arcs(curves, segments) = {
+    let arcs = (0,)
+    for (start, finish) in segments {
+      let first-index = int(calc.floor(start))
+      let last-index = int(calc.floor(finish - 1e-12))
+      let length = if first-index == last-index {
+        let local = subcurve(curves.at(first-index),
+          start - first-index, finish - first-index)
+        _mp-fixed-cubic-arc-raw(local.map(point =>
+          point.map(axis => axis / _mp-unit)))
+      } else {
+        assert(last-index == first-index + 1,
+          message: "shadow connector crosses more than one cubic knot")
+        let left = subcurve(curves.at(first-index), start - first-index, 1)
+        let right = subcurve(curves.at(last-index), 0, finish - last-index)
+        let tangent(points, end: false) = if end {
+          _sub(points.at(3), points.at(2))
+        } else { _sub(points.at(1), points.at(0)) }
+        let connector = _hobby-given-cubic(
+          left.at(0), right.at(3),
+          tangent(left, end: true), tangent(right))
+        _mp-fixed-cubic-arc-raw(connector.map(point =>
+          point.map(axis => axis / _mp-unit)))
+      }
+      arcs.push(arcs.last() + length)
+    }
+    arcs
+  }
   let quarter-post-segments = post-shadow-segments(quarter-lane-curves)
   let fifth-post-segments = post-shadow-segments(fifth-lane-curves)
   let exact-post-segments = post-shadow-segments(exact-lane-curves)
   let quarter-arcs = segment-arcs(quarter-lane-curves, quarter-post-segments)
   let fifth-arcs = segment-arcs(fifth-lane-curves, fifth-post-segments)
   let exact-arcs = segment-arcs(exact-lane-curves, exact-post-segments)
+  let exact-hobby-arcs = hobby-segment-arcs(exact-lane-curves,
+    exact-post-segments)
   (source-call: source-call, source-lane: source-lane,
     strand-segment: strand-segment, typst-lane: lane-index, lane-u: piece.u,
     center-count: center-curves.len(), fifth-lane-curves: fifth-lane-curves,
     quarter-lane-curves: quarter-lane-curves,
     exact-lane-curves: exact-lane-curves,
     quarter-arcs: quarter-arcs, fifth-arcs: fifth-arcs,
-    exact-arcs: exact-arcs)
+    exact-arcs: exact-arcs, exact-hobby-arcs: exact-hobby-arcs,
+    exact-post-segments: exact-post-segments)
 })
 
 #metadata(records) <m11-knot-lane-offset-cubics>

@@ -2492,12 +2492,16 @@ The connector audit now also checks the join that crosses an original cubic
 knot. For call 4/lane 6, source time `[0.94225,1.04225]`, its two endpoint
 tangent errors are `-0.00362°` and `0.00757°` against the adjoining source
 cubics. `probe_m11_cross_knot_join.py` feeds the two trimmed endpoints and
-tangent directions back through MetaPost's `..` solver. Its controls are
-`(86.69072,21.43077)` and `(86.70184,21.40576) mm`, within `0.00001 mm` of
-the traced controls `(86.69072,21.43076)` and `(86.70183,21.40576) mm`, the
-trace's five-decimal output resolution. This recovers the connector control
-distances from source geometry; a Typst port and its arc-length/recursive
-impact remain to be measured.
+tangent directions back through MetaPost's `..` solver. The Typst
+`_hobby-given-cubic` port reproduces both source `M11POSTFIX` control points
+within `8.4e-6 mm`; its fixed-point arc is `15,247` versus source `15,246`
+units. In the exact-lane q replay, replacing the old split-subcurve estimate
+with this connector corrects that interval's arc residual from `+2` to `0`
+units. It does not change the 20-node call 4/lane 6 recursive tree. Call 4/lane
+2 remains at 38/40 candidate/source nodes and call 5/lane 2 at 34/30. This
+confirms the connector geometry and narrows the remaining branch mismatches to
+other post-shadow segments; the production lane renderer has not yet adopted
+this helper.
 Reproduce the control audit with:
 
 ```sh
@@ -2507,6 +2511,9 @@ nix develop path:./nix --command python \
 nix develop path:./nix --command python \
   diagnostics/probe_m11_cross_knot_join.py \
   /tmp/m11-shadow-trace-current/trace.log
+nix develop path:./nix --command typst eval \
+  'query(<m11-hobby-given-join>).first().value' \
+  --in diagnostics/m11_hobby_given_join_probe.typ --root .
 ```
 
 The arc audit now also reports the first divergent q-map for call 4/lane 6.

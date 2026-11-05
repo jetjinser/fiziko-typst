@@ -92,6 +92,8 @@ end
     errors = tuple(math.dist(a, b) for a, b in zip(predicted, actual))
     print(f"call/lane={args.call}/{args.lane} segment={post_index} "
           f"source-time=[{start:.5f},{end:.5f}]")
+    print(f"trimmed endpoints: {start_point} -> {end_point} mm")
+    print(f"endpoint tangent vectors: {start_tangent} -> {end_tangent}")
     print(f"MetaPost join controls: {predicted[0]} / {predicted[1]} mm")
     print(f"source trace controls:  {actual[0]} / {actual[1]} mm")
     print(f"control errors: {errors[0]:.8g}/{errors[1]:.8g} mm; "

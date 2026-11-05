@@ -483,6 +483,35 @@
   (f(p0.at(0), p1.at(0), p2.at(0), p3.at(0)), f(p0.at(1), p1.at(1), p2.at(1), p3.at(1)))
 }
 
+// One unit-tension Hobby segment with fixed endpoint directions. Points and
+// tangent vectors use the library's mm, y-down coordinates.
+#let _hobby-given-cubic(start, end, start-tangent, end-tangent) = {
+  let chord = (end.at(0) - start.at(0), start.at(1) - end.at(1))
+  let chord-length = _len(chord)
+  if chord-length <= 1e-10 { return none }
+  let chord-angle = calc.atan2(chord.at(1), chord.at(0))
+  let start-angle = calc.atan2(-start-tangent.at(1), start-tangent.at(0))
+  let end-angle = calc.atan2(-end-tangent.at(1), end-tangent.at(0))
+  let theta = start-angle - chord-angle
+  let phi = chord-angle - end-angle
+  let velocity(st, ct, sf, cf) = calc.min(4.0,
+    (2 + calc.sqrt(2) * (st - sf / 16) * (sf - st / 16) * (ct - cf)) /
+    (1.5 * (2 + (calc.sqrt(5) - 1) * ct + (3 - calc.sqrt(5)) * cf)))
+  let rotate(v, angle) = (
+    v.at(0) * calc.cos(angle) - v.at(1) * calc.sin(angle),
+    v.at(0) * calc.sin(angle) + v.at(1) * calc.cos(angle),
+  )
+  let r = velocity(calc.sin(theta), calc.cos(theta),
+    calc.sin(phi), calc.cos(phi))
+  let s = velocity(calc.sin(phi), calc.cos(phi),
+    calc.sin(theta), calc.cos(theta))
+  let start-up = (start.at(0), -start.at(1))
+  let end-up = (end.at(0), -end.at(1))
+  let c1 = _add(start-up, _mul(rotate(chord, theta), r))
+  let c2 = _sub(end-up, _mul(rotate(chord, -phi), s))
+  (start, (c1.at(0), -c1.at(1)), (c2.at(0), -c2.at(1)), end)
+}
+
 /// Catmull–Rom sampler retained for closed paths and explicit selection.
 #let _resample-catmull(pts, per: 12, closed: false) = {
   let segs = if closed { pts.len() } else { pts.len() - 1 }

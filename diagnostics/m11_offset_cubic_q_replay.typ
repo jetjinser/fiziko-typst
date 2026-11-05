@@ -11,6 +11,8 @@
     else { arc-record.quarter-arcs }
   let exact-arcs = if arc-record == none { item.source-arc-fixed }
     else { arc-record.exact-arcs }
+  let hobby-arcs = if arc-record == none { item.source-arc-fixed }
+    else { arc-record.exact-hobby-arcs }
   let make-q(arcs) = range(item.segments).map(i => {
     let x0 = arcs.at(i)
     let x1 = arcs.at(i + 1)
@@ -33,6 +35,7 @@
     source-q-curves-fixed: make-q(arcs))
   let result = run(arcs)
   let exact-result = run(exact-arcs)
+  let hobby-result = run(hobby-arcs)
   // Diagnostic oracle: substitute only source arc increments belonging to
   // the traced shadowCut connectors, then carry each correction downstream.
   let connector-indices = if item.call == 4 and item.lane == 2 { (22, 29) }
@@ -53,6 +56,8 @@
     source-arc-fixed: item.source-arc-fixed,
     exact-curve-calls: exact-result.at(1),
     exact-curve-q-nodes: exact-result.at(2).nodes.filter(node => node.stage == "thin"),
+    hobby-connector-calls: hobby-result.at(1),
+    hobby-connector-q-nodes: hobby-result.at(2).nodes.filter(node => node.stage == "thin"),
     connector-q-nodes: connector-result.at(2).nodes
       .filter(node => node.stage == "thin"))
 })
