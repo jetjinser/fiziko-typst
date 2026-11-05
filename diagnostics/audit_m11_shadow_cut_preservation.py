@@ -65,7 +65,7 @@ def main():
     parser.add_argument("--trim", type=float, default=0.05)
     args = parser.parse_args()
 
-    cuts, _, _, _, _, _, _ = read_source(args.source_trace)
+    cuts = read_source(args.source_trace)[0]
     pre_curves = read_pre_cut_curves(args.source_trace)
     post_curves = read_post_cut_curves(args.source_trace)
     for key, pair in PAIRS.items():

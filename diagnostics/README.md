@@ -2401,6 +2401,13 @@ branch. The pinned `offsetPathTemplate` confirms that q x knots are
 to reconstruct those partial post-shadow path lengths with matching geometry
 and fixed-point evaluation, rather than applying a global arc scale.
 
+The endpoint audit now maps all post-shadow source cubic endpoints to the
+paired Typst lane using the dense trace: mean/max endpoint errors are
+`0.0000127/0.0000272 mm`, `0.0000124/0.0000556 mm`, and
+`0.0000159/0.0000386 mm` for calls 4/lane 2, 4/lane 6, and 5/lane 2. This
+keeps the lane-to-source-time mapping local to each splice boundary and
+confirms that the remaining arc residuals are small but branch-sensitive.
+
 **M11 pre-shadow offset-cubic arc probe (2026-11-05).** The production
 `_mp-offset-boundary` port reconstructs the paired pre-shadow lane controls
 from the checked-in centerline samples. Results recorded before the

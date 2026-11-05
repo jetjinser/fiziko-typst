@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--samples-per-cubic", type=int, default=64)
     args = parser.parse_args()
 
-    *_, post_curves = read_source(args.source_trace)
+    post_curves = read_source(args.source_trace)[6]
     lanes = typst_lane_map(args.typst_trace, dense=True)
     for key, pair in PAIRS.items():
         points = lanes[pair]
