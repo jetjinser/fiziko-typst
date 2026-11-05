@@ -4593,14 +4593,25 @@ The row `29.49918` trace records both source surface handles
 (`S104-CLIP-POLY-POST/PRE`) and ray controls. After inverse rotation, the
 source handles are the straight one-third/two-thirds controls for the `--`
 edges in `supplemental.mp`; a missing smooth-boundary model is not the cause.
-At this row, the current Typst hatch endpoints differ from the five source
-fixed-subdivision points by up to `0.000871 mm`; source arc/chord residual
-remains at most one 16.16 bp unit. The full recursive audit pairs only `27/77`
-q nodes, with q-arc control residual mean/max `236.720/623` units. Continue
-with the fixed-point transformation and intersection parameter path, before
-changing recursion thresholds or q splitting. The source-point audit now
-compares fixed-width-q subdivision points and times, not linear samples at
-unrelated floating-width q times.
+The source macro clips with two independent calls:
+`aHatch firstIntersectionTimes p` and
+`reverse(aHatch) firstIntersectionTimes p`. The scanner now follows that
+forward/reverse order through `intersection-times`, instead of finding all
+forward intersections and pairing them. On this row both fixed 16.16 hit
+pairs now match source exactly: forward
+`(0.02372741699, 3.08949279785)`, reverse
+`(0.29983520508, 0.59196472168)`. Maximum error across the five source hatch
+points falls from `0.000871 mm` to `0.000115 mm`; the source arc/chord
+residual remains at most one unit. The row's recursive audit pairs `30/77`
+q nodes, up from `27/77`; q-arc residual mean/max is `238.261/586` units.
+Across the whole tree, pairing is `1488/1696`, with 1,278 exact width
+controls, 241 exact q-arc controls, and q-arc residual mean/max
+`26.726/930` units. The same-HEAD 600 ppi render changes full/hatch RMSE
+`0.206393200/0.071770575 → 0.206394640/0.071778720`; stipple is unchanged.
+Keep the source intersection order for its exact hit semantics, with the small
+raster trade-off recorded. The source-point audit compares fixed-width-q
+subdivision points and times, not linear samples at unrelated
+floating-width-q times.
 
 **S104 scanline direction-rounding probe (2026-11-05, rejected).** A fresh
 pinned-source trace and current Typst metadata reproduce row 93's baseline

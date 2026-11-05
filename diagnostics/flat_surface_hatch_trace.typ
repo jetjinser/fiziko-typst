@@ -192,6 +192,7 @@
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
+    intersection-hits: if segment.len() > 4 { segment.at(4) } else { () },
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,
     source-arc-fixed: if segment.at(2) == 93 or segment.at(2) == 53 { source-arc-fixed } else { () },

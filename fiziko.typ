@@ -21,7 +21,7 @@
 
 #import "solve.typ": solve-linear, line-intersect, pyth-add, pyth-sub
 #import "contour.typ": marching-squares
-#import "intersection.typ": intersection-times, cubic-intersection
+#import "intersection.typ": intersection-times
 
 // ---------------------------------------------------------------------------
 // constants
@@ -3053,25 +3053,15 @@
     // fixed step grid there instead of deriving the first line from ymin.
     let height = ymax - (count - row) * row-step
     let ray = _mp-fixed-line-cubic((xmin, height), (xmax, height))
-    let hits = ()
-    for edge in edge-curves {
-      let hit = cubic-intersection(ray, edge)
-      if hit != none and hit.at(0) >= 0 and hit.at(0) <= 1 {
-        hits.push(_mp-fixed-cubic-at(ray, hit.at(0)).at(0))
-      }
-    }
-    let sorted = hits.sorted()
-    let unique = ()
-    for hit in sorted {
-      if unique.len() == 0 or hit - unique.last() > 1 {
-        unique.push(hit)
-      }
-    }
-    for j in range(0, unique.len() - 1, step: 2) {
-      let u0 = unique.at(j)
-      let u1 = unique.at(j + 1)
+    let reverse-ray = ray.rev()
+    let forward-hit = intersection-times(ray, edge-curves)
+    let reverse-hit = intersection-times(reverse-ray, edge-curves)
+    if forward-hit.at(0) >= 0 and reverse-hit.at(0) >= 0 {
+      let u0 = _mp-fixed-cubic-at(ray, forward-hit.at(0)).at(0)
+      let u1 = _mp-fixed-cubic-at(reverse-ray, reverse-hit.at(0)).at(0)
       if u1 - u0 > int(calc.round(0.001 / _mp-unit * one)) {
-        segments.push((page-point((u0, height)), page-point((u1, height)), row, count))
+        segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
+          (forward-hit, reverse-hit)))
       }
     }
   }
