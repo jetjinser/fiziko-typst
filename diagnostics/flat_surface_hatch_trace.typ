@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-fixed-mix-point, _mp-path-subdivision-times, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-fixed-mix-point, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -12,7 +12,9 @@
   panel, angle, 3 * _source-max-shading, fit: true,
   source-fixed: use-source-fixed-scanlines)
 #let projections = panel.map(p => p.at(0) * _cos(angle) + p.at(1) * _sin(angle))
-#let total-width = calc.max(..projections) - calc.min(..projections)
+#let total-width = if use-source-fixed-scanlines {
+  segments.first().at(5)
+} else { calc.max(..projections) - calc.min(..projections) }
 #let stream = _metapost-rng-sequence(1, calc.max(128, segments.len() * 128))
 #let cursor = 0
 #let fixed-width-q-cursor = 0
@@ -37,7 +39,26 @@
   // Candidate MetaPost-style 16.16 arithmetic for the scalar envelope.
   // The height normal and light make surfLight exactly one in this fixture.
   let fixed-width(t) = _flat-surface-source-width(
-    t, line-length, total-width, row-fraction, shade, 6 / 7, 2)
+    t, _mp-rounded(line-length), total-width, row-fraction, shade, 2)
+  let q = _mp-scalar-rounded
+  let width-ratio = q(_mp-rounded(line-length) / total-width)
+  let width-row = q(row-fraction)
+  let width-sin-time = q(_sin(q(q(0.25) * 180)))
+  let width-sin-row = q(_sin(q(width-row * 180)))
+  let width-envelope = q(q(width-sin-time * width-ratio) * width-sin-row)
+  let width-root = q(calc.sqrt(calc.max(0.0, width-envelope)))
+  let width-fade = q(q(6 * width-root) / 7)
+  let width-remain = q(1 - width-fade)
+  let width-light = q(q(1 / 15) + q(shade))
+  let width-base = q(2 * q(_source-min-stroke / _mp-unit))
+  let width-bp = q(q(width-base * width-light) * width-remain)
+  // A source-input-only callback probe for row 98, from S104-WIDTH-IN.
+  let source-input-width = if segment.at(2) == 98 {
+    _flat-surface-source-width(0.25,
+      (94 + 179 / 256 + 52 / 65536) * _mp-unit,
+      (150 + 181 / 256 + 229 / 65536) * _mp-unit,
+      80 / 256 + 143 / 65536, shade, 2)
+  } else { none }
   let fixed-width-q-subdivision-start = fixed-width-q-cursor
   let fixed-width-q-requested-subdivisions = 3 + int(calc.floor(
     stream.at(fixed-width-q-cursor) * 2 + 0.5))
@@ -229,6 +250,25 @@
     sample-times: fractions, sample-widths: widths,
     fixed-width-q-times: fixed-width-q-subdivision-times,
     fixed-width-q-points: fixed-width-q-points,
+    fixed-width-q-widths: fixed-width-q-subdivision-times.map(t =>
+      int(calc.round(fixed-width(t) / _mp-unit * 65536))),
+    source-input-width-fixed: if source-input-width == none { none } else {
+      int(calc.round(source-input-width / _mp-unit * 65536))
+    },
+    fixed-width-q-scalar-trace: (
+      ratio: int(calc.round(width-ratio * 65536)),
+      sin-time: int(calc.round(width-sin-time * 65536)),
+      sin-row: int(calc.round(width-sin-row * 65536)),
+      envelope: int(calc.round(width-envelope * 65536)),
+      root: int(calc.round(width-root * 65536)),
+      fade: int(calc.round(width-fade * 65536)),
+      remain: int(calc.round(width-remain * 65536)),
+      light: int(calc.round(width-light * 65536)),
+      base-bp: int(calc.round(width-base * 65536)),
+      width-bp: int(calc.round(width-bp * 65536)),
+    ),
+    source-width-inputs: (line-length-mm: line-length,
+      total-width-mm: total-width, row-fraction: row-fraction),
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,
     rng-used: ink.at(1), nodes: ink.at(2).nodes,

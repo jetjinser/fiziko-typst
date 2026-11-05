@@ -8,6 +8,13 @@ import sys
 from pathlib import Path
 
 
+def fixed_chunks(expression: str) -> str:
+    whole = f"floor(({expression}))"
+    high = f"floor((({expression}) - {whole}) * 256)"
+    low = f"round(((({expression}) - {whole}) * 256 - {high}) * 256)"
+    return f'decimal({whole}) & " " & decimal({high}) & " " & decimal({low})'
+
+
 def main() -> None:
     if len(sys.argv) not in (3, 4):
         raise SystemExit(__doc__)
@@ -20,6 +27,55 @@ def main() -> None:
         if not path_cubic_rows:
             raise SystemExit("PATH_CUBIC_ROWS must contain at least one row")
     source = Path(sys.argv[1]).read_text()
+    row_distance = f"abs(i - {path_cubic_rows[0]:.5f})"
+    for row in path_cubic_rows[1:]:
+        row_distance = f"min({row_distance}, abs(i - {row:.5f}))"
+    callback_quarter = (
+        "(2minStrokeWidth*(1/15+surfLight))*"
+        "(1-6/7sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi)))"
+    )
+    width_math_a = (
+        "sin(1/4*pi)",
+        "hatchLength/totalWidth",
+        "sin(distFromEdge*pi)",
+        "sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi)",
+        "sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi))",
+    )
+    width_math_b = (
+        "(6/7)*sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi))",
+        "1-(6/7)*sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi))",
+        "1-6/7sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi))",
+        "1/15+surfLight",
+    )
+    width_math_c = (
+        "2minStrokeWidth*(1/15+surfLight)",
+        "(2minStrokeWidth*(1/15+surfLight))*(1-(6/7)*sqrt(sin(1/4*pi)*(hatchLength/totalWidth)*sin(distFromEdge*pi)))",
+        callback_quarter,
+    )
+    width_input_message = (
+        '                    message "S104-WIDTH-IN " & decimal(i) & " " & '
+        + fixed_chunks("hatchLength") + ' & " " & '
+        + fixed_chunks("totalWidth") + ' & " " & '
+        + fixed_chunks("distFromEdge") + ' & " " & '
+        + fixed_chunks("surfLight") + ' & " " & '
+        + fixed_chunks(callback_quarter) + ";"
+    )
+    def width_math_message(tag: str, values: tuple[str, ...]) -> str:
+        return (
+            f'                    message "{tag} " & decimal(i) & " " & '
+            + ' & " " & '.join(fixed_chunks(expression) for expression in values)
+            + ";"
+        )
+    width_math_trace = "\n".join((
+        width_math_message("S104-WIDTH-MATH-A", width_math_a),
+        width_math_message("S104-WIDTH-MATH-B", width_math_b),
+        width_math_message("S104-WIDTH-MATH-C", width_math_c),
+    ))
+    width_probe = (
+        f"\n                if {row_distance} < 0.00001:\n"
+        + width_input_message + "\n" + width_math_trace
+        + "\n                fi;"
+    )
     anchor = "            hatchLength := arclength(aHatch);"
     if source.count(anchor) != 1:
         raise ValueError(f"expected one flatSurface row hook, found {source.count(anchor)}")
@@ -32,7 +88,8 @@ def main() -> None:
         ' & decimal(hatchLength) & " " & decimal(totalWidth)'
         ' & " " & decimal(distFromEdge) & " " & decimal(traceRngTotal)'
         ' & " " & decimal(surfLight) & " "'
-        ' & decimal(2minStrokeWidth*(1/15+surfLight));',
+        ' & decimal(2minStrokeWidth*(1/15+surfLight));'
+        + width_probe,
     )
 
     # Trace the recursive width-template decisions made by the hatch brush.

@@ -3090,7 +3090,7 @@
       let u1 = _mp-fixed-cubic-at(reverse-ray, reverse-hit.at(0)).at(0)
       if u1 - u0 > int(calc.round(0.001 / _mp-unit * one)) {
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
-          (forward-hit, reverse-hit)))
+          (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit))
       }
     }
   }
@@ -3145,7 +3145,7 @@
 // MetaPost rounds each scalar operation in flatSurface's width callback to
 // 16.16 before offsetPathTemplate stores the resulting q-width knot.
 #let _flat-surface-source-width(t, line-length, total-width, row-fraction,
-                                shade, end-fade, scale) = {
+                                shade, scale) = {
   let q = _mp-scalar-rounded
   let ratio = q(line-length / total-width)
   let row-position = q(row-fraction)
@@ -3153,7 +3153,10 @@
   let s2 = q(_sin(q(row-position * 180)))
   let envelope = q(q(s1 * ratio) * s2)
   let root = q(calc.sqrt(calc.max(0.0, envelope)))
-  let fade = q(q(end-fade) * root)
+  // Match MetaPost's source expression `6/7sqrt(root)`: it multiplies by
+  // six before dividing by seven, which differs by one fixed unit from
+  // rounding `6/7` first and then multiplying by the root.
+  let fade = q(q(6 * root) / 7)
   let remain = q(1 - fade)
   let light-factor = q(q(1 / 15) + q(shade))
   let base-bp = q(scale * q(_source-min-stroke / _mp-unit))
@@ -3235,8 +3238,9 @@
   let line-spacing = if spacing == none {
     if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
   } else { spacing }
+  let source-fixed-scanlines = rng == "metapost" and style == "hatch"
   let segs = _scanline-segments(poly, angle, line-spacing, fit: true,
-    source-fixed: rng == "metapost" and style == "hatch")
+    source-fixed: source-fixed-scanlines)
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
   assert(rng == "keyed" or style != "stipples",
@@ -3250,7 +3254,9 @@
   let draw-segs = if rng == "metapost" and style == "hatch" { segs.rev() } else { segs }
   let along = (_cos(angle), _sin(angle))
   let along-projections = poly.map(p => _dot(p, along))
-  let total-width = calc.max(..along-projections) - calc.min(..along-projections)
+  let total-width = if source-fixed-scanlines and segs.len() > 0 {
+    segs.first().at(5)
+  } else { calc.max(..along-projections) - calc.min(..along-projections) }
   let items = ()
   for s in draw-segs {
     // flatSurface calls pathSubdivide(aHatch, 3 + round(uniformdeviate(2))).
@@ -3276,9 +3282,9 @@
       )
       scale * _source-min-stroke * (1 / 15 + shade) * (1 - end-fade * calc.sqrt(calc.max(0.0, envelope)))
     }
-    let source-fixed-width(t, end-fade, scale) = _flat-surface-source-width(
-      t, line-length, total-width, row-fraction, shade, end-fade, scale)
-    let source-fixed = rng == "metapost" and style == "hatch"
+    let source-fixed-width(t) = _flat-surface-source-width(
+      t, line-length, total-width, row-fraction, shade, 2)
+    let source-fixed = source-fixed-scanlines
     // MetaPost pathSubdivide rounds each line point with scaled arithmetic.
     let pts = subdivision-times.map(t => if source-fixed {
       _mp-fixed-mix-point(s.at(0), s.at(1), t)
@@ -3293,7 +3299,7 @@
     } else {
       if rng == "metapost" {
         let active-width(t) = if source-fixed {
-          source-fixed-width(t, 6 / 7, 2)
+          source-fixed-width(t)
         } else { width(t, 6 / 7, 2) }
         let frames = _frame(pts, false)
         let fractions = _path-fractions(frames.map(e => e.at(0)), false)

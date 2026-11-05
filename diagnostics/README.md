@@ -4618,10 +4618,35 @@ A direction-only callback probe replaced `row/count` with
 `(count-row)/count`, the candidate counterpart to source `distFromEdge` after
 the page-axis flip. For row 98 this gives `0.3146853`, matching the source's
 printed `0.31468`, but the production q controls remain exactly unchanged.
-The sine symmetry and 16.16 quantization therefore do not explain the one-unit
-width residual. Revert this probe; trace the source and candidate scalar inputs
-to the width callback (`hatchLength`, `totalWidth`, and the sampled callback
-value) before changing the production width law.
+The sine symmetry and 16.16 quantization therefore do not explain the width
+residual.
+
+**S104 source width callback order (2026-11-06).** The pinned source callback
+uses `1-6/7sqrt(...)`. In MetaPost's scaled arithmetic this multiplies the
+quantized root by six before dividing by seven; the earlier Typst candidate
+rounded `6/7` first and multiplied afterward. Source instrumentation at row 98
+reports width `13311` in 16.16 units, while the old candidate produced `13310`.
+The production helper now follows the source operation order. This raises the
+full q-tree endpoint pairing from `1488/1696` to `1517/1696`, exact width
+controls from `1278` to `1414`, and exact arc controls from `241` to `273`;
+mean q-arc residual falls `26.726 → 13.852` units (maximum remains 930).
+Row 98 changes from 5 outer/23 thin nodes to 21 outer/19 thin; 19 thin
+endpoints pair, and all four first-root width knots match the source. The
+source and Typst still disagree by one fixed unit on a q-arc control, and two
+source thin endpoints remain unpaired.
+
+The same probe captures source scalar inputs and intermediate width
+expressions in bounded `S104-WIDTH-MATH-A/B/C` messages. Row 98's direct source
+callback result and source-ordered Typst result both round to `13311`. Using
+the source-rounded scanline projection for `totalWidth` changes it by about
+`0.000029 mm` versus the floating vertex projection; an isolated row-98 query
+leaves all q nodes unchanged. The fixed projection is retained for arithmetic
+fidelity, not because it fixes recursion. A 600 ppi image comparison against
+the prior floating callback shows a very small regression: full/hatch RMSE
+`0.206394640/0.071778720 → 0.206395069/0.071781147`, with stipple unchanged.
+Keep the width operation order because it reproduces the source callback and
+substantially improves recursive q correspondence; continue to gate further
+changes on both the full row audit and paired render.
 
 The line-cubic builder was checked separately with MetaPost `--` paths for
 integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
