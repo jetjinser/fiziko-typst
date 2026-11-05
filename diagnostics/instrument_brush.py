@@ -89,6 +89,26 @@ def main() -> None:
         ' & traceFixed(xpart(point traceKnotIndex of bt)) & " "'
         ' & traceFixed(ypart(point traceKnotIndex of bt));\n'
         "    endfor;\n"
+        "    if traceCoastWidth:\n"
+        "        for traceQSegmentIndex := 0 upto floor(length(bt))-1:\n"
+        '            message "S101-QCURVE-FIX " & decimal(i) & " "'
+        ' & decimal(traceQSegmentIndex) & " 0 "'
+        ' & traceFixed(xpart(point traceQSegmentIndex of bt)) & " "'
+        ' & traceFixed(ypart(point traceQSegmentIndex of bt));\n'
+        '            message "S101-QCURVE-FIX " & decimal(i) & " "'
+        ' & decimal(traceQSegmentIndex) & " 1 "'
+        ' & traceFixed(xpart(postcontrol traceQSegmentIndex of bt)) & " "'
+        ' & traceFixed(ypart(postcontrol traceQSegmentIndex of bt));\n'
+        '            message "S101-QCURVE-FIX " & decimal(i) & " "'
+        ' & decimal(traceQSegmentIndex) & " 2 "'
+        ' & traceFixed(xpart(precontrol (traceQSegmentIndex+1) of bt)) & " "'
+        ' & traceFixed(ypart(precontrol (traceQSegmentIndex+1) of bt));\n'
+        '            message "S101-QCURVE-FIX " & decimal(i) & " "'
+        ' & decimal(traceQSegmentIndex) & " 3 "'
+        ' & traceFixed(xpart(point (traceQSegmentIndex+1) of bt)) & " "'
+        ' & traceFixed(ypart(point (traceQSegmentIndex+1) of bt));\n'
+        "        endfor;\n"
+        "    fi;\n"
         '    message "S101 NODE " & decimal(i) & " " & decimal(w0)'
         ' & " " & decimal(w1) & " " & decimal(arclength(p))'
         ' & " " & decimal(length(p)) & " "'

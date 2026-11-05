@@ -4656,23 +4656,34 @@ the production recursion engine. The trace now also exports every root q cubic
 control as `M11-ROOTQC`; across all eight source landmasses these controls match
 the cubic reconstructed from adjacent knots exactly (zero differing fixed
 units), confirming that line-control rounding is not an unmodeled root gap.
-With exact root `q`, source and Typst node
-totals match for all six visible masses (M1/M2/M4/M5/M7/M8: `15/15`, `57/57`,
-`31/31`, `1/1`, `1/1`, `1/1`); brush random-call totals also match
-(`12/12`, `30/30`, `6/6`, `2/2`, `2/2`, `2/2`). Parent-aware recursion
-decisions match `15/15` for M1 and `31/31` for M4, and `53/55` for M2. This
-isolates most remaining coast recursion error to construction of the initial
-source q template, with two M2 decision differences still inside recursion.
-At the first mismatching depth-4 branch, parent and earlier child q controls
-pair exactly; MetaPost finds a cut at q time `0.69211`, while Typst's
-`intersection-times` returns no hit. In the sibling branch MetaPost rejects a
-cut while Typst accepts q time `41.30789`. These are complementary branch
-decisions with endpoint errors around `0.0021–0.0023 mm`, and point to the
-fixed-point first-intersection search/selection after recursive q splitting.
-The next probe should replay these exact child cubics and rays through both
-MetaPost `firstIntersectionTimes` and `intersection-times`, then adjust the
-intersection port only if that reproduces the source choices without changing
-other source-q oracle trees.
+With exact root `q`, source and Typst node totals match for all six visible
+masses (M1/M2/M4/M5/M7/M8: `15/15`, `57/57`, `31/31`, `1/1`, `1/1`, `1/1`);
+brush random-call totals also match (`12/12`, `30/30`, `6/6`, `2/2`, `2/2`,
+`2/2`). Before the midpoint correction below, two M2 branch decisions differed.
+At the matched parent, hit parameters agreed, but MetaPost's rounded midpoint
+was `333:186:199` while the Typst float path rounded one fixed unit lower. That
+one-unit difference reversed the near-tied hit-distance choice (`41.30789`
+versus `0.69211`). The source-rounded split now forms the midpoint from
+fixed-point bounds with MetaPost's half-up tie behavior and compares rounded hit
+distances. With exact root q, source and Typst now match every recursive node
+and decision for all six visible masses; all 54 brush random calls match.
+`instrument_brush.py` now records each node's complete source q cubic array as
+short `S101-QCURVE-FIX` records, and `compare_m11_recursive_q_curves.py`
+confirms exact fixed-point q controls on all paired nodes across those six
+trees. The remaining coast tree gap is in production construction of the
+initial q template and its callback width/time map, rather than recursive q
+splitting.
+
+The production M11 M2 tree changes from `57/57` source/Typst nodes to `57/59`,
+so correcting the source tie behavior does not by itself fix the approximate
+production root template. Same-commit 600 ppi comparisons show M11 full/globe
+RMSE unchanged at `0.114800/0.189287`; M4 and M6 are pixel-metric unchanged.
+S104 whole/hatch RMSE improves `0.206404465/0.071834281` to
+`0.206402978/0.071825871`. M9 changes `0.211396935` to `0.211427704` overall,
+with a `0.000133276` top-left crop regression and other crops unchanged or
+nearly unchanged. Retain the source arithmetic correction: the exact source-q
+oracle now reproduces the complete recursive q geometry and branch choices;
+the small M9 raster tradeoff is recorded for further review.
 
 `instrument_m11_coasts.py ... --path-cubics=1,2,4` additionally exports all
 MetaPost path cubic controls as fixed-point `M11-PATHP-FIX`; run
@@ -4701,6 +4712,7 @@ nix develop path:./nix --command bash -c '
   cp /tmp/m11-source-q/oracle.typ diagnostics/m11_coast_q_oracle_probe.generated.typ
   typst eval "query(<m11-coast-source-q-oracle>).first().value" --in diagnostics/m11_coast_q_oracle_probe.generated.typ --root . > /tmp/m11-source-q/oracle.json
   rm diagnostics/m11_coast_q_oracle_probe.generated.typ
+  python3 diagnostics/compare_m11_recursive_q_curves.py /tmp/m11-source-q/trace.log /tmp/m11-source-q/oracle.json
 '
 ```
 

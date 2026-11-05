@@ -835,7 +835,13 @@
         none, none, none, none, none,
         (status: "degenerate-width", x-min: x-min, x-max: x-max))
     }
-    let midpoint = _mp-rounded((x-min + x-max) / 2)
+    let midpoint = if source-rounding {
+      // MetaPost first adds fixed-point bounds, then rounds the half-product
+      // upward when their sum lands exactly between representable values.
+      let x-min-fixed = int(calc.round(x-min / _mp-unit * 65536))
+      let x-max-fixed = int(calc.round(x-max / _mp-unit * 65536))
+      int(calc.floor((x-min-fixed + x-max-fixed + 1) / 2)) / 65536 * _mp-unit
+    } else { (x-min + x-max) / 2 }
     let height = if source-rounding { _mp-rounded(target) } else { target }
     let ray-right = source-q-fixed((source-q-cubic((midpoint, height), (x-max, height)),))
     let ray-left = source-q-fixed((source-q-cubic((midpoint, height), (x-min, height)),))
@@ -854,9 +860,17 @@
     }
     let right-x = if right-time < 0 { 0.0 } else { source-q-point(qcurves, right-time).at(0) }
     let left-x = if left-time < 0 { 0.0 } else { source-q-point(qcurves, left-time).at(0) }
+    let closer-right = if source-rounding {
+      // MetaPost compares the two rounded hit x coordinates against its
+      // rounded midpoint. A float comparison can reverse a one-unit tie.
+      let midpoint-fixed = int(calc.round(midpoint / _mp-unit * 65536))
+      let right-fixed = int(calc.round(right-x / _mp-unit * 65536))
+      let left-fixed = int(calc.round(left-x / _mp-unit * 65536))
+      calc.abs(right-fixed - midpoint-fixed) < calc.abs(left-fixed - midpoint-fixed)
+    } else { calc.abs(right-x - midpoint) < calc.abs(left-x - midpoint) }
     let qtime = if right-time < 0 { left-time }
       else if left-time < 0 { right-time }
-      else if calc.abs(right-x - midpoint) < calc.abs(left-x - midpoint) { right-time }
+      else if closer-right { right-time }
       else { left-time }
     let segment = int(calc.clamp(calc.floor(qtime), 0, qmap.len() - 1))
     let fraction = calc.clamp(qtime - segment, 0.0, 1.0)
