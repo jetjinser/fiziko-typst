@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """Compare source and Typst M9 field samples on the same lattice points.
 
-Usage: compare_m9_field_samples.py MPOST_LOG TYPST_JSON
+Usage: compare_m9_field_samples.py MPOST_LOG TYPST_JSON [--scale=N]
 """
 
 import json
 import sys
 from pathlib import Path
 
-CONTOUR_SCALE = 24
-
-
 def decode_16_16(high: str, low: str) -> float:
     return int(high) / 256 + int(low) / 65536
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         raise SystemExit(__doc__)
+    scale = 1.0
+    if len(sys.argv) == 4:
+        option, value = sys.argv[3].split("=", 1)
+        if option != "--scale":
+            raise SystemExit(__doc__)
+        scale = float(value)
+        if scale <= 0:
+            raise SystemExit("--scale must be positive")
     source_samples = {}
     for line in Path(sys.argv[1]).read_text().splitlines():
         fields = line.split()
@@ -30,7 +35,7 @@ def main() -> None:
 
     typst = json.loads(Path(sys.argv[2]).read_text())
     typst_samples = {
-        (sample["i"], sample["j"]): sample["wfield"] / CONTOUR_SCALE
+        (sample["i"], sample["j"]): sample["wfield"] / scale
         for row in typst["raw-grid-samples"]
         for sample in row
     }

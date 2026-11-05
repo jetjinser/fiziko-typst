@@ -117,6 +117,15 @@ gates regress. The remaining wood gap is therefore in how source field values
 and resulting contours are evaluated around these accurately paired knots,
 not in missing knots or panel cursor order.
 
+The associated fixed-point `wField` probe now includes the same column jitter
+as source `CLVFIX` and uses source fixed-point knot coordinates. Compared at
+the raw field scale (without the production contour's factor of 24), it pairs
+55/72 grid samples exactly, with mean/max absolute error
+`4.03e-6/3.05e-5`. This confirms the source arithmetic oracle is within two
+16.16 units on the sampled grid, but it does not yet show that replacing the
+production continuous field improves the contour raster; previous full-field
+and max-only production candidates still regress one or more M9/S105 regions.
+
 **M11 coast cubic callback trial (2026-11-05).** The production Typst trace
 rebuilt from the current checkout pairs 7 of 31 source thin nodes on mass 4,
 with 6/7 recurse/stop decisions agreeing; masses 1/2/4 are

@@ -386,13 +386,15 @@ field terms. Compare it with `CLWRFIX`, `CLWTERMFIX`, `CLWBASEFIX` and
 positions from seed 1, applying the traced 28-call brush consumption after
 each accepted knot; its first three cumulative knot terms match the source
 trace exactly. It also exports a 72-sample fixed-point grid using those
-derived positions. Pair those values with the first 72 `CLVFIX` records and
-compare directly after dividing Typst's `wfield` by its 24x contour scale.
-`CLVFIX` is emitted after adding the source column jitter, and the Typst
-`model.field` adds the paired seeded offset too; subtracting `CLCOL` from only
-the source side incorrectly adds the entire offset to the measured error.
-`CLCOL` records that jitter as two base-256 digits. This comparison is
-diagnostic only and does not alter rendering. To reproduce the summary:
+derived positions. Its grid evaluator now adds the matching source-rounded
+column jitter and emits the unscaled 16.16 field value. Pair it with the first
+72 `CLVFIX` records using `compare_m9_field_samples.py ... --scale=1`; for
+production `model.field` metadata, pass `--scale=24`. `CLVFIX` is
+emitted after adding column jitter, and `CLCOL` records that jitter as two
+base-256 digits. With source fixed-point knot coordinates, the current probe
+pairs 55/72 field samples exactly; mean/max absolute residual is
+`4.03e-6/3.05e-5`. This is diagnostic only and does not alter rendering. To
+reproduce the probe comparison:
 
 The max-cell trace `(6,42)` shows a narrow path forward: running the
 fixed-point evaluator with the current model's knot coordinates reproduces all
@@ -408,9 +410,9 @@ nix develop path:./nix --command typst eval \
   'query(<m9-fixed-field-probe>).first().value' \
   --in diagnostics/m9_field_fixedpoint_probe.typ --root . \
   > /tmp/m9-cLine-trace/field-probe.json
-nix shell nixpkgs#python3 --command python3 \
+nix develop path:./nix --command python3 \
   diagnostics/compare_m9_field_samples.py \
-  /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/field-probe.json
+  /tmp/m9-cLine-trace/trace.log /tmp/m9-cLine-trace/field-probe.json --scale=1
 ```
 
 The same trace now instruments `brushGenerate` for the first accepted M9
