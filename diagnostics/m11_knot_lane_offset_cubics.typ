@@ -1,6 +1,6 @@
 // Reconstruct pre-shadow M11 knot lanes from source-sampled centerline points
 // using the production MetaPost offsetPathGenerate port.
-#import "../fiziko.typ": _mp-cubic-split, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-from-quarter-samples-raw, _mp-offset-boundary, _mp-unit, _polyline-time-range, _source-path-time-splice, _tube-layout
+#import "../fiziko.typ": _mp-cubic-split, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-mix-point, _mp-offset-boundary, _mp-unit, _polyline-time-range, _source-path-time-splice, _tube-layout
 #import "../comparisons/m11-knot-paths.typ": upstream-m11-knot-paths
 #import "../build/m11-shadow-splice-cases.typ": m11-shadow-cases
 
@@ -24,11 +24,19 @@
     source-cubic-step: 4, radial-y-sign: 1)
   let lane = layout.inner.at(lane-index)
   let piece = lane.pieces.first()
-  let offsets = range(center-curves.len() + 1).map(_ => piece.u * 0.8)
-  let fifth-lane-curves = _mp-offset-boundary(
-    center-curves.map(curve => curve.fifth), offsets)
-  let quarter-lane-curves = _mp-offset-boundary(
-    center-curves.map(curve => curve.quarter), offsets)
+  let offsets = range(center-curves.len() + 1).map(_ => 0.8)
+  let boundaries(center) = (
+    positive: _mp-offset-boundary(center, offsets),
+    negative: _mp-offset-boundary(center, offsets.map(value => -value)))
+  let fifth-boundaries = boundaries(center-curves.map(curve => curve.fifth))
+  let quarter-boundaries = boundaries(center-curves.map(curve => curve.quarter))
+  let fraction = (1 - piece.u) / 2
+  let interpath(boundaries) = range(boundaries.positive.len()).map(i =>
+    range(4).map(j => _mp-fixed-mix-point(
+      boundaries.positive.at(i).at(j),
+      boundaries.negative.at(i).at(j), fraction)))
+  let fifth-lane-curves = interpath(fifth-boundaries)
+  let quarter-lane-curves = interpath(quarter-boundaries)
   let shadow-case = m11-shadow-cases.find(record =>
     record.call == source-call and record.lane == source-lane)
   let post-shadow-segments(curves) = {

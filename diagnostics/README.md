@@ -2326,6 +2326,25 @@ nix develop path:./nix --command typst eval \
   --in diagnostics/m11_offset_cubic_q_replay.typ --root .
 ```
 
+**M11 `shadowCut` connector control audit (2026-11-05).** The new
+`audit_m11_shadow_connector_curves.py` pairs every post-shadow connector with
+the corresponding pre-shadow cubic subcurve. Same-cubic connector controls
+differ by `0.000004–0.000018 mm`; call 4/lane 6 has one connector that crosses
+an original cubic knot and needs a separate `..`-join reconstruction. In the
+interpath arc probe, connector-segment increments differ from source by only
+0–2 fixed units. Replacing only those increments with the traced source values
+changes q-tree counts from `38/22/28` to `40/22/28`: it restores call 4/lane 2
+but leaves call 4/lane 6 and call 5/lane 2 unchanged. This is a diagnostic
+source-oracle substitution, not a production fix. Connectors can trigger a
+threshold branch, but they do not explain the other two lane mismatches.
+Reproduce the control audit with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/audit_m11_shadow_connector_curves.py \
+  /tmp/m11-q-audit/trace.log
+```
+
 The arc audit now also reports the first divergent q-map for call 4/lane 6.
 Its decision-11 node maps to source segments 6–8, whose 64-chord increment
 errors are `+1`, `+2`, and `-11` fixed units. These are much smaller than the
