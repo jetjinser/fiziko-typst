@@ -4655,10 +4655,16 @@ coordinates. `flatSurface` now retains that cubic for `pathSubdivide` sample
 evaluation using fixed-point cubic arithmetic; consecutive sampled lengths
 use the source's fixed-point `pyth_add`. The fixed-width-q reconstruction
 still matches all 142 row requests, brush calls (`1516/1516`), path-segment
-counts, and absolute RNG offsets. The complete tree now pairs 1,526/1,696
-source q nodes, with 1,422 exact width controls and 317 exact arc controls;
-mean/max q-arc residual is 13.206/929 fixed units (previously
-1,517/1,696, 1,414 widths, 273 arcs, and 13.852/930). The 600 ppi S104 gate
+counts, and absolute RNG offsets. The complete tree now pairs 1,525/1,696
+source q nodes, with 1,421 exact width controls and 307 exact arc controls;
+mean/max q-arc residual is 13.072/929 fixed units. The widest outlier,
+source row `-15.34870`, pairs only 1 of 5 source thin nodes within the
+0.005 mm endpoint tolerance, so the residual combines q-arc mismatch with a
+different recursive tree. The earlier saved summary reported
+1,526/1,696, 1,422 widths, 317 arcs, and 13.206/929; a fresh audit of the
+saved trace and query produces the counts above. The scanline hit audit also
+matches 139/142 rows exactly; the other three differ by one 16.16 unit in one
+intersection coordinate each. The 600 ppi S104 gate
 passes; versus the preceding callback build, full/hatch RMSE changes
 `0.206395069/0.071781147 → 0.206397143/0.071792876`, while stipple remains
 `0.285145324`. This is a small raster regression retained for closer source
@@ -4666,12 +4672,12 @@ sampling and q-control agreement.
 
 The largest remaining q-arc control residual is 929 fixed units on source
 row `-15.34870`, node 4. Its paired width controls are exact; endpoint
-pairing is only `0.004999 mm`, near the audit's `0.005 mm` tolerance. The next
-largest residuals are 883 and 813 units on row `25.91135`, then 733 units on
-row `-1.89433`. These rows have divergent thin-node trees, so the control
-deltas mix q-arc construction with node correspondence. Inspect the first
-parent/cut divergence and exact source scanline subdivision points on these
-rows before changing q interpolation. Reproduce the focused outlier check
+pairing is `0.004999 mm`, near the audit's `0.005 mm` tolerance. The next
+largest residual is 814 units on row `25.91135` (nodes 1378 and 1379), then
+732 units on row `-1.89433`. These rows have divergent thin-node trees, so the
+control deltas mix q-arc construction with node correspondence. Inspect the
+first parent/cut divergence and exact source scanline subdivision points on
+these rows before changing q interpolation. Reproduce the focused outlier check
 with:
 
 ```sh
