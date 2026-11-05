@@ -92,6 +92,24 @@ clear the paired wood gates. Continue by tracing the source fixed-point
 conversion of accepted knot coordinates and test it against all four M9 panel
 streams and both S105 regions before changing production again.
 
+**M9 fixed-coordinate replay follow-up (2026-11-05, reverted).** The source
+trace records each raw `uniformdeviate(bound)` result and the resulting
+accepted `WKCAND` coordinates. Replaying the source's intermediate rounding of
+`woodKnotRadius`, `woodBlockDetail`, the detail-space bound, random product,
+shift, and conversion back to millimetres pairs the first block's five
+accepted knots in order with mean/max position error
+`0.000001655/0.000002168 mm` (the trace prints only five decimal places in bp).
+The production replay preserved the field call cursor, but a fresh same-run
+600 ppi pair regressed M9 full RMSE `0.211452985 → 0.211531168`; top-left,
+top-right and bottom-left crops regress `0.194674703/0.233712567/0.239184657
+→ 0.195252499/0.233848533/0.239283558`, while bottom-right improves
+`0.170635231 → 0.170035834`. S105 full/block regress
+`0.101683758/0.127907934 → 0.101692659/0.127928593`; surface improves
+`0.075817840 → 0.075811463`. This source-exact geometry replay is reverted
+pending a four-panel accepted-knot/cursor audit: the first panel's knot match
+does not explain the rendered regressions or prove the rotated panels follow
+the same coordinate transform.
+
 **M11 coast cubic callback trial (2026-11-05).** The production Typst trace
 rebuilt from the current checkout pairs 7 of 31 source thin nodes on mass 4,
 with 6/7 recurse/stop decisions agreeing; masses 1/2/4 are
