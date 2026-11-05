@@ -220,6 +220,14 @@ removes the source interior crossing. The local cause is fixed-point cubic
 subpath interpolation, not the q-time-to-center-path map. The source-q fixture
 remains diagnostic-only; the candidate-wide gates are recorded below.
 
+An independent MetaPost `subpath (0, 0.5)` probe now feeds the traced source
+node-32 cubic directly to the native engine. Its four left-child controls
+match source node 33 exactly, including the 12513-unit endpoint. The current
+Typst floating conversion still yields 12514 for the injected split. The
+probe is retained at `diagnostics/s104_native_subpath_probe.mp`; it confirms
+the local arithmetic diagnosis but does not change the rejected all-tree and
+raster results below.
+
 The fixed-point q split was then tested as a production-wide replacement for
 floating interpolation. It makes this source-q row exact (19/19 endpoint and
 control matches) while retaining all 142 row call schedules, but full generated

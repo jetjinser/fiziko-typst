@@ -3490,6 +3490,20 @@ the target and removes the crossing for nodes 34/35. This is a diagnostic
 oracle for fixed-point cubic subpath splitting, not a production q integration;
 the q-time-to-center-path mapping is not the cause of this focused mismatch.
 
+`s104_native_subpath_probe.mp` independently checks the source operation. It
+encodes the traced source node-32 cubic as 16.16 coordinates, runs MetaPost's
+native `subpath (0, 0.5)`, and prints the left child's four controls as integer
+high/low components. Those controls exactly match source node 33, including
+the endpoint width 12513. Reproduce it while keeping generated files in `/tmp`:
+
+```sh
+nix develop path:./nix --command bash -c \
+  'repo_root="$PWD"; cd /tmp; mpost -interaction=nonstopmode "$repo_root/diagnostics/s104_native_subpath_probe.mp"'
+```
+
+This confirms the local native split arithmetic; the generated-q tree and
+raster gates below still reject applying that arithmetic globally.
+
 A production-wide integer fixed-point q-split trial made this injected row
 exact at 19/19 source nodes and retained the exact 142-row RNG/call schedule.
 Across generated q curves, however, endpoint pairs regressed from 1476 to
