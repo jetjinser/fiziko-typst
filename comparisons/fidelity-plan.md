@@ -91,6 +91,18 @@ lane residuals and `36/22/34` production-sample q trees unchanged to reported
 precision; the remaining branch differences therefore require a path or arc
 construction correction, not another unit-scale adjustment.
 
+**M11 exact input-cubic lane probe (2026-11-05).** The source path exporter now
+preserves all 24 original MetaPost cubics per strand in
+`comparisons/m11-knot-curves.typ`. Splitting those exact curves into the four
+`offsetPathSubdivide` intervals and rebuilding the offset lane reduces the
+three post-shadow arc residuals to max/mean `6/1.93`, `14/3.81`, and `6/2.41`
+fixed units. The replay trees become `38/20/34` against source `40/20/30`:
+call 4/lane 6 is exact and call 4/lane 2 is close, but call 5/lane 2 still
+over-recurses. This is a better geometry oracle than fitting controls from
+sampled path points, but it is diagnostic-only; source-faithful offset joins,
+shadow splices, and all-lane/image gates are still required before production
+integration.
+
 **M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
 source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
 when it is given raw-fraction knot coordinates. A production candidate formed

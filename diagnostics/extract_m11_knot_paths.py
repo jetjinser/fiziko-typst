@@ -12,11 +12,17 @@ FIXED_RECORD = re.compile(
     r"(-?[0-9]+) ([0-9]+) ([0-9]+)"
 )
 SCALE_RECORD = re.compile(r"M11PATHSCALE ([0-9]+) ([0-9]+) ([0-9]+)")
+CURVE_RECORD = re.compile(
+    r"M11PATHCTRL ([AB]) ([0-9]+) ([0-3]) (-?[0-9]+) ([0-9]+) ([0-9]+) "
+    r"(-?[0-9]+) ([0-9]+) ([0-9]+)"
+)
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: extract_m11_knot_paths.py TRACE_LOG OUTPUT_TYP")
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit(
+            "usage: extract_m11_knot_paths.py TRACE_LOG OUTPUT_TYP [OUTPUT_CURVES_TYP]"
+        )
     source = Path(sys.argv[1]).read_text()
     paths: dict[str, list[tuple[float, float]]] = {"A": [], "B": []}
     times: dict[str, list[float]] = {"A": [], "B": []}
@@ -24,6 +30,9 @@ def main() -> None:
         "A": [], "B": []
     }
     fixed_times: dict[str, list[float]] = {"A": [], "B": []}
+    source_curves: dict[str, dict[int, dict[int, tuple[int, int]]]] = {
+        "A": {}, "B": {}
+    }
     scale_records = SCALE_RECORD.findall(source)
     if len(scale_records) > 1:
         raise ValueError("expected at most one fixed-point mm scale record")
@@ -34,6 +43,11 @@ def main() -> None:
         fixed_times[strand].append(float(time))
         fixed_records[strand].append(
             (int(xi), int(xh), int(xl), int(yi), int(yh), int(yl))
+        )
+    for strand, segment, control, xi, xh, xl, yi, yh, yl in CURVE_RECORD.findall(source):
+        source_curves[strand].setdefault(int(segment), {})[int(control)] = (
+            int(xi) * 65536 + int(xh) * 256 + int(xl),
+            int(yi) * 65536 + int(yh) * 256 + int(yl),
         )
     if len(paths["A"]) < 2 or len(paths["A"]) != len(paths["B"]):
         raise ValueError(f"expected equal nonempty strand samples, got {len(paths['A'])} and {len(paths['B'])}")
@@ -87,6 +101,43 @@ def main() -> None:
         ")\n"
     )
     Path(sys.argv[2]).write_text(output)
+
+    if len(sys.argv) == 4:
+        if not scale_records:
+            raise ValueError("fixed-point source curves require M11PATHSCALE")
+        expected_segments = round(times["A"][-1])
+        scale_int, scale_high, scale_low = map(int, scale_records[0])
+        mm_scale = scale_int + scale_high / 256 + scale_low / 65536
+        if mm_scale <= 0:
+            raise ValueError("fixed-point mm scale must be positive")
+        for strand in ("A", "B"):
+            if sorted(source_curves[strand]) != list(range(expected_segments)):
+                raise ValueError(f"missing source cubic segments for strand {strand}")
+            if any(sorted(source_curves[strand][i]) != [0, 1, 2, 3]
+                   for i in range(expected_segments)):
+                raise ValueError(f"incomplete source cubic controls for strand {strand}")
+
+        def curve_array(strand: str) -> str:
+            curves = []
+            for segment in range(expected_segments):
+                controls = source_curves[strand][segment]
+                points = [
+                    "(" + ", ".join(f"{raw / (mm_scale * 65536):.9f}"
+                                      for raw in controls[index]) + ")"
+                    for index in range(4)
+                ]
+                curves.append("(" + ", ".join(points) + ")")
+            return "(\n  " + ",\n  ".join(curves) + "\n)"
+
+        curve_output = (
+            "// Original cubic controls from the pinned MetaPost M11 path.\n"
+            "// Points are page coordinates in mm; each segment has four controls.\n"
+            "#let upstream-m11-knot-curves = (\n"
+            f"  wa: {curve_array('A')},\n"
+            f"  wb: {curve_array('B')},\n"
+            ")\n"
+        )
+        Path(sys.argv[3]).write_text(curve_output)
 
 
 if __name__ == "__main__":

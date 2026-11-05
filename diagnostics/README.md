@@ -1508,7 +1508,9 @@ own path solver. Sampling each source path every 1/4 path-time and storing the
 result in `comparisons/m11-knot-paths.typ` lowered 600 ppi knot crop RMSE from
 0.14230 to 0.06233. A 1/8-step path (193 samples per strand) lowered knot RMSE
 to 0.05979 and whole-plate RMSE from 0.11513 to 0.11490. The 1/16-step path
-(385 samples per strand) lowers them further to 0.05904 and 0.11483. It raises
+(385 samples per strand) lowers them further to 0.05904 and 0.11483. These
+older RMSE values used the pre-correction coordinate conversion; use the
+scale-corrected fidelity-plan figures for current image comparisons. It raises
 the comparison runtime from 28.6 s to 41.6 s, a cost retained for the measured
 fidelity gain. Globe, eye, and refraction crops are unchanged. `comparisons/run.py`
 includes this data file in the isolated input snapshot so the comparison
@@ -1529,7 +1531,8 @@ printf 'selected := 11; input main.mp;\n' > /tmp/m11-path-source/trace.mp
 (cd /tmp/m11-path-source && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 python3 diagnostics/extract_m11_knot_paths.py \
-  /tmp/m11-path-source/trace.log comparisons/m11-knot-paths.typ
+  /tmp/m11-path-source/trace.log comparisons/m11-knot-paths.typ \
+  comparisons/m11-knot-curves.typ
 ```
 
 The source sampler emits both the human-readable `M11PATH` records and split
@@ -1540,6 +1543,12 @@ decimal places. This avoids losing source coordinate bits to MetaPost's
 five-place `decimal` output before cubic reconstruction. Do not substitute the
 unquantized `25.4/72` factor: MetaPost's quantized `mm` constant is the scale
 used by the source paths.
+
+When `OUTPUT_CURVES_TYP` is supplied, the same trace exports every original
+MetaPost cubic as four fixed-point controls in
+`comparisons/m11-knot-curves.typ`. The lane-offset diagnostic compares
+sample-fitted quarter cubics with these exact source cubics, split into the
+same four path-time intervals used by `offsetPathSubdivide`.
 
 Tube mask mode now follows `knotFromStrands`' interval construction: each
 strand is split halfway between adjacent crossings, the supplied per-crossing
@@ -2340,11 +2349,20 @@ fixed-point offset-cubic arcs and q replay with:
 ```sh
 nix develop path:./nix --command python \
   diagnostics/extract_m11_shadow_splice_cases.py \
-  /tmp/m11-q-audit/trace.log build/m11-shadow-splice-cases.typ
+  /tmp/m11-tube-scale-audit/trace.log build/m11-shadow-splice-cases.typ
 nix develop path:./nix --command typst eval \
   'query(<m11-offset-cubic-q-replay>).first().value' \
   --in diagnostics/m11_offset_cubic_q_replay.typ --root .
 ```
+
+**Exact source-cubic follow-up.** The exporter now also preserves the original
+MetaPost strand cubics in `comparisons/m11-knot-curves.typ`. Splitting those
+curves into four source-time pieces before `_mp-offset-boundary` changes the
+candidate trees to `38/20/34` against `40/20/30`: lane 4/6 becomes exact,
+while lane 5/2 still over-recurses. Cumulative arc residual max/mean absolute
+errors are `6/1.93`, `14/3.81`, and `6/2.41` fixed units. Exact source cubics
+improve two lane comparisons but do not match all three, so this remains a
+diagnostic geometry oracle pending a source-faithful offset and shadow splice.
 
 **M11 `shadowCut` connector control audit (2026-11-05).** The new
 `audit_m11_shadow_connector_curves.py` pairs every post-shadow connector with

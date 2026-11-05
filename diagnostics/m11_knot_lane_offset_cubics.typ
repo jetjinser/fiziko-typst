@@ -2,7 +2,15 @@
 // using the production MetaPost offsetPathGenerate port.
 #import "../fiziko.typ": _mp-cubic-split, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-fifth-samples-raw, _mp-fixed-cubic-from-quarter-samples-raw, _mp-fixed-mix-point, _mp-offset-boundary, _mp-unit, _polyline-time-range, _source-path-time-splice, _tube-layout
 #import "../comparisons/m11-knot-paths.typ": upstream-m11-knot-paths
+#import "../comparisons/m11-knot-curves.typ": upstream-m11-knot-curves
 #import "../build/m11-shadow-splice-cases.typ": m11-shadow-cases
+
+#let quarter-pieces(curve) = {
+  let first = _mp-cubic-split(curve, 0.25)
+  let middle = _mp-cubic-split(first.right, 1 / 3)
+  let last = _mp-cubic-split(middle.right, 1 / 2)
+  (first.left, middle.left, last.left, last.right)
+}
 
 #let paths = (upstream-m11-knot-paths.wa, upstream-m11-knot-paths.wb)
 #let times = paths.map(path => range(path.len()).map(i => i / 16))
@@ -30,6 +38,11 @@
     negative: _mp-offset-boundary(center, offsets.map(value => -value)))
   let fifth-boundaries = boundaries(center-curves.map(curve => curve.fifth))
   let quarter-boundaries = boundaries(center-curves.map(curve => curve.quarter))
+  let exact-center-curves = ()
+  for source-curve in upstream-m11-knot-curves.wb.slice(start, finish) {
+    exact-center-curves += quarter-pieces(source-curve)
+  }
+  let exact-boundaries = boundaries(exact-center-curves)
   let fraction = (1 - piece.u) / 2
   let interpath(boundaries) = range(boundaries.positive.len()).map(i =>
     range(4).map(j => _mp-fixed-mix-point(
@@ -37,6 +50,7 @@
       boundaries.negative.at(i).at(j), fraction)))
   let fifth-lane-curves = interpath(fifth-boundaries)
   let quarter-lane-curves = interpath(quarter-boundaries)
+  let exact-lane-curves = interpath(exact-boundaries)
   let shadow-case = m11-shadow-cases.find(record =>
     record.call == source-call and record.lane == source-lane)
   let post-shadow-segments(curves) = {
@@ -71,13 +85,17 @@
   }
   let quarter-post-segments = post-shadow-segments(quarter-lane-curves)
   let fifth-post-segments = post-shadow-segments(fifth-lane-curves)
+  let exact-post-segments = post-shadow-segments(exact-lane-curves)
   let quarter-arcs = segment-arcs(quarter-lane-curves, quarter-post-segments)
   let fifth-arcs = segment-arcs(fifth-lane-curves, fifth-post-segments)
+  let exact-arcs = segment-arcs(exact-lane-curves, exact-post-segments)
   (source-call: source-call, source-lane: source-lane,
     strand-segment: strand-segment, typst-lane: lane-index, lane-u: piece.u,
     center-count: center-curves.len(), fifth-lane-curves: fifth-lane-curves,
     quarter-lane-curves: quarter-lane-curves,
-    quarter-arcs: quarter-arcs, fifth-arcs: fifth-arcs)
+    exact-lane-curves: exact-lane-curves,
+    quarter-arcs: quarter-arcs, fifth-arcs: fifth-arcs,
+    exact-arcs: exact-arcs)
 })
 
 #metadata(records) <m11-knot-lane-offset-cubics>
