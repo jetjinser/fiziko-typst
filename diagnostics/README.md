@@ -2389,6 +2389,18 @@ production lane curves; widths, source time splice pairing, and recursive q
 construction match under the source-arc oracle. These are diagnostics only;
 no production renderer change is claimed.
 
+**Fresh branch-boundary replay (2026-11-06).** Re-running the corrected
+`m11-shadow-trace-current` source/Typst pair in the devshell reproduces the
+same `36/22/34` generated and `40/22/36` fifth-fit trees; injecting the traced
+source arc knots still gives exact `40/20/30` trees and q controls. The first
+divergence in call 4/lane 6 covers post-shadow arc increments with residuals
+`+3/-1/0` fixed units, and call 5/lane 2's mapped interval has
+`0/-3/+2/+2`. Thus even locally small arc errors can change the width-cut
+branch. The pinned `offsetPathTemplate` confirms that q x knots are
+`arclength(subpath (0, i) of p)` at integer path times; the remaining task is
+to reconstruct those partial post-shadow path lengths with matching geometry
+and fixed-point evaluation, rather than applying a global arc scale.
+
 **M11 pre-shadow offset-cubic arc probe (2026-11-05).** The production
 `_mp-offset-boundary` port reconstructs the paired pre-shadow lane controls
 from the checked-in centerline samples. Results recorded before the
