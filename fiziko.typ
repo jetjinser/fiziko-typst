@@ -4728,7 +4728,7 @@
   let outline-times = ()
   let circle-time-map = ()
   // Keep q-template arc coordinates independent from outline sampling density.
-  let outline-arc-positions = (0.0,)
+  let outline-arc-positions = ()
   let closing-arc-length = none
   let path-time = 0.0
   let source-closed-run = runs.len() == 1 and (
@@ -4750,7 +4750,9 @@
           else { _dist(outline.last(), point) }
         outline.push(point)
         outline-times.push(path-time + j)
-        outline-arc-positions.push(outline-arc-positions.last() + increment)
+        outline-arc-positions.push(if outline-arc-positions.len() == 0 {
+          0.0
+        } else { outline-arc-positions.last() + increment })
       }
     }
     path-time += calc.max(0, coast.len() - 1)
@@ -4776,43 +4778,49 @@
       for (j, boundary) in arc-boundaries.enumerate() {
         circle-time-map.push((time: path-time + j, param: boundary - 2, arc: i))
       }
-      let steps = int(calc.ceil(calc.abs(to - from) * 16))
       let previous-arc-time = from
-      for j in range(steps + 1) {
-        if steps == 0 { continue }
-        let t = from + (to - from) * j / steps
-        let arc-segment = if t == to { arc-boundaries.len() - 2 } else {
-          range(arc-boundaries.len() - 1).find(k =>
-            calc.min(arc-boundaries.at(k), arc-boundaries.at(k + 1)) - 1e-10
-              <= t and t <= calc.max(arc-boundaries.at(k),
-                arc-boundaries.at(k + 1)) + 1e-10)
+      for arc-segment-index in range(arc-boundaries.len() - 1) {
+        let segment-start = arc-boundaries.at(arc-segment-index)
+        let segment-end = arc-boundaries.at(arc-segment-index + 1)
+        let steps = int(calc.ceil(calc.abs(segment-end - segment-start) * 16))
+        for j in range(steps + 1) {
+          if steps == 0 or (arc-segment-index > 0 and j == 0) { continue }
+          let t = segment-start + (segment-end - segment-start) * j / steps
+          let arc-segment = if t == to { arc-boundaries.len() - 2 } else {
+            range(arc-boundaries.len() - 1).find(k =>
+              calc.min(arc-boundaries.at(k), arc-boundaries.at(k + 1)) - 1e-10
+                <= t and t <= calc.max(arc-boundaries.at(k),
+                  arc-boundaries.at(k + 1)) + 1e-10)
+          }
+          let arc-segment = if arc-segment == none { 0 } else { arc-segment }
+          let segment-fraction = (calc.abs(t - arc-boundaries.at(arc-segment)) /
+            calc.abs(arc-boundaries.at(arc-segment + 1) -
+              arc-boundaries.at(arc-segment)))
+          let arc-time = arc-segment + segment-fraction
+          // _mp-circle-point is the source cubic fullcircle rotated by 90°.
+          let p = _mp-circle-point(t - 2)
+          let point = _add(center, (2 * radius * p.at(0), -2 * radius * p.at(1)))
+          let subdivisions = 8
+          let arc-length = range(subdivisions).map(k => {
+            let ta = previous-arc-time + (t - previous-arc-time) * k / subdivisions
+            let tb = previous-arc-time + (t - previous-arc-time) * (k + 1) / subdivisions
+            let a = _mp-circle-point(ta - 2)
+            let b = _mp-circle-point(tb - 2)
+            _dist((2 * radius * a.at(0), -2 * radius * a.at(1)),
+              (2 * radius * b.at(0), -2 * radius * b.at(1)))
+          }).sum()
+          if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
+            outline.push(point)
+            outline-times.push(path-time + arc-time)
+            outline-arc-positions.push(if outline-arc-positions.len() == 0 {
+              0.0
+            } else { outline-arc-positions.last() + arc-length })
+          } else if (j == steps and outline.len() > 1
+              and _dist(point, outline.first()) <= 1e-8) {
+            closing-arc-length = arc-length
+          }
+          previous-arc-time = t
         }
-        let arc-segment = if arc-segment == none { 0 } else { arc-segment }
-        let segment-fraction = (calc.abs(t - arc-boundaries.at(arc-segment)) /
-          calc.abs(arc-boundaries.at(arc-segment + 1) -
-            arc-boundaries.at(arc-segment)))
-        let arc-time = arc-segment + segment-fraction
-        // _mp-circle-point is the source cubic fullcircle rotated by 90°.
-        let p = _mp-circle-point(t - 2)
-        let point = _add(center, (2 * radius * p.at(0), -2 * radius * p.at(1)))
-        let subdivisions = 8
-        let arc-length = range(subdivisions).map(k => {
-          let ta = previous-arc-time + (t - previous-arc-time) * k / subdivisions
-          let tb = previous-arc-time + (t - previous-arc-time) * (k + 1) / subdivisions
-          let a = _mp-circle-point(ta - 2)
-          let b = _mp-circle-point(tb - 2)
-          _dist((2 * radius * a.at(0), -2 * radius * a.at(1)),
-            (2 * radius * b.at(0), -2 * radius * b.at(1)))
-        }).sum()
-        if outline.len() == 0 or _dist(outline.last(), point) > 1e-8 {
-          outline.push(point)
-          outline-times.push(path-time + arc-time)
-          outline-arc-positions.push(outline-arc-positions.last() + arc-length)
-        } else if (j == steps and outline.len() > 1
-            and _dist(point, outline.first()) <= 1e-8) {
-          closing-arc-length = arc-length
-        }
-        previous-arc-time = t
       }
       path-time += arc-boundaries.len() - 1
     }
@@ -4833,9 +4841,8 @@
     // horizon-entry sample; with a wrapped visible run, it is the original
     // polygon vertex after merging the last and first runs. Rebase the closed
     // outline there, keeping the cyclic endpoint at the end of source time.
-    // The arc table starts with a sentinel before the first point entry, so
-    // source point 1 is stored at arc index 2.
-    let origin-arc = outline-arc-positions.at(2)
+    // Arc positions align with outline points, so source point 1 is at index 1.
+    let origin-arc = outline-arc-positions.at(1)
     let total-arc = outline-arc-positions.last()
     let rotated-points = outline.slice(1) + outline.slice(0, 1)
     let rotated-times = outline-times.slice(1).map(t => t - 1) + (path-time,)
@@ -4844,7 +4851,7 @@
     let circle-map-before = circle-time-map.filter(entry => entry.time < 1)
       .map(entry => (time: entry.time + path-time - 1, param: entry.param, arc: entry.arc))
     circle-time-map = circle-map-after + circle-map-before
-    let rotated-arcs = outline-arc-positions.slice(2, outline.len() + 1)
+    let rotated-arcs = outline-arc-positions.slice(1, outline.len())
       .map(a => a - origin-arc)
     rotated-arcs.push(total-arc - origin-arc)
     rotated-arcs.push(total-arc)

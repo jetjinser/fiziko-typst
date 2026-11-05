@@ -1961,3 +1961,16 @@ has `38/22/26` nodes against source `40/20/30` (first decision differences at
 18/11/6), so preserving source sample bits alone does not resolve recursive
 divergence. Keep the corrected source fixture, but treat the replay and pixel
 changes as diagnostic evidence only, not as a production `shadowCut` fix.
+
+**M11 horizon cubic boundary sampling (2026-11-06).** `_globe-land-outline-data`
+now samples each fullcircle cubic interval independently, retaining every
+integer fullcircle knot in the sampled outline. This removes a seam-position
+error from interpolation between whole-arc samples: all traced root q knots
+for masses 1/2/4 now pair within `0.001 mm` (`139/139`, `170/170`, `52/52`),
+with maximum position error `0.00053 mm`. The M4 recursive tree remains
+`31/31`; M1/M2 still differ (`15/13` and `57/39`), so the source q-control
+construction remains open. M11 600 ppi whole/globe RMSE improves from
+`0.114800/0.189287` to `0.114775/0.189183`; knot RMSE is unchanged. A production
+trial with exact partial cubic arc lengths reduced the M4 tree to `31/7` and
+was removed. Retain the boundary samples and continue on q-control
+construction, not the discarded arc-length trial.

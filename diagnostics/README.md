@@ -5012,3 +5012,22 @@ nix develop path:./nix --command bash -c '
 
 The q-oracle extractor and its generated Typst probe are diagnostic only; do
 not retain generated probe files in the repository.
+
+**M11 horizon cubic boundary sampling (2026-11-06).** Sampling each horizon
+arc at a fixed density over its entire parameter interval could omit the
+integer fullcircle knots where MetaPost's `subpath` preserves cubic boundaries.
+The Typst trace then interpolated q knots across a chord: mass 4's source-time
+49 point was off by `0.0528 mm` and its root knot did not pair. Sampling each
+fullcircle cubic interval separately now includes every integer boundary.
+Against the pinned source trace, root q knots pair within `0.001 mm` for all
+three traced masses: `139/139`, `170/170`, and `52/52`; maximum point error is
+`0.00053 mm`. The source q.x versus Typst arc-at-time maximum residuals are
+`0.00261/0.00373/0.00115 mm`. The M4 recursive tree remains exact at `31/31`,
+while M1 and M2 still diverge (`15/13` and `57/39` nodes), so this fixes root
+knot placement but not the source `offsetPathTemplate` q controls. On the same
+600 ppi M11 source render, whole/globe RMSE improves from the recorded
+`0.114800/0.189287` to `0.114775/0.189183`; knot RMSE is unchanged at
+`0.078535`. An exact cubic arc-length production trial was tested and removed:
+although it slightly reduced the root arc residual, the M4 tree fell from
+`31/31` to `31/7`. Keep boundary-aligned sampling; continue from the remaining
+root q control and recursive geometry mismatch.
