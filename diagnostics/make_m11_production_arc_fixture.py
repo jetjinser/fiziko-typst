@@ -7,11 +7,9 @@ from extract_m11_typst_q_inputs import (
     PAIRS, read_source, sample, splice, typst_lane_map,
 )
 
-MM_PER_BP = 25.4 / 72
-
-
 def main(source_log, typst_trace, output):
-    cuts, _widths, _calls, _offsets, post_lengths, source_arcs, _curves = read_source(source_log)
+    (cuts, _widths, _calls, _offsets, post_lengths, source_arcs,
+     _curves, mm_per_bp) = read_source(source_log)
     lanes = typst_lane_map(typst_trace)
     groups = []
     for key, pair in PAIRS.items():
@@ -28,7 +26,7 @@ def main(source_log, typst_trace, output):
             for quarter in range(5):
                 source_time = segments[i][0] + (segments[i][1] - segments[i][0]) * quarter / 4
                 xy = sample(points, source_time)
-                samples.append(tuple(value / MM_PER_BP for value in xy))
+                samples.append(tuple(value / mm_per_bp for value in xy))
             expected = source_arcs[key][i + 1] - (source_arcs[key].get(i, 0))
             rows.append((samples, expected))
         groups.append((key, rows))

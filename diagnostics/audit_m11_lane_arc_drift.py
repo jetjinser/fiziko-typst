@@ -61,7 +61,8 @@ def audit(log, replay, arc_field, polyline_steps):
                 all_nodes = run["q-nodes"]
             else:
                 field = {"arc-fixed": "q-nodes",
-                         "fifth-arc-fixed": "fifth-arc-q-nodes"}[arc_field]
+                         "fifth-arc-fixed": "fifth-arc-q-nodes",
+                         "cubic-arc-fixed": "cubic-arc-q-nodes"}[arc_field]
                 all_nodes = item[field]
             nodes = [node for node in all_nodes if node["stage"] == "thin"]
             node = nodes[node_index]
@@ -88,7 +89,7 @@ def main():
     parser.add_argument("source_log", type=Path)
     parser.add_argument("replay_json", type=Path)
     parser.add_argument("--arc-field", default="arc-fixed",
-                        choices=("arc-fixed", "fifth-arc-fixed",
+                        choices=("arc-fixed", "fifth-arc-fixed", "cubic-arc-fixed",
                                  "polyline-arc-fixed"))
     parser.add_argument("--polyline-steps", type=int, default=16,
                         choices=(1, 2, 4, 8, 16, 32, 64))

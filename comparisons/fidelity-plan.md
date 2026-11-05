@@ -91,6 +91,19 @@ lane residuals and `36/22/34` production-sample q trees unchanged to reported
 precision; the remaining branch differences therefore require a path or arc
 construction correction, not another unit-scale adjustment.
 
+**M11 production-lane cubic arc fit (2026-11-05).** A fresh trace fitted cubic
+arcs to the current Typst lane geometry and replayed the source fixed-point q
+split. The resulting thin trees are `38/22/28` against source `40/20/30`;
+maximum q-control x residuals are `48/7/51` fixed units and widths remain
+exact. The fitted cubic arcs differ from source cumulative endpoint arcs by
+`-43/-54/-59` units. Sweeping 1–64 polyline chords produced no common sampling
+density that matches all three trees. A cubic fit is closer on average than
+four-chord estimates (arc MAE/max `4.3/22`, `4.4/19`, `4.4/22` units versus
+`11.5/45`, `11.7/45`, `11.6/45`), but it still misses the recursive decisions.
+This is diagnostic-only; the remaining priority-1 work is to reproduce the
+source post-shadow path/arc construction and callback-time mapping, then check
+all lanes and paired M11/M4/M6 renders before production integration.
+
 **M11 exact input-cubic lane probe (2026-11-05).** The source path exporter now
 preserves all 24 original MetaPost cubics per strand in
 `comparisons/m11-knot-curves.typ`. Splitting those exact curves into the four

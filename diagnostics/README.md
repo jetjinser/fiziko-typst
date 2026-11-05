@@ -116,6 +116,16 @@ children, not in the traced lane control geometry. Use the fixture and
 `m11_source_offset_check.typ` as geometric oracles before another rendering
 trial.
 
+The production-lane arc-fit probe uses `make_m11_production_arc_fixture.py`
+to reconstruct quarter samples from the current lane trace, fits cubic arcs
+in Typst, then passes their cumulative fixed-point lengths into the q replay.
+With the corrected source `mm` scale, the fitted-arc thin trees are `38/22/28`
+versus source `40/20/30`; their maximum q-control x residuals are
+`48/7/51` fixed units, with exact width controls. Cubic arc fits have lower
+mean error than four-chord lengths, but a 1–64 chord sweep has no shared
+density matching all three trees. This isolates a remaining source path/arc
+mapping gap; no production rendering change is justified by this probe.
+
 ## M11 coast cubic time and recursive decisions
 
 `instrument_m11_coasts.py --path-cubics` adds the actual mass-4 coastline

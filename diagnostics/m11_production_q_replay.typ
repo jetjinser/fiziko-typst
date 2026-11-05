@@ -79,6 +79,7 @@
   let generated-result = run(generated-q-fixed)
   let fifth-result = run(q-from-arcs(fifth-arc-fixed))
   let blended-result = run(q-from-arcs(blended-arcs))
+  let cubic-arc-result = run(q-from-arcs(item.typst-cubic-arc-fixed))
   let polyline-runs = polyline-arc-tables.map(table => {
     let result = run(q-from-arcs(table.arcs))
     (steps: table.steps, arcs: table.arcs,
@@ -94,11 +95,14 @@
     fifth-arc-q-nodes: fifth-result.at(2).nodes.filter(node => node.stage == "thin"),
     blended-arc-calls: blended-result.at(1),
     blended-arc-q-nodes: blended-result.at(2).nodes.filter(node => node.stage == "thin"),
+    cubic-arc-calls: cubic-arc-result.at(1),
+    cubic-arc-q-nodes: cubic-arc-result.at(2).nodes.filter(node => node.stage == "thin"),
     polyline-arc-calls: polyline-result.calls,
     polyline-arc-q-nodes: polyline-result.q-nodes,
     polyline-arc-runs: polyline-runs,
     source-arc-calls: source-result.at(1), source-arc-dashes: source-result.at(2).dashes,
     source-arc-q-nodes: source-result.at(2).nodes.filter(node => node.stage == "thin"),
+    cubic-arc-fixed: item.typst-cubic-arc-fixed,
     segment-arcs: segment-arcs, arc-fixed: arc-fixed,
     fifth-segment-arcs: fifth-segment-arcs,
     fifth-arc-fixed: fifth-arc-fixed,

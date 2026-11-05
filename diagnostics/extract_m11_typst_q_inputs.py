@@ -135,11 +135,20 @@ def cubic(points, t):
 
 
 def export(source_log, typst_trace, output, dense=False, dense_factor=4,
-           show_segment_errors=False):
+           show_segment_errors=False, cubic_arc_json=None):
     (cuts, widths, calls, offsets, post_lengths, source_arcs,
      source_curves, mm_per_bp) = read_source(source_log)
     samples_per_cubic = SAMPLES_PER_CUBIC * dense_factor if dense else SAMPLES_PER_CUBIC
     lanes = typst_lane_map(typst_trace, dense=dense)
+    cubic_arcs = {}
+    if cubic_arc_json is not None:
+        for item in json.loads(cubic_arc_json.read_text()):
+            key = (item["call"], item["lane"])
+            lengths = item["arcs"]
+            cumulative = [0]
+            for length in lengths:
+                cumulative.append(cumulative[-1] + length)
+            cubic_arcs[key] = cumulative
     records = []
     for key, pair in PAIRS.items():
         if key not in widths or key not in cuts or key not in offsets:
@@ -206,6 +215,9 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4,
                                     for i in range(post_lengths[key] + 1)],
             "source-arc-fixed": [0] + [source_arcs[key][i]
                                         for i in range(1, post_lengths[key] + 1)],
+            "typst-cubic-arc-fixed": cubic_arcs.get(
+                key, [0] + [source_arcs[key][i]
+                            for i in range(1, post_lengths[key] + 1)]),
             "geometry-error-max": max(point_errors),
             "geometry-error-mean": sum(point_errors) / len(point_errors),
             "geometry-error-segments": segment_maxima,
@@ -223,12 +235,14 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4,
         times = ", ".join(scalar(x) for x in r["param-times"])
         fixed = ", ".join(map(str, r["source-width-fixed"]))
         source_arc = ", ".join(map(str, r["source-arc-fixed"]))
+        typst_cubic_arc = ", ".join(map(str, r["typst-cubic-arc-fixed"]))
         lines.append(
             f"  (call: {r['call']}, lane: {r['lane']}, "
             f"source-calls: {r['source-calls']}, rng-offset: {r['rng-offset']}, "
             f"segments: {r['segments']}, samples-per-segment: {samples_per_cubic}, points: ({points}), "
             f"widths: ({widths_text}), param-times: ({times}), "
-            f"source-width-fixed: ({fixed}), source-arc-fixed: ({source_arc})),")
+            f"source-width-fixed: ({fixed}), source-arc-fixed: ({source_arc}), "
+            f"typst-cubic-arc-fixed: ({typst_cubic_arc})),")
     lines.append(")")
     output.write_text("\n".join(lines) + "\n")
     print(f"exported {len(records)} geometry-paired production lane inputs")
@@ -256,7 +270,10 @@ if __name__ == "__main__":
                         help="number of direct curve samples between input knots")
     parser.add_argument("--show-segment-errors", action="store_true",
                         help="print aligned source/Typst geometry error for every post-cut cubic")
+    parser.add_argument("--cubic-arc-json", type=Path,
+                        help="use independently reconstructed fixed cubic arc lengths")
     args = parser.parse_args()
     export(args.source_trace, args.typst_trace, args.output, dense=args.dense,
            dense_factor=args.dense_factor,
-           show_segment_errors=args.show_segment_errors)
+           show_segment_errors=args.show_segment_errors,
+           cubic_arc_json=args.cubic_arc_json)
