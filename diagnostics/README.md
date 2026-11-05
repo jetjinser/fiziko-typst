@@ -4561,6 +4561,25 @@ unchanged. Keep the source cubic intersection path. Remaining recursion
 divergence is concentrated in other rows, especially rows 99, 98, 87, and 53;
 the source schedule and exact row-93 branch do not establish full tree parity.
 
+The current fixed-scanline trace was also compared against the source's raw
+`firstIntersectionTimes` results for every row. Forward and reverse hit pairs
+match exactly on `139/142` rows. The other three differ by one 16.16 time unit
+in a single component each (rows `-18.9365`, `-9.06999`, and `7.97220`). Row
+`-10.86390` matches both hit pairs exactly even though its recursive audit
+pairs only `7/21` thin nodes, so scanline clipping does not explain that large
+tree divergence. Keep the solver unchanged until those three one-unit cases
+are traced to a specific arithmetic operation. Reproduce the all-row check
+with:
+
+```sh
+nix develop path:./nix --command typst query \
+  diagnostics/flat_surface_hatch_trace.typ '<s104-hatch-rows>' \
+  --field value --root . > build/s104-hatch-rows.json
+nix develop path:./nix --command python \
+  diagnostics/compare_s104_scanline_hits.py \
+  /tmp/s104-source-fulltrace/trace.log build/s104-hatch-rows.json
+```
+
 For row 28.60222, the current root q x-control residual falls from mean/max
 `93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched
 to baseline floating scanlines (`use-source-fixed-scanlines = false`), the
