@@ -3421,6 +3421,10 @@ typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
 
+The instrumenter accepts an optional third argument with comma-separated rows
+for `S104-PCURVE`, `S104-HATCHPT`, `S104-HATCHBP`, and `S104-HATCHARC` detail.
+For the current largest q-arc residual, pass `28.60222` after the output path.
+
 `S104-SUBDRAW` records the raw `uniformdeviate(2)` result for each row's
 subdivision request. `S104-RNG-ABS-ROW` records the absolute random-call
 offset immediately before that draw; the counter wraps only after 4,000 calls
@@ -4444,23 +4448,34 @@ step must keep rendered outline knots and recursive source-time/arc controls
 as separate representations, then pass all six coast trees and the raster
 gate.
 
-**S104 current recursive-q checkpoint (2026-11-06).** A fresh run from the
-pinned upstream source and current Typst checkout confirms that the retained
-fixed-width q callback matches all 142 subdivision draws, row call vectors,
-path segment counts, and absolute RNG offsets; total brush calls are
-`1516/1516`. The full-trace q audit pairs `1486/1696` source nodes, with
-`1232` exact width-control nodes and q-arc residual mean/max `55.788/933`
-16.16 bp units. The largest width-control discrepancy is 3 units. On row 93
-(`y=-6.37912`), all 19 thin nodes pair and width controls are exact; the
-source-rounded path points leave q-arc controls within 16 units. On row 99
-(`y=-11.76086`), the fresh production trace pairs all 19 nodes with exact
-width controls and q-arc residual max 73 units. This supersedes the older
-report that two leaves missed because a width endpoint was one unit high; that
-report came from stale trace files. The broader remaining gap is in q-arc
-construction and the rows whose recursive branches still diverge, not in the
-142-row RNG schedule or this row's width interpolation. Preserve these fresh
-traces as the baseline and accept future changes only when they improve the
-full-tree plus 600 ppi whole/hatch comparison.
+**S104 source-fixed scanlines and recursive-q checkpoint (2026-11-06).** A
+fresh run from the pinned upstream source and current Typst checkout confirms
+that the fixed-width q callback matches all 142 subdivision draws, row call
+vectors, path segment counts, and absolute RNG offsets; total brush calls are
+`1516/1516`. `flat-surface(rng: "metapost")` now rotates/intersects scanlines
+in source 16.16 arithmetic using plain.mp's `mm = 185771/65536 bp/mm`, with
+the row grid anchored to the source low-side edge after accounting for the
+page-axis flip. The full-trace q audit pairs `1489/1696` source nodes, with
+`1268` exact width-control nodes and q-arc residual mean/max `27.964/884`
+16.16 bp units; 189 paired nodes have exact q-arc controls. The largest
+width-control discrepancy is 3 units. On row 93 (`y=-6.37912`), all 19 thin
+nodes pair and width controls are exact; q-arc controls are within 16 units.
+On row 99 (`y=-11.76086`), all 19 nodes pair with exact widths and q-arc
+residual max 73 units. The older report of two row-99 leaves missing because
+a width endpoint was one unit high came from stale trace files.
+
+For row 28.60222, the current root q x-control residual falls from mean/max
+`93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched
+to baseline floating scanlines (`use-source-fixed-scanlines = false`), the
+source-root-q oracle pairs all 29 source node endpoints and reduces paired
+q-arc residual to at most one unit, with exact width controls on 27/29 nodes;
+it still produces 33 thin nodes against the 29 source nodes, so it validates
+q-control propagation locally rather than full-tree parity. This oracle does
+not pair against the current fixed-scanline production trace. Same-run 600
+ppi S104 full/hatch RMSE
+improves from `0.206403/0.071826` to `0.206396/0.071787`; stipple is
+unchanged. The broader remaining gap is q-arc construction and the rows whose
+recursive branches still diverge, not the 142-row RNG schedule.
 
 A refreshed source run with `S104-PCURVE` controls confirms that row 93's
 remaining local q-arc residual is not caused by centerline curvature. Source
@@ -4517,10 +4532,10 @@ intersection, and reconstruction arithmetic unchanged, increases the same error 
 a standalone correction. Do not render or retain it. The source instrumenter
 now records `S104-CLIP-SURF/POLY`, the raw clipping ray, both
 `firstIntersectionTimes` pairs, hit points, clipped endpoints, and the rotated
-result. `S104-HIT` remains the separate brush-recursion trace. The source
-polygon rotation is now exactly reproduced once the source `mm` scalar is
-used; the next step is to carry that corrected geometry through all rows and
-the q recursion.
+result. `S104-HIT` remains the separate brush-recursion trace. The corrected
+16.16 transform, half-open intersection, and flipped row-grid anchor are now
+integrated for `flat-surface(rng: "metapost")`; the all-row RNG, recursive-q
+and 600 ppi results are recorded in the S104 current checkpoint above.
 
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
 M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to

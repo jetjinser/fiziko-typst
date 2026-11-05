@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Add row geometry messages to a copy of the upstream flatSurface macro.
 
-Usage: instrument_flat_surface.py UPSTREAM_FIZIKO_MP OUTPUT_MP
+Usage: instrument_flat_surface.py UPSTREAM_FIZIKO_MP OUTPUT_MP [PATH_CUBIC_ROWS]
 """
 
 import sys
@@ -9,8 +9,16 @@ from pathlib import Path
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         raise SystemExit(__doc__)
+    path_cubic_rows = (-6.37912,)
+    if len(sys.argv) == 4:
+        try:
+            path_cubic_rows = tuple(float(value) for value in sys.argv[3].split(","))
+        except ValueError as error:
+            raise SystemExit("PATH_CUBIC_ROWS must be comma-separated row values") from error
+        if not path_cubic_rows:
+            raise SystemExit("PATH_CUBIC_ROWS must contain at least one row")
     source = Path(sys.argv[1]).read_text()
     anchor = "            hatchLength := arclength(aHatch);"
     if source.count(anchor) != 1:
@@ -466,6 +474,13 @@ def main() -> None:
         '                    endfor;\n'
         '                fi;',
     )
+    row_condition = " or ".join(
+        f"abs(i - {row:.5f}) < 0.00001" for row in path_cubic_rows
+    )
+    source = source.replace(
+        "if abs(i + 6.37912) < 0.00001:",
+        f"if {row_condition}:", 1
+    )
     end_anchor = "            fi;\n        endfor;\n    );\n    clip hatchImage to surfPath;"
     if source.count(end_anchor) != 1:
         raise ValueError(f"expected one flatSurface row end hook, found {source.count(end_anchor)}")
@@ -569,6 +584,12 @@ vardef traceUniformdeviate (expr x) =
     uniformdeviate(x)
 enddef;
 """
+    condition = " or ".join(
+        f"traceHatchRow = {row:.5f}" for row in path_cubic_rows
+    )
+    source = source.replace(
+        "if traceHatchRow = -6.37912:", f"if {condition}:", 1
+    )
     Path(sys.argv[2]).write_text(source)
 
 

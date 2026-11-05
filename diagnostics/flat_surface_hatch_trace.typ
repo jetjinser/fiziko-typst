@@ -5,10 +5,12 @@
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
 // therefore maps to -30° in the Typst page coordinates.
 #let angle = -30
+#let use-source-fixed-scanlines = true
 #let normal = (0, 0, -1)
 #let light = (-0.353553, 0.382683, 0.853553)
 #let segments = _scanline-segments(
-  panel, angle, 3 * _source-max-shading, fit: true)
+  panel, angle, 3 * _source-max-shading, fit: true,
+  source-fixed: use-source-fixed-scanlines)
 #let projections = panel.map(p => p.at(0) * _cos(angle) + p.at(1) * _sin(angle))
 #let total-width = calc.max(..projections) - calc.min(..projections)
 #let stream = _metapost-rng-sequence(1, calc.max(128, segments.len() * 128))
@@ -81,7 +83,35 @@
   } else { none }
   // Exact 16.16 source q cubics captured from S104 row-93 outer node 278.
   // The four q segments map to this row's four sampled line segments.
-  let source-q-curves-fixed = if segment.at(2) == 99 {
+  let source-q-curves-fixed = if not use-source-fixed-scanlines and segment.at(2) == 54 {
+    // Source S104 y=28.60222, root outer q template (source trace serial 967).
+    (
+      (
+        (0, 108 * 256 + 209),
+        (567251, 87 * 256 + 236),
+        (1134501, 67 * 256 + 6),
+        (1701752, 46 * 256 + 33),
+      ),
+      (
+        (1701752, 46 * 256 + 33),
+        (2269002, 42 * 256 + 45),
+        (2836251, 38 * 256 + 56),
+        (3403501, 34 * 256 + 68),
+      ),
+      (
+        (3403501, 34 * 256 + 68),
+        (3970752, 38 * 256 + 56),
+        (4538002, 42 * 256 + 45),
+        (5105253, 46 * 256 + 33),
+      ),
+      (
+        (5105253, 46 * 256 + 33),
+        (5672503, 67 * 256 + 6),
+        (6239753, 87 * 256 + 236),
+        (6807003, 108 * 256 + 209),
+      ),
+    )
+  } else if not use-source-fixed-scanlines and segment.at(2) == 99 {
     // Source S104 y=-11.76086, root outer template (source trace serial 178).
     (
       (
@@ -109,7 +139,7 @@
         (23704 * 256 + 145, 108 * 256 + 209),
       ),
     )
-  } else if segment.at(2) == 93 {
+  } else if not use-source-fixed-scanlines and segment.at(2) == 93 {
     (
       (
         (0, 108 * 256 + 209),

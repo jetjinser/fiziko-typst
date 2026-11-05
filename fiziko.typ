@@ -2994,8 +2994,83 @@
 
 // Intersect evenly spaced scanlines with a closed polygon. Each line returns
 // one or more inside intervals, including concave polygons and disjoint cuts.
-#let _scanline-segments(poly, angle, spacing, fit: false) = {
+#let _source-scanline-segments(poly, angle, spacing) = {
+  // MetaPost rotates the polygon and intersects horizontal fixed-point rays.
+  // Convert Typst millimetres with plain.mp's quantized mm scalar, then keep
+  // the projection, row grid, edge intersections and inverse rotation in
+  // signed 16.16 arithmetic.
+  let one = 65536
+  let source-bp-per-mm = 185771
+  let sine = int(calc.round(_sin(angle) * one))
+  let cosine = int(calc.round(_cos(angle) * one))
+  let mul(a, b) = _mp-fixed-round-ratio(a * b, one)
+  let rotate(point, direction) = (
+    mul(point.at(0), cosine) - mul(point.at(1), sine * direction),
+    mul(point.at(0), sine * direction) + mul(point.at(1), cosine),
+  )
+  let rotated = poly.map(point => rotate((
+    int(calc.round(point.at(0) * source-bp-per-mm)),
+    int(calc.round(point.at(1) * source-bp-per-mm)),
+  ), -1))
+  let ymin = calc.min(..rotated.map(point => point.at(1)))
+  let ymax = calc.max(..rotated.map(point => point.at(1)))
+  let spacing-fixed = int(calc.round(spacing * source-bp-per-mm))
+  if spacing-fixed <= 0 or ymax <= ymin { return () }
+  let count = calc.max(1, int(calc.round((ymax - ymin) / spacing-fixed)))
+  let row-step = _mp-fixed-round-ratio(ymax - ymin, count)
+  let xmin = calc.min(..rotated.map(point => point.at(0)))
+  let xmax = calc.max(..rotated.map(point => point.at(0)))
+  let ray-width = xmax - xmin
+  let page-point(local) = {
+    let point = rotate(local, 1)
+    (point.at(0) / one * _mp-unit, point.at(1) / one * _mp-unit)
+  }
+  let segments = ()
+  for row in range(count + 1) {
+    // The source advances rows from the low side of its y-up rotated box.
+    // In the page's y-down frame that is the high side, so anchor the same
+    // fixed step grid there instead of deriving the first line from ymin.
+    let height = ymax - (count - row) * row-step
+    let hits = ()
+    for i in range(poly.len()) {
+      let a = rotated.at(i)
+      let b = rotated.at(_mod(i + 1, poly.len()))
+      let va = a.at(1) - height
+      let vb = b.at(1) - height
+      if (va <= 0 and vb > 0) or (vb <= 0 and va > 0) {
+        let edge-x = b.at(0) - a.at(0)
+        let edge-y = b.at(1) - a.at(1)
+        let offset-x = a.at(0) - xmin
+        let offset-y = a.at(1) - height
+        let denominator = ray-width * edge-y
+        let numerator = offset-x * edge-y - offset-y * edge-x
+        let edge-numerator = offset-x * 0 - offset-y * ray-width
+        if denominator != 0 {
+          let den = if denominator < 0 { -denominator } else { denominator }
+          let num = if denominator < 0 { -numerator } else { numerator }
+          let edge-num = if denominator < 0 { -edge-numerator } else { edge-numerator }
+          if num >= 0 and num <= den and edge-num >= 0 and edge-num <= den {
+            let t = _mp-fixed-round-ratio(num * one, den)
+            hits.push(xmin + _mp-fixed-round-ratio(ray-width * t, one))
+          }
+        }
+      }
+    }
+    let sorted = hits.sorted()
+    for j in range(0, sorted.len() - 1, step: 2) {
+      let u0 = sorted.at(j)
+      let u1 = sorted.at(j + 1)
+      if u1 - u0 > int(calc.round(0.001 / _mp-unit * one)) {
+        segments.push((page-point((u0, height)), page-point((u1, height)), row, count))
+      }
+    }
+  }
+  segments
+}
+
+#let _scanline-segments(poly, angle, spacing, fit: false, source-fixed: false) = {
   if poly.len() < 3 or spacing <= 0 { return () }
+  if source-fixed { return _source-scanline-segments(poly, angle, spacing) }
   let d = (_cos(angle), _sin(angle))
   let n = (-d.at(1), d.at(0))
   let projections = poly.map(p => _dot(p, n))
@@ -3131,7 +3206,8 @@
   let line-spacing = if spacing == none {
     if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
   } else { spacing }
-  let segs = _scanline-segments(poly, angle, line-spacing, fit: true)
+  let segs = _scanline-segments(poly, angle, line-spacing, fit: true,
+    source-fixed: rng == "metapost" and style == "hatch")
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
   assert(rng == "keyed" or style != "stipples",
