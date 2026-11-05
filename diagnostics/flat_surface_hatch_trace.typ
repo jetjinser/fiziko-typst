@@ -83,7 +83,36 @@
   } else { none }
   // Exact 16.16 source q cubics captured from S104 row-93 outer node 278.
   // The four q segments map to this row's four sampled line segments.
-  let source-q-curves-fixed = if not use-source-fixed-scanlines and segment.at(2) == 54 {
+  let source-q-curves-fixed = if segment.at(2) == 98 {
+    // Source S104 y=-10.86390, complete outer q template (serial 183).
+    // This oracle isolates row-98 recursion from production q construction.
+    (
+      (
+        (0, 108 * 256 + 209),
+        (2020 * 256 + 69, 89 * 256 + 224),
+        (4040 * 256 + 139, 70 * 256 + 240),
+        (6060 * 256 + 208, 51 * 256 + 255),
+      ),
+      (
+        (6060 * 256 + 208, 51 * 256 + 255),
+        (8081 * 256 + 21, 48 * 256 + 106),
+        (10101 * 256 + 91, 44 * 256 + 212),
+        (12121 * 256 + 160, 41 * 256 + 63),
+      ),
+      (
+        (12121 * 256 + 160, 41 * 256 + 63),
+        (14141 * 256 + 229, 44 * 256 + 212),
+        (16162 * 256 + 43, 48 * 256 + 106),
+        (18182 * 256 + 112, 51 * 256 + 255),
+      ),
+      (
+        (18182 * 256 + 112, 51 * 256 + 255),
+        (20202 * 256 + 181, 70 * 256 + 240),
+        (22222 * 256 + 249, 89 * 256 + 224),
+        (24243 * 256 + 62, 108 * 256 + 209),
+      ),
+    )
+  } else if not use-source-fixed-scanlines and segment.at(2) == 54 {
     // Source S104 y=28.60222, root outer q template (source trace serial 967).
     (
       (

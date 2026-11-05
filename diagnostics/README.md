@@ -4591,6 +4591,29 @@ therefore enters at or before the outer width-threshold cut that creates this
 thin root; it is not a uniform q-arc offset. Use the row's `S104-OUTER` and
 `S104-OFIX` records alongside `fixed-width-q-nodes` when tracing that cut.
 
+The row-98 root-q oracle is retained in `flat_surface_hatch_trace.typ` as the
+`source-q-curves-fixed` fixture for row index 98. It injects the four exact
+source cubics from `S104-OFIX/OCTRL/OXCTRL` serial 183 while leaving the fixed
+scanline points and recursive splitter unchanged. On the paired source trace,
+it produces 21 outer and 21 thin nodes (the source counts), pairs all 21 thin
+endpoints within `0.000260 mm`, and emits 9 dashes like the source. The
+production fixed-width candidate for the same row has 5 outer and 23 thin
+q-nodes; its first root cubic differs from the source by one fixed unit at the
+second control's arc and width coordinates and one at the final width. This
+shows that the recursion engine can follow this source tree when given the
+source root template, but the fixture does not validate a production width
+knot fix or a page render. Replay the oracle on a fresh source trace with:
+
+```sh
+nix develop path:./nix --command typst query \
+  diagnostics/flat_surface_hatch_trace.typ '<s104-hatch-rows>' \
+  --field value --root . > /tmp/s104-hatch-rows.json
+jq '.[0]' /tmp/s104-hatch-rows.json > /tmp/s104-hatch-rows-unwrapped.json
+nix develop path:./nix --command python diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-source-fulltrace/trace.log /tmp/s104-hatch-rows-unwrapped.json \
+  --source-y=-10.86390 --node-field source-q-nodes
+```
+
 The line-cubic builder was checked separately with MetaPost `--` paths for
 integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
 Typst port's nearest-rounded `delta/3` and `2*delta/3` construction, so changing
