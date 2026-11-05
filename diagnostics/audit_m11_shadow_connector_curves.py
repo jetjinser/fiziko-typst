@@ -66,6 +66,20 @@ def subsegment(curve, start, end):
     return prefix if start <= 1e-12 else split(prefix, start / end)[1]
 
 
+def derivative(curve, time):
+    u = 1 - time
+    return tuple(3 * (u * u * (curve[1][axis] - curve[0][axis])
+                      + 2 * u * time * (curve[2][axis] - curve[1][axis])
+                      + time * time * (curve[3][axis] - curve[2][axis]))
+                 for axis in range(2))
+
+
+def angle_error(a, b):
+    cross = a[0] * b[1] - a[1] * b[0]
+    dot = a[0] * b[0] + a[1] * b[1]
+    return math.degrees(math.atan2(cross, dot))
+
+
 def audit(path):
     pre = read_pre_cut_curves(path)
     post = read_post_cut_curves(path)
@@ -84,9 +98,21 @@ def audit(path):
             start, end, _is_connector = segments[post_index]
             first, last = int(math.floor(start)), int(math.floor(end - 1e-12))
             if first != last:
+                actual = post[key][post_index]
+                start_curve = curves[min(first, len(curves) - 1)]
+                end_curve = curves[min(last, len(curves) - 1)]
+                start_tangent = derivative(start_curve, start - first)
+                end_tangent = derivative(end_curve, end - last)
+                actual_start = tuple(actual[1][axis] - actual[0][axis]
+                                     for axis in range(2))
+                actual_end = tuple(actual[3][axis] - actual[2][axis]
+                                   for axis in range(2))
                 print(f"  post-segment={post_index} source-time="
                       f"[{start:.5f},{end:.5f}] crosses source cubic knot; "
-                      "connector control comparison omitted")
+                      f"source '..' join tangent errors="
+                      f"{angle_error(start_tangent, actual_start):.6g}/"
+                      f"{angle_error(end_tangent, actual_end):.6g} deg; "
+                      f"controls={actual[1]} / {actual[2]}")
                 continue
             curve_index = min(first, len(curves) - 1)
             expected = subsegment(curves[curve_index], start - curve_index,

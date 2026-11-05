@@ -2488,6 +2488,13 @@ changes q-tree counts from `38/22/28` to `40/22/28`: it restores call 4/lane 2
 but leaves call 4/lane 6 and call 5/lane 2 unchanged. This is a diagnostic
 source-oracle substitution, not a production fix. Connectors can trigger a
 threshold branch, but they do not explain the other two lane mismatches.
+The connector audit now also checks the join that crosses an original cubic
+knot. For call 4/lane 6, source time `[0.94225,1.04225]`, its two endpoint
+tangent errors are `-0.00362°` and `0.00757°` against the adjoining source
+cubics. The traced connector controls are `(86.69072,21.43076)` and
+`(86.70183,21.40576) mm`. This confirms tangent continuity but leaves the
+MetaPost `..` join's control distances and arc length to reconstruct; the
+five-decimal pre-cut controls limit the precision of this angle check.
 Reproduce the control audit with:
 
 ```sh
