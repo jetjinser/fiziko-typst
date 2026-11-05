@@ -3561,6 +3561,10 @@
   let candidate-cap = calc.max(256, (max-knots + 10) * 30)
   let stream = _metapost-rng-sequence(seed,
     rng-offset + candidate-cap + columns + 2048)
+  // Knot coordinates use uniformdeviate's raw fraction through its scaled
+  // bound multiplication. Column jitter still uses the quantized stream.
+  let raw-stream = _metapost-rng-raw-sequence(seed,
+    rng-offset + candidate-cap + columns + 2048)
   let randoms = stream.slice(rng-offset, rng-offset + candidate-cap + columns)
   let knots = ()
   let cursor = 0
@@ -3568,8 +3572,11 @@
   // woodBlock keeps sampling candidates until ten are rejected by the
   // minimum-distance rule; accepted candidates do not consume that counter.
   while rejected < 10 and knots.len() < max-knots and cursor + 1 < candidate-cap {
-    let x = -knot-radius / 2 + (w + knot-radius) * randoms.at(cursor)
-    let y = -knot-radius / 2 + (h + knot-radius) * randoms.at(cursor + 1)
+    // Match the source's fixed-point random-bound product and shifted point.
+    let x = _mp-rounded(-knot-radius / 2
+      + _mp-rounded((w + knot-radius) * raw-stream.at(rng-offset + cursor)))
+    let y = _mp-rounded(-knot-radius / 2
+      + _mp-rounded((h + knot-radius) * raw-stream.at(rng-offset + cursor + 1)))
     if knots.all(k => _dist(k, (x, y)) >= 20) {
       knots.push((x, y))
       // Each accepted source knot draws five nested brush rings. The pinned

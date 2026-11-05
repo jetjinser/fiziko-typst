@@ -4478,3 +4478,27 @@ offset `536`; M9 RMSE moves `0.21156→0.211453` and S105 moves
 top-right regresses by `0.00008`. S105's block crop is pixel-metric unchanged,
 while the surface crop moves `0.076946→0.075818`. Retain this change; recursive
 wood brush trees remain open.
+
+**Raw-fraction wood-knot coordinates (2026-11-05).** `_woodblock-field` now
+keeps the raw MetaPost RNG fraction through the dimensional knot-bound product,
+then applies 16.16 rounding to that product and the shifted physical
+coordinate. This replaces rounding the random fraction before calculating the
+knot position. RNG consumption is unchanged: M9's four panel cursors still
+report `204, 174, 174, 174` values. Against the exact source-knot replay, the
+17 M9 knot positions move from mean/max error `0.0002555/0.0005032 mm` to
+`0.0000748/0.0001469 mm`.
+
+The matched M9 contour still visits the same 19 cells. Mean/max path-point
+error improves `0.001967/0.004645 → 0.001936/0.004439 mm`; the root-cut
+distance improves `0.003811 → 0.003572 mm`. Thin-tree decision agreement
+increases from `39/44` to `42/46`, with the same 52 Typst thin nodes and 12
+dash leaves. The outer tree changes from 41 nodes to 25 against 37 in source,
+so total node count moves farther from source even as the paired recursion
+decisions improve.
+
+Same-toolchain 600 ppi M9 RMSE improves `0.211452985 → 0.211396935`; top-right
+and bottom-right crops improve while top-left and bottom-left worsen slightly.
+S105 changes `0.101683758 → 0.101694601` overall: its surface crop improves
+`0.075817840 → 0.075811201`, while the block crop worsens
+`0.127907934 → 0.127932279`. Keep the coordinate correction for the measured
+M9 source-position and raster gains, with the small S105 tradeoff recorded.
