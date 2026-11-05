@@ -2407,6 +2407,13 @@ paired Typst lane using the dense trace: mean/max endpoint errors are
 `0.0000159/0.0000386 mm` for calls 4/lane 2, 4/lane 6, and 5/lane 2. This
 keeps the lane-to-source-time mapping local to each splice boundary and
 confirms that the remaining arc residuals are small but branch-sensitive.
+On the same source trace, `audit_m11_q_arclength.py` confirms all 121 traced
+q arc knots equal the pinned MetaPost arc-length port over the source
+post-shadow cubics exactly; reconstructing those cubics from their quarter
+samples adds at most 2 fixed units. The arc solver is therefore already
+source-faithful. The larger residual appears only when arcs are estimated from
+the generated Typst lane, so further work should target its offset/interpath
+geometry and splice construction.
 
 **M11 pre-shadow offset-cubic arc probe (2026-11-05).** The production
 `_mp-offset-boundary` port reconstructs the paired pre-shadow lane controls
