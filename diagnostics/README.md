@@ -1074,6 +1074,16 @@ the minimum-width threshold. Rebuild the trace before relying on older saved
 files in `/tmp/m11-coast-brush-current`; use the commands above with a fresh
 output directory.
 
+A diagnostic-only candidate fitted the callback `(arc,width)` knot points with
+the library's open unit-tension Hobby solver before recursive cuts. It made
+mass 1's node count exact (`15/17 → 15/15`), but changed mass 2 from `57` to
+`37` nodes and mass 4 from `31` to `7`. Masses 5/7/8, which each have one
+source leaf, expanded to `21/10/5` Typst nodes. The candidate was removed;
+these results rule out generic Hobby smoothing of callback samples as a
+source-q reconstruction. The remaining work needs the source
+`offsetPathTemplate` q controls or a faithful construction of them, not just a
+smoother curve through the callback values.
+
 The dash-path hook now records source leaf endpoints as well as pattern width
 and length. On mass 1, the sixth source dash is a 1.68953 bp (0.59603 mm)
 leaf from approximately `(23.06729, 7.56214)` to `(23.20318, 7.62602)` mm.
