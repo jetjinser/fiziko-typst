@@ -1063,6 +1063,17 @@ Typst reports no crossing. See the M11 coast item in
 [`comparisons/fidelity-plan.md`](../comparisons/fidelity-plan.md) for the
 measured pairing and rejected production trial.
 
+Regenerating the paired trace from the current checkout confirms the coast
+outline and root cuts are already closely aligned. On masses 1 and 2, root cut
+times are `97.69934` and `103.9962`; root length errors are only `0.00116`
+and `0.01332 mm`. The first remaining parent-aware divergence is at depth 5:
+mass 1 source/Typst split lengths are `7.627/0.014` and `7.475/0.146 mm`,
+while mass 2's source recurses over `32.374/0.160 mm` and Typst stops despite
+`0.00267 mm` endpoint error. This points to the child q arc/width map close to
+the minimum-width threshold. Rebuild the trace before relying on older saved
+files in `/tmp/m11-coast-brush-current`; use the commands above with a fresh
+output directory.
+
 The dash-path hook now records source leaf endpoints as well as pattern width
 and length. On mass 1, the sixth source dash is a 1.68953 bp (0.59603 mm)
 leaf from approximately `(23.06729, 7.56214)` to `(23.20318, 7.62602)` mm.
