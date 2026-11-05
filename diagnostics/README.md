@@ -2277,6 +2277,19 @@ fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
 the quarter-sample implementation as the measured baseline; no production
 renderer change is claimed.
 
+A regenerated current-checkout trace and 64-chord replay confirm that the
+remaining tree mismatch is lane-specific: call 4/lane 2 and call 5/lane 2
+still reproduce their complete 40- and 30-node trees, while call 4/lane 6
+diverges at decision 11 (22 candidate nodes versus 20 source nodes). The
+largest segment arc residuals remain alternating in sign: `+25/-20` fixed
+units for call 4/lane 2, `-26/+19` for lane 6, and `+25/-20` for call 5/lane
+2. The first q-map divergence in call 5/lane 2 spans source segments 17–19;
+call 4/lane 2's first divergence spans 31–32. No common local correction
+emerges from these residuals, and none of the three sampled-lane q-control
+sequences is exact. This strengthens the case for generating MetaPost's
+post-`shadowCut` arc and callback-width knots from production path state rather
+than adding a fixed per-segment correction to sampled chord lengths.
+
 The q-replay's recursive arc-offset result must not be mistaken for a current
 production q tree. `m11_knot_tube_trace.typ` calls `_ink-loops` without
 `source-width-fixed` or `source-q-curves-fixed`; its baseline trace therefore
