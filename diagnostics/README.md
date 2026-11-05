@@ -4428,6 +4428,18 @@ rg '^FIX' /tmp/s104-node164-probe/trace.log
 The four returned controls for the last child cubic match source node 165's
 `S104-TXCTRL`/`S104-TCTRL` records exactly.
 
+**S104 scanline direction-rounding probe (2026-11-05, rejected).** A fresh
+pinned-source trace and current Typst metadata reproduce row 93's baseline
+same-time point error at mean/max `0.000105669/0.000144343 mm`. MetaPost
+`cosd(30)` is a 16.16 numeric (displayed as `0.86603`); rounding only Typst's
+scanline direction cosine/sine to that grid, while leaving projection, intersection, and
+reconstruction arithmetic unchanged, increases the same error to
+`0.000290838/0.000298003 mm`. This rules out direction-cosine quantization as
+a standalone correction. Do not render or retain it; the next diagnostic
+must reproduce the source's full intersection sequence (normal projection,
+edge parameter, and point reconstruction) and compare each intermediate
+against the instrumented `S104-HIT`/`S104-SEG` values.
+
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
 M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to
 find 19 source contour cells and 21 Typst cells. The two extra Typst records
