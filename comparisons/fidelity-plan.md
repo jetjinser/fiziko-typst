@@ -1974,3 +1974,16 @@ construction remains open. M11 600 ppi whole/globe RMSE improves from
 trial with exact partial cubic arc lengths reduced the M4 tree to `31/7` and
 was removed. Retain the boundary samples and continue on q-control
 construction, not the discarded arc-length trial.
+
+**M11 source-rounded globe projection / closed-endpoint trial
+(2026-11-06, reverted).** Applying MetaPost-style 16.16 rounding to projection
+trigonometry and products reduced mean root-knot point errors on masses 1/2/4
+to `0.000027/0.000050/0.000032 mm` from
+`0.000108/0.000126/0.000115 mm`. Explicitly mapping the terminal callback time
+to the closed path endpoint brought the final mass-4 q.x within 214 fixed
+units of source. The combined candidate nevertheless produced trees
+`15/13`, `57/39`, and `31/7` nodes (source/Typst) and slightly regressed M11
+600 ppi whole/globe RMSE to `0.114807/0.189313` from `0.114800/0.189287`; knot
+RMSE was unchanged. Revert both production changes. Continue from recursive
+q-control drift: improved root knot placement and endpoint arc alone do not
+preserve source branch decisions.

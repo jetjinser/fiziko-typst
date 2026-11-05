@@ -5031,3 +5031,16 @@ knot placement but not the source `offsetPathTemplate` q controls. On the same
 although it slightly reduced the root arc residual, the M4 tree fell from
 `31/31` to `31/7`. Keep boundary-aligned sampling; continue from the remaining
 root q control and recursive geometry mismatch.
+
+**M11 fixed-point globe projection and cyclic q endpoint trial
+(2026-11-06, reverted).** Quantizing each trigonometric result and projection
+product to 16.16 reduced mean root-knot position errors on masses 1/2/4 from
+`0.000108/0.000126/0.000115 mm` to `0.000027/0.000050/0.000032 mm`. Mapping
+the terminal source time to the closed path endpoint also brought mass 4's
+final root q.x within 214 fixed units of source. The combined candidate still
+gave recursive trees `15/13`, `57/39`, and `31/7` nodes (source/Typst), and
+M11 600 ppi full/globe RMSE regressed slightly to `0.114807/0.189313` from
+`0.114800/0.189287`; knot RMSE stayed `0.078535`. The source-rounding and
+endpoint changes were removed. The remaining actionable issue is the
+cumulative q-control drift through recursive splits, rather than root knot
+position alone.
