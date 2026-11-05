@@ -75,6 +75,23 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Reproduce source mask-aware contour-level bounds and exact random level draw, then carry source `st`/cell-range state and callback parameterization through recursive brush cuts; validate first on M9 and then S105. | The fresh production-matched M9 trace has 41/52 outer/thin nodes versus source 37/65; both consume 24 random calls and draw 12 dashes. The diagnostic source-q replay pairs 46 thin nodes, 43/46 recurse/stop decisions, and 11/12 dash endpoints within 0.1 mm, but integrating that forward-arc template into production regressed M9 RMSE (`0.21138138→0.21201468`). Replacing the first diagnostic contour level with the source fixed trace reduces contour point error fivefold and root q arc-x error about 6.7×, but does not change the tree counts; reproducing the source mask range and random level generation is now the first actionable step. Retain a production change only after M9 and S105 crop gates pass. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
+source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
+when it is given raw-fraction knot coordinates. A production candidate formed
+each accepted knot coordinate as a separately 16.16-rounded raw RNG product
+plus the rounded negative half-radius offset, while leaving the rounded random
+stream, column jitter and call cursor unchanged. Same-checkout 600 ppi renders
+against the current baseline show mixed region results: M9 full RMSE improves
+`0.211452985 → 0.211396935`, with top-right/bottom-right improving
+`0.233712567/0.170635231 → 0.233487254/0.170547375`, but top-left/bottom-left
+regress `0.194674703/0.239184657 → 0.194677923/0.239266706`. S105 full/block
+regress `0.101683758/0.127907934 → 0.101694601/0.127932279`; surface improves
+`0.075817840 → 0.075811201`. The candidate is reverted because the block
+regression and two M9 crop regressions mean the coordinate rule does not yet
+clear the paired wood gates. Continue by tracing the source fixed-point
+conversion of accepted knot coordinates and test it against all four M9 panel
+streams and both S105 regions before changing production again.
+
 **M11 coast cubic callback trial (2026-11-05).** The production Typst trace
 rebuilt from the current checkout pairs 7 of 31 source thin nodes on mass 4,
 with 6/7 recurse/stop decisions agreeing; masses 1/2/4 are
