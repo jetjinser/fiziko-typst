@@ -4580,6 +4580,17 @@ nix develop path:./nix --command python \
   /tmp/s104-source-fulltrace/trace.log build/s104-hatch-rows.json
 ```
 
+For the larger row `-10.86390` divergence, source thin node 49 starts at
+`(34.03694, 28.77428)` mm; the first Typst thin node starts at
+`(34.01343, 28.78795)` mm. Their first q cubic starts at arc x
+`1698721/1693690` and width `13059/13058` fixed units (source/Typst); at that
+cubic's end arc x differs by only one unit, while the second cubic ends at
+`4512015/4512583`. The scanline hit pairs match exactly, and the line-cubic
+control construction has been checked against MetaPost. The remaining mismatch
+therefore enters at or before the outer width-threshold cut that creates this
+thin root; it is not a uniform q-arc offset. Use the row's `S104-OUTER` and
+`S104-OFIX` records alongside `fixed-width-q-nodes` when tracing that cut.
+
 The line-cubic builder was checked separately with MetaPost `--` paths for
 integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
 Typst port's nearest-rounded `delta/3` and `2*delta/3` construction, so changing
