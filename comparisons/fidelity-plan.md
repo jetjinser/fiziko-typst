@@ -1867,3 +1867,18 @@ restarting at each fragment; it is not yet a source-parity result because the
 pinned MetaPost source callback has not been traced at these crossing
 locations. Add a source-level callback comparison before using it to claim a
 raster-fidelity improvement.
+
+**M11 pre-shadow lane q reconstruction trial (2026-11-05, reverted).** A
+production trial fitted each lane cubic from every four sampled intervals,
+integrated its fixed-point arc, and passed the resulting `--` q controls and
+fixed callback widths into `_ink-loops`. On the same 600 ppi M11 source run,
+whole-plate RMSE stayed at `0.114799`; knot RMSE moved slightly from
+`0.078545` to `0.078525`. The recursive evidence rejects the trial: its
+diagnostic lane trees are `51/75/49` nodes against source `40/20/30`, with the
+first branch divergences at depths 1/1/2. The reconstructed controls use the
+uncut sampled lane and therefore omit the source `shadowCut` connector cubics
+and post-cut callback-time map. The production edit was reverted; the
+diagnostic now retains this failed reconstruction in
+`diagnostics/m11_knot_tube_trace.typ`. Continue by generating the q knots from
+post-cut lane controls and callback times, rather than enabling pre-shadow
+q reconstruction in production.

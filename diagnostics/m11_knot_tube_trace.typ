@@ -1,5 +1,5 @@
 // Compare modeled M11 tube lane/brush calls for the source's six crossing intervals.
-#import "../fiziko.typ": _add, _frame, _ink-loops, _mod, _mul, _polyline-time-range, _source-dash-length, _source-min-stroke, _source-max-shading, _source-spacing, _mp-unit, _tube-layout
+#import "../fiziko.typ": _add, _frame, _ink-loops, _mod, _mul, _polyline-time-range, _source-dash-length, _source-min-stroke, _source-max-shading, _source-spacing, _mp-unit, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-from-quarter-samples-raw, _tube-layout
 #import "../comparisons/m11-knot-paths.typ": upstream-m11-knot-paths
 
 #let paths = (upstream-m11-knot-paths.wa, upstream-m11-knot-paths.wb)
@@ -24,6 +24,35 @@
   if current > 1e-9 { widths.at(i) * y-flipped-shade(layout, u, t) / current }
   else { 0.0 }
 })
+#let reconstructed-source-q(frames, widths, step) = {
+  let n = frames.len()
+  if _mod(n - 1, step) != 0 { return none }
+  let segments = int((n - 1) / step)
+  let fixed-widths = range(segments + 1).map(i =>
+    int(calc.round(widths.at(i * step) / _mp-unit * 65536)))
+  let arcs = (0,)
+  for i in range(segments) {
+    let samples = (0, int(step / 4), int(3 * step / 4), step).map(j => {
+      let point = frames.at(i * step + j).at(0)
+      (point.at(0) / _mp-unit, point.at(1) / _mp-unit)
+    })
+    arcs.push(arcs.last() + _mp-fixed-cubic-arc-raw(
+      _mp-fixed-cubic-from-quarter-samples-raw(samples)))
+  }
+  let curves = range(segments).map(i => {
+    let x0 = arcs.at(i)
+    let x1 = arcs.at(i + 1)
+    let y0 = fixed-widths.at(i)
+    let y1 = fixed-widths.at(i + 1)
+    let dx = x1 - x0
+    let dy = y1 - y0
+    ((x0, y0), (x0 + int(calc.round(dx / 3)), y0 + int(calc.round(dy / 3))),
+      (x0 + int(calc.round(2 * dx / 3)), y0 + int(calc.round(2 * dy / 3))),
+      (x1, y1))
+  })
+  (curves: curves, widths: fixed-widths,
+    param-times: range(n).map(i => i / step))
+}
 
 #for strand in range(2) {
   for (segment, interval) in intervals.enumerate() {
@@ -113,6 +142,18 @@
           source-rounding: true,
           trace-nodes: (lane-index == 1 or lane-index == 5)
             and piece-index == 0)
+        let source-q = reconstructed-source-q(piece.frames, piece.widths, 4)
+        let q-result = if source-q == none { result } else {
+          _ink-loops(piece.frames, piece.widths, piece.closed,
+            _source-min-stroke, _source-dash-length, seed: 1 + piece.seed-offset,
+            dash-extra: 0.01 * _mp-unit, dash-cap: 1, with-stats: true,
+            source-rounding: true,
+            trace-nodes: (lane-index == 1 or lane-index == 5)
+              and piece-index == 0,
+            param-times: source-q.param-times,
+            source-width-fixed: source-q.widths,
+            source-q-curves-fixed: source-q.curves)
+        }
         calls += result.at(1)
         dashes += result.at(2).dashes
         let candidate-widths = y-flipped-widths(layout, piece.u, piece.times, piece.widths)
@@ -132,11 +173,14 @@
           radius-slopes: piece.times.map(t => (layout.radius-slope)(t)),
           lightness: piece.times.map(t => (layout.shade)(piece.u, t)),
           candidate-calls: candidate-result.at(1),
+          reconstructed-q-calls: q-result.at(1),
           nodes: if (lane-index == 1 or lane-index == 5) and piece-index == 0 {
             result.at(2).nodes
           } else { () },
           candidate-nodes: if (lane-index == 1 or lane-index == 5)
             and piece-index == 0 { candidate-result.at(2).nodes } else { () },
+          reconstructed-q-nodes: if (lane-index == 1 or lane-index == 5)
+            and piece-index == 0 { q-result.at(2).nodes } else { () },
           width-min: calc.min(..piece.widths), width-max: calc.max(..piece.widths),
           calls: result.at(1), dashes: result.at(2).dashes))
         outer-nodes += result.at(2).nodes.filter(node => node.stage == "outer").len()

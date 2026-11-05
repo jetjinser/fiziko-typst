@@ -1874,6 +1874,30 @@ does not insert these knots before brush recursion. Use `M11POSTCURVEA/B` to
 compare the reparameterized path; do not tune lighting from the uncut path
 comparison alone.
 
+The trace fixture also compares a deliberately incomplete pre-shadow q
+reconstruction: it fits each lane cubic from four equal sample intervals and
+forms fixed-point arc/width `--` controls without applying the source shadow
+splices. Reproduce its recursive trees with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-knot-tube-trace>).map(it => it.value)' \
+  --in diagnostics/m11_knot_tube_trace.typ --root . \
+  > /tmp/m11-knot-source-q-candidate.json
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_lane_q_replay.py \
+  /tmp/m11-knot-source-q-candidate.json \
+  /tmp/m11-knot-source-q-nodes.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_thin_trees.py \
+  /tmp/m11-q-audit/trace.log /tmp/m11-knot-source-q-nodes.json
+```
+
+This reconstruction yields `51/75/49` thin nodes against source `40/20/30`.
+It is diagnostic-only: the source's post-`shadowCut` connector curves and
+callback-time remapping must be applied before its q template can guide a
+production change.
+
 **Source offset-curve construction audit (2026-11-04).** Re-running
 `compare_m11_lane_geometry.py` on the pinned source trace and current Typst
 trace confirms the key lanes pair unambiguously: source call/lane `4/2` maps to
