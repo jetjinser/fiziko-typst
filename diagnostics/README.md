@@ -2315,6 +2315,14 @@ the width template is exact. Continue from the arc-to-parameter reconstruction
 at this boundary; changing callback widths or the general width interpolation
 would target the wrong input.
 
+The audit now prints cumulative drift at the integer knots covered by each
+first-divergence q-map. For call 4/lane 6 the drift moves `+11 → +12 → +14 →
++3` over knots 6–9; call 4/lane 2 moves `+25 → +27 → +7` over knots 31–33;
+call 5/lane 2 moves `+14 → +16 → -4` over knots 19–21. The local segment
+increment errors are the differences between adjacent entries. This locates
+the q-control displacement in accumulated history entering the node, rather
+than a constant offset or the largest-error segment alone.
+
 The q-replay's recursive arc-offset result must not be mistaken for a current
 production q tree. `m11_knot_tube_trace.typ` calls `_ink-loops` without
 `source-width-fixed` or `source-q-curves-fixed`; its baseline trace therefore

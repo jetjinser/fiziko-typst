@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -74,6 +75,12 @@ def audit(log, replay, arc_field, polyline_steps):
                      for i in range(first_segment, last_segment)]
             print("  q-map segment errors (zero-based segment, fixed units): "
                   + ", ".join(f"{i}:{value:+d}" for i, value in local))
+            first_knot = max(0, int(min(span[0] for span in spans)))
+            last_knot = min(len(drift) - 1,
+                            math.ceil(max(span[1] for span in spans)))
+            knot_drift = [(i, drift[i]) for i in range(first_knot, last_knot + 1)]
+            print("  q-map cumulative knot drift (knot, fixed units): "
+                  + ", ".join(f"{i}:{value:+d}" for i, value in knot_drift))
 
 
 def main():

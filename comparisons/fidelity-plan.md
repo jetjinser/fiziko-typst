@@ -1712,8 +1712,11 @@ segments 6–8; their local arc errors are only `+1/+2/-11` fixed units. The
 paired node has exact width controls and at most 14 units of q-arc control
 error, yet the source stops while the replay recurses. The mismatch is thus
 highly sensitive to cumulative q-arc placement and its intersection decision,
-not to width-control generation. The lane audit and tree comparator now print
-these local q-map/control residuals directly.
+not to width-control generation. At the first-divergence maps, cumulative
+drift runs `+11/+12/+14/+3` across lane 4/6 knots 6–9, `+25/+27/+7` across
+lane 4/2 knots 31–33, and `+14/+16/-4` across lane 5/2 knots 19–21. The lane
+audit and tree comparator now print these local q-map/control residuals
+directly.
 
 **M11 shadow outline sampling check (2026-11-05).** Rebuilding the shadow
 silhouette with `per: 0` on source-sampled inputs instead of the helper's
