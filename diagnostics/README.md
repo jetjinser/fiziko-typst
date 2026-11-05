@@ -3221,7 +3221,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW|HATCHPT|HATCHARC)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW|HATCHPT|HATCHBP|HATCHARC)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -3233,10 +3233,14 @@ to stay within MetaPost's numeric range. The selected hatch panel completes
 before the wrap.
 
 For the focused source row `-6.37912`, `S104-HATCHPT` records each subdivided
-hatch point in 16.16 millimetres and `S104-HATCHARC` records MetaPost's
-cumulative `arclength` at the same knot in 16.16 bp. These records let the q
-template's source arc knots be compared directly with Typst's fixed-width
-callback knots before any brush recursion.
+hatch point in 16.16 millimetres, `S104-HATCHBP` records its original bp
+coordinates in 16.16, and `S104-HATCHARC` records MetaPost's cumulative
+`arclength` at the same knot in 16.16 bp. The bp coordinates show that each
+source arc increment agrees with the point-to-point chord within one fixed
+unit. Mapped into Typst page coordinates, the five source points differ from
+Typst's same-time row samples by `0.00008–0.00014 mm`; the first discrepancy
+therefore enters in scanline endpoint/subdivision geometry, before q arc
+length construction and brush recursion.
 
 On row 93 (`y=-6.37912`), rebuilding q x knots from fixed-point cubic arc
 lengths of the sampled straight segments does not change the q-candidate tree:

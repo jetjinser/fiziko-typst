@@ -399,6 +399,7 @@ def main() -> None:
         '                if abs(i + 6.37912) < 0.00001:\n'
         '                    for traceHatchPoint := 0 step 1 until length(aHatch):\n'
         '                        traceHatchPointRecord(traceHatchPoint, point traceHatchPoint of aHatch);\n'
+                        '                        traceHatchBpRecord(traceHatchPoint, point traceHatchPoint of aHatch);\n'
         '                        traceHatchArcRecord(traceHatchPoint, arclength(subpath(0,traceHatchPoint) of aHatch));\n'
         '                    endfor;\n'
         '                fi;',
@@ -454,6 +455,19 @@ vardef traceHatchArcRecord (expr index, arc) =
     al := round(((arc - aw) * 256 - ah) * 256);
     message "S104-HATCHARC " & decimal(index) & " "
         & decimal(aw) & " " & decimal(ah) & " " & decimal(al);
+enddef;
+vardef traceHatchBpRecord (expr index, z) =
+    save xw, xh, xl, yw, yh, yl;
+    numeric xw, xh, xl, yw, yh, yl;
+    xw := floor(xpart z);
+    xh := floor((xpart z - xw) * 256);
+    xl := round(((xpart z - xw) * 256 - xh) * 256);
+    yw := floor(ypart z);
+    yh := floor((ypart z - yw) * 256);
+    yl := round(((ypart z - yw) * 256 - yh) * 256);
+    message "S104-HATCHBP " & decimal(index) & " "
+        & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
+        & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
 enddef;
 vardef traceUniformdeviate (expr x) =
     traceRngTotal := traceRngTotal + 1;
