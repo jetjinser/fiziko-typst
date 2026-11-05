@@ -1099,6 +1099,18 @@ measured arc/time-map discrepancy as a diagnostic target, and do not use the
 width-only formula as a global replacement without matching q controls and
 all six mass trees.
 
+An independent q-only arc replay then kept the rendering outline and callback
+width samples unchanged, but replaced each integer q.x with the fixed-point
+arclength of the corresponding fullcircle cubic subarc. It reduced root q.x
+mean/max errors on masses 1/2/4 from
+`0.001215/0.040779`, `0.003578/0.122949`, and `0.001321/0.053387 mm` to
+`0.000943/0.002788`, `0.002775/0.005720`, and `0.000307/0.001089 mm`.
+However, the thin trees became `17/55/7` against source `15/57/31`; mass 4
+lost its previously exact recursion tree. The q-only production integration
+was reverted without a raster run. This isolates a coupled gap: source q.x
+arclength is better reconstructed, but the callback widths/path-time mapping
+and recursive q segmentation still do not reproduce the source decisions.
+
 The dash-path hook now records source leaf endpoints as well as pattern width
 and length. On mass 1, the sixth source dash is a 1.68953 bp (0.59603 mm)
 leaf from approximately `(23.06729, 7.56214)` to `(23.20318, 7.62602)` mm.
