@@ -4226,6 +4226,11 @@ The source instrumenter now also emits fixed 16.16 `S104-HATCHPT` and
 `S104-HATCHARC` records for row `-6.37912`. Its root q arc knots are
 `[0, 2298558, 4597113, 6895671, 6895777]`; the Typst row's
 `source-arc-fixed` knots are `[0, 2298550, 4597100, 6895650, 6895754]`.
+The four per-segment source increments are `[2298558, 2298555, 2298558,
+106]`, against Typst `[2298550, 2298550, 2298550, 104]`, so the segment
+residuals are `[8, 5, 8, 2]` fixed units. Focus the next audit on how source
+callback points become these q arc knots; do not adjust the already-matching
+outer cut parameter or the verified child split.
 At source node 164, q x controls begin at `1941582` and end at `4956825`,
 while Typst begins at `1941576` and ends at `4956809`; every paired width
 control is exact. This pins the first mismatch to the root callback/outer-cut
