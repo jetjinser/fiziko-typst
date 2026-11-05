@@ -1084,6 +1084,21 @@ source-q reconstruction. The remaining work needs the source
 `offsetPathTemplate` q controls or a faithful construction of them, not just a
 smoother curve through the callback values.
 
+Two more callback candidates were replayed against a freshly regenerated
+source/Typst trace. Sampling each fullcircle cubic interval separately makes
+the source integer cubic boundaries explicit in the arc/time map and reduces
+the measured q.x residuals, but changes the mass-1/2 trees to 15/13 and 57/37
+thin nodes (baseline: 15/17 and 57/57); the same-run whole/globe RMSE gain is
+small (`0.114800/0.189896 → 0.114775/0.189183`). A follow-up also evaluated
+the callback width from source-rounded fixed-point normal/lightness terms at
+those points. It further changes the trees to 15/13 and 57/97 nodes, while
+masses 4/5/7/8 remain 31/31, 1/1, 1/1, and 1/1. Thus fixed-point callback
+arithmetic alone does not recover source q recursion, even when the circle
+boundaries are explicit. Both production candidates were reverted; keep the
+measured arc/time-map discrepancy as a diagnostic target, and do not use the
+width-only formula as a global replacement without matching q controls and
+all six mass trees.
+
 The dash-path hook now records source leaf endpoints as well as pattern width
 and length. On mass 1, the sixth source dash is a 1.68953 bp (0.59603 mm)
 leaf from approximately `(23.06729, 7.56214)` to `(23.20318, 7.62602)` mm.
