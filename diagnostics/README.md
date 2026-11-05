@@ -4546,8 +4546,14 @@ after knot placement. The source instrumenter records the shifted pair and its
 `yscaled` form as `CLWPAIRFIX`; `probe_m9_wood_radius.py` compares their
 16.16 square-root reconstruction with the traced radius. The ordinary
 fixed-point square-root model is within one unit for all five knots, but exact
-only for two, so this final one-unit `pyth` rounding difference remains open.
-Run the audit on a fresh `/tmp/m9-radius-trace/trace.log` with:
+only for two. Replaying MetaPost's integer `pyth_add` instead matches all five
+traced radii exactly. A production field trial used that operation for every
+sample, but the same-run 600 ppi M9/S105 RMSE changed
+`0.211396935/0.101694601 → 0.211448555/0.101694727`; the substitution was
+reverted. Exact agreement at the five traced radii is therefore not enough to
+accept a global field change. `probe_m9_wood_radius.py` now reports both the
+square-root and `pyth_add` candidates. Run it on a fresh
+`/tmp/m9-radius-trace/trace.log` with:
 
 ```sh
 nix develop path:./nix --command python \
