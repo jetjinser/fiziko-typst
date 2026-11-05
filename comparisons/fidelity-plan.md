@@ -94,21 +94,28 @@ streams and both S105 regions before changing production again.
 
 **M9 fixed-coordinate replay follow-up (2026-11-05, reverted).** The source
 trace records each raw `uniformdeviate(bound)` result and the resulting
-accepted `WKCAND` coordinates. Replaying the source's intermediate rounding of
-`woodKnotRadius`, `woodBlockDetail`, the detail-space bound, random product,
-shift, and conversion back to millimetres pairs the first block's five
-accepted knots in order with mean/max position error
-`0.000001655/0.000002168 mm` (the trace prints only five decimal places in bp).
-The production replay preserved the field call cursor, but a fresh same-run
-600 ppi pair regressed M9 full RMSE `0.211452985 → 0.211531168`; top-left,
+accepted `WKCAND` coordinates. Baseline and source both accept `5/4/4/4`
+knots on the four panels with source offsets `0/1456/2823/4120` and Typst
+field random counts `204/174/174/174`; the baseline positional mean/max error
+per panel is `0.000306/0.000505`, `0.000236/0.000326`,
+`0.000278/0.000450`, and `0.000191/0.000292 mm`. Replaying the source's
+intermediate rounding of `woodKnotRadius`, `woodBlockDetail`, the detail-space
+bound, random product, shift, and conversion back to millimetres preserves
+all four accepted sequences and reduces their positional mean/max error to
+`0.000001655/0.000002168`, `0.000001397/0.000002049`,
+`0.000001541/0.000002688`, and `0.000002167/0.000002641 mm` (the source trace
+prints only five decimal places in bp). The production replay preserves each
+field call cursor, but a fresh same-run 600 ppi pair regresses M9 full RMSE
+`0.211452985 → 0.211531168`; top-left,
 top-right and bottom-left crops regress `0.194674703/0.233712567/0.239184657
 → 0.195252499/0.233848533/0.239283558`, while bottom-right improves
 `0.170635231 → 0.170035834`. S105 full/block regress
 `0.101683758/0.127907934 → 0.101692659/0.127928593`; surface improves
-`0.075817840 → 0.075811463`. This source-exact geometry replay is reverted
-pending a four-panel accepted-knot/cursor audit: the first panel's knot match
-does not explain the rendered regressions or prove the rotated panels follow
-the same coordinate transform.
+`0.075817840 → 0.075811463`. This source-exact geometry replay is reverted:
+all four accepted-knot sequences and RNG offsets match, yet M9 and S105 render
+gates regress. The remaining wood gap is therefore in how source field values
+and resulting contours are evaluated around these accurately paired knots,
+not in missing knots or panel cursor order.
 
 **M11 coast cubic callback trial (2026-11-05).** The production Typst trace
 rebuilt from the current checkout pairs 7 of 31 source thin nodes on mass 4,
