@@ -100,7 +100,9 @@
   mix(d, e)
 }
 #let _mp-fixed-arc-test(d0, d1, d2, v0: none, v02: none, v2: none,
-                        tolerance: _mp-fraction-one / 4096, depth: 0) = {
+                        // Inputs are raw 16.16 bp coordinates; MetaPost's
+                        // arc_tol_k of 1/4096 bp is therefore 16 fixed units.
+                        tolerance: 65536 / 4096, depth: 0) = {
   assert(depth <= 40, message: "MetaPost arc subdivision exceeded 40 levels")
   let v0 = if v0 == none { _mp-fixed-pyth-add(d0.at(0), d0.at(1)) } else { v0 }
   let v2 = if v2 == none { _mp-fixed-pyth-add(d2.at(0), d2.at(1)) } else { v2 }

@@ -4976,14 +4976,21 @@ values. `compare_m11_coast_source_arcs.py TRACE` compares all three with source
 root q. A fresh pinned-source run matches every cumulative path arc exactly on
 masses 1/2/4 (`139/139`, `170/170`, `52/52`); all q-knot increments also match
 direct MetaPost segment arcs (`138/138`, `169/169`, `51/51`). The prior audit
-used a separately rounded cubic estimator instead: it differs from direct
-MetaPost segment arcs by at most 4/25/0 fixed units on masses 1/2/4, producing
-the misleading 327-unit accumulated mass-2 residual. Earlier trials that fed
-that estimator's values to the root template reject those implementations,
-but do not reject exact source path-arc coordinates. Revisit production arc
-mapping using the direct source values while preserving callback widths and
-times through seams and recursive cuts. Reproduce the source trace inside the
-devshell using the pinned upstream checkout:
+used a separately rounded cubic estimator with the wrong tolerance scale:
+the path coordinates are raw 16.16 bp, but it used `fraction_one / 4096`
+instead of `65536 / 4096 = 16` fixed units. This caused the 327-unit
+accumulated mass-2 residual. With the corrected tolerance, the Python and
+Typst cubic estimators match every direct MetaPost segment arc on masses
+1/2/4. A separate Typst probe matches all 16 selected M2 horizon segments
+exactly, and `m11_fixed_arc_check.typ` matches all 3 lane groups exactly
+(quarter-sample reconstruction max error 2 units). The earlier cubic-arc
+production trials used the wrong tolerance and do not test source-exact arc
+mapping; rerun the production candidate with this correction, carrying exact
+path arcs and callback widths/times through seams and recursive cuts. A fresh
+600 ppi paired gate for M4/M6/M9/M11/S102/S105 passes; RMSE is
+`0.059473/0.089493/0.211428/0.114800/0.049088/0.101695`, respectively.
+Reproduce the source trace inside the devshell using the pinned upstream
+checkout:
 
 ```sh
 nix develop path:./nix --command bash -c '

@@ -9,10 +9,11 @@ from pathlib import Path
 
 
 FIXED = 65536
-# MetaPost's internal fraction is 28-bit fixed point. The arc estimator's
-# stopping threshold is unity / 4096 (mpmath.w: arc_tol_k).
+# MetaPost uses 28-bit fractions for ratios inside pyth_add.
 FRACTION_ONE = 1 << 28
-ARC_TOLERANCE = FRACTION_ONE // 4096
+# The arc routine receives raw 16.16 path coordinates. Its 1/4096 bp
+# stopping threshold is 16 units in that coordinate scale.
+ARC_TOLERANCE = (1 << 16) // 4096
 
 
 def fixed_pair(hi, lo):
