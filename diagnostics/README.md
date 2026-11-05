@@ -107,7 +107,19 @@ lane-recursion cause.
 The checker compares reconstructed center cubics, q2/q3 boundaries, and traced
 lane controls. Current maximum errors are `0.000033 mm` for the clipped input
 cubics, `0.000065 mm` for their boundaries, and `0.000041 mm` for checked
-lanes. The lane curves were tried in the renderer, but the 600 ppi M11
+lanes. The source trace now exports q0 inputs, offset knots, and q2/q3
+controls as exact 16.16 millimetre values in addition to its decimal records.
+Using those fixed values, the source offset equation replay has a `0.000022`
+to `0.000027 mm` mean control-point error and up to `0.000095 mm` maximum error
+across six tube calls. Running the same fixed q0 inputs through the Typst
+offset implementation yields the same errors, so the remaining residual is in
+the ported offset equation/rounding sequence and is not trace decimal loss.
+The production-lane arc-fit probe also confirms the source q arc solver itself
+is exact to the recorded fixed-point knots. A fixed-vector candidate was
+discarded because its initial implementation referenced helpers declared
+later and provided no measured improvement; it is not part of production.
+
+The lane curves were tried in the renderer, but the 600 ppi M11
 whole/knot RMSE regressed `0.114799/0.078545 → 0.117208/0.097408`; M4/M6
 pixels were unchanged. Keeping only the inner source lanes still regressed
 knot RMSE to `0.100047`. The integration was removed. The remaining difference
@@ -115,6 +127,16 @@ is in how the source cubic lane becomes thin-brush callbacks and recursive q
 children, not in the traced lane control geometry. Use the fixture and
 `m11_source_offset_check.typ` as geometric oracles before another rendering
 trial.
+
+For follow-up, the measured M11 gaps are: (1) reproduce MetaPost's exact
+fixed-point offset construction well enough to remove the q2/q3 control
+residual above; (2) reproduce the conversion from source cubic lanes into
+thin-brush callbacks and the resulting recursive q child counts (`224` source
+brush calls versus `226` Typst, with production-lane trees differing by
+`38/22/28` versus `40/20/30`); and (3) validate any correction against the
+600 ppi whole-plate and knot crops, since inserting traced lanes directly made
+the knot image worse. These are separate gates: geometric agreement alone has
+already failed the raster gate.
 
 The production-lane arc-fit probe uses `make_m11_production_arc_fixture.py`
 to reconstruct quarter samples from the current lane trace, fits cubic arcs

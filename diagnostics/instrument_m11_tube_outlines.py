@@ -13,6 +13,16 @@ def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
     source = Path(sys.argv[1]).read_text()
+    source = '''
+vardef traceFixedParts(expr traceValue) =
+    save traceWhole, traceHigh, traceLow;
+    numeric traceWhole, traceHigh, traceLow;
+    traceWhole := floor(traceValue);
+    traceHigh := floor((traceValue-traceWhole)*256 + 1/2);
+    traceLow := floor(((traceValue-traceWhole)*256-traceHigh)*256 + 1/2);
+    decimal(traceWhole) & ":" & decimal(traceHigh) & ":" & decimal(traceLow)
+enddef;
+''' + source
     anchor = (
         '                    draw tube.scantokens(segmentStyle[j])'
         '(pathSegments[j])(segmentWidth[j]) if segmentStyle[j] = "e": '
@@ -68,6 +78,30 @@ def main() -> None:
                 & decimal(ypart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
                 & decimal(xpart(point (traceCurveIndex+1) of q3)/mm) & " "
                 & decimal(ypart(point (traceCurveIndex+1) of q3)/mm);
+            message "M11EDGECURVEFIXA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 2 "
+                & traceFixedParts(xpart(point traceCurveIndex of q2)/mm) & " "
+                & traceFixedParts(ypart(point traceCurveIndex of q2)/mm) & " "
+                & traceFixedParts(xpart(postcontrol traceCurveIndex of q2)/mm) & " "
+                & traceFixedParts(ypart(postcontrol traceCurveIndex of q2)/mm);
+            message "M11EDGECURVEFIXB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 2 "
+                & traceFixedParts(xpart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
+                & traceFixedParts(ypart(precontrol (traceCurveIndex+1) of q2)/mm) & " "
+                & traceFixedParts(xpart(point (traceCurveIndex+1) of q2)/mm) & " "
+                & traceFixedParts(ypart(point (traceCurveIndex+1) of q2)/mm);
+            message "M11EDGECURVEFIXA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 3 "
+                & traceFixedParts(xpart(point traceCurveIndex of q3)/mm) & " "
+                & traceFixedParts(ypart(point traceCurveIndex of q3)/mm) & " "
+                & traceFixedParts(xpart(postcontrol traceCurveIndex of q3)/mm) & " "
+                & traceFixedParts(ypart(postcontrol traceCurveIndex of q3)/mm);
+            message "M11EDGECURVEFIXB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " 3 "
+                & traceFixedParts(xpart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
+                & traceFixedParts(ypart(precontrol (traceCurveIndex+1) of q3)/mm) & " "
+                & traceFixedParts(xpart(point (traceCurveIndex+1) of q3)/mm) & " "
+                & traceFixedParts(ypart(point (traceCurveIndex+1) of q3)/mm);
         endfor;
         for traceBoundaryTime := 0 step 1/4 until length(q2):
             message "M11EDGE " & decimal(traceBoundaryCall) & " 2 "
@@ -101,15 +135,40 @@ def main() -> None:
                 & decimal(ypart(precontrol (traceCurveIndex+1) of q0)/mm) & " "
                 & decimal(xpart(point (traceCurveIndex+1) of q0)/mm) & " "
                 & decimal(ypart(point (traceCurveIndex+1) of q0)/mm);
+            message "M11INPUTFIXA " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & traceFixedParts(xpart(point traceCurveIndex of q0)/mm) & " "
+                & traceFixedParts(ypart(point traceCurveIndex of q0)/mm) & " "
+                & traceFixedParts(xpart(postcontrol traceCurveIndex of q0)/mm) & " "
+                & traceFixedParts(ypart(postcontrol traceCurveIndex of q0)/mm);
+            message "M11INPUTFIXB " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & traceFixedParts(xpart(precontrol (traceCurveIndex+1) of q0)/mm) & " "
+                & traceFixedParts(ypart(precontrol (traceCurveIndex+1) of q0)/mm) & " "
+                & traceFixedParts(xpart(point (traceCurveIndex+1) of q0)/mm) & " "
+                & traceFixedParts(ypart(point (traceCurveIndex+1) of q0)/mm);
             message "M11OFFSET " & decimal(traceBoundaryCall) & " "
                 & decimal(traceCurveIndex) & " "
                 & decimal(xpart(point traceCurveIndex of q1)/mm) & " "
                 & decimal(ypart(point traceCurveIndex of q1)/mm);
+            message "M11OFFSETFIX " & decimal(traceBoundaryCall) & " "
+                & decimal(traceCurveIndex) & " "
+                & traceFixedParts(xpart(point traceCurveIndex of q1)/mm) & " "
+                & traceFixedParts(ypart(point traceCurveIndex of q1)/mm);
         endfor;
         message "M11OFFSET " & decimal(traceBoundaryCall) & " "
             & decimal(length(q0)) & " "
             & decimal(xpart(point length(q0) of q1)/mm) & " "
             & decimal(ypart(point length(q0) of q1)/mm);
+        message "M11OFFSETFIX " & decimal(traceBoundaryCall) & " "
+            & decimal(length(q0)) & " "
+            & traceFixedParts(xpart(point length(q0) of q1)/mm) & " "
+            & traceFixedParts(ypart(point length(q0) of q1)/mm);
+        message "M11ENDHANDLESFIX " & decimal(traceBoundaryCall) & " "
+            & traceFixedParts(xpart(precontrol 0 of q0)/mm) & " "
+            & traceFixedParts(ypart(precontrol 0 of q0)/mm) & " "
+            & traceFixedParts(xpart(postcontrol length(q0) of q0)/mm) & " "
+            & traceFixedParts(ypart(postcontrol length(q0) of q0)/mm);
     fi;''')
     tube_start = "vardef tubeGenerate@#(expr p, q, d, i) ="
     if source.count(tube_start) != 1:

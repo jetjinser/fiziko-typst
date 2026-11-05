@@ -14,17 +14,37 @@ from collections import defaultdict
 from pathlib import Path
 
 
+def fixed_mm(value):
+    whole, high, low = map(int, value.split(":"))
+    return (whole * 65536 + high * 256 + low) / 65536
+
+
 def read_trace(path):
     points = defaultdict(dict)
     offsets = defaultdict(dict)
     output = defaultdict(lambda: defaultdict(dict))
     lanes = defaultdict(lambda: defaultdict(dict))
+    points_fixed = defaultdict(lambda: defaultdict(dict))
+    offsets_fixed = defaultdict(dict)
+    output_fixed = defaultdict(lambda: defaultdict(dict))
     for line in path.read_text().splitlines():
         fields = line.split()
         if not fields:
             continue
         tag = fields[0]
-        if tag == "M11INPUTA":
+        if tag == "M11INPUTFIXA":
+            call, index = int(fields[1]), int(fields[2])
+            points_fixed[call][index].update({
+                0: (fixed_mm(fields[3]), fixed_mm(fields[4])),
+                1: (fixed_mm(fields[5]), fixed_mm(fields[6])),
+            })
+        elif tag == "M11INPUTFIXB":
+            call, index = int(fields[1]), int(fields[2])
+            points_fixed[call][index].update({
+                2: (fixed_mm(fields[3]), fixed_mm(fields[4])),
+                3: (fixed_mm(fields[5]), fixed_mm(fields[6])),
+            })
+        elif tag == "M11INPUTA":
             call, index = int(fields[1]), int(fields[2])
             points[call][index] = [
                 (float(fields[3]), float(fields[4])),
@@ -36,6 +56,10 @@ def read_trace(path):
                 (float(fields[3]), float(fields[4])),
                 (float(fields[5]), float(fields[6])),
             ])
+        elif tag == "M11OFFSETFIX":
+            call, index = int(fields[1]), int(fields[2])
+            offsets_fixed[call][index] = (
+                fixed_mm(fields[3]), fixed_mm(fields[4]))
         elif tag == "M11OFFSET":
             call, index = int(fields[1]), int(fields[2])
             offsets[call][index] = (float(fields[3]), float(fields[4]))
@@ -49,6 +73,19 @@ def read_trace(path):
                 lanes[call][lane][curve] = controls
             else:
                 lanes[call][lane][curve].extend(controls)
+        elif tag in ("M11EDGECURVEFIXA", "M11EDGECURVEFIXB"):
+            # Boundary tracing increments traceBoundaryCall immediately before
+            # emitting q2/q3, unlike the q0/input records.
+            call, curve, side = int(fields[1]) - 1, int(fields[2]), int(fields[3])
+            controls = [
+                (fixed_mm(fields[4]), fixed_mm(fields[5])),
+                (fixed_mm(fields[6]), fixed_mm(fields[7])),
+            ]
+            target = output_fixed[call][side].setdefault(curve, {})
+            if tag.endswith("FIXA"):
+                target.update({0: controls[0], 1: controls[1]})
+            else:
+                target.update({2: controls[0], 3: controls[1]})
         elif tag in ("M11EDGECURVEA", "M11EDGECURVEB"):
             # q2/q3 logging happens just after traceBoundaryCall increments.
             call = int(fields[1]) - 1
@@ -61,6 +98,21 @@ def read_trace(path):
                 output[call][side][curve] = controls
             else:
                 output[call][side][curve].extend(controls)
+    for call, curves in points_fixed.items():
+        points[call] = {
+            index: [controls[i] for i in range(4)]
+            for index, controls in curves.items()
+        }
+    for call, values in offsets_fixed.items():
+        offsets[call] = values
+    for call, sides in output_fixed.items():
+        output[call] = {
+            side: {
+                index: [controls[i] for i in range(4)]
+                for index, controls in curves.items()
+            }
+            for side, curves in sides.items()
+        }
     return points, offsets, output, lanes
 
 
