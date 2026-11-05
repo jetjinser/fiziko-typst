@@ -3242,6 +3242,17 @@ Typst's same-time row samples by `0.00008–0.00014 mm`; the first discrepancy
 therefore enters in scanline endpoint/subdivision geometry, before q arc
 length construction and brush recursion.
 
+Reproduce the coordinate/chord comparison against a Typst row metadata trace:
+
+```sh
+nix develop path:./nix --command python diagnostics/audit_s104_hatch_bp.py \
+  /tmp/s104-source-trace/trace.log /tmp/s104-typst-rows.json --row 93
+```
+
+The pinned row gives mean/max same-time point error
+`0.000105669/0.000144343 mm`; source arc/chord residual is at most one
+16.16 bp unit.
+
 On row 93 (`y=-6.37912`), rebuilding q x knots from fixed-point cubic arc
 lengths of the sampled straight segments does not change the q-candidate tree:
 it remains 11 outer / 9 thin nodes and 4 dash leaves, versus source 21 / 19 / 5.
@@ -4222,24 +4233,29 @@ differ by at most 16 fixed units. A native MetaPost replay of source node 164's
 q path with `subpath (0, 2.40022)` reproduces source node 165's child controls
 exactly. The child split itself is therefore faithful on this branch. The
 source and Typst outer root cut parameters also match exactly at
-`55358/65536 = 0.8446960449`; the residual must be resolved by comparing how
-their root callback points and q arc knots are constructed before the cut,
-rather than changing outer or thin split arithmetic.
+`55358/65536 = 0.8446960449`. New `S104-HATCHBP` records and
+`audit_s104_hatch_bp.py` show that the source arc increments match the exact
+bp-coordinate chords within one unit, while the source subdivision points
+differ from Typst's same-time samples by `0.00008–0.00014 mm`. The first
+mismatch is in scanline endpoint/subdivision geometry before q construction;
+do not adjust the matching outer cut or child split.
 
-The source instrumenter now also emits fixed 16.16 `S104-HATCHPT` and
-`S104-HATCHARC` records for row `-6.37912`. Its root q arc knots are
+The source instrumenter now also emits fixed 16.16 `S104-HATCHPT`,
+`S104-HATCHBP`, and `S104-HATCHARC` records for row `-6.37912`. Its root q
+arc knots are
 `[0, 2298558, 4597113, 6895671, 6895777]`; the Typst row's
 `source-arc-fixed` knots are `[0, 2298550, 4597100, 6895650, 6895754]`.
 The four per-segment source increments are `[2298558, 2298555, 2298558,
 106]`, against Typst `[2298550, 2298550, 2298550, 104]`, so the segment
-residuals are `[8, 5, 8, 2]` fixed units. Focus the next audit on how source
-callback points become these q arc knots; do not adjust the already-matching
-outer cut parameter or the verified child split.
+residuals are `[8, 5, 8, 2]` fixed units. The reproducible bp audit shows that
+the first actionable source difference is in the row endpoints and fixed-time
+subdivision points, upstream of these q arc knots; leave the already-matching
+outer cut parameter and verified child split unchanged.
 At source node 164, q x controls begin at `1941582` and end at `4956825`,
 while Typst begins at `1941576` and ends at `4956809`; every paired width
-control is exact. This pins the first mismatch to the root callback/outer-cut
-mapping, before thin recursion, and supplies a fixed-point oracle for that
-mapping.
+control is exact. These controls quantify how the upstream scanline-point
+differences enter the first thin q input, before thin recursion, and provide a
+fixed-point oracle for future geometry propagation work.
 
 To replay the source node-164 q split with MetaPost's native `subpath`, use:
 
