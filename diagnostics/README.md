@@ -4589,18 +4589,18 @@ rg '^FIX' /tmp/s104-node164-probe/trace.log
 The four returned controls for the last child cubic match source node 165's
 `S104-TXCTRL`/`S104-TCTRL` records exactly.
 
-The row `29.49918` trace narrows the remaining large recursive mismatch to
-the source surface boundary. MetaPost's closed `surfPath` edge controls are
-not the straight one-third/two-thirds controls currently synthesized from
-the Typst polygon vertices. The focused trace records both source handles
-(`S104-CLIP-POLY-POST/PRE`) and the ray controls. At this row, the current
-Typst hatch endpoints differ from the five source fixed-subdivision points by
-up to `0.000871 mm`; source arc/chord residual remains at most one 16.16 bp
-unit. The full recursive audit pairs only `27/77` q nodes, with q-arc control
-residual mean/max `236.720/623` units. Reproduce the closed MetaPost/Hobby
-surface controls before changing recursion thresholds or q splitting. The
-source-point audit now compares fixed-width-q subdivision points and times,
-not linear samples at unrelated floating-width q times.
+The row `29.49918` trace records both source surface handles
+(`S104-CLIP-POLY-POST/PRE`) and ray controls. After inverse rotation, the
+source handles are the straight one-third/two-thirds controls for the `--`
+edges in `supplemental.mp`; a missing smooth-boundary model is not the cause.
+At this row, the current Typst hatch endpoints differ from the five source
+fixed-subdivision points by up to `0.000871 mm`; source arc/chord residual
+remains at most one 16.16 bp unit. The full recursive audit pairs only `27/77`
+q nodes, with q-arc control residual mean/max `236.720/623` units. Continue
+with the fixed-point transformation and intersection parameter path, before
+changing recursion thresholds or q splitting. The source-point audit now
+compares fixed-width-q subdivision points and times, not linear samples at
+unrelated floating-width q times.
 
 **S104 scanline direction-rounding probe (2026-11-05, rejected).** A fresh
 pinned-source trace and current Typst metadata reproduce row 93's baseline
