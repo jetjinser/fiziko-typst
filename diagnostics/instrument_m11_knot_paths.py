@@ -18,6 +18,14 @@ def main() -> None:
     anchor = '  addStrandToKnot(weave)(wa,.8mm,"l","-1,1,-1,1");'
     trace = f"""  numeric traceX, traceY, traceXInt, traceYInt,
         traceXHigh, traceYHigh, traceXLow, traceYLow;
+  traceX := mm;
+  traceXInt := floor(traceX);
+  traceXHigh := floor((traceX-traceXInt)*256);
+  traceXLow := round(((traceX-traceXInt)*256-traceXHigh)*256);
+  if traceXLow = 256: traceXHigh := traceXHigh+1; traceXLow := 0; fi;
+  if traceXHigh = 256: traceXInt := traceXInt+1; traceXHigh := 0; fi;
+  message "M11PATHSCALE " & decimal(traceXInt) & " "
+    & decimal(traceXHigh) & " " & decimal(traceXLow);
   for ti := 0 step 1/{step_denominator} until length(wa):
     message "M11PATH A " & decimal(ti) & " " & decimal(xpart(point ti of wa)/mm) & " " & decimal(44-ypart(point ti of wa)/mm);
     message "M11PATH B " & decimal(ti) & " " & decimal(xpart(point ti of wb)/mm) & " " & decimal(44-ypart(point ti of wb)/mm);

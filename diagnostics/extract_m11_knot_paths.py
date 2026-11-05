@@ -11,6 +11,7 @@ FIXED_RECORD = re.compile(
     r"M11PATHFIX ([AB]) ([0-9.]+) (-?[0-9]+) ([0-9]+) ([0-9]+) "
     r"(-?[0-9]+) ([0-9]+) ([0-9]+)"
 )
+SCALE_RECORD = re.compile(r"M11PATHSCALE ([0-9]+) ([0-9]+) ([0-9]+)")
 
 
 def main() -> None:
@@ -19,16 +20,21 @@ def main() -> None:
     source = Path(sys.argv[1]).read_text()
     paths: dict[str, list[tuple[float, float]]] = {"A": [], "B": []}
     times: dict[str, list[float]] = {"A": [], "B": []}
-    fixed_paths: dict[str, list[tuple[float, float]]] = {"A": [], "B": []}
+    fixed_records: dict[str, list[tuple[int, int, int, int, int, int]]] = {
+        "A": [], "B": []
+    }
     fixed_times: dict[str, list[float]] = {"A": [], "B": []}
+    scale_records = SCALE_RECORD.findall(source)
+    if len(scale_records) > 1:
+        raise ValueError("expected at most one fixed-point mm scale record")
     for strand, time, x, y in RECORD.findall(source):
         times[strand].append(float(time))
         paths[strand].append((float(x), float(y)))
     for strand, time, xi, xh, xl, yi, yh, yl in FIXED_RECORD.findall(source):
         fixed_times[strand].append(float(time))
-        x = int(xi) + int(xh) / 256 + int(xl) / 65536
-        y = int(yi) + int(yh) / 256 + int(yl) / 65536
-        fixed_paths[strand].append((x * 25.4 / 72, y * 25.4 / 72))
+        fixed_records[strand].append(
+            (int(xi), int(xh), int(xl), int(yi), int(yh), int(yl))
+        )
     if len(paths["A"]) < 2 or len(paths["A"]) != len(paths["B"]):
         raise ValueError(f"expected equal nonempty strand samples, got {len(paths['A'])} and {len(paths['B'])}")
     if times["A"] != times["B"]:
@@ -38,19 +44,40 @@ def main() -> None:
            for i, t in enumerate(times["A"])):
         raise ValueError("source samples are not on a uniform path-time grid")
 
-    if fixed_paths["A"] or fixed_paths["B"]:
-        if (len(fixed_paths["A"]) != len(times["A"])
-                or len(fixed_paths["B"]) != len(times["B"])
+    if fixed_records["A"] or fixed_records["B"]:
+        if len(scale_records) != 1:
+            raise ValueError("fixed-point path records require M11PATHSCALE")
+        if (len(fixed_records["A"]) != len(times["A"])
+                or len(fixed_records["B"]) != len(times["B"])
                 or fixed_times["A"] != times["A"]
                 or fixed_times["B"] != times["B"]):
             raise ValueError("fixed-point and decimal path records do not pair")
+        scale_int, scale_high, scale_low = map(int, scale_records[0])
+        mm_scale = scale_int + scale_high / 256 + scale_low / 65536
+        if mm_scale <= 0:
+            raise ValueError("fixed-point mm scale must be positive")
+        fixed_paths = {
+            strand: [
+                ((xi * 65536 + xh * 256 + xl) / (mm_scale * 65536),
+                 (yi * 65536 + yh * 256 + yl) / (mm_scale * 65536))
+                for xi, xh, xl, yi, yh, yl in fixed_records[strand]
+            ]
+            for strand in ("A", "B")
+        }
+        for strand in ("A", "B"):
+            errors = [max(abs(a - b) for a, b in zip(fixed, decimal))
+                      for fixed, decimal in zip(fixed_paths[strand], paths[strand])]
+            if max(errors, default=0) > 0.00002:
+                raise ValueError(
+                    f"fixed-point path differs from decimal sanity trace for {strand}: "
+                    f"max {max(errors):.9g} mm")
         paths = fixed_paths
 
     def array(points: list[tuple[float, float]]) -> str:
         values = [f"({x:.9f}, {y:.9f})" for x, y in points]
         return "(\n  " + ",\n  ".join(values) + "\n)"
 
-    precision = " with 16.16 bp coordinates" if fixed_paths["A"] else ""
+    precision = " with 16.16 bp coordinates" if fixed_records["A"] else ""
     output = (
         f"// M11 knot paths sampled from the pinned MetaPost 2.11 source at {times['A'][1] - times['A'][0]:g} path-time intervals{precision}.\n"
         "#let upstream-m11-knot-paths = (\n"

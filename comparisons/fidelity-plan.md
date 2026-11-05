@@ -1883,15 +1883,22 @@ diagnostic now retains this failed reconstruction in
 post-cut lane controls and callback times, rather than enabling pre-shadow
 q reconstruction in production.
 
-**M11 knot source-sample precision (2026-11-05).** The path exporter now keeps
-the pinned MetaPost 16.16 bp coordinates by splitting fractional bytes into
-small transcript values, then decodes them before converting to millimetres.
-Against the saved same-run baseline (`0.114798998` whole / `0.078545412` knot),
-the 600 ppi rerender is `0.114799855` / `0.078530892`; globe, eye, and
-refraction crops are unchanged. The knot improvement is small, while the
-whole-plate difference is a negligible regression. The quarter-fit shadow q
-replay changes from `38/22/28` to `36/22/28` nodes against source `40/20/30`,
-so greater sample precision alone does not solve the recursive mismatch. Keep
-the higher precision fixture because it preserves the actual source sample
-coordinates; do not treat the pixel delta or the mixed recursive counts as a
-production `shadowCut` fix.
+**M11 knot source-sample precision: scale correction (2026-11-05).** The
+previous entry for commit `4f154e9` used the standard `25.4/72` conversion
+instead of MetaPost's quantized 16.16 `mm` constant. Its fixture coordinates,
+render metrics, and q-tree comparison are superseded and must not be used as
+evidence. The instrumenter now records `M11PATHSCALE`; the exporter divides
+each raw 16.16 bp coordinate by the recorded scale (`185771/65536` bp per mm
+in this pinned run). Regenerating the fixture from the fresh source trace is
+byte-for-byte reproducible, and its fixed coordinates agree with the decimal
+sanity trace within `0.00002 mm`.
+
+With the corrected fixture, the 600 ppi source comparison is `0.114800342`
+whole-plate and `0.078535116` knot RMSE, versus the saved historical baseline
+`0.114798998` / `0.078545412`. Globe, eye, and refraction remain close to the
+same baseline; the knot change is a small improvement and the whole-plate
+change a small regression. The corrected quarter-fit offset-cubic q replay
+has `38/22/26` nodes against source `40/20/30` (first decision differences at
+18/11/6), so preserving source sample bits alone does not resolve recursive
+divergence. Keep the corrected source fixture, but treat the replay and pixel
+changes as diagnostic evidence only, not as a production `shadowCut` fix.

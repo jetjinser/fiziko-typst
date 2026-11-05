@@ -1525,10 +1525,13 @@ python3 diagnostics/extract_m11_knot_paths.py \
 ```
 
 The source sampler emits both the human-readable `M11PATH` records and split
-16.16 bp coordinate bytes in `M11PATHFIX`. The exporter uses those fixed-point
-bytes when present, converts to millimetres only after decoding, and writes
-nine decimal places. This avoids losing source coordinate bits to MetaPost's
-five-place `decimal` output before cubic reconstruction.
+16.16 bp coordinate bytes in `M11PATHFIX`. `M11PATHSCALE` records MetaPost's
+own 16.16 value for `mm` (currently `185771/65536` bp per mm). The exporter
+converts a raw coordinate with `raw16 / (mm_scale * 65536)` and writes nine
+decimal places. This avoids losing source coordinate bits to MetaPost's
+five-place `decimal` output before cubic reconstruction. Do not substitute the
+unquantized `25.4/72` factor: MetaPost's quantized `mm` constant is the scale
+used by the source paths.
 
 Tube mask mode now follows `knotFromStrands`' interval construction: each
 strand is split halfway between adjacent crossings, the supplied per-crossing
