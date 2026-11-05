@@ -4648,6 +4648,25 @@ Keep the width operation order because it reproduces the source callback and
 substantially improves recursive q correspondence; continue to gate further
 changes on both the full row audit and paired render.
 
+**S104 remaining q-arc outliers after callback correction (2026-11-06).** A
+fresh full-row audit of the corrected callback leaves the largest q-arc
+control residual at 930 fixed units on source row `-15.34870`, node 4. Its
+paired width controls are exact; the endpoint pairing is only `0.004999 mm`,
+near the audit's `0.005 mm` tolerance. The next largest residuals are 883 and
+813 units on row `25.91135`, then 733 units on row `-1.89433`. These outliers
+occur on rows with divergent thin-node trees, so their control deltas mix
+source q-arc construction with node correspondence. Keep the width fix and
+inspect the first parent/cut divergence and exact source scanline subdivision
+points on these rows before changing q interpolation. Reproduce the focused
+outlier check with:
+
+```sh
+nix develop path:./nix --command python diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-source-fulltrace/trace.log \
+  /tmp/s104-row98-source-fade-final-verified-unwrapped.json \
+  --largest-arc-errors 8 --node-field fixed-width-q-nodes
+```
+
 The line-cubic builder was checked separately with MetaPost `--` paths for
 integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
 Typst port's nearest-rounded `delta/3` and `2*delta/3` construction, so changing
