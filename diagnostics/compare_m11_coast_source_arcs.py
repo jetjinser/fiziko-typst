@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Compare source root q.x knots with arclengths of traced source path cubics.
+
+Usage: compare_m11_coast_source_arcs.py MPOST_LOG
+"""
+
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+from audit_m11_q_arclength import metapost_arc_length_fixed
+
+
+def fixed(value: str) -> int:
+    whole, high, low = map(int, value.split(":"))
+    return whole * 65536 + high * 256 + low
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit(__doc__)
+    curves = defaultdict(dict)
+    knots = defaultdict(list)
+    for line in Path(sys.argv[1]).read_text().splitlines():
+        fields = line.split()
+        if fields[:1] == ["M11-PATHP-FIX"]:
+            mass, segment, control = map(int, fields[1:4])
+            curves[mass].setdefault(segment, {})[control] = (
+                fixed(fields[4]), fixed(fields[5]))
+        elif fields[:1] == ["M11-ROOTQ"]:
+            mass = int(fields[1])
+            knots[mass].append((int(fields[2]), fixed(fields[3])))
+
+    for mass in sorted(curves):
+        segments = {
+            segment: tuple(points[index] for index in range(4))
+            for segment, points in curves[mass].items()
+        }
+        if sorted(segments) != list(range(len(segments))):
+            raise ValueError(f"mass {mass}: non-contiguous path segments")
+        cumulative = [0]
+        for segment in range(len(segments)):
+            cumulative.append(cumulative[-1] + metapost_arc_length_fixed(segments[segment]))
+        source = knots[mass]
+        count = min(len(source), len(cumulative))
+        errors = [(index, source[index][1] - cumulative[index])
+                  for index in range(count)]
+        exact = sum(error == 0 for _, error in errors)
+        maximum = max((abs(error) for _, error in errors), default=0)
+        increments = [errors[index][1] - errors[index - 1][1]
+                      for index in range(1, len(errors))]
+        increment_max = max(map(abs, increments), default=0)
+        increment_mean = (sum(map(abs, increments)) / len(increments)
+                          if increments else 0)
+        print(f"mass {mass}: source q knots/path boundaries {len(source)}/{len(cumulative)}; "
+              f"exact cumulative-arc matches {exact}/{count}; max error {maximum} fixed units; "
+              f"increment error mean/max {increment_mean:.2f}/{increment_max} units")
+        for index, error in errors:
+            if error:
+                print(f"  knot {index}: source-minus-cubic-arc {error} fixed units")
+        if increment_max > 0:
+            largest = sorted(range(len(increments)),
+                             key=lambda index: abs(increments[index]),
+                             reverse=True)[:8]
+            for index in largest:
+                if increments[index]:
+                    print(f"  segment {index}: source-minus-cubic arc increment "
+                          f"{increments[index]} fixed units")
+
+
+if __name__ == "__main__":
+    main()

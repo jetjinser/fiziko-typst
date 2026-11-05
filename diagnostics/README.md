@@ -4647,3 +4647,39 @@ S105 changes `0.101683758 → 0.101694601` overall: its surface crop improves
 `0.075817840 → 0.075811201`, while the block crop worsens
 `0.127907934 → 0.127932279`. Keep the coordinate correction for the measured
 M9 source-position and raster gains, with the small S105 tradeoff recorded.
+
+**M11 coast root-q oracle and source-path arc audit (2026-11-05).**
+`instrument_m11_coasts.py` now records the complete fixed-point `q` input to
+`thinBrushGenerate` as `M11-ROOTQ`. `extract_m11_coast_q_oracle.py` turns those
+source knots into a Typst probe that feeds the original source template into
+the production recursion engine. With exact root `q`, source and Typst node
+totals match for all six visible masses (M1/M2/M4/M5/M7/M8: `15/15`, `57/57`,
+`31/31`, `1/1`, `1/1`, `1/1`); brush random-call totals also match
+(`12/12`, `30/30`, `6/6`, `2/2`, `2/2`, `2/2`). Parent-aware recursion
+decisions match `15/15` for M1 and `31/31` for M4, and `53/55` for M2. This
+isolates most remaining coast recursion error to construction of the initial
+source q template, with two M2 decision differences still inside recursion.
+
+`instrument_m11_coasts.py ... --path-cubics=1,2,4` additionally exports all
+MetaPost path cubic controls as fixed-point `M11-PATHP-FIX`; run
+`compare_m11_coast_source_arcs.py TRACE` to compare their cubic arc lengths to
+source q.x knots. M1 agrees at `137/139` path boundaries (max 4 fixed units),
+M4 at `52/52` exactly, while M2 agrees at `57/170` with maximum accumulated
+error 327 units. M2's increment residuals cluster on horizon-circle spans 56–63
+and 103–109. Feeding cubic-derived arc coordinates back into the root template
+fixes M1/M4 recursion but changes the trees to `17/83/7` nodes for M1/M2/M4;
+it is rejected. Thus traced outline arclength alone is insufficient: reproduce
+the source offset-template knot/control construction and preserve callback
+widths/timing through child cuts before another production trial. Reproduce
+the source trace inside the devshell using the pinned upstream checkout:
+
+```sh
+nix develop path:./nix --command bash -c '
+  python3 diagnostics/instrument_m11_coasts.py "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-instrumented.mp --path-cubics=1,2,4
+  mpost -interaction=nonstopmode /tmp/m11-instrumented.mp > /tmp/m11-coast-trace.log
+  python3 diagnostics/compare_m11_coast_source_arcs.py /tmp/m11-coast-trace.log
+'
+```
+
+The q-oracle extractor and its generated Typst probe are diagnostic only; do
+not retain generated probe files in the repository.

@@ -14,9 +14,19 @@ def replace_once(source: str, old: str, new: str, name: str) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) not in (3, 4) or (len(sys.argv) == 4 and sys.argv[3] != "--path-cubics"):
-        raise SystemExit("usage: instrument_m11_coasts.py UPSTREAM_FIZIKO_MP OUTPUT_MP [--path-cubics]")
+    path_cubic_ids = (4,)
     trace_path_cubics = len(sys.argv) == 4
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit("usage: instrument_m11_coasts.py UPSTREAM_FIZIKO_MP OUTPUT_MP [--path-cubics[=IDS]]")
+    if len(sys.argv) == 4:
+        if sys.argv[3] == "--path-cubics":
+            path_cubic_ids = (4,)
+        elif sys.argv[3].startswith("--path-cubics="):
+            path_cubic_ids = tuple(int(value) for value in sys.argv[3].split("=", 1)[1].split(","))
+            if not path_cubic_ids or any(value < 1 or value > 8 for value in path_cubic_ids):
+                raise SystemExit("path-cubic IDs must be source landmass IDs 1 through 8")
+        else:
+            raise SystemExit("usage: instrument_m11_coasts.py UPSTREAM_FIZIKO_MP OUTPUT_MP [--path-cubics[=IDS]]")
     source = Path(sys.argv[1]).read_text()
     source = replace_once(
         source,
@@ -46,21 +56,24 @@ def main() -> None:
 """
     path_trace = ""
     if trace_path_cubics:
-        path_trace = '''            if i = 4:
+        path_trace = "\n".join(f'''            if i = {value}:
                 message "M11-PATHLEN " & decimal(i) & " " & decimal(length(lm));
                 for tracePathSegment = 0 upto floor(length(lm))-1:
-                    message "M11-PATHC " & decimal(i) & " " & decimal(tracePathSegment) & " "
-                        & decimal(xpart(point tracePathSegment of lm)) & " "
-                        & decimal(ypart(point tracePathSegment of lm)) & " "
-                        & decimal(xpart(postcontrol tracePathSegment of lm)) & " "
-                        & decimal(ypart(postcontrol tracePathSegment of lm)) & " "
-                        & decimal(xpart(precontrol (tracePathSegment+1) of lm)) & " "
-                        & decimal(ypart(precontrol (tracePathSegment+1) of lm)) & " "
-                        & decimal(xpart(point (tracePathSegment+1) of lm)) & " "
-                        & decimal(ypart(point (tracePathSegment+1) of lm));
+                    message "M11-PATHP-FIX " & decimal(i) & " " & decimal(tracePathSegment) & " 0 "
+                        & traceFixed(xpart(point tracePathSegment of lm)) & " "
+                        & traceFixed(ypart(point tracePathSegment of lm));
+                    message "M11-PATHP-FIX " & decimal(i) & " " & decimal(tracePathSegment) & " 1 "
+                        & traceFixed(xpart(postcontrol tracePathSegment of lm)) & " "
+                        & traceFixed(ypart(postcontrol tracePathSegment of lm));
+                    message "M11-PATHP-FIX " & decimal(i) & " " & decimal(tracePathSegment) & " 2 "
+                        & traceFixed(xpart(precontrol (tracePathSegment+1) of lm)) & " "
+                        & traceFixed(ypart(precontrol (tracePathSegment+1) of lm));
+                    message "M11-PATHP-FIX " & decimal(i) & " " & decimal(tracePathSegment) & " 3 "
+                        & traceFixed(xpart(point (tracePathSegment+1) of lm)) & " "
+                        & traceFixed(ypart(point (tracePathSegment+1) of lm));
                 endfor;
             fi;
-'''
+''' for value in path_cubic_ids)
     source = replace_once(
         source,
         coast,
@@ -68,7 +81,20 @@ def main() -> None:
         "            traceCoastWidth := true;\n"
         "            traceCoastRng := 0;\n"
         + path_trace
-        + coast
+        + "            traceCoastRootQ := offsetPathTemplate(lm, 0)(\n"
+        + "                2/3minStrokeWidth + 1/3minStrokeWidth\n"
+        + "                * normalVectorToLightness(\n"
+        + "                    sphereAnglesToNormalVector(\n"
+        + "                        (angleRad(point offsetPathTime of lm), arcsin(abs(point offsetPathTime of lm)/2s))\n"
+        + "                    ), 0, point offsetPathTime of lm\n"
+        + "                )\n"
+        + "            );\n"
+        + "            for traceCoastRootIndex := 0 upto length(traceCoastRootQ):\n"
+        + '                message "M11-ROOTQ " & decimal(i) & " " & decimal(traceCoastRootIndex) & " "\n'
+        + '                    & traceFixed(xpart(point traceCoastRootIndex of traceCoastRootQ)) & " "\n'
+        + '                    & traceFixed(ypart(point traceCoastRootIndex of traceCoastRootQ));\n'
+        + "            endfor;\n"
+        + "            thinBrushGenerate(lm, traceCoastRootQ, 0);\n"
         + "            traceCoastWidth := false;\n"
         + '            message "M11-COAST " & decimal(i) & " " & decimal(traceCoastRng);\n'
         + '            message "M11-COAST-END " & decimal(i);\n',
@@ -83,6 +109,8 @@ def main() -> None:
 
 numeric traceCoastRng;
 boolean traceCoastWidth;
+path traceCoastRootQ;
+numeric traceCoastRootIndex;
 traceCoastRng := 0;
 traceCoastWidth := false;
 vardef traceUniformdeviate (expr x) =
