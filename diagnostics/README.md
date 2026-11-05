@@ -2364,6 +2364,13 @@ errors are `6/1.93`, `14/3.81`, and `6/2.41` fixed units. Exact source cubics
 improve two lane comparisons but do not match all three, so this remains a
 diagnostic geometry oracle pending a source-faithful offset and shadow splice.
 
+Passing these exact curves through the production `strand-knot`/`tube` path was
+tested and reverted. The corrected 600 ppi whole-plate RMSE regressed from
+`0.114800342` to `0.114819651`, and knot RMSE from `0.078535116` to
+`0.078702539`; other M11 crops were unchanged. The fixture remains available
+for diagnosing the offset joins and shadow connectors before a new production
+trial.
+
 **M11 `shadowCut` connector control audit (2026-11-05).** The new
 `audit_m11_shadow_connector_curves.py` pairs every post-shadow connector with
 the corresponding pre-shadow cubic subcurve. Same-cubic connector controls

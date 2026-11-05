@@ -103,6 +103,15 @@ sampled path points, but it is diagnostic-only; source-faithful offset joins,
 shadow splices, and all-lane/image gates are still required before production
 integration.
 
+The exact-curve data was also wired through `strand-knot` into production
+`tube`/`_tube-layout` for an M11 render trial. Although the candidate compiled,
+it regressed the corrected 600 ppi comparison: whole-plate RMSE
+`0.114800342→0.114819651` and knot RMSE `0.078535116→0.078702539`; globe,
+eye, and refraction were unchanged. The production API and M11 call-site
+changes were reverted. Keep the source-cubic fixture and offset replay as
+diagnostics, and use a source-faithful offset join/shadow connector before
+trying another production integration.
+
 **M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
 source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
 when it is given raw-fraction knot coordinates. A production candidate formed
