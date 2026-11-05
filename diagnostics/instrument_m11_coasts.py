@@ -93,6 +93,20 @@ def main() -> None:
         + '                message "M11-ROOTQ " & decimal(i) & " " & decimal(traceCoastRootIndex) & " "\n'
         + '                    & traceFixed(xpart(point traceCoastRootIndex of traceCoastRootQ)) & " "\n'
         + '                    & traceFixed(ypart(point traceCoastRootIndex of traceCoastRootQ));\n'
+        + '                if traceCoastRootIndex < length(traceCoastRootQ):\n'
+        + '                    message "M11-ROOTQC " & decimal(i) & " " & decimal(traceCoastRootIndex) & " 0 "\n'
+        + '                        & traceFixed(xpart(point traceCoastRootIndex of traceCoastRootQ)) & " "\n'
+        + '                        & traceFixed(ypart(point traceCoastRootIndex of traceCoastRootQ));\n'
+        + '                    message "M11-ROOTQC " & decimal(i) & " " & decimal(traceCoastRootIndex) & " 1 "\n'
+        + '                        & traceFixed(xpart(postcontrol traceCoastRootIndex of traceCoastRootQ)) & " "\n'
+        + '                        & traceFixed(ypart(postcontrol traceCoastRootIndex of traceCoastRootQ));\n'
+        + '                    message "M11-ROOTQC " & decimal(i) & " " & decimal(traceCoastRootIndex) & " 2 "\n'
+        + '                        & traceFixed(xpart(precontrol (traceCoastRootIndex + 1) of traceCoastRootQ)) & " "\n'
+        + '                        & traceFixed(ypart(precontrol (traceCoastRootIndex + 1) of traceCoastRootQ));\n'
+        + '                    message "M11-ROOTQC " & decimal(i) & " " & decimal(traceCoastRootIndex) & " 3 "\n'
+        + '                        & traceFixed(xpart(point (traceCoastRootIndex + 1) of traceCoastRootQ)) & " "\n'
+        + '                        & traceFixed(ypart(point (traceCoastRootIndex + 1) of traceCoastRootQ));\n'
+        + '                fi;\n'
         + "            endfor;\n"
         + "            thinBrushGenerate(lm, traceCoastRootQ, 0);\n"
         + "            traceCoastWidth := false;\n"

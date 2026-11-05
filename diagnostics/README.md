@@ -4652,13 +4652,27 @@ M9 source-position and raster gains, with the small S105 tradeoff recorded.
 `instrument_m11_coasts.py` now records the complete fixed-point `q` input to
 `thinBrushGenerate` as `M11-ROOTQ`. `extract_m11_coast_q_oracle.py` turns those
 source knots into a Typst probe that feeds the original source template into
-the production recursion engine. With exact root `q`, source and Typst node
+the production recursion engine. The trace now also exports every root q cubic
+control as `M11-ROOTQC`; across all eight source landmasses these controls match
+the cubic reconstructed from adjacent knots exactly (zero differing fixed
+units), confirming that line-control rounding is not an unmodeled root gap.
+With exact root `q`, source and Typst node
 totals match for all six visible masses (M1/M2/M4/M5/M7/M8: `15/15`, `57/57`,
 `31/31`, `1/1`, `1/1`, `1/1`); brush random-call totals also match
 (`12/12`, `30/30`, `6/6`, `2/2`, `2/2`, `2/2`). Parent-aware recursion
 decisions match `15/15` for M1 and `31/31` for M4, and `53/55` for M2. This
 isolates most remaining coast recursion error to construction of the initial
 source q template, with two M2 decision differences still inside recursion.
+At the first mismatching depth-4 branch, parent and earlier child q controls
+pair exactly; MetaPost finds a cut at q time `0.69211`, while Typst's
+`intersection-times` returns no hit. In the sibling branch MetaPost rejects a
+cut while Typst accepts q time `41.30789`. These are complementary branch
+decisions with endpoint errors around `0.0021–0.0023 mm`, and point to the
+fixed-point first-intersection search/selection after recursive q splitting.
+The next probe should replay these exact child cubics and rays through both
+MetaPost `firstIntersectionTimes` and `intersection-times`, then adjust the
+intersection port only if that reproduces the source choices without changing
+other source-q oracle trees.
 
 `instrument_m11_coasts.py ... --path-cubics=1,2,4` additionally exports all
 MetaPost path cubic controls as fixed-point `M11-PATHP-FIX`; run
@@ -4675,9 +4689,18 @@ the source trace inside the devshell using the pinned upstream checkout:
 
 ```sh
 nix develop path:./nix --command bash -c '
-  python3 diagnostics/instrument_m11_coasts.py "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-instrumented.mp --path-cubics=1,2,4
-  mpost -interaction=nonstopmode /tmp/m11-instrumented.mp > /tmp/m11-coast-trace.log
-  python3 diagnostics/compare_m11_coast_source_arcs.py /tmp/m11-coast-trace.log
+  mkdir -p /tmp/m11-source-q
+  python3 diagnostics/instrument_brush.py "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m11-source-q/brush.mp
+  python3 diagnostics/instrument_m11_coasts.py /tmp/m11-source-q/brush.mp /tmp/m11-source-q/fiziko.mp --path-cubics=1,2,4
+  cp comparisons/reference/main.mp /tmp/m11-source-q/main.mp
+  printf "selected := 11; input main.mp;\\n" > /tmp/m11-source-q/trace.mp
+  (cd /tmp/m11-source-q && mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
+  python3 diagnostics/compare_m11_coast_source_arcs.py /tmp/m11-source-q/trace.log
+  typst eval "query(<m11-coast-brush-trace>).first().value" --in diagnostics/m11_coast_brush_trace.typ --root . > /tmp/m11-source-q/typst.json
+  python3 diagnostics/extract_m11_coast_q_oracle.py /tmp/m11-source-q/trace.log /tmp/m11-source-q/typst.json /tmp/m11-source-q/oracle.typ
+  cp /tmp/m11-source-q/oracle.typ diagnostics/m11_coast_q_oracle_probe.generated.typ
+  typst eval "query(<m11-coast-source-q-oracle>).first().value" --in diagnostics/m11_coast_q_oracle_probe.generated.typ --root . > /tmp/m11-source-q/oracle.json
+  rm diagnostics/m11_coast_q_oracle_probe.generated.typ
 '
 ```
 

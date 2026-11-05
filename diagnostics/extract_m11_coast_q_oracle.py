@@ -36,6 +36,35 @@ def source_roots(path: str) -> dict[int, list[tuple[int, int]]]:
     return roots
 
 
+def source_root_curves(path: str) -> dict[int, list[tuple[tuple[int, int], ...]]]:
+    active = False
+    mass = 0
+    segments: dict[int, dict[int, tuple[int, int]]] = {}
+    roots: dict[int, list[tuple[tuple[int, int], ...]]] = {}
+    for line in Path(path).read_text().splitlines():
+        fields = line.split()
+        if fields[:1] == ["M11-COAST-BEGIN"]:
+            mass = int(fields[1])
+            active = True
+            segments = {}
+        elif fields[:1] == ["M11-COAST-END"]:
+            active = False
+        elif active and fields[:1] == ["M11-ROOTQC"]:
+            segment, control = map(int, fields[2:4])
+            segments.setdefault(segment, {})[control] = (
+                fixed(fields[4]), fixed(fields[5]))
+        elif active and fields[:1] == ["M11-COAST"]:
+            curves = []
+            for segment in range(len(segments)):
+                points = segments[segment]
+                if sorted(points) != [0, 1, 2, 3]:
+                    raise ValueError(f"mass {mass}: incomplete source q segment {segment}")
+                curves.append(tuple(points[index] for index in range(4)))
+            roots[mass] = curves
+            segments = {}
+    return roots
+
+
 def typst(value) -> str:
     if isinstance(value, dict):
         return "(" + ", ".join(f"{key}: {typst(item)}" for key, item in value.items()) + ",)"
@@ -63,6 +92,7 @@ def main() -> None:
         raise SystemExit(__doc__)
     log, trace_path, output = sys.argv[1:4]
     roots = source_roots(log)
+    root_curves = source_root_curves(log)
     trace = json.loads(Path(trace_path).read_text())
     qarc = None if len(sys.argv) == 4 else {
         entry["landmass"]: entry["source-q-arc-positions"]
@@ -81,12 +111,20 @@ def main() -> None:
                 (round(arc / (25.4 / 72) * 65536), width)
                 for arc, (_, width) in zip(qarc[mass], knots)
             ]
+        if qarc is None:
+            q = root_curves.get(mass)
+            if q is None:
+                raise ValueError(f"mass {mass}: source trace has no M11-ROOTQC controls")
+        else:
+            q = q_curves(knots)
+        if q is None:
+            raise ValueError(f"mass {mass}: source trace has no M11-ROOTQC controls")
         cases.append({
             "landmass": mass,
             "points": entry["outline-points"],
             "times": entry["source-times"],
             "end": entry["source-time-end"],
-            "q": q_curves(knots),
+            "q": q,
         })
     if not cases:
         raise SystemExit("no source/Typst coast roots could be paired")
