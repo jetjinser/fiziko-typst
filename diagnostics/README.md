@@ -2491,16 +2491,22 @@ threshold branch, but they do not explain the other two lane mismatches.
 The connector audit now also checks the join that crosses an original cubic
 knot. For call 4/lane 6, source time `[0.94225,1.04225]`, its two endpoint
 tangent errors are `-0.00362°` and `0.00757°` against the adjoining source
-cubics. The traced connector controls are `(86.69072,21.43076)` and
-`(86.70183,21.40576) mm`. This confirms tangent continuity but leaves the
-MetaPost `..` join's control distances and arc length to reconstruct; the
-five-decimal pre-cut controls limit the precision of this angle check.
+cubics. `probe_m11_cross_knot_join.py` feeds the two trimmed endpoints and
+tangent directions back through MetaPost's `..` solver. Its controls are
+`(86.69072,21.43077)` and `(86.70184,21.40576) mm`, within `0.00001 mm` of
+the traced controls `(86.69072,21.43076)` and `(86.70183,21.40576) mm`, the
+trace's five-decimal output resolution. This recovers the connector control
+distances from source geometry; a Typst port and its arc-length/recursive
+impact remain to be measured.
 Reproduce the control audit with:
 
 ```sh
 nix develop path:./nix --command python \
   diagnostics/audit_m11_shadow_connector_curves.py \
   /tmp/m11-q-audit/trace.log
+nix develop path:./nix --command python \
+  diagnostics/probe_m11_cross_knot_join.py \
+  /tmp/m11-shadow-trace-current/trace.log
 ```
 
 The arc audit now also reports the first divergent q-map for call 4/lane 6.
