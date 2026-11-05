@@ -91,6 +91,8 @@
   max: (cell: (6, 42), source: 0.2035675049,
     float-knots: fixed-field(6, 42, model.knots),
     raw-rng-knots: fixed-field(6, 42, raw-rng-knots))),
+  source-knot-coordinate: raw-rng-knots,
+  production-knot-coordinate: model.knots,
   raw-grid-samples: range(6).map(i => range(12).map(j => {
     let column-jitter = _mp-scalar-rounded(
       raw-rng-stream.at(raw-rng-state.cursor + i)

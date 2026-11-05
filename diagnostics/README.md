@@ -4522,6 +4522,19 @@ panel crops unchanged or worse. The candidate was reverted. The remaining
 error is the sampled field maximum (`0.20803571` Typst vs `0.20800781` source);
 the existing max-only field-arithmetic probe remains the next useful target.
 
+The fixed-point probe now exports both its exact source-style knot conversion
+and the production knot coordinates. Against the first M9 block's accepted
+source candidates, the diagnostic conversion agrees within `0.0000022 mm`;
+the retained production conversion differs by up to `0.0001485 mm`. A trial
+kept normalized source knot coordinates for `wField` instead of converting
+them to millimetres and back. It did not fix the maximum sample: field plus
+column jitter was `0.20803590` vs `0.20800781` source. Its paired 600 ppi result
+was mixed: M9 RMSE regressed `0.211396935 → 0.211523563`, while S105 improved
+`0.101694601 → 0.101560090`. The production trial is reverted. This narrows
+the remaining max-field discrepancy to the source `abs`/`pyth` and radius
+operation sequence after knot placement; a future candidate needs a direct
+fixed-point radius replay and must clear both plate gates.
+
 **Mask-aware wood contour levels (2026-11-05).** `woodenThing` sets
 `woodBlockMaskPath` to an inset of the plank before `woodBlock` computes
 `minWithinMask` and `maxWithinMask`; the contour-level loop uses those masked
