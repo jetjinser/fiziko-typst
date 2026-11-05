@@ -42,24 +42,31 @@ def source_knots(log_path, landmass, depth):
 def typst_arc_at_source_time(entry, source_time):
     times = entry["source-times"]
     arcs = entry["source-arc-positions"]
-    for index, (start, end) in enumerate(zip(times, times[1:])):
+    if math.isclose(source_time, entry["source-time-end"], abs_tol=1e-9):
+        # A closed stroke's final q knot is the start point after traversing
+        # the closing arc. Some traces store a duplicate terminal time for the
+        # last outline point, so this must take precedence over that sample.
+        return arcs[-1]
+    time_ends = times[1:] + [entry["source-time-end"]]
+    for index, (start, end) in enumerate(zip(times, time_ends)):
         if (start <= source_time <= end) or (end <= source_time <= start):
             fraction = 0.0 if end == start else (source_time - start) / (end - start)
-            path_index = index + fraction
-            arc_index = int(math.floor(path_index))
-            arc_fraction = path_index - arc_index
-            return arcs[arc_index] * (1 - arc_fraction) + arcs[arc_index + 1] * arc_fraction
+            return arcs[index] * (1 - fraction) + arcs[index + 1] * fraction
     raise ValueError(f"source time {source_time} is outside Typst's path map")
 
 
 def typst_point_at_source_time(entry, source_time):
     times = entry["source-times"]
     points = entry["outline-points"]
-    for index, (start, end) in enumerate(zip(times, times[1:])):
+    if math.isclose(source_time, entry["source-time-end"], abs_tol=1e-9):
+        return points[0]
+    time_ends = times[1:] + [entry["source-time-end"]]
+    for index, (start, end) in enumerate(zip(times, time_ends)):
         if (start <= source_time <= end) or (end <= source_time <= start):
             fraction = 0.0 if end == start else (source_time - start) / (end - start)
+            next_point = points[index + 1] if index + 1 < len(points) else points[0]
             return tuple(points[index][axis] * (1 - fraction)
-                         + points[index + 1][axis] * fraction
+                         + next_point[axis] * fraction
                          for axis in range(2))
     raise ValueError(f"source time {source_time} is outside Typst's path map")
 

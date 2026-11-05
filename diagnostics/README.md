@@ -4344,6 +4344,27 @@ without a raster trial. The retained eight-chord accumulator remains in place;
 the next correction needs to address the source-time/q-arc mapping, not simply
 replace the arc-length estimator.
 
+**M11 fullcircle-boundary sampling trial (2026-11-05, reverted).** The coast
+q-knot comparator previously failed to map `source-time-end`: it treated the
+terminal q knot as the last sampled outline point instead of the cyclic start
+after the closing arc. The comparator now maps the terminal arc coordinate to
+the final cumulative arc entry and the terminal point to the first outline
+point. With that correction, baseline q.x mean/max residuals for masses 1/2/4
+are `0.001215/0.040779`, `0.003578/0.122949`, and
+`0.001321/0.053387 mm`.
+
+A production trial sampled each horizon fullcircle cubic separately, making
+each cubic boundary an explicit outline knot. This lowered q.x residuals to
+`0.000939/0.002604`, `0.001774/0.003733`, and
+`0.000309/0.001150 mm`, and slightly improved 600 ppi whole/globe RMSE from
+`0.114800/0.189896` to `0.114775/0.189183`. However, mass-1 thin nodes changed
+from source/Typst `15/17` to `15/13`, and mass 2 from `57/57` to `57/37`
+(parent-aware decisions `21/29`); mass 4 remained `31/31`. The production
+sampling change was reverted. The comparator fix is retained. A viable next
+step must keep rendered outline knots and recursive source-time/arc controls
+as separate representations, then pass all six coast trees and the raster
+gate.
+
 **S104 current recursive-q checkpoint (2026-11-05).** A newly regenerated
 pinned-source trace and current Typst metadata confirm that the retained
 fixed-width q callback still matches all 142 subdivision draws, row call
