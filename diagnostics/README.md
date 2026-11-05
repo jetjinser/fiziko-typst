@@ -4580,6 +4580,19 @@ nix develop path:./nix --command python \
   /tmp/s104-source-fulltrace/trace.log build/s104-hatch-rows.json
 ```
 
+The line-cubic builder was checked separately with MetaPost `--` paths for
+integer segment lengths 1–12 bp. Its exact 16.16 control chunks agree with the
+Typst port's nearest-rounded `delta/3` and `2*delta/3` construction, so changing
+that construction is not supported by the three residual hits. Replay the
+control probe with:
+
+```sh
+nix develop path:./nix --command bash -c \
+  'cd diagnostics && mpost -interaction=nonstopmode -halt-on-error \
+    -jobname=s104-line-control-probe s104_line_control_probe.mp'
+rg '^[0-9]+ [0-9]+' diagnostics/s104-line-control-probe.log
+```
+
 For row 28.60222, the current root q x-control residual falls from mean/max
 `93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched
 to baseline floating scanlines (`use-source-fixed-scanlines = false`), the
