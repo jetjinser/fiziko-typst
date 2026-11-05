@@ -253,6 +253,25 @@ def main() -> None:
         fi;"""
     source = replace_once(source, radius_anchor, radius_trace,
                           "wood maximum knot radius and angle")
+    pair_anchor = "        r := (abs(((x, y) shifted -wk[k]) yscaled (sin(woodKnotAngle))));"
+    pair_trace = """        traceWoodPair := (x, y) shifted -wk[k];
+        traceWoodScaledPair := traceWoodPair yscaled (sin(woodKnotAngle));
+        if traceWoodBlock = 1:
+            if (i = 6) and (j = 42):
+                message "CLWPAIRFIX " & decimal(k) & " "
+                    & decimal(floor(xpart(traceWoodPair)*256)) & " "
+                    & decimal(round((xpart(traceWoodPair)*256-floor(xpart(traceWoodPair)*256))*256)) & " "
+                    & decimal(floor(ypart(traceWoodPair)*256)) & " "
+                    & decimal(round((ypart(traceWoodPair)*256-floor(ypart(traceWoodPair)*256))*256)) & " "
+                    & decimal(floor(xpart(traceWoodScaledPair)*256)) & " "
+                    & decimal(round((xpart(traceWoodScaledPair)*256-floor(xpart(traceWoodScaledPair)*256))*256)) & " "
+                    & decimal(floor(ypart(traceWoodScaledPair)*256)) & " "
+                    & decimal(round((ypart(traceWoodScaledPair)*256-floor(ypart(traceWoodScaledPair)*256))*256));
+            fi;
+        fi;
+""" + pair_anchor
+    source = replace_once(source, pair_anchor, pair_trace,
+                          "wood maximum shifted and scaled radius pairs")
     knot_sum_anchor = "outputValue := outputValue + 1/64cos(2pi*1/30r);"
     knot_sum_trace = knot_sum_anchor + """
         if traceWoodBlock = 1:
@@ -330,6 +349,7 @@ def main() -> None:
     source += """
 
 boolean traceWoodCells;
+pair traceWoodPair, traceWoodScaledPair;
 numeric traceWoodLine, traceWoodPoint, traceWoodBlock, traceThinCall, traceQSegment, traceOuterQIndex;
 traceWoodCells := false;
 traceWoodLine := 0;

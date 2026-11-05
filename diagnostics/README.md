@@ -4531,9 +4531,20 @@ them to millimetres and back. It did not fix the maximum sample: field plus
 column jitter was `0.20803590` vs `0.20800781` source. Its paired 600 ppi result
 was mixed: M9 RMSE regressed `0.211396935 → 0.211523563`, while S105 improved
 `0.101694601 → 0.101560090`. The production trial is reverted. This narrows
-the remaining max-field discrepancy to the source `abs`/`pyth` and radius
-operation sequence after knot placement; a future candidate needs a direct
-fixed-point radius replay and must clear both plate gates.
+the remaining max-field discrepancy to the source `abs`/`pyth` operation
+after knot placement. The source instrumenter records the shifted pair and its
+`yscaled` form as `CLWPAIRFIX`; `probe_m9_wood_radius.py` compares their
+16.16 square-root reconstruction with the traced radius. The ordinary
+fixed-point square-root model is within one unit for all five knots, but exact
+only for two, so this final one-unit `pyth` rounding difference remains open.
+Run the audit on a fresh `/tmp/m9-radius-trace/trace.log` with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/probe_m9_wood_radius.py /tmp/m9-radius-trace/trace.log
+```
+
+Any field change still needs both M9 and S105 crop gates.
 
 **Mask-aware wood contour levels (2026-11-05).** `woodenThing` sets
 `woodBlockMaskPath` to an inset of the plank before `woodBlock` computes
