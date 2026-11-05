@@ -2291,58 +2291,37 @@ Simpson estimate ([source manual, sections 399–414](https://tug.ctan.org/info/
 
 ### M11 q replay from production lane samples
 
-The q replay can now use the actual sampled inner lanes emitted by
-`m11_knot_tube_trace.typ`, rather than center cubics sampled from the source
-trace. A geometry comparison pairs source call/lane records to the Typst
-segments: source call 4/lane 2 and 4/lane 6 pair to strand 1/segment 0/lanes 5
-and 1; call 5/lane 2 pairs to strand 1/segment 2/lane 5. The exporter then
-maps those samples through the traced `shadowCut` time splices and supplies the
-source callback widths. Its source-arc mode matches all three complete trees,
-confirming the geometry pairing and splice map. With arcs calculated from the
-Typst samples, call 4/lane 6 still matches its 20-node tree; calls 4/lane 2
-and 5/lane 2 each stop two nodes early (38/40 and 28/30). Their segment arc
-errors peak at 24–26 fixed units, with about 9.2 units mean absolute error.
-Mapped post-shadow lane points differ from traced source cubics by at most
-0.00147 mm (mean 0.00028 mm); largest residuals cluster around segments
-18–31 depending on lane, rather than only at inserted connectors.
-A fifth-sample least-squares cubic fit shifts the error but is not a universal
-fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
-the quarter-sample implementation as the measured baseline; no production
-renderer change is claimed.
+The q replay uses the actual sampled inner lanes emitted by
+`m11_knot_tube_trace.typ`. Source call/lane pairs map to strand 1/segment 0,
+lanes 5 and 1 for source calls 4/2 and 4/6, and strand 1/segment 2/lane 5 for
+call 5/2. The exporter maps the points through traced `shadowCut` time splices
+and supplies source callback widths. **The following results supersede the
+pre-scale-correction production-lane replay figures in this section and older
+notes:** with source arc knots
+injected, all three trees and q controls match exactly (40/40, 20/20, 30/30).
+With quarter-sample cubic arc estimates from the corrected production samples,
+the trees are 36/22/34 against source 40/20/30. Cumulative arc residuals have
+max/mean absolute errors of 15/8.49, 11/3.02, and 9/3.66 fixed units for the
+three lanes. The paired post-shadow sample geometry differs from source cubics
+by max/mean `0.000414/0.000053`, `0.000400/0.000051`, and
+`0.000417/0.000055 mm`.
 
-The current tree comparison makes the estimator tradeoff explicit. With
-quarter-sample cubic integration, the candidate trees are `38/20/34` against
-source `40/20/30`; with fifth-sample fitting they are `38/22/30`; with the
-64-chord lane polyline they are `40/22/30`. Each method reproduces at least
-one lane's complete tree, but no one method reproduces all three. This points
-to the missing post-shadow lane cubic construction itself: selecting an arc
-estimator by lane or by a fixed sampling density would only transfer the
-branch error between lanes.
-
-A regenerated current-checkout trace and 64-chord replay confirm that the
-remaining tree mismatch is lane-specific: call 4/lane 2 and call 5/lane 2
-still reproduce their complete 40- and 30-node trees, while call 4/lane 6
-diverges at decision 11 (22 candidate nodes versus 20 source nodes). The
-largest segment arc residuals remain alternating in sign: `+25/-20` fixed
-units for call 4/lane 2, `-26/+19` for lane 6, and `+25/-20` for call 5/lane
-2. The first q-map divergence in call 5/lane 2 spans source segments 17–19;
-call 4/lane 2's first divergence spans 31–32. No common local correction
-emerges from these residuals, and none of the three sampled-lane q-control
-sequences is exact. This strengthens the case for generating MetaPost's
-post-`shadowCut` arc and callback-width knots from production path state rather
-than adding a fixed per-segment correction to sampled chord lengths.
+Alternative estimators move the branch mismatches: fifth-sample fitting gives
+40/22/36 nodes, a 16-chord polyline gives 40/22/34, and a 64-chord polyline
+gives 38/22/34. None matches all three trees. This isolates the remaining
+known difference to reconstructing source post-`shadowCut` arc knots from the
+production lane curves; widths, source time splice pairing, and recursive q
+construction match under the source-arc oracle. These are diagnostics only;
+no production renderer change is claimed.
 
 **M11 pre-shadow offset-cubic arc probe (2026-11-05).** The production
 `_mp-offset-boundary` port reconstructs the paired pre-shadow lane controls
-from the checked-in centerline samples with mean/max control errors of
-`0.000039–0.000041/0.000108–0.000135 mm` across calls 4/2, 4/6, and 5/2.
-Using those curves, fixed-point MetaPost cubic arcs, and the traced shadow cut
-times (without injecting source arc knots) improves mean segment arc error
-against the post-shadow trace from `8.38/8.05/8.62` to
-`8.07/7.32/8.25` fixed units. It does not recover the full trees: replayed
-counts are `38/22/28` against source `40/20/30`, and the 64-chord replay does
-better on call 5/lane 2. The candidate reconstructs the removed gap's arc
-from the underlying pre-shadow cubic, so its remaining mismatch can include
+from the checked-in centerline samples. Results recorded before the
+`M11PATHSCALE` correction used incorrectly scaled input coordinates and are
+superseded. Re-running the offset-cubic replay with the corrected fixture
+produces `38/22/26` nodes against source `40/20/30`; it still does not recover
+all three trees. The candidate reconstructs the removed gap's arc from the
+underlying pre-shadow cubic, so its remaining mismatch can include
 the `..` connector controls introduced by MetaPost's `shadowCut`. Keep this
 as a geometry probe; no production change or raster improvement is claimed.
 The probe is in `m11_knot_lane_offset_cubics.typ` and

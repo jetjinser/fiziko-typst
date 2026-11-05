@@ -75,6 +75,16 @@ gate. Items that need a prerequisite are listed after it.
 | 6 | **Wood cLine recursion and call order** | Reproduce source mask-aware contour-level bounds and exact random level draw, then carry source `st`/cell-range state and callback parameterization through recursive brush cuts; validate first on M9 and then S105. | The fresh production-matched M9 trace has 41/52 outer/thin nodes versus source 37/65; both consume 24 random calls and draw 12 dashes. The diagnostic source-q replay pairs 46 thin nodes, 43/46 recurse/stop decisions, and 11/12 dash endpoints within 0.1 mm, but integrating that forward-arc template into production regressed M9 RMSE (`0.21138138→0.21201468`). Replacing the first diagnostic contour level with the source fixed trace reduces contour point error fivefold and root q arc-x error about 6.7×, but does not change the tree counts; reproducing the source mask range and random level generation is now the first actionable step. Retain a production change only after M9 and S105 crop gates pass. |
 | 7 | **Wood knot brush offset/leaf geometry** | Separate the source cubic `fullcircle` geometry from its eight-knot width template, then compare offset boundaries and leaf endpoints before touching the band renderer. | The pinned cubic sampler reproduces source ring counts, but using its rings in production worsened M9 RMSE and coverage. Geometry is a known source behavior; production rendering remains gated on M9/S105. |
 
+**M11 fixture scale correction (2026-11-05).** The M11 lane tree and render
+trials summarized in priority 1 used the pre-correction sample fixture and are
+historical until rerun against the corrected MetaPost `mm` scale. With the
+corrected fixture, the source-arc oracle still matches the `40/20/30` trees
+exactly; deriving arcs from production lane samples gives `36/22/34`, and
+fifth-sample, 16-chord, and 64-chord estimates give `40/22/36`, `40/22/34`,
+and `38/22/34`. See the updated production-lane replay in
+`diagnostics/README.md` before using earlier M11 numbers to accept an
+implementation.
+
 **M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
 source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
 when it is given raw-fraction knot coordinates. A production candidate formed
