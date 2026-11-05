@@ -4507,6 +4507,13 @@ without a raster trial. The retained eight-chord accumulator remains in place;
 the next correction needs to address the source-time/q-arc mapping, not simply
 replace the arc-length estimator.
 
+**Arc-estimator correction (2026-11-06).** The earlier cubic-arc trial above
+used `_mp-fixed-cubic-arc-raw` results as though they were exact MetaPost
+`arclength` values. A later direct-source audit found that estimator differs
+from MetaPost by up to 25 fixed units on an individual M2 horizon cubic, so
+those trials reject that estimator-based implementation; they do not reject
+source-exact cumulative path arcs. See the direct `M11-PATHARC` audit below.
+
 **M11 fullcircle-boundary sampling trial (2026-11-05, reverted).** The coast
 q-knot comparator previously failed to map `source-time-end`: it treated the
 terminal q knot as the last sampled outline point instead of the cyclic start
@@ -4962,18 +4969,21 @@ nearly unchanged. Retain the source arithmetic correction: the exact source-q
 oracle now reproduces the complete recursive q geometry and branch choices;
 the small M9 raster tradeoff is recorded for further review.
 
-`instrument_m11_coasts.py ... --path-cubics=1,2,4` additionally exports all
-MetaPost path cubic controls as fixed-point `M11-PATHP-FIX`; run
-`compare_m11_coast_source_arcs.py TRACE` to compare their cubic arc lengths to
-source q.x knots. M1 agrees at `137/139` path boundaries (max 4 fixed units),
-M4 at `52/52` exactly, while M2 agrees at `57/170` with maximum accumulated
-error 327 units. M2's increment residuals cluster on horizon-circle spans 56–63
-and 103–109. Feeding cubic-derived arc coordinates back into the root template
-fixes M1/M4 recursion but changes the trees to `17/83/7` nodes for M1/M2/M4;
-it is rejected. Thus traced outline arclength alone is insufficient: reproduce
-the source offset-template knot/control construction and preserve callback
-widths/timing through child cuts before another production trial. Reproduce
-the source trace inside the devshell using the pinned upstream checkout:
+`instrument_m11_coasts.py ... --path-cubics=1,2,4` exports fixed-point
+`M11-PATHP-FIX` cubic controls, direct cumulative `M11-PATHARC` values from
+`arclength(subpath (0,i) of lm)`, and direct per-segment `M11-PATHARCSEG`
+values. `compare_m11_coast_source_arcs.py TRACE` compares all three with source
+root q. A fresh pinned-source run matches every cumulative path arc exactly on
+masses 1/2/4 (`139/139`, `170/170`, `52/52`); all q-knot increments also match
+direct MetaPost segment arcs (`138/138`, `169/169`, `51/51`). The prior audit
+used a separately rounded cubic estimator instead: it differs from direct
+MetaPost segment arcs by at most 4/25/0 fixed units on masses 1/2/4, producing
+the misleading 327-unit accumulated mass-2 residual. Earlier trials that fed
+that estimator's values to the root template reject those implementations,
+but do not reject exact source path-arc coordinates. Revisit production arc
+mapping using the direct source values while preserving callback widths and
+times through seams and recursive cuts. Reproduce the source trace inside the
+devshell using the pinned upstream checkout:
 
 ```sh
 nix develop path:./nix --command bash -c '

@@ -72,6 +72,14 @@ def main() -> None:
                         & traceFixed(xpart(point (tracePathSegment+1) of lm)) & " "
                         & traceFixed(ypart(point (tracePathSegment+1) of lm));
                 endfor;
+                for traceArcSegment = 0 upto floor(length(lm)):
+                    message "M11-PATHARC " & decimal(i) & " " & decimal(traceArcSegment) & " "
+                        & traceFixed(arclength(subpath (0, traceArcSegment) of lm));
+                endfor;
+                for traceArcSegment = 0 upto floor(length(lm))-1:
+                    message "M11-PATHARCSEG " & decimal(i) & " " & decimal(traceArcSegment) & " "
+                        & traceFixed(arclength(subpath (traceArcSegment, traceArcSegment+1) of lm));
+                endfor;
             fi;
 ''' for value in path_cubic_ids)
     source = replace_once(
