@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-arc-raw, _mp-fixed-mix-point, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -31,6 +31,28 @@
   cursor += 1
   let subdivision-times = _mp-path-subdivision-times(requested-subdivisions)
   let row-fraction = segment.at(2) / calc.max(1, segment.at(3))
+  let fixed-width-q-subdivision-start = fixed-width-q-cursor
+  let fixed-width-q-requested-subdivisions = 3 + int(calc.floor(
+    stream.at(fixed-width-q-cursor) * 2 + 0.5))
+  fixed-width-q-cursor += 1
+  let fixed-width-q-subdivision-times = _mp-path-subdivision-times(
+    fixed-width-q-requested-subdivisions)
+  let fixed-width-q-points = fixed-width-q-subdivision-times.map(t =>
+    _mp-fixed-cubic-at(segment.at(6), t).map(value =>
+      value / 65536 * _mp-unit))
+  let fixed-width-q-frames = _frame(fixed-width-q-points, false)
+  let fixed-width-q-fractions = _path-fractions(
+    fixed-width-q-frames.map(e => e.at(0)), false)
+  let fixed-source-arc-positions = (0.0,)
+  for i in range(fixed-width-q-points.len() - 1) {
+    fixed-source-arc-positions.push(fixed-source-arc-positions.last()
+      + _mp-fixed-pyth-distance(fixed-width-q-points.at(i),
+        fixed-width-q-points.at(i + 1)))
+  }
+  let fixed-line-length = fixed-source-arc-positions.last()
+  let points = subdivision-times.map(t => _mp-fixed-cubic-at(
+    segment.at(6), t).map(value => value / 65536 * _mp-unit))
+  let frames = _frame(points, false)
   let line-length = _dist(segment.at(0), segment.at(1))
   let width(t) = {
     let envelope = calc.sin(180deg * t) * line-length / total-width * calc.sin(180deg * row-fraction)
@@ -39,9 +61,9 @@
   // Candidate MetaPost-style 16.16 arithmetic for the scalar envelope.
   // The height normal and light make surfLight exactly one in this fixture.
   let fixed-width(t) = _flat-surface-source-width(
-    t, _mp-rounded(line-length), total-width, row-fraction, shade, 2)
+    t, fixed-line-length, total-width, row-fraction, shade, 2)
   let q = _mp-scalar-rounded
-  let width-ratio = q(_mp-rounded(line-length) / total-width)
+  let width-ratio = q(fixed-line-length / total-width)
   let width-row = q(row-fraction)
   let width-sin-time = q(_sin(q(q(0.25) * 180)))
   let width-sin-row = q(_sin(q(width-row * 180)))
@@ -59,20 +81,6 @@
       (150 + 181 / 256 + 229 / 65536) * _mp-unit,
       80 / 256 + 143 / 65536, shade, 2)
   } else { none }
-  let fixed-width-q-subdivision-start = fixed-width-q-cursor
-  let fixed-width-q-requested-subdivisions = 3 + int(calc.floor(
-    stream.at(fixed-width-q-cursor) * 2 + 0.5))
-  fixed-width-q-cursor += 1
-  let fixed-width-q-subdivision-times = _mp-path-subdivision-times(
-    fixed-width-q-requested-subdivisions)
-  let fixed-width-q-points = fixed-width-q-subdivision-times.map(t =>
-    _mp-fixed-mix-point(segment.at(0), segment.at(1), t))
-  let fixed-width-q-frames = _frame(fixed-width-q-points, false)
-  let fixed-width-q-fractions = _path-fractions(
-    fixed-width-q-frames.map(e => e.at(0)), false)
-  let points = subdivision-times.map(t => _add(segment.at(0),
-    _mul(_sub(segment.at(1), segment.at(0)), t)))
-  let frames = _frame(points, false)
   let fractions = _path-fractions(frames.map(e => e.at(0)), false)
   let widths = fractions.map(width)
   let source-arc-fixed = if segment.at(2) == 93 or segment.at(2) == 53 {
@@ -238,7 +246,8 @@
     _source-dash-length, random-stream: stream, rng-offset: fixed-width-q-cursor,
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
-    source-rounding: true, source-width-fixed: fixed-width-fixed)
+    source-rounding: true, source-width-fixed: fixed-width-fixed,
+    source-arc-positions: fixed-source-arc-positions)
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),

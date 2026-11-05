@@ -4648,22 +4648,36 @@ Keep the width operation order because it reproduces the source callback and
 substantially improves recursive q correspondence; continue to gate further
 changes on both the full row audit and paired render.
 
-**S104 remaining q-arc outliers after callback correction (2026-11-06).** A
-fresh full-row audit of the corrected callback leaves the largest q-arc
-control residual at 930 fixed units on source row `-15.34870`, node 4. Its
-paired width controls are exact; the endpoint pairing is only `0.004999 mm`,
-near the audit's `0.005 mm` tolerance. The next largest residuals are 883 and
-813 units on row `25.91135`, then 733 units on row `-1.89433`. These outliers
-occur on rows with divergent thin-node trees, so their control deltas mix
-source q-arc construction with node correspondence. Keep the width fix and
-inspect the first parent/cut divergence and exact source scanline subdivision
-points on these rows before changing q interpolation. Reproduce the focused
-outlier check with:
+**S104 clipped-cubic scanline sampling and remaining q-arc outliers
+(2026-11-06).** The source clips the scanline intersection from a `--` cubic
+in rotated coordinates, then rotates the clipped cubic back to page
+coordinates. `flatSurface` now retains that cubic for `pathSubdivide` sample
+evaluation using fixed-point cubic arithmetic; consecutive sampled lengths
+use the source's fixed-point `pyth_add`. The fixed-width-q reconstruction
+still matches all 142 row requests, brush calls (`1516/1516`), path-segment
+counts, and absolute RNG offsets. The complete tree now pairs 1,526/1,696
+source q nodes, with 1,422 exact width controls and 317 exact arc controls;
+mean/max q-arc residual is 13.206/929 fixed units (previously
+1,517/1,696, 1,414 widths, 273 arcs, and 13.852/930). The 600 ppi S104 gate
+passes; versus the preceding callback build, full/hatch RMSE changes
+`0.206395069/0.071781147 → 0.206397143/0.071792876`, while stipple remains
+`0.285145324`. This is a small raster regression retained for closer source
+sampling and q-control agreement.
+
+The largest remaining q-arc control residual is 929 fixed units on source
+row `-15.34870`, node 4. Its paired width controls are exact; endpoint
+pairing is only `0.004999 mm`, near the audit's `0.005 mm` tolerance. The next
+largest residuals are 883 and 813 units on row `25.91135`, then 733 units on
+row `-1.89433`. These rows have divergent thin-node trees, so the control
+deltas mix q-arc construction with node correspondence. Inspect the first
+parent/cut divergence and exact source scanline subdivision points on these
+rows before changing q interpolation. Reproduce the focused outlier check
+with:
 
 ```sh
 nix develop path:./nix --command python diagnostics/audit_s104_q_alignment.py \
   /tmp/s104-source-fulltrace/trace.log \
-  /tmp/s104-row98-source-fade-final-verified-unwrapped.json \
+  /tmp/s104-rotated-cubic-candidate-unwrapped.json \
   --largest-arc-errors 8 --node-field fixed-width-q-nodes
 ```
 

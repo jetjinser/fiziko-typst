@@ -74,6 +74,11 @@
   }
   if big { a * 4 } else { a }
 }
+#let _mp-fixed-pyth-distance(a, b) = {
+  let dx = int(calc.round((b.at(0) - a.at(0)) / _mp-unit * 65536))
+  let dy = int(calc.round((b.at(1) - a.at(1)) / _mp-unit * 65536))
+  _mp-fixed-pyth-add(dx, dy) * _mp-unit / 65536
+}
 #let _mp-fixed-line-cubic(a, b) = {
   let delta = (b.at(0) - a.at(0), b.at(1) - a.at(1))
   let c1 = delta.map(value => _mp-fixed-round-ratio(value, 3))
@@ -3086,11 +3091,20 @@
     let forward-hit = intersection-times(ray, edge-curves)
     let reverse-hit = intersection-times(reverse-ray, edge-curves)
     if forward-hit.at(0) >= 0 and reverse-hit.at(0) >= 0 {
-      let u0 = _mp-fixed-cubic-at(ray, forward-hit.at(0)).at(0)
-      let u1 = _mp-fixed-cubic-at(reverse-ray, reverse-hit.at(0)).at(0)
+      let clipped-start = _mp-fixed-cubic-at(ray, forward-hit.at(0))
+      let clipped-end = _mp-fixed-cubic-at(reverse-ray, reverse-hit.at(0))
+      let u0 = clipped-start.at(0)
+      let u1 = clipped-end.at(0)
       if u1 - u0 > int(calc.round(0.001 / _mp-unit * one)) {
+        // MetaPost clips the rotated `--` hatch line, then rotates that new
+        // cubic back into page coordinates before pathSubdivide. Retain the
+        // rotated fixed controls so subdivision sees the same `--` rounding
+        // instead of treating the final endpoints as an ideal straight line.
+        let clipped-cubic = _mp-fixed-line-cubic(
+          (u0, height), (u1, height)).map(point => rotate(point, 1))
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
-          (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit))
+          (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit,
+          clipped-cubic))
       }
     }
   }
@@ -3273,7 +3287,20 @@
       _mp-path-subdivision-times(requested-subdivisions)
     } else { range(requested-subdivisions + 1).map(i => i / requested-subdivisions) }
     let row-fraction = s.at(2) / calc.max(1, s.at(3))
-    let line-length = _dist(s.at(0), s.at(1))
+    let source-fixed = source-fixed-scanlines
+    let pts = subdivision-times.map(t => if source-fixed {
+      _mp-fixed-cubic-at(s.at(6), t).map(value => value / 65536 * _mp-unit)
+    } else { _add(s.at(0), _mul(_sub(s.at(1), s.at(0)), t)) })
+    let source-arc-positions = if source-fixed {
+      let positions = (0.0,)
+      for i in range(pts.len() - 1) {
+        positions.push(positions.last() + _mp-fixed-pyth-distance(
+          pts.at(i), pts.at(i + 1)))
+      }
+      positions
+    } else { none }
+    let line-length = if source-fixed { source-arc-positions.last() }
+      else { _dist(s.at(0), s.at(1)) }
     let width(t, end-fade, scale) = {
       let envelope = (
         calc.sin(180deg * t)
@@ -3284,11 +3311,6 @@
     }
     let source-fixed-width(t) = _flat-surface-source-width(
       t, line-length, total-width, row-fraction, shade, 2)
-    let source-fixed = source-fixed-scanlines
-    // MetaPost pathSubdivide rounds each line point with scaled arithmetic.
-    let pts = subdivision-times.map(t => if source-fixed {
-      _mp-fixed-mix-point(s.at(0), s.at(1), t)
-    } else { _add(s.at(0), _mul(_sub(s.at(1), s.at(0)), t)) })
     if style == "stipples" {
       items.push(stroke-stipple-brush(pts,
         t => width(t, 5 / 6, dot-size / _source-min-stroke),
@@ -3313,7 +3335,8 @@
           period: _source-dash-length, seed: seed + s.at(2),
           _random-stream: stream, _rng-offset: cursor, _with-rng: true,
           _source-rounding: true,
-          _source-width-fixed: source-width-fixed)
+          _source-width-fixed: source-width-fixed,
+          _source-arc-positions: source-arc-positions)
         items.push(drawn.at(0))
         cursor += drawn.at(1)
       } else {
