@@ -4444,23 +4444,23 @@ step must keep rendered outline knots and recursive source-time/arc controls
 as separate representations, then pass all six coast trees and the raster
 gate.
 
-**S104 current recursive-q checkpoint (2026-11-05).** A newly regenerated
-pinned-source trace and current Typst metadata confirm that the retained
-fixed-width q callback still matches all 142 subdivision draws, row call
-vectors, path segment counts, and absolute RNG offsets; total brush calls are
-`1516/1516`. The current full-trace q audit pairs `1476/1696` source nodes,
-with `1213` exact width-control nodes and q-arc residual mean/max `58.733/933`
-units. On row 93 (`y=-6.37912`), the diagnostic injection of the exact traced
-source q cubics yields `19/19` endpoint pairs and exact width and arc controls
-on every pair. On row 99 (`y=-11.76086`), the same oracle yields `17/19`;
-the two unmatched source leaves are the short adjacent interval whose child
-endpoint becomes one fixed width unit too high under the half-time split.
-This fresh run confirms that the source q trace is a strong local oracle, but
-does not justify injecting source-specific curves into production. The
-general implementation target is the source's q-control construction and
-recursive child split arithmetic from the already matched callback/row state;
-accept only a candidate that preserves all 142 random schedules and improves
-the full-tree plus 600 ppi whole/hatch comparison.
+**S104 current recursive-q checkpoint (2026-11-06).** A fresh run from the
+pinned upstream source and current Typst checkout confirms that the retained
+fixed-width q callback matches all 142 subdivision draws, row call vectors,
+path segment counts, and absolute RNG offsets; total brush calls are
+`1516/1516`. The full-trace q audit pairs `1486/1696` source nodes, with
+`1232` exact width-control nodes and q-arc residual mean/max `55.788/933`
+16.16 bp units. The largest width-control discrepancy is 3 units. On row 93
+(`y=-6.37912`), all 19 thin nodes pair and width controls are exact; the
+source-rounded path points leave q-arc controls within 16 units. On row 99
+(`y=-11.76086`), the fresh production trace pairs all 19 nodes with exact
+width controls and q-arc residual max 73 units. This supersedes the older
+report that two leaves missed because a width endpoint was one unit high; that
+report came from stale trace files. The broader remaining gap is in q-arc
+construction and the rows whose recursive branches still diverge, not in the
+142-row RNG schedule or this row's width interpolation. Preserve these fresh
+traces as the baseline and accept future changes only when they improve the
+full-tree plus 600 ppi whole/hatch comparison.
 
 A refreshed source run with `S104-PCURVE` controls confirms that row 93's
 remaining local q-arc residual is not caused by centerline curvature. Source
