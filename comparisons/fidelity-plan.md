@@ -112,27 +112,27 @@ changes were reverted. Keep the source-cubic fixture and offset replay as
 diagnostics, and use a source-faithful offset join/shadow connector before
 trying another production integration.
 
-**M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
-source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
-when it is given raw-fraction knot coordinates. A production candidate formed
-each accepted knot coordinate as a separately 16.16-rounded raw RNG product
-plus the rounded negative half-radius offset, while leaving the rounded random
-stream, column jitter and call cursor unchanged. Same-checkout 600 ppi renders
-against the current baseline show mixed region results: M9 full RMSE improves
-`0.211452985 → 0.211396935`, with top-right/bottom-right improving
-`0.233712567/0.170635231 → 0.233487254/0.170547375`, but top-left/bottom-left
-regress `0.194674703/0.239184657 → 0.194677923/0.239266706`. S105 full/block
-regress `0.101683758/0.127907934 → 0.101694601/0.127932279`; surface improves
-`0.075817840 → 0.075811201`. The candidate is reverted because the block
-regression and two M9 crop regressions mean the coordinate rule does not yet
-clear the paired wood gates. Continue by tracing the source fixed-point
-conversion of accepted knot coordinates and test it against all four M9 panel
-streams and both S105 regions before changing production again.
+**M9 raw-fraction dimensional knot coordinates (2026-11-05, retained in
+`af025eb`).** `_woodblock-field` preserves the raw MetaPost RNG fraction until
+after the dimensional bound multiplication, then applies 16.16 rounding to
+the product and shifted coordinate. The rounded random stream still drives
+column jitter, and knot rejection and field cursors are unchanged. Across the
+four M9 panel streams, all 17 source/Typst knot pairs improve from mean/max
+position error `0.0002555/0.0005032` to `0.0000748/0.0001469 mm`; cursors
+remain `204/174/174/174`. On the focused path, 19/19 visited cells remain
+paired; path-point error changes `0.001967/0.004645 → 0.001936/0.004439 mm`,
+root-cut error `0.003811 → 0.003572 mm`, and paired thin-tree decisions
+`39/44 → 42/46`. The outer-node count falls from 41 to 25 against 37 in source,
+so that count is a remaining tradeoff. Same-run 600 ppi M9 full RMSE improves
+`0.211452985 → 0.211396935`; S105 full RMSE increases slightly
+`0.101683758 → 0.101694601`, with the block/surface tradeoff documented in
+`diagnostics/README.md`. Keep the measured source-coordinate and M9 gains;
+continue aligning the M9 outer tree and protect the S105 block crop.
 
-**M9 fixed-coordinate replay follow-up (2026-11-05, reverted).** The source
-trace records each raw `uniformdeviate(bound)` result and the resulting
-accepted `WKCAND` coordinates. Baseline and source both accept `5/4/4/4`
-knots on the four panels with source offsets `0/1456/2823/4120` and Typst
+**M9 source-detail fixed-coordinate replay (2026-11-05, rejected alternative).**
+The source trace records each raw `uniformdeviate(bound)` result and the
+resulting accepted `WKCAND` coordinates. Baseline and source both accept
+`5/4/4/4` knots on the four panels with source offsets `0/1456/2823/4120` and Typst
 field random counts `204/174/174/174`; the baseline positional mean/max error
 per panel is `0.000306/0.000505`, `0.000236/0.000326`,
 `0.000278/0.000450`, and `0.000191/0.000292 mm`. Replaying the source's
@@ -148,7 +148,8 @@ top-right and bottom-left crops regress `0.194674703/0.233712567/0.239184657
 → 0.195252499/0.233848533/0.239283558`, while bottom-right improves
 `0.170635231 → 0.170035834`. S105 full/block regress
 `0.101683758/0.127907934 → 0.101692659/0.127928593`; surface improves
-`0.075817840 → 0.075811463`. This source-exact geometry replay is reverted:
+`0.075817840 → 0.075811463`. This more literal source-detail coordinate replay
+was reverted in favor of the raw-fraction dimensional rounding above:
 all four accepted-knot sequences and RNG offsets match, yet M9 and S105 render
 gates regress. The remaining wood gap is therefore in how source field values
 and resulting contours are evaluated around these accurately paired knots,
