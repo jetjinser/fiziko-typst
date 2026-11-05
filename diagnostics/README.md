@@ -4156,6 +4156,19 @@ the current terminal callback mapping; this production change was reverted
 without a raster trial. The mass-1 terminal seam remains open, and any fix must
 distinguish its source topology from mass 4's hidden-start cyclic outline.
 
+A second seam candidate removed only a terminal outline sample that was within
+`0.0001 mm` of its predecessor while the cyclic start was farther away, and
+retained the cumulative closing arc as the `source-time-end` endpoint. This
+reduced mass 1's terminal source/Typst q-knot x residual from `68,695` to `468`
+fixed units, but its branch decision remained wrong (`15/17` thin nodes) and
+the paired depth-5 endpoint error increased from `0.01056` to `0.01847 mm`.
+Mass 2 stayed at `57/57` nodes and `26/31` decision agreement; mass 4 again
+regressed from `31/31` to `31/7`. The production edit was reverted without a
+raster trial. This confirms that including the closing arc is necessary for
+the terminal q coordinate but insufficient to restore the recursive source
+tree; the cyclic path-time and its source width/cubic controls must be mapped
+together.
+
 **M11 coastline exact-cubic arc-length trials (2026-11-05, rejected).** The
 first candidate replaced the eight-chord horizon arc accumulator with lengths
 from the rotated MetaPost `fullcircle` cubic segments. It mistakenly added the
