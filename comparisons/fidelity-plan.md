@@ -1701,6 +1701,12 @@ only and does not yet justify a production q-clock rule or raster trial. A
 `38/22/28`, and `40/22/30` against source `40/20/30`, despite endpoint drift
 falling from thousands of units at one chord to at most nine at sixteen.
 Recursive decisions therefore do not converge with arc-density alone.
+Current q-tree replays put the estimator tradeoff at `38/20/34` nodes for
+quarter-sample cubic integration, `38/22/30` for fifth-sample fitting, and
+`40/22/30` for 64-chord polylines, against source `40/20/30`. No estimator
+reproduces all three lanes, so a lane-specific or fixed-density switch would
+move the discrepancy rather than solve it. The missing source post-shadow
+lane cubic construction remains the production target.
 At call 4/lane 6's first divergent node, a 64-chord replay maps to source
 segments 6–8; their local arc errors are only `+1/+2/-11` fixed units. The
 paired node has exact width controls and at most 14 units of q-arc control

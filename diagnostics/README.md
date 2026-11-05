@@ -2277,6 +2277,15 @@ fix: it recovers call 5/lane 2 while changing call 4/lane 6 to 22 nodes. Keep
 the quarter-sample implementation as the measured baseline; no production
 renderer change is claimed.
 
+The current tree comparison makes the estimator tradeoff explicit. With
+quarter-sample cubic integration, the candidate trees are `38/20/34` against
+source `40/20/30`; with fifth-sample fitting they are `38/22/30`; with the
+64-chord lane polyline they are `40/22/30`. Each method reproduces at least
+one lane's complete tree, but no one method reproduces all three. This points
+to the missing post-shadow lane cubic construction itself: selecting an arc
+estimator by lane or by a fixed sampling density would only transfer the
+branch error between lanes.
+
 A regenerated current-checkout trace and 64-chord replay confirm that the
 remaining tree mismatch is lane-specific: call 4/lane 2 and call 5/lane 2
 still reproduce their complete 40- and 30-node trees, while call 4/lane 6
