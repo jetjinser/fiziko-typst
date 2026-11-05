@@ -368,7 +368,7 @@ def main() -> None:
     if source.count(clip_anchor) != 1:
         raise ValueError(f"expected one flatSurface clip block, found {source.count(clip_anchor)}")
     clip_trace = '''            aHatch := (xpart(llcorner(p)),i) -- (xpart(lrcorner(p)), i);
-            if abs(i + 6.37912) < 0.00001:
+            if traceFlatClip and (abs(i + 6.37912) < 0.00001):
                 for traceClipIndex := 0 step 1 until length(surfPath):
                     traceClipPoint("S104-CLIP-SURF", i, traceClipIndex, point traceClipIndex of surfPath);
                 endfor;
@@ -378,26 +378,47 @@ def main() -> None:
                 traceClipPoint("S104-CLIP-RAW", i, 0, point 0 of aHatch);
                 traceClipPoint("S104-CLIP-RAW", i, 1, point 1 of aHatch);
             fi;
+            traceClipInput := aHatch;
             traceClipForward := aHatch firstIntersectionTimes p;
             traceClipReverse := reverse(aHatch) firstIntersectionTimes p;
-            if abs(i + 6.37912) < 0.00001:
-                traceClipPair("S104-CLIP-T1", i, xpart(traceClipForward), ypart(traceClipForward));
-                traceClipPair("S104-CLIP-T2", i, xpart(traceClipReverse), ypart(traceClipReverse));
-                traceClipPoint("S104-CLIP-HIT", i, 0, point xpart(traceClipForward) of aHatch);
-                traceClipPoint("S104-CLIP-HIT", i, 1, point xpart(traceClipReverse) of reverse(aHatch));
-            fi;
             aHatch := (point xpart(traceClipForward) of aHatch) --
                 (point xpart(traceClipReverse) of reverse(aHatch));
-            if abs(i + 6.37912) < 0.00001:
+            if traceFlatClip and (arclength(aHatch) > 0):
+                traceClipPair("S104-CLIP-ROW", i, i, 0);
+                traceClipPoint("S104-CLIP-RAW", i, 0, point 0 of traceClipInput);
+                traceClipPoint("S104-CLIP-RAW", i, 1, point 1 of traceClipInput);
+                traceClipPair("S104-CLIP-T1", i, xpart(traceClipForward), ypart(traceClipForward));
+                traceClipPair("S104-CLIP-T2", i, xpart(traceClipReverse), ypart(traceClipReverse));
+                traceClipPoint("S104-CLIP-HIT", i, 0, point xpart(traceClipForward) of traceClipInput);
+                traceClipPoint("S104-CLIP-HIT", i, 1, point xpart(traceClipReverse) of reverse(traceClipInput));
                 traceClipPoint("S104-CLIP-OUT", i, 0, point 0 of aHatch);
                 traceClipPoint("S104-CLIP-OUT", i, 1, point 1 of aHatch);
             fi;'''
     source = source.replace(clip_anchor, clip_trace)
+    flat_surface_rotation = "    p := surfPath rotated -hatchAngle;"
+    if source.count(flat_surface_rotation) != 1:
+        raise ValueError("expected one flatSurface source rotation")
+    source = source.replace(
+        flat_surface_rotation,
+        '    traceFlatClip := (str @# = "") or (str @# = "hatches");\n'
+        + flat_surface_rotation,
+    )
+    flat_surface_end = (
+        "    clip hatchImage to surfPath;\n"
+        "    image(\n"
+        "        draw hatchImage;\n"
+        "    )\n"
+        "enddef;"
+    )
+    if source.count(flat_surface_end) != 1:
+        raise ValueError("expected one flatSurface return block")
+    source = source.replace(flat_surface_end, flat_surface_end.replace(
+        "    image(", "    traceFlatClip := false;\n    image("))
     rotate_anchor = "                aHatch := aHatch rotated hatchAngle;"
     if source.count(rotate_anchor) != 1:
         raise ValueError(f"expected one flatSurface hatch rotation, found {source.count(rotate_anchor)}")
     source = source.replace(rotate_anchor, rotate_anchor + '''
-                if abs(i + 6.37912) < 0.00001:
+                if traceFlatClip:
                     traceClipPoint("S104-CLIP-ROT", i, 0, point 0 of aHatch);
                     traceClipPoint("S104-CLIP-ROT", i, 1, point 1 of aHatch);
                 fi;''')
@@ -466,14 +487,17 @@ numeric traceSubdivisions;
 traceSubdivisions := 0;
 boolean traceFlatHatch;
 boolean traceThinCutActive;
+boolean traceFlatClip;
 numeric traceHatchRow;
 numeric traceThinSerial;
 numeric traceCutSerial;
 numeric traceHatchPoint;
 numeric traceClipIndex;
 pair traceClipForward, traceClipReverse;
+path traceClipInput;
 traceFlatHatch := false;
 traceThinCutActive := false;
+traceFlatClip := false;
 traceHatchRow := 0;
 traceThinSerial := 0;
 traceCutSerial := 0;

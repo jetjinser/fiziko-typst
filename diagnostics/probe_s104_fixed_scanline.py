@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconstruct one S104 source scanline with 16.16 line intersections."""
+"""Reconstruct S104 source scanlines with 16.16 line intersections."""
 
 import argparse
 import math
@@ -144,13 +144,63 @@ def traced_rotated_panel(log_path, row):
     return [result[i] for i in indexes]
 
 
+def traced_clip_rows(log_path):
+    rows = {}
+    for line in Path(log_path).read_text().splitlines():
+        fields = line.split()
+        if fields and fields[0] == "S104-CLIP-ROW" and len(fields) == 8:
+            _, row_text, whole, high, low, _, _, _ = fields
+            row_fixed = int(whole) * SCALE + int(high) * 256 + int(low)
+            rows[round(float(row_text) * SCALE)] = (row_fixed, {})
+        elif fields and fields[0] == "S104-CLIP-ROT" and len(fields) == 9:
+            _, row_text, index, x, xh, xl, y, yh, yl = fields
+            key = round(float(row_text) * SCALE)
+            row_fixed, points = rows.setdefault(key, (key, {}))
+            points[int(index)] = (
+                int(x) * SCALE + int(xh) * 256 + int(xl),
+                int(y) * SCALE + int(yh) * 256 + int(yl),
+            )
+    complete = {}
+    for row, (row_fixed, points) in rows.items():
+        if sorted(points) == [0, 1]:
+            complete[row_fixed] = [points[0], points[1]]
+    return complete
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_trace", type=Path)
     parser.add_argument("--row", type=float, default=-6.37912)
     parser.add_argument("--frame-height", type=float, default=44.0)
     parser.add_argument("--hatch-angle", type=float, default=30.0)
+    parser.add_argument("--all-rows", action="store_true")
     args = parser.parse_args()
+    if args.all_rows:
+        source_rows = traced_clip_rows(args.source_trace)
+        if not source_rows:
+            raise SystemExit("source trace has no complete S104-CLIP-ROW records")
+        errors = []
+        for row_fixed, source_points in source_rows.items():
+            source = [
+                (x / SCALE * MM_PER_BP,
+                 args.frame_height - y / SCALE * MM_PER_BP)
+                for x, y in source_points
+            ]
+            actual = intersections(row_fixed / SCALE,
+                                   args.frame_height, args.hatch_angle)
+            if len(actual) != 2:
+                raise SystemExit(
+                    f"row {row_fixed}: expected two candidate crossings, got {len(actual)}")
+            errors.extend((math.dist(a, b), row_fixed, index, a, b)
+                          for index, (a, b) in enumerate(zip(source, actual)))
+        print(f"complete source rows: {len(source_rows)}")
+        print(f"fixed reconstruction endpoint error mean/max: "
+              f"{sum(item[0] for item in errors) / len(errors):.9f}/"
+              f"{max(errors)[0]:.9f} mm")
+        for error, row, endpoint, source, candidate in sorted(errors, reverse=True)[:5]:
+            print(f"worst row {row / SCALE:.5f} endpoint {endpoint}: "
+                  f"{error:.9f} mm; source={source}; candidate={candidate}")
+        return
     source = source_segments(args.source_trace, args.row)[0]
     expected = tuple((x, args.frame_height - y) for x, y in source)
     actual = intersections(args.row, args.frame_height, args.hatch_angle)

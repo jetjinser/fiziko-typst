@@ -3741,16 +3741,23 @@ candidate only. The corrected fixed-`mm` geometry still needs full-row
 pairing, recursive-tree comparison, and a fresh 600 ppi render before
 production integration.
 
-Rechecking the same reconstruction against all 142 current paired rows gives
-an average summed endpoint error of `0.000089 mm` against the pinned source's
-five-decimal `S104-SEG` output; the current Typst scanline endpoints average
-`0.000520 mm` against that same rounded output. The candidate is closer on all
-rows in this coarse comparison, with worst row `0.000826 mm`. Only row
-`-6.37912` has full 16.16 source endpoint coordinates in the trace, and its
-left/right errors are `0.00000761/0.00000538 mm`. The full-row metrics above
-were collected with the earlier `72/25.4` conversion; preserve the distinction
-between that coarse historical comparison and this focused exact-coordinate
-result. The corrected geometry still needs all-row and recursive q validation.
+The source instrumenter now records exact 16.16 clipping inputs, both
+`firstIntersectionTimes` pairs, hit points, and rotated endpoints for all 142
+nonempty hatch rows. Reconstructing against those exact source endpoints gives
+mean/max endpoint error `0.000022921/0.000819908 mm`; the five largest errors
+are all below `0.00082 mm` and occur near polygon corners. This confirms the
+fixed-`mm` panel rotation and half-open crossing model across every source row.
+It does not establish a recursive-tree or rendered-image improvement. Earlier
+whole-row metrics against five-decimal `S104-SEG` output used the wrong
+`72/25.4` conversion and are historical only. Keep this reconstruction as a
+diagnostic oracle; require a fresh 142-row recursion comparison and paired 600
+ppi render before considering production integration. Reproduce the probe
+from a fresh instrumented source log with:
+
+```sh
+nix develop path:./nix --command python diagnostics/probe_s104_fixed_scanline.py \
+  /tmp/s104-source-fulltrace/trace.log --all-rows
+```
 
 A further diagnostic supplied each subdivided Typst vertex width to
 `_ink-loops` as a source-rounded 16.16 q-template knot, letting it rebuild q
