@@ -4204,6 +4204,16 @@ recursive child split arithmetic from the already matched callback/row state;
 accept only a candidate that preserves all 142 random schedules and improves
 the full-tree plus 600 ppi whole/hatch comparison.
 
+A refreshed source run with `S104-PCURVE` controls confirms that row 93's
+remaining local q-arc residual is not caused by centerline curvature. Source
+node 164 has three straight cubic segments; its paired Typst node endpoints
+differ by `0.000171 mm`, all width controls are exact, and q-arc controls
+differ by at most 16 fixed units. The root line and subdivision schedule are
+already paired, so this local residual enters in how the q arc coordinates
+survive recursive subpath cuts. Keep the next probe focused on source q
+parameter mapping through those cuts rather than changing the hatch geometry
+or width law.
+
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
 M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to
 find 19 source contour cells and 21 Typst cells. The two extra Typst records
