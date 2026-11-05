@@ -4130,6 +4130,23 @@ where that drift first enters the ancestry. Keep the terminal-seam branch
 decision as the visible symptom, but do not treat source child propagation as
 the root cause without that earlier mapping audit.
 
+That mapping audit identifies a concrete root-path seam omission. The source
+mass-1 q path's first and terminal points coincide at
+`(23.20318, 7.62602) mm`; Typst's first outline point is within `0.00014 mm`,
+but `source-time-end=138` currently lands on the final sampled outline point
+`(22.85168, 7.50295) mm`, `0.37230 mm` from the start. The arc table contains
+the closing arc (`0.37230 mm`) as an extra terminal entry, but there is no
+matching source-time point for that arc endpoint. The same shape occurs on
+masses 2 and 4: source terminal points match Typst starts within `0.00012` and
+`0.00007 mm`, while Typst's final samples sit `0.16778` and `0.02188 mm` from
+their starts. Masses 5, 7, and 8 already have coincident first/last Typst
+outline points. This explains why the source q curve's terminal interval is
+lost from the indexed callback map on masses 1/2/4. A prior direct endpoint
+substitution left masses 1/2 unchanged and regressed mass 4 from 31/31 to 31/7
+thin nodes, so the next implementation must carry the closing arc as a proper
+cyclic q-time segment with its endpoint widths and controls, not patch only
+the final sample.
+
 A focused terminal-time candidate then mapped the final callback directly to
 the closed path endpoint, so its q.x included the final cyclic arc instead of
 stopping at the last sampled vertex. This left mass 1/2 unchanged at
