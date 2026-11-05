@@ -4512,6 +4512,23 @@ On row 99 (`y=-11.76086`), all 19 nodes pair with exact widths and q-arc
 residual max 73 units. The older report of two row-99 leaves missing because
 a width endpoint was one unit high came from stale trace files.
 
+The remaining row-93 q-arc mismatch came from clipping the scanline by direct
+line/edge algebra. MetaPost applies `firstIntersectionTimes` to cubic paths,
+including the `--` controls on the horizontal ray and polygon edges. The source
+instrumenter now records those focused-row handles, and
+`s104_clip_intersection_probe.typ` verifies that the fixed-point cubic solver
+reproduces the source's forward and reverse hit pairs exactly. The production
+scanner now builds those straight cubics and uses the same solver per edge;
+on row 93, all 19 thin nodes still pair, width controls remain exact, and q-arc
+control residual falls from mean/max `10.780/16` to `0.538/1` fixed units.
+Across the full trace, row call/RNG schedules remain exact (`142/142`), with
+`1489/1696` source q nodes paired and full-tree q-arc residual
+`27.964/884` units. Against a same-HEAD 600 ppi baseline, full/hatch RMSE
+improves `0.206396138/0.071787194 → 0.206393200/0.071770575`; stipple is
+unchanged. Keep the source cubic intersection path. Remaining recursion
+divergence is concentrated in other rows, especially rows 99, 98, 87, and 53;
+the source schedule and exact row-93 branch do not establish full tree parity.
+
 For row 28.60222, the current root q x-control residual falls from mean/max
 `93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched
 to baseline floating scanlines (`use-source-fixed-scanlines = false`), the
@@ -4540,8 +4557,9 @@ differ from Typst's same-time samples by `0.00008–0.00014 mm`. The first
 mismatch is in scanline endpoint/subdivision geometry before q construction;
 do not adjust the matching outer cut or child split.
 
-The source instrumenter now also emits fixed 16.16 `S104-HATCHPT`,
-`S104-HATCHBP`, and `S104-HATCHARC` records for row `-6.37912`. Its root q
+The source instrumenter emits fixed 16.16 `S104-HATCHPT`, `S104-HATCHBP`, and
+`S104-HATCHARC` records for selected rows (pass `-6.37912,28.60222` as its
+optional detail argument). Row `-6.37912` root q
 arc knots are
 `[0, 2298558, 4597113, 6895671, 6895777]`; the Typst row's
 `source-arc-fixed` knots are `[0, 2298550, 4597100, 6895650, 6895754]`.

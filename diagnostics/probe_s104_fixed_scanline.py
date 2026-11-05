@@ -42,10 +42,10 @@ def source_segments(log_path, row):
         fields = line.split()
         if len(fields) >= 2 and fields[0] == "FSROW":
             source_row = float(fields[1])
-        elif (len(fields) == 8 and fields[0] == "S104-HATCHBP"
+        elif (len(fields) == 9 and fields[0] == "S104-HATCHBP"
               and source_row is not None
               and abs(source_row - row) < 0.00001):
-            _, index, x, xh, xl, y, yh, yl = fields
+            _, _, index, x, xh, xl, y, yh, yl = fields
             fixed_points[int(index)] = (
                 int(x) * SCALE + int(xh) * 256 + int(xl),
                 int(y) * SCALE + int(yh) * 256 + int(yl),

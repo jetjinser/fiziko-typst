@@ -6,6 +6,8 @@ import json
 import math
 from pathlib import Path
 
+from compare_s104_row_calls import source_rows
+
 
 SCALE = 65536
 MM_PER_BP = 25.4 / 72
@@ -23,13 +25,17 @@ def source_records(path, row):
         if not fields:
             continue
         if fields[0] == "S104-HATCHBP":
-            _, index, x, xh, xl, y, yh, yl = fields
+            _, source_row, index, x, xh, xl, y, yh, yl = fields
+            if abs(float(source_row) - row) > 0.00001:
+                continue
             points[int(index)] = (
                 fixed_chunks(int(x), int(xh), int(xl)),
                 fixed_chunks(int(y), int(yh), int(yl)),
             )
         elif fields[0] == "S104-HATCHARC":
-            _, index, whole, high, low = fields
+            _, source_row, index, whole, high, low = fields
+            if abs(float(source_row) - row) > 0.00001:
+                continue
             arcs[int(index)] = fixed_chunks(
                 int(whole), int(high), int(low))
     if len(points) < 2 or len(arcs) != len(points):
@@ -57,8 +63,13 @@ def main():
     parser.add_argument("--frame-height", type=float, default=44)
     args = parser.parse_args()
 
-    source_points, source_arcs = source_records(args.source_trace, args.row)
     row = typst_row(args.typst_rows, args.row)
+    typst_data = json.loads(Path(args.typst_rows).read_text())
+    typst_rows = typst_data["rows"] if isinstance(typst_data, dict) else typst_data
+    row_index = next(index for index, item in enumerate(typst_rows)
+                     if item.get("row") == args.row)
+    source_y = source_rows(args.source_trace)[row_index]["row"]
+    source_points, source_arcs = source_records(args.source_trace, source_y)
     start, end = row["start"], row["end"]
     times = row["sample-times"]
     if len(times) != len(source_points):

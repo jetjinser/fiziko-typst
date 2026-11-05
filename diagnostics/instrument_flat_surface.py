@@ -383,8 +383,14 @@ def main() -> None:
                 for traceClipIndex := 0 step 1 until length(p):
                     traceClipPoint("S104-CLIP-POLY", i, traceClipIndex, point traceClipIndex of p);
                 endfor;
+                for traceClipIndex := 0 step 1 until length(p)-1:
+                    traceClipPoint("S104-CLIP-POLY-POST", i, traceClipIndex, postcontrol traceClipIndex of p);
+                    traceClipPoint("S104-CLIP-POLY-PRE", i, traceClipIndex, precontrol (traceClipIndex+1) of p);
+                endfor;
                 traceClipPoint("S104-CLIP-RAW", i, 0, point 0 of aHatch);
                 traceClipPoint("S104-CLIP-RAW", i, 1, point 1 of aHatch);
+                traceClipPoint("S104-CLIP-RAY-POST", i, 0, postcontrol 0 of aHatch);
+                traceClipPoint("S104-CLIP-RAY-PRE", i, 0, precontrol 1 of aHatch);
             fi;
             traceClipInput := aHatch;
             traceClipForward := aHatch firstIntersectionTimes p;
@@ -455,6 +461,7 @@ def main() -> None:
         raise ValueError(f"expected one pathSubdivide hook, found {source.count(subdivide_anchor)}")
     source = source.replace(
         subdivide_anchor,
+        "traceHatchRow := i;\n"
         "traceSubdivisionDraw := uniformdeviate(2);\n"
         "traceSubdivisions := 3+round(traceSubdivisionDraw);\n"
         "                aHatch := pathSubdivide(aHatch,traceSubdivisions);\n"
@@ -474,9 +481,10 @@ def main() -> None:
         '                    endfor;\n'
         '                fi;',
     )
-    row_condition = " or ".join(
-        f"abs(i - {row:.5f}) < 0.00001" for row in path_cubic_rows
-    )
+    row_distance = f"abs(i - {path_cubic_rows[0]:.5f})"
+    for row in path_cubic_rows[1:]:
+        row_distance = f"min({row_distance}, abs(i - {row:.5f}))"
+    row_condition = f"{row_distance} < 0.00001"
     source = source.replace(
         "if abs(i + 6.37912) < 0.00001:",
         f"if {row_condition}:", 1
@@ -551,7 +559,7 @@ vardef traceHatchPointRecord (expr index, z) =
     yw := floor(ypart z / mm);
     yh := floor((ypart z / mm - yw) * 256);
     yl := round(((ypart z / mm - yw) * 256 - yh) * 256);
-    message "S104-HATCHPT " & decimal(index) & " "
+    message "S104-HATCHPT " & decimal(traceHatchRow) & " " & decimal(index) & " "
         & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
         & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
 enddef;
@@ -561,7 +569,7 @@ vardef traceHatchArcRecord (expr index, arc) =
     aw := floor(arc);
     ah := floor((arc - aw) * 256);
     al := round(((arc - aw) * 256 - ah) * 256);
-    message "S104-HATCHARC " & decimal(index) & " "
+    message "S104-HATCHARC " & decimal(traceHatchRow) & " " & decimal(index) & " "
         & decimal(aw) & " " & decimal(ah) & " " & decimal(al);
 enddef;
 vardef traceHatchBpRecord (expr index, z) =
@@ -573,7 +581,7 @@ vardef traceHatchBpRecord (expr index, z) =
     yw := floor(ypart z);
     yh := floor((ypart z - yw) * 256);
     yl := round(((ypart z - yw) * 256 - yh) * 256);
-    message "S104-HATCHBP " & decimal(index) & " "
+    message "S104-HATCHBP " & decimal(traceHatchRow) & " " & decimal(index) & " "
         & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
         & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
 enddef;
@@ -584,9 +592,10 @@ vardef traceUniformdeviate (expr x) =
     uniformdeviate(x)
 enddef;
 """
-    condition = " or ".join(
-        f"traceHatchRow = {row:.5f}" for row in path_cubic_rows
-    )
+    row_distance = f"abs(traceHatchRow - {path_cubic_rows[0]:.5f})"
+    for row in path_cubic_rows[1:]:
+        row_distance = f"min({row_distance}, abs(traceHatchRow - {row:.5f}))"
+    condition = f"{row_distance} < 0.00001"
     source = source.replace(
         "if traceHatchRow = -6.37912:", f"if {condition}:", 1
     )

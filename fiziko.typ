@@ -21,7 +21,7 @@
 
 #import "solve.typ": solve-linear, line-intersect, pyth-add, pyth-sub
 #import "contour.typ": marching-squares
-#import "intersection.typ": intersection-times
+#import "intersection.typ": intersection-times, cubic-intersection
 
 // ---------------------------------------------------------------------------
 // constants
@@ -73,6 +73,26 @@
     b = _mp-fixed-round-ratio(b * ratio, _mp-fraction-one)
   }
   if big { a * 4 } else { a }
+}
+#let _mp-fixed-line-cubic(a, b) = {
+  let delta = (b.at(0) - a.at(0), b.at(1) - a.at(1))
+  let c1 = delta.map(value => _mp-fixed-round-ratio(value, 3))
+  let c2 = delta.map(value => _mp-fixed-round-ratio(2 * value, 3))
+  (a, (a.at(0) + c1.at(0), a.at(1) + c1.at(1)),
+   (a.at(0) + c2.at(0), a.at(1) + c2.at(1)), b)
+}
+#let _mp-fixed-cubic-at(points, t) = {
+  let q = int(calc.round(t * 65536))
+  let mix(a, b) = (
+    a.at(0) + _mp-fixed-round-ratio((b.at(0) - a.at(0)) * q, 65536),
+    a.at(1) + _mp-fixed-round-ratio((b.at(1) - a.at(1)) * q, 65536),
+  )
+  let a = mix(points.at(0), points.at(1))
+  let b = mix(points.at(1), points.at(2))
+  let c = mix(points.at(2), points.at(3))
+  let d = mix(a, b)
+  let e = mix(b, c)
+  mix(d, e)
 }
 #let _mp-fixed-arc-test(d0, d1, d2, v0: none, v02: none, v2: none,
                         tolerance: _mp-fraction-one / 4096, depth: 0) = {
@@ -3020,7 +3040,8 @@
   let row-step = _mp-fixed-round-ratio(ymax - ymin, count)
   let xmin = calc.min(..rotated.map(point => point.at(0)))
   let xmax = calc.max(..rotated.map(point => point.at(0)))
-  let ray-width = xmax - xmin
+  let edge-curves = range(poly.len()).map(i => _mp-fixed-line-cubic(
+    rotated.at(i), rotated.at(_mod(i + 1, poly.len()))))
   let page-point(local) = {
     let point = rotate(local, 1)
     (point.at(0) / one * _mp-unit, point.at(1) / one * _mp-unit)
@@ -3031,35 +3052,24 @@
     // In the page's y-down frame that is the high side, so anchor the same
     // fixed step grid there instead of deriving the first line from ymin.
     let height = ymax - (count - row) * row-step
+    let ray = _mp-fixed-line-cubic((xmin, height), (xmax, height))
     let hits = ()
-    for i in range(poly.len()) {
-      let a = rotated.at(i)
-      let b = rotated.at(_mod(i + 1, poly.len()))
-      let va = a.at(1) - height
-      let vb = b.at(1) - height
-      if (va <= 0 and vb > 0) or (vb <= 0 and va > 0) {
-        let edge-x = b.at(0) - a.at(0)
-        let edge-y = b.at(1) - a.at(1)
-        let offset-x = a.at(0) - xmin
-        let offset-y = a.at(1) - height
-        let denominator = ray-width * edge-y
-        let numerator = offset-x * edge-y - offset-y * edge-x
-        let edge-numerator = offset-x * 0 - offset-y * ray-width
-        if denominator != 0 {
-          let den = if denominator < 0 { -denominator } else { denominator }
-          let num = if denominator < 0 { -numerator } else { numerator }
-          let edge-num = if denominator < 0 { -edge-numerator } else { edge-numerator }
-          if num >= 0 and num <= den and edge-num >= 0 and edge-num <= den {
-            let t = _mp-fixed-round-ratio(num * one, den)
-            hits.push(xmin + _mp-fixed-round-ratio(ray-width * t, one))
-          }
-        }
+    for edge in edge-curves {
+      let hit = cubic-intersection(ray, edge)
+      if hit != none and hit.at(0) >= 0 and hit.at(0) <= 1 {
+        hits.push(_mp-fixed-cubic-at(ray, hit.at(0)).at(0))
       }
     }
     let sorted = hits.sorted()
-    for j in range(0, sorted.len() - 1, step: 2) {
-      let u0 = sorted.at(j)
-      let u1 = sorted.at(j + 1)
+    let unique = ()
+    for hit in sorted {
+      if unique.len() == 0 or hit - unique.last() > 1 {
+        unique.push(hit)
+      }
+    }
+    for j in range(0, unique.len() - 1, step: 2) {
+      let u0 = unique.at(j)
+      let u1 = unique.at(j + 1)
       if u1 - u0 > int(calc.round(0.001 / _mp-unit * one)) {
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count))
       }
