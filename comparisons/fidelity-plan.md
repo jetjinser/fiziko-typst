@@ -1706,6 +1706,16 @@ call/tree agreement and the 600 ppi image gate. Do not apply the endpoint
 correction alone: preserve its geometry while propagating matching q curves
 and center-path parameterization through recursion.
 
+The focused endpoint probe now compares against row 93's exact 16.16
+`S104-HATCHBP` endpoints rather than the five-decimal `S104-SEG` printout.
+The fixed-scanline reconstruction errors are `0.00004340/0.00011084 mm` on
+the left/right endpoints; current Typst errors are `0.00014434/0.00009067 mm`.
+Thus the candidate improves the left endpoint but slightly worsens the right.
+The older `0.000003/0.000011 mm` values were limited by print precision, and
+the all-row `0.000089/0.000520 mm` comparison also uses rounded `S104-SEG`
+values. These geometry gains do not override the recorded full-tree and raster
+regressions of its production integration.
+
 **M11 knot q-arc reconstruction audit (2026-11-05).** A fresh trace of the
 current production lane geometry and source callback input reproduces all 90
 thin nodes and all 90 q-control sets exactly when the source cumulative q-arc

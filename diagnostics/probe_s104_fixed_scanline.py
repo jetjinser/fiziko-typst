@@ -29,8 +29,34 @@ def cross(a, b):
 
 
 def source_segments(log_path, row):
+    lines = Path(log_path).read_text().splitlines()
+    # The focused row records its actual path knots in bp as 16.16 chunks.
+    # Prefer those over S104-SEG, whose decimal output is rounded to five
+    # places and can hide endpoint errors of several 1e-5 mm.
+    fixed_points = {}
+    source_row = None
+    for line in lines:
+        fields = line.split()
+        if len(fields) >= 2 and fields[0] == "FSROW":
+            source_row = float(fields[1])
+        elif (len(fields) == 8 and fields[0] == "S104-HATCHBP"
+              and source_row is not None
+              and abs(source_row - row) < 0.00001):
+            _, index, x, xh, xl, y, yh, yl = fields
+            fixed_points[int(index)] = (
+                int(x) * SCALE + int(xh) * 256 + int(xl),
+                int(y) * SCALE + int(yh) * 256 + int(yl),
+            )
+    if fixed_points:
+        indexes = sorted(fixed_points)
+        if indexes != list(range(len(indexes))) or len(indexes) < 2:
+            raise ValueError("source HATCHBP indexes must be contiguous")
+        first, last = fixed_points[indexes[0]], fixed_points[indexes[-1]]
+        return [tuple(tuple(value / SCALE * MM_PER_BP for value in point)
+                      for point in (first, last))]
+
     result = []
-    for line in Path(log_path).read_text().splitlines():
+    for line in lines:
         fields = line.split()
         if (len(fields) >= 7 and fields[0] == "S104-SEG"
                 and int(fields[2]) == 0
