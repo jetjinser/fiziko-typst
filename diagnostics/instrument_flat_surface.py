@@ -360,6 +360,47 @@ def main() -> None:
         '            message "S104-WFIX " & decimal(traceHatchRow) & " "'
         '                & decimal(traceCutSerial) & " "',
     )
+    clip_anchor = (
+        "            aHatch := (xpart(llcorner(p)),i) -- (xpart(lrcorner(p)), i);\n"
+        "            aHatch := (point xpart(aHatch firstIntersectionTimes p) of aHatch) --\n"
+        "                (point xpart(reverse(aHatch) firstIntersectionTimes p) of reverse(aHatch));"
+    )
+    if source.count(clip_anchor) != 1:
+        raise ValueError(f"expected one flatSurface clip block, found {source.count(clip_anchor)}")
+    clip_trace = '''            aHatch := (xpart(llcorner(p)),i) -- (xpart(lrcorner(p)), i);
+            if abs(i + 6.37912) < 0.00001:
+                for traceClipIndex := 0 step 1 until length(surfPath):
+                    traceClipPoint("S104-CLIP-SURF", i, traceClipIndex, point traceClipIndex of surfPath);
+                endfor;
+                for traceClipIndex := 0 step 1 until length(p):
+                    traceClipPoint("S104-CLIP-POLY", i, traceClipIndex, point traceClipIndex of p);
+                endfor;
+                traceClipPoint("S104-CLIP-RAW", i, 0, point 0 of aHatch);
+                traceClipPoint("S104-CLIP-RAW", i, 1, point 1 of aHatch);
+            fi;
+            traceClipForward := aHatch firstIntersectionTimes p;
+            traceClipReverse := reverse(aHatch) firstIntersectionTimes p;
+            if abs(i + 6.37912) < 0.00001:
+                traceClipPair("S104-CLIP-T1", i, xpart(traceClipForward), ypart(traceClipForward));
+                traceClipPair("S104-CLIP-T2", i, xpart(traceClipReverse), ypart(traceClipReverse));
+                traceClipPoint("S104-CLIP-HIT", i, 0, point xpart(traceClipForward) of aHatch);
+                traceClipPoint("S104-CLIP-HIT", i, 1, point xpart(traceClipReverse) of reverse(aHatch));
+            fi;
+            aHatch := (point xpart(traceClipForward) of aHatch) --
+                (point xpart(traceClipReverse) of reverse(aHatch));
+            if abs(i + 6.37912) < 0.00001:
+                traceClipPoint("S104-CLIP-OUT", i, 0, point 0 of aHatch);
+                traceClipPoint("S104-CLIP-OUT", i, 1, point 1 of aHatch);
+            fi;'''
+    source = source.replace(clip_anchor, clip_trace)
+    rotate_anchor = "                aHatch := aHatch rotated hatchAngle;"
+    if source.count(rotate_anchor) != 1:
+        raise ValueError(f"expected one flatSurface hatch rotation, found {source.count(rotate_anchor)}")
+    source = source.replace(rotate_anchor, rotate_anchor + '''
+                if abs(i + 6.37912) < 0.00001:
+                    traceClipPoint("S104-CLIP-ROT", i, 0, point 0 of aHatch);
+                    traceClipPoint("S104-CLIP-ROT", i, 1, point 1 of aHatch);
+                fi;''')
     thin_dash = "                        draw p withpen thinpen dashed thinBrushPattern(w2, arclength(p));"
     if source.count(thin_dash) != 1:
         raise ValueError(f"expected one thin dash draw hook, found {source.count(thin_dash)}")
@@ -429,11 +470,39 @@ numeric traceHatchRow;
 numeric traceThinSerial;
 numeric traceCutSerial;
 numeric traceHatchPoint;
+numeric traceClipIndex;
+pair traceClipForward, traceClipReverse;
 traceFlatHatch := false;
 traceThinCutActive := false;
 traceHatchRow := 0;
 traceThinSerial := 0;
 traceCutSerial := 0;
+vardef traceClipPoint (expr tag, row, index, z) =
+    save xw, xh, xl, yw, yh, yl;
+    numeric xw, xh, xl, yw, yh, yl;
+    xw := floor(xpart z);
+    xh := floor((xpart z - xw) * 256);
+    xl := round(((xpart z - xw) * 256 - xh) * 256);
+    yw := floor(ypart z);
+    yh := floor((ypart z - yw) * 256);
+    yl := round(((ypart z - yw) * 256 - yh) * 256);
+    message tag & " " & decimal(row) & " " & decimal(index) & " "
+        & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
+        & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
+enddef;
+vardef traceClipPair (expr tag, row, a, b) =
+    save aw, ah, al, bw, bh, bl;
+    numeric aw, ah, al, bw, bh, bl;
+    aw := floor(a);
+    ah := floor((a - aw) * 256);
+    al := round(((a - aw) * 256 - ah) * 256);
+    bw := floor(b);
+    bh := floor((b - bw) * 256);
+    bl := round(((b - bw) * 256 - bh) * 256);
+    message tag & " " & decimal(row) & " "
+        & decimal(aw) & " " & decimal(ah) & " " & decimal(al) & " "
+        & decimal(bw) & " " & decimal(bh) & " " & decimal(bl);
+enddef;
 vardef traceHatchPointRecord (expr index, z) =
     save xw, xh, xl, yw, yh, yl;
     numeric xw, xh, xl, yw, yh, yl;

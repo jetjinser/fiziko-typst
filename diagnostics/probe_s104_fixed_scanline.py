@@ -8,6 +8,9 @@ from pathlib import Path
 
 SCALE = 65536
 MM_PER_BP = 25.4 / 72
+# plain.mp's `mm` is a 16.16 numeric; the pinned source resolves it to
+# 185771/65536 bp per millimetre rather than the exact 72/25.4 ratio.
+SOURCE_BP_PER_MM = 185771 / SCALE
 PANEL = ((8.0, 36.0), (56.0, 31.0), (50.0, 8.0), (5.0, 13.0))
 
 
@@ -78,7 +81,8 @@ def intersections(row, frame_height, hatch_angle):
     for x, y in PANEL:
         # MetaPost defines the panel in its y-up source frame. Apply the
         # fixture's page flip only after rotating the intersection back.
-        raw = (round(x / MM_PER_BP * SCALE), round(y / MM_PER_BP * SCALE))
+        raw = (round(x * SOURCE_BP_PER_MM * SCALE),
+               round(y * SOURCE_BP_PER_MM * SCALE))
         points.append(rotate(raw, sine, cosine, -1))
     y = round(row * SCALE)
     xmin = min(point[0] for point in points)
@@ -108,6 +112,38 @@ def intersections(row, frame_height, hatch_angle):
     return [point for _, point in sorted(hits)]
 
 
+def rotated_panel(hatch_angle):
+    angle = math.radians(hatch_angle)
+    sine = round(math.sin(angle) * SCALE)
+    cosine = round(math.cos(angle) * SCALE)
+    source_points = [
+        (round(x * SOURCE_BP_PER_MM * SCALE),
+         round(y * SOURCE_BP_PER_MM * SCALE))
+        for x, y in PANEL
+    ]
+    rotated = [rotate(point, sine, cosine, -1) for point in source_points]
+    return [*rotated, rotated[0]]
+
+
+def traced_rotated_panel(log_path, row):
+    result = {}
+    for line in Path(log_path).read_text().splitlines():
+        fields = line.split()
+        if (len(fields) == 9 and fields[0] == "S104-CLIP-POLY"
+                and abs(float(fields[1]) - row) < 0.00001):
+            _, _, index, x, xh, xl, y, yh, yl = fields
+            result[int(index)] = (
+                int(x) * SCALE + int(xh) * 256 + int(xl),
+                int(y) * SCALE + int(yh) * 256 + int(yl),
+            )
+    if not result:
+        return None
+    indexes = sorted(result)
+    if indexes != list(range(len(indexes))):
+        raise ValueError("source rotated polygon indexes must be contiguous")
+    return [result[i] for i in indexes]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_trace", type=Path)
@@ -118,6 +154,15 @@ def main():
     source = source_segments(args.source_trace, args.row)[0]
     expected = tuple((x, args.frame_height - y) for x, y in source)
     actual = intersections(args.row, args.frame_height, args.hatch_angle)
+    traced = traced_rotated_panel(args.source_trace, args.row)
+    if traced is not None:
+        candidate = rotated_panel(args.hatch_angle)
+        if len(traced) != len(candidate):
+            raise SystemExit(
+                f"rotated polygon has {len(traced)} source and {len(candidate)} candidate points")
+        residuals = [max(abs(a[0] - b[0]), abs(a[1] - b[1]))
+                     for a, b in zip(traced, candidate)]
+        print(f"rotated polygon max coordinate error: {max(residuals)} fixed units")
     if len(actual) != 2:
         raise SystemExit(f"expected two fixed-point crossings, found {len(actual)}")
     print(f"row={args.row:.5f}; source angle={args.hatch_angle:g}°")

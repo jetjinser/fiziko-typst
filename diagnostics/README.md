@@ -3721,18 +3721,25 @@ MetaPost-style 16.16 rotation, half-open polygon crossings, fixed-point
 intersection parameters, and interpolation. Its original comparison used
 `S104-SEG`, which prints only five decimals. The probe now prefers the focused
 row's exact 16.16 `S104-HATCHBP` endpoints. For source row `-6.37912`, the
-reconstruction errors are `0.00004340/0.00011084 mm`: the left endpoint is
-closer than the current Typst endpoint (`0.00014434 mm`), while the right is
-slightly farther (`0.00009067 mm`). Thus the old `0.000003/0.000011 mm`
-figures measured formatting precision, not geometric error. A production
-prototype using these crossings reduced the row's root q-knot residual from
+first exact probe still used `72/25.4 bp/mm`, but plain MetaPost's `mm` is the
+fixed numeric `185771/65536 bp/mm`. With that source scalar, the reconstructed
+rotated polygon matches all five traced `S104-CLIP-POLY` vertices exactly, and
+row `-6.37912` endpoint errors are `0.00000761/0.00000538 mm`. Current Typst
+endpoint errors are `0.00014434/0.00009067 mm`. The old
+`0.000003/0.000011 mm` values measured only `S104-SEG` print precision; the
+intermediate `0.00004340/0.00011084 mm` values came from the near-correct
+rotation with the wrong millimetre scalar. These corrected focused results
+establish a local geometry candidate; the earlier production prototype's
+tree/raster results used the wrong scalar and must be rerun before acceptance.
+That older prototype reduced the row's root q-knot residual from
 23 to 7 16.16 units, but did not improve the complete recursion: across 142
 paired rows, exact row matches changed from 108 to 107 and RNG-call L1 error
 from 332 to 422. At 600 ppi, whole/hatch RMSE regressed from
 0.207029/0.075285 to 0.207417/0.077360. Adding generated q knots recovered
-only to 0.207407/0.077308. The prototype was removed from production. The
-remaining S104 task is to carry row scheduling, recursive center-path
-parameterization, and q controls together, then pass both tree and image gates.
+only to 0.207407/0.077308. Those tree and raster results apply to the earlier
+candidate only. The corrected fixed-`mm` geometry still needs full-row
+pairing, recursive-tree comparison, and a fresh 600 ppi render before
+production integration.
 
 Rechecking the same reconstruction against all 142 current paired rows gives
 an average summed endpoint error of `0.000089 mm` against the pinned source's
@@ -3740,11 +3747,10 @@ five-decimal `S104-SEG` output; the current Typst scanline endpoints average
 `0.000520 mm` against that same rounded output. The candidate is closer on all
 rows in this coarse comparison, with worst row `0.000826 mm`. Only row
 `-6.37912` has full 16.16 source endpoint coordinates in the trace, and its
-left/right errors are `0.00004340/0.00011084 mm`. Production integration still
-fails the recursive-tree and raster gates. Preserve the distinction between
-coarse all-row endpoint evidence and the focused exact-coordinate audit; the
-remaining issue is propagating corrected root geometry through q controls and
-recursive center-path mapping.
+left/right errors are `0.00000761/0.00000538 mm`. The full-row metrics above
+were collected with the earlier `72/25.4` conversion; preserve the distinction
+between that coarse historical comparison and this focused exact-coordinate
+result. The corrected geometry still needs all-row and recursive q validation.
 
 A further diagnostic supplied each subdivided Typst vertex width to
 `_ink-loops` as a source-rounded 16.16 q-template knot, letting it rebuild q
@@ -4443,11 +4449,13 @@ same-time point error at mean/max `0.000105669/0.000144343 mm`. MetaPost
 scanline direction cosine/sine to that grid, while leaving projection,
 intersection, and reconstruction arithmetic unchanged, increases the same error to
 `0.000290838/0.000298003 mm`. This rules out direction-cosine quantization as
-a standalone correction. Do not render or retain it; the next diagnostic
-must instrument the two `firstIntersectionTimes` calls used to clip each hatch
-line. Existing `S104-HIT` records are brush-recursion intersections, not the
-polygon clipping events; compare the new clipping intermediates with exact
-`S104-HATCHBP` endpoints and `S104-SEG` records.
+a standalone correction. Do not render or retain it. The source instrumenter
+now records `S104-CLIP-SURF/POLY`, the raw clipping ray, both
+`firstIntersectionTimes` pairs, hit points, clipped endpoints, and the rotated
+result. `S104-HIT` remains the separate brush-recursion trace. The source
+polygon rotation is now exactly reproduced once the source `mm` scalar is
+used; the next step is to carry that corrected geometry through all rows and
+the q recursion.
 
 **M9 current contour and brush checkpoint (2026-11-05).** A fresh instrumented
 M9 source run paired with `m9_contour_walk_trace.typ` initially appeared to
