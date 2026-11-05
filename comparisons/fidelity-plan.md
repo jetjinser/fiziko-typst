@@ -1993,3 +1993,16 @@ units of source. The combined candidate nevertheless produced trees
 RMSE was unchanged. Revert both production changes. Continue from recursive
 root-template generation: improved root knot placement and endpoint arc alone
 do not preserve source branch decisions.
+
+**M11 terminal callback width correction (2026-11-06).** A reproducible
+`M11-ROOTQ` versus `source-width-fixed` audit found that only the terminal
+callback sample was materially wrong: baseline width errors were at most
+`23/4/2` fixed units on M1/M2/M4 and at most one unit elsewhere. Sampling the
+first outline point when `source-time == source-time-end` reduces all visible
+mass width errors to at most one fixed unit; exact M1/M2/M4 knots are
+`78/139`, `81/170`, and `39/52`. Recursive trees remain at `15/13`, `57/39`,
+and `31/31` source/Typst nodes, and 600 ppi M11 whole/globe/knot RMSE stays
+`0.114775/0.189183/0.078535`. Retain the width callback correction. A separate
+terminal q.x-to-closed-arc mapping improves root controls to within
+`484/693/214` fixed units but drops the M11 landmass-4 Typst tree from 31 to 7;
+keep that change reverted and continue tracing the initial q arc/time map.

@@ -5045,6 +5045,22 @@ endpoint changes were removed. The remaining actionable issue is the
 production root q template and its source-time/arc/width mapping, rather than
 recursive q splitting itself.
 
+**M11 terminal callback width at the closed seam (2026-11-06).** Comparing
+`M11-ROOTQ` width knots to the production trace's `source-width-fixed` exposed
+an endpoint-only mismatch: baseline terminal widths differed by `23/4/2`
+fixed units on masses 1/2/4, while all other knots were within one unit. At
+`source-time == source-time-end`, the closed contour callback must sample its
+first point. Mapping that terminal width sample to the first outline point
+reduces every visible mass's root-width maximum to one fixed unit (M1/M2/M4
+exact knots: `78/139`, `81/170`, `39/52`). The source/Typst recursion trees
+stay at `15/13`, `57/39`, and `31/31` nodes, and the same 600 ppi M11
+whole/globe/knot metrics remain `0.114775/0.189183/0.078535`. Keep this narrow
+callback correction. Mapping the terminal q.x to the cyclic arc endpoint is a
+separate rejected change: although it brings root q.x controls within
+`484/693/214` fixed units on M1/M2/M4, M11 landmass 4's Typst tree falls from 31 to 7
+nodes. Root-width comparison is reproducible with
+`compare_m11_root_width_callbacks.py`.
+
 **M11 direct horizon-cubic arc candidate (2026-11-06, reverted).** After the
 arc-audit tolerance correction, a production-trace trial replaced sampled
 eight-chord lengths for partial fullcircle intervals with

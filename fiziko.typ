@@ -4990,7 +4990,9 @@
           let fraction = if span > 0 {
             calc.clamp((source-time - times.at(segment)) / span, 0.0, 1.0)
           } else { 0.0 }
-          let t = if segment + 1 < path.len() {
+          let t = if source-time >= end-time {
+            0.0
+          } else if segment + 1 < path.len() {
             fractions.at(segment) + fraction * (fractions.at(segment + 1) - fractions.at(segment))
           } else {
             fractions.at(segment) + fraction * (1 - fractions.at(segment))
