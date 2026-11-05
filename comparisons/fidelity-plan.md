@@ -1882,3 +1882,16 @@ diagnostic now retains this failed reconstruction in
 `diagnostics/m11_knot_tube_trace.typ`. Continue by generating the q knots from
 post-cut lane controls and callback times, rather than enabling pre-shadow
 q reconstruction in production.
+
+**M11 knot source-sample precision (2026-11-05).** The path exporter now keeps
+the pinned MetaPost 16.16 bp coordinates by splitting fractional bytes into
+small transcript values, then decodes them before converting to millimetres.
+Against the saved same-run baseline (`0.114798998` whole / `0.078545412` knot),
+the 600 ppi rerender is `0.114799855` / `0.078530892`; globe, eye, and
+refraction crops are unchanged. The knot improvement is small, while the
+whole-plate difference is a negligible regression. The quarter-fit shadow q
+replay changes from `38/22/28` to `36/22/28` nodes against source `40/20/30`,
+so greater sample precision alone does not solve the recursive mismatch. Keep
+the higher precision fixture because it preserves the actual source sample
+coordinates; do not treat the pixel delta or the mixed recursive counts as a
+production `shadowCut` fix.

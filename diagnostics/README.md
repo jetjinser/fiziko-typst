@@ -1524,6 +1524,12 @@ python3 diagnostics/extract_m11_knot_paths.py \
   /tmp/m11-path-source/trace.log comparisons/m11-knot-paths.typ
 ```
 
+The source sampler emits both the human-readable `M11PATH` records and split
+16.16 bp coordinate bytes in `M11PATHFIX`. The exporter uses those fixed-point
+bytes when present, converts to millimetres only after decoding, and writes
+nine decimal places. This avoids losing source coordinate bits to MetaPost's
+five-place `decimal` output before cubic reconstruction.
+
 Tube mask mode now follows `knotFromStrands`' interval construction: each
 strand is split halfway between adjacent crossings, the supplied per-crossing
 layer value is assigned to that interval, and higher-layer tube silhouettes

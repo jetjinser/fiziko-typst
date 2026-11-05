@@ -16,9 +16,43 @@ def main() -> None:
         raise SystemExit("STEP_DENOMINATOR must be positive")
     source = source_path.read_text()
     anchor = '  addStrandToKnot(weave)(wa,.8mm,"l","-1,1,-1,1");'
-    trace = f"""  for ti := 0 step 1/{step_denominator} until length(wa):
+    trace = f"""  numeric traceX, traceY, traceXInt, traceYInt,
+        traceXHigh, traceYHigh, traceXLow, traceYLow;
+  for ti := 0 step 1/{step_denominator} until length(wa):
     message "M11PATH A " & decimal(ti) & " " & decimal(xpart(point ti of wa)/mm) & " " & decimal(44-ypart(point ti of wa)/mm);
     message "M11PATH B " & decimal(ti) & " " & decimal(xpart(point ti of wb)/mm) & " " & decimal(44-ypart(point ti of wb)/mm);
+    traceX := xpart(point ti of wa);
+    traceY := 44mm - ypart(point ti of wa);
+    traceXInt := floor(traceX);
+    traceYInt := floor(traceY);
+    traceXHigh := floor((traceX-traceXInt)*256);
+    traceYHigh := floor((traceY-traceYInt)*256);
+    traceXLow := round(((traceX-traceXInt)*256-traceXHigh)*256);
+    traceYLow := round(((traceY-traceYInt)*256-traceYHigh)*256);
+    if traceXLow = 256: traceXHigh := traceXHigh+1; traceXLow := 0; fi;
+    if traceYLow = 256: traceYHigh := traceYHigh+1; traceYLow := 0; fi;
+    if traceXHigh = 256: traceXInt := traceXInt+1; traceXHigh := 0; fi;
+    if traceYHigh = 256: traceYInt := traceYInt+1; traceYHigh := 0; fi;
+    message "M11PATHFIX A " & decimal(ti) & " " & decimal(traceXInt) & " "
+      & decimal(traceXHigh) & " " & decimal(traceXLow) & " "
+      & decimal(traceYInt) & " " & decimal(traceYHigh) & " "
+      & decimal(traceYLow);
+    traceX := xpart(point ti of wb);
+    traceY := 44mm - ypart(point ti of wb);
+    traceXInt := floor(traceX);
+    traceYInt := floor(traceY);
+    traceXHigh := floor((traceX-traceXInt)*256);
+    traceYHigh := floor((traceY-traceYInt)*256);
+    traceXLow := round(((traceX-traceXInt)*256-traceXHigh)*256);
+    traceYLow := round(((traceY-traceYInt)*256-traceYHigh)*256);
+    if traceXLow = 256: traceXHigh := traceXHigh+1; traceXLow := 0; fi;
+    if traceYLow = 256: traceYHigh := traceYHigh+1; traceYLow := 0; fi;
+    if traceXHigh = 256: traceXInt := traceXInt+1; traceXHigh := 0; fi;
+    if traceYHigh = 256: traceYInt := traceYInt+1; traceYHigh := 0; fi;
+    message "M11PATHFIX B " & decimal(ti) & " " & decimal(traceXInt) & " "
+      & decimal(traceXHigh) & " " & decimal(traceXLow) & " "
+      & decimal(traceYInt) & " " & decimal(traceYHigh) & " "
+      & decimal(traceYLow);
   endfor;
 """
     if source.count(anchor) != 1:
