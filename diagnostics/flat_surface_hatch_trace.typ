@@ -54,11 +54,11 @@
   let frames = _frame(points, false)
   let fractions = _path-fractions(frames.map(e => e.at(0)), false)
   let widths = fractions.map(width)
-  let source-arc-fixed = if segment.at(2) == 93 {
+  let source-arc-fixed = if segment.at(2) == 93 or segment.at(2) == 53 {
     let arcs = (0,)
-    for i in range(frames.len() - 1) {
-      let a = frames.at(i).at(0)
-      let b = frames.at(i + 1).at(0)
+    for i in range(fixed-width-q-frames.len() - 1) {
+      let a = fixed-width-q-frames.at(i).at(0)
+      let b = fixed-width-q-frames.at(i + 1).at(0)
       let p0 = (a.at(0) / _mp-unit, a.at(1) / _mp-unit)
       let p3 = (b.at(0) / _mp-unit, b.at(1) / _mp-unit)
       let p1 = (p0.at(0) + (p3.at(0) - p0.at(0)) / 3,
@@ -194,9 +194,11 @@
     start: segment.at(0), end: segment.at(1),
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,
-    source-arc-fixed: if segment.at(2) == 93 { source-arc-fixed } else { () },
+    source-arc-fixed: if segment.at(2) == 93 or segment.at(2) == 53 { source-arc-fixed } else { () },
     width-min: calc.min(..widths), width-max: calc.max(..widths),
     sample-times: fractions, sample-widths: widths,
+    fixed-width-q-times: fixed-width-q-subdivision-times,
+    fixed-width-q-points: fixed-width-q-points,
     outer: ink.at(2).outer, thin: ink.at(2).thin,
     dash-calls: ink.at(2).dashes, rng-start: cursor,
     rng-used: ink.at(1), nodes: ink.at(2).nodes,

@@ -4558,7 +4558,8 @@ mismatch is in scanline endpoint/subdivision geometry before q construction;
 do not adjust the matching outer cut or child split.
 
 The source instrumenter emits fixed 16.16 `S104-HATCHPT`, `S104-HATCHBP`, and
-`S104-HATCHARC` records for selected rows (pass `-6.37912,28.60222` as its
+`S104-HATCHARC` records for selected rows (pass
+`-6.37912,28.60222,29.49918` as its
 optional detail argument). Row `-6.37912` root q
 arc knots are
 `[0, 2298558, 4597113, 6895671, 6895777]`; the Typst row's
@@ -4587,6 +4588,19 @@ rg '^FIX' /tmp/s104-node164-probe/trace.log
 
 The four returned controls for the last child cubic match source node 165's
 `S104-TXCTRL`/`S104-TCTRL` records exactly.
+
+The row `29.49918` trace narrows the remaining large recursive mismatch to
+the source surface boundary. MetaPost's closed `surfPath` edge controls are
+not the straight one-third/two-thirds controls currently synthesized from
+the Typst polygon vertices. The focused trace records both source handles
+(`S104-CLIP-POLY-POST/PRE`) and the ray controls. At this row, the current
+Typst hatch endpoints differ from the five source fixed-subdivision points by
+up to `0.000871 mm`; source arc/chord residual remains at most one 16.16 bp
+unit. The full recursive audit pairs only `27/77` q nodes, with q-arc control
+residual mean/max `236.720/623` units. Reproduce the closed MetaPost/Hobby
+surface controls before changing recursion thresholds or q splitting. The
+source-point audit now compares fixed-width-q subdivision points and times,
+not linear samples at unrelated floating-width q times.
 
 **S104 scanline direction-rounding probe (2026-11-05, rejected).** A fresh
 pinned-source trace and current Typst metadata reproduce row 93's baseline

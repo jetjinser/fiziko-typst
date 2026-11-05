@@ -375,8 +375,12 @@ def main() -> None:
     )
     if source.count(clip_anchor) != 1:
         raise ValueError(f"expected one flatSurface clip block, found {source.count(clip_anchor)}")
-    clip_trace = '''            aHatch := (xpart(llcorner(p)),i) -- (xpart(lrcorner(p)), i);
-            if traceFlatClip and (abs(i + 6.37912) < 0.00001):
+    clip_row_distance = f"abs(i - {path_cubic_rows[0]:.5f})"
+    for row in path_cubic_rows[1:]:
+        clip_row_distance = f"min({clip_row_distance}, abs(i - {row:.5f}))"
+    clip_row_condition = f"{clip_row_distance} < 0.00001"
+    clip_trace = f'''            aHatch := (xpart(llcorner(p)),i) -- (xpart(lrcorner(p)), i);
+            if traceFlatClip and ({clip_row_condition}):
                 for traceClipIndex := 0 step 1 until length(surfPath):
                     traceClipPoint("S104-CLIP-SURF", i, traceClipIndex, point traceClipIndex of surfPath);
                 endfor;

@@ -71,7 +71,8 @@ def main():
     source_y = source_rows(args.source_trace)[row_index]["row"]
     source_points, source_arcs = source_records(args.source_trace, source_y)
     start, end = row["start"], row["end"]
-    times = row["sample-times"]
+    source_fixed_points = row.get("fixed-width-q-points")
+    times = row.get("fixed-width-q-times", row["sample-times"])
     if len(times) != len(source_points):
         raise ValueError(
             f"source has {len(source_points)} points, Typst has {len(times)} sample times")
@@ -80,8 +81,9 @@ def main():
     for index, ((x, y), t) in enumerate(zip(source_points, times)):
         source = (x / SCALE * MM_PER_BP,
                   args.frame_height - y / SCALE * MM_PER_BP)
-        typst = (start[0] + (end[0] - start[0]) * t,
-                 start[1] + (end[1] - start[1]) * t)
+        typst = (source_fixed_points[index] if source_fixed_points else
+                 (start[0] + (end[0] - start[0]) * t,
+                  start[1] + (end[1] - start[1]) * t))
         error = math.dist(source, typst)
         errors.append(error)
         print(f"point {index}: t={t:.10f} source=({source[0]:.9f},"
