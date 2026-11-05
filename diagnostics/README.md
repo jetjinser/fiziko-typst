@@ -4216,10 +4216,11 @@ node 164 has three straight cubic segments; its paired Typst node endpoints
 differ by `0.000171 mm`, all width controls are exact, and q-arc controls
 differ by at most 16 fixed units. A native MetaPost replay of source node 164's
 q path with `subpath (0, 2.40022)` reproduces source node 165's child controls
-exactly. The child split itself is therefore faithful on this branch; the
-residual already exists in the first thin node's q input, after the outer
-brush cut. Keep the next probe focused on mapping the source root q template
-through that outer cut rather than changing the thin child splitter.
+exactly. The child split itself is therefore faithful on this branch. The
+source and Typst outer root cut parameters also match exactly at
+`55358/65536 = 0.8446960449`; the residual must be resolved by comparing how
+their root callback points and q arc knots are constructed before the cut,
+rather than changing outer or thin split arithmetic.
 
 The source instrumenter now also emits fixed 16.16 `S104-HATCHPT` and
 `S104-HATCHARC` records for row `-6.37912`. Its root q arc knots are
