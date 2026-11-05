@@ -50,12 +50,18 @@ def read_source(path):
     source_arcs = defaultdict(dict)
     post_curves = defaultdict(lambda: defaultdict(dict))
     mm_per_bp = None
+    fixed_mm_scale = None
     for line_index, line in enumerate(path.read_text().splitlines()):
         f = line.split()
         if not f:
             continue
         if f[0] == "M11UNITS":
             mm_per_bp = 1 / float(f[1])
+        elif f[0] == "M11UNITSFIX":
+            if fixed_mm_scale is not None:
+                raise ValueError("multiple M11UNITSFIX records")
+            fixed_mm_scale = (int(f[1]) + int(f[2]) / 256
+                              + int(f[3]) / 65536)
         elif f[0] == "M11CUT":
             key = (int(f[1]), int(f[2]))
             cuts[key].append((float(f[4]), int(round(float(f[6])))))
@@ -78,10 +84,16 @@ def read_source(path):
             curve, control = int(f[3]), int(f[4])
             post_curves[key][curve][control] = (
                 (int(f[5]) + int(f[6]) / 256 + int(f[7]) / 65536)
-                * (mm_per_bp if mm_per_bp is not None else 1 / 2.83464),
+                * mm_per_bp,
                 (int(f[8]) + int(f[9]) / 256 + int(f[10]) / 65536)
-                * (mm_per_bp if mm_per_bp is not None else 1 / 2.83464),
+                * mm_per_bp,
             )
+    if fixed_mm_scale is not None:
+        if fixed_mm_scale <= 0:
+            raise ValueError("M11UNITSFIX must be positive")
+        mm_per_bp = 1 / fixed_mm_scale
+    if mm_per_bp is None:
+        mm_per_bp = 1 / 2.83464
     offsets = {}
     cursor = 4639
     for _, key in lane_order:
@@ -90,7 +102,8 @@ def read_source(path):
     curves = {key: [tuple(post_curves[key][i][j] for j in range(4))
                     for i in sorted(post_curves[key])]
               for key in post_curves}
-    return cuts, widths, lane_calls, offsets, post_lengths, source_arcs, curves
+    return (cuts, widths, lane_calls, offsets, post_lengths, source_arcs,
+            curves, mm_per_bp)
 
 
 def typst_lane_map(path, dense=False):
@@ -123,7 +136,8 @@ def cubic(points, t):
 
 def export(source_log, typst_trace, output, dense=False, dense_factor=4,
            show_segment_errors=False):
-    cuts, widths, calls, offsets, post_lengths, source_arcs, source_curves = read_source(source_log)
+    (cuts, widths, calls, offsets, post_lengths, source_arcs,
+     source_curves, mm_per_bp) = read_source(source_log)
     samples_per_cubic = SAMPLES_PER_CUBIC * dense_factor if dense else SAMPLES_PER_CUBIC
     lanes = typst_lane_map(typst_trace, dense=dense)
     records = []
@@ -168,7 +182,7 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4,
                 w0, w1 = widths[key][i], widths[key][i + 1]
                 ws.append((w0 * (1 - q / samples_per_cubic)
                            + w1 * (q / samples_per_cubic)) / 65536
-                          * 25.4 / 72)
+                          * mm_per_bp)
         end_time = float(post_lengths[key])
         endpoint = sample(center, source_time_at(segments, end_time), samples_per_cubic)
         endpoint_error = math.dist(endpoint, source_curves[key][-1][-1])
@@ -176,7 +190,7 @@ def export(source_log, typst_trace, output, dense=False, dense_factor=4,
         segment_errors[post_lengths[key] - 1].append(endpoint_error)
         path.append(endpoint)
         path_times.append(end_time)
-        ws.append(widths[key][post_lengths[key]] / 65536 * 25.4 / 72)
+        ws.append(widths[key][post_lengths[key]] / 65536 * mm_per_bp)
         segment_maxima = sorted(
             ((max(values), index) for index, values in segment_errors.items()),
             reverse=True)[:4]

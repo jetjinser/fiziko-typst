@@ -500,9 +500,16 @@ enddef;''')
         "    traceTubeCall := 0;\n"
         "    traceBoundaryCall := 0;\n"
         "    traceKnotActive := true;\n"
+        "    traceMaskTime := floor(mm);\n"
+        "    traceBoundaryTime := floor((mm-traceMaskTime)*256);\n"
+        "    traceCurveIndex := round(((mm-traceMaskTime)*256-traceBoundaryTime)*256);\n"
+        "    if traceCurveIndex = 256: traceBoundaryTime := traceBoundaryTime+1; traceCurveIndex := 0; fi;\n"
+        "    if traceBoundaryTime = 256: traceMaskTime := traceMaskTime+1; traceBoundaryTime := 0; fi;\n"
         '    message "M11TSTART " & decimal(traceCallBlocks) & " "'
         ' & decimal(traceCallRemainder);\n'
         '    message "M11UNITS " & decimal(mm);\n'
+        '    message "M11UNITSFIX " & decimal(traceMaskTime) & " "'
+        ' & decimal(traceBoundaryTime) & " " & decimal(traceCurveIndex);\n'
         "    for sNa := 1 step 1 until knotName.nStrands:")
     # MetaPost permits implicit multiplication, as in `1/2uniformdeviate(...)`;
     # a word-boundary matcher misses that call because the preceding `2` is a

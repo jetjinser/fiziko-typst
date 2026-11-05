@@ -85,6 +85,12 @@ and `38/22/34`. See the updated production-lane replay in
 `diagnostics/README.md` before using earlier M11 numbers to accept an
 implementation.
 
+The tube-outline diagnostic now records the same exact fixed-point `mm` scale
+for source cubic and width conversion. A fresh trace/replay leaves the corrected
+lane residuals and `36/22/34` production-sample q trees unchanged to reported
+precision; the remaining branch differences therefore require a path or arc
+construction correction, not another unit-scale adjustment.
+
 **M9 raw-RNG knot-coordinate rounding probe (2026-11-05, reverted).** The
 source-rounded extrema diagnostic reaches the pinned M9 minimum/maximum only
 when it is given raw-fraction knot coordinates. A production candidate formed

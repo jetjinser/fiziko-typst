@@ -96,6 +96,14 @@ nix develop path:./nix --command typst eval \
   --in diagnostics/m11_source_offset_check.typ --root .
 ```
 
+The source trace records `M11UNITSFIX` alongside the five-digit `M11UNITS`
+sanity value. The q-input exporter converts fixed bp coordinates and callback
+widths with this exact 16.16 `mm` scale (`185771/65536` bp/mm in the pinned
+run), rather than the unquantized inch conversion. A fresh exact-scale trace
+leaves the corrected production-lane geometry residuals and q-tree counts
+unchanged to the reported precision, so unit conversion is not the remaining
+lane-recursion cause.
+
 The checker compares reconstructed center cubics, q2/q3 boundaries, and traced
 lane controls. Current maximum errors are `0.000033 mm` for the clipped input
 cubics, `0.000065 mm` for their boundaries, and `0.000041 mm` for checked
