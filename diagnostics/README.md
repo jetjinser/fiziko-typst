@@ -2290,6 +2290,13 @@ sequences is exact. This strengthens the case for generating MetaPost's
 post-`shadowCut` arc and callback-width knots from production path state rather
 than adding a fixed per-segment correction to sampled chord lengths.
 
+The arc audit now also reports the first divergent q-map for call 4/lane 6.
+Its decision-11 node maps to source segments 6–8, whose 64-chord increment
+errors are `+1`, `+2`, and `-11` fixed units. These are much smaller than the
+lane's largest errors (`-26` and `+19`), so correcting only the largest local
+arc residuals would not address its tree mismatch. This lane also confirms the
+three lanes diverge at distinct parts of the post-shadow path.
+
 The q-replay's recursive arc-offset result must not be mistaken for a current
 production q tree. `m11_knot_tube_trace.typ` calls `_ink-loops` without
 `source-width-fixed` or `source-q-curves-fixed`; its baseline trace therefore

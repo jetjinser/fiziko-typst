@@ -52,10 +52,18 @@ def audit(log, replay, arc_field, polyline_steps):
               f"max-abs={max(map(abs, increment_errors))}")
         print("  largest segment errors (zero-based segment, fixed units): "
               + ", ".join(f"{i}:{value:+d}" for i, value in largest))
-        for node_index in ((32,) if key == (4, 2) else
-                           (19,) if key == (5, 2) else ()):
-            node = [node for node in item["q-nodes"]
-                    if node["stage"] == "thin"][node_index]
+        node_index = {(4, 2): 32, (4, 6): 10, (5, 2): 19}.get(key)
+        if node_index is not None:
+            if arc_field == "polyline-arc-fixed":
+                run = next(record for record in item["polyline-arc-runs"]
+                           if record["steps"] == polyline_steps)
+                all_nodes = run["q-nodes"]
+            else:
+                field = {"arc-fixed": "q-nodes",
+                         "fifth-arc-fixed": "fifth-arc-q-nodes"}[arc_field]
+                all_nodes = item[field]
+            nodes = [node for node in all_nodes if node["stage"] == "thin"]
+            node = nodes[node_index]
             print(f"  first divergent thin node {node_index + 1}: "
                   f"depth={node['depth']} q-map={node['q-map']}")
             spans = node["q-map"]
