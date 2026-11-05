@@ -1707,6 +1707,13 @@ quarter-sample cubic integration, `38/22/30` for fifth-sample fitting, and
 reproduces all three lanes, so a lane-specific or fixed-density switch would
 move the discrepancy rather than solve it. The missing source post-shadow
 lane cubic construction remains the production target.
+An offset-cubic probe reconstructs the paired pre-shadow lane controls from
+the Typst centerline with mean/max errors below `0.000041/0.000135 mm`. Its
+fixed-point arc knots lower mean local arc error on all three lanes, but its
+post-shadow q trees are `38/22/28` against source `40/20/30`; call 5/lane 2
+regresses against the 64-chord replay. The probe maps source shadow cut times
+but carries the removed gap's underlying cubic arc, so MetaPost's `..`
+connector controls remain to be reconstructed. Keep this diagnostic-only.
 At call 4/lane 6's first divergent node, a 64-chord replay maps to source
 segments 6–8; their local arc errors are only `+1/+2/-11` fixed units. The
 paired node has exact width controls and at most 14 units of q-arc control

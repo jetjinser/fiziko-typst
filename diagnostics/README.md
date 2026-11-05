@@ -2299,6 +2299,33 @@ sequences is exact. This strengthens the case for generating MetaPost's
 post-`shadowCut` arc and callback-width knots from production path state rather
 than adding a fixed per-segment correction to sampled chord lengths.
 
+**M11 pre-shadow offset-cubic arc probe (2026-11-05).** The production
+`_mp-offset-boundary` port reconstructs the paired pre-shadow lane controls
+from the checked-in centerline samples with mean/max control errors of
+`0.000039–0.000041/0.000108–0.000135 mm` across calls 4/2, 4/6, and 5/2.
+Using those curves, fixed-point MetaPost cubic arcs, and the traced shadow cut
+times (without injecting source arc knots) improves mean segment arc error
+against the post-shadow trace from `8.38/8.05/8.62` to
+`8.07/7.32/8.25` fixed units. It does not recover the full trees: replayed
+counts are `38/22/28` against source `40/20/30`, and the 64-chord replay does
+better on call 5/lane 2. The candidate reconstructs the removed gap's arc
+from the underlying pre-shadow cubic, so its remaining mismatch can include
+the `..` connector controls introduced by MetaPost's `shadowCut`. Keep this
+as a geometry probe; no production change or raster improvement is claimed.
+The probe is in `m11_knot_lane_offset_cubics.typ` and
+`m11_offset_cubic_q_replay.typ`. After generating
+`build/m11-production-q-inputs.typ` with the exporter above, reproduce the
+fixed-point offset-cubic arcs and q replay with:
+
+```sh
+nix develop path:./nix --command python \
+  diagnostics/extract_m11_shadow_splice_cases.py \
+  /tmp/m11-q-audit/trace.log build/m11-shadow-splice-cases.typ
+nix develop path:./nix --command typst eval \
+  'query(<m11-offset-cubic-q-replay>).first().value' \
+  --in diagnostics/m11_offset_cubic_q_replay.typ --root .
+```
+
 The arc audit now also reports the first divergent q-map for call 4/lane 6.
 Its decision-11 node maps to source segments 6–8, whose 64-chord increment
 errors are `+1`, `+2`, and `-11` fixed units. These are much smaller than the
