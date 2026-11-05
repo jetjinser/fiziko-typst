@@ -24,6 +24,18 @@ def source_arcs(path):
     return records
 
 
+def source_nodes(path, call, lane):
+    nodes = []
+    for line in path.read_text().splitlines():
+        fields = line.split()
+        if len(fields) == 7 and fields[0] == "M11THIN" \
+                and (int(fields[1]), int(fields[2])) == (call, lane):
+            nodes.append({"depth": int(fields[3]), "recurse": None})
+    for i, node in enumerate(nodes):
+        node["recurse"] = i + 1 < len(nodes) and nodes[i + 1]["depth"] > node["depth"]
+    return nodes
+
+
 def audit(log, replay, arc_field, polyline_steps):
     source = source_arcs(log)
     for item in replay:
@@ -53,20 +65,24 @@ def audit(log, replay, arc_field, polyline_steps):
               f"max-abs={max(map(abs, increment_errors))}")
         print("  largest segment errors (zero-based segment, fixed units): "
               + ", ".join(f"{i}:{value:+d}" for i, value in largest))
-        node_index = {(4, 2): 32, (4, 6): 10, (5, 2): 19}.get(key)
-        if node_index is not None:
-            if arc_field == "polyline-arc-fixed":
-                run = next(record for record in item["polyline-arc-runs"]
-                           if record["steps"] == polyline_steps)
-                all_nodes = run["q-nodes"]
-            else:
-                field = {"arc-fixed": "q-nodes",
-                         "fifth-arc-fixed": "fifth-arc-q-nodes",
-                         "cubic-arc-fixed": "cubic-arc-q-nodes"}[arc_field]
-                all_nodes = item[field]
-            nodes = [node for node in all_nodes if node["stage"] == "thin"]
-            node = nodes[node_index]
-            print(f"  first divergent thin node {node_index + 1}: "
+        if arc_field == "polyline-arc-fixed":
+            run = next(record for record in item["polyline-arc-runs"]
+                       if record["steps"] == polyline_steps)
+            all_nodes = run["q-nodes"]
+        else:
+            field = {"arc-fixed": "q-nodes",
+                     "fifth-arc-fixed": "fifth-arc-q-nodes",
+                     "cubic-arc-fixed": "cubic-arc-q-nodes"}[arc_field]
+            all_nodes = item[field]
+        nodes = [node for node in all_nodes if node["stage"] == "thin"]
+        reference_nodes = source_nodes(log, *key)
+        first = next((i for i, (reference, candidate) in enumerate(
+            zip(reference_nodes, nodes))
+            if reference["depth"] != candidate["depth"]
+            or reference["recurse"] != candidate["recurse"]), None)
+        if first is not None:
+            node = nodes[first]
+            print(f"  first divergent thin node {first + 1}: "
                   f"depth={node['depth']} q-map={node['q-map']}")
             spans = node["q-map"]
             first_segment = max(0, int(min(span[0] for span in spans)))

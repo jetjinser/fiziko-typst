@@ -2578,9 +2578,21 @@ while the preceding segments are each high by 2 units. The larger pointwise
 geometry residuals occur one segment earlier (30 and 18), so the critical
 increment error is not simply the location of the largest sampled-point
 error. A single endpoint scale cannot correct these local arc-clock errors.
-The next probe should separate the quarter-sample reconstruction error from
-the small source/Typst curve difference on these exact segments; do not promote
-global sampling-density or endpoint-scale adjustments.
+The focused follow-up now separates source q-template arc construction from
+the production lane arc estimates. On the pinned 2026-11-05 source/Typst pair,
+all 121 source q arc knots are exact in the replay, and the fixed-point port of
+MetaPost's cubic arc estimator reproduces all source arc increments exactly.
+Reconstructing each source cubic from its quarter samples changes its arc by
+at most 2 units (mean 0.587) in 16.16 bp. The production lane's estimated arc
+increments differ locally by at most 11 units; the first thin-tree divergence
+for call 4/lane 2 falls at node 19 over q-map 12.86–16.96, call 4/lane 6 at
+node 12 over 6.43–8.04, and call 5/lane 2 at node 7 over 0.86–4.96. This
+supports a small, threshold-sensitive production-curve/arc residual as the
+remaining trigger, but does not identify a safe sampling change. Keep the
+current production geometry; global density and endpoint-scale adjustments
+remain unsupported. `audit_m11_lane_arc_drift.py` now finds the first
+divergent node from the current source and replay traces rather than relying
+on node indices from an older run.
 
 An opt-in replay computes each source-time segment's q arc from 1, 2, 4, 8,
 or 16 straight chords in the dense Typst lane trace. More chords reduce
