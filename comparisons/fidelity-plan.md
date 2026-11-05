@@ -1972,8 +1972,14 @@ with maximum position error `0.00053 mm`. The M4 recursive tree remains
 construction remains open. M11 600 ppi whole/globe RMSE improves from
 `0.114800/0.189287` to `0.114775/0.189183`; knot RMSE is unchanged. A production
 trial with exact partial cubic arc lengths reduced the M4 tree to `31/7` and
-was removed. Retain the boundary samples and continue on q-control
-construction, not the discarded arc-length trial.
+was removed. A follow-up using the corrected fixed-point arc tolerance reduced
+maximum root q.x/arc-at-time residuals on M1/M2/M4 from
+`0.00261/0.00373/0.00115 mm` to `0.00248/0.00262/0.00106 mm`, but its trees
+were only `13/35/7` Typst nodes versus source `15/57/31` (baseline M2 is 39
+Typst nodes); it was also reverted. The source confirms coast edges are
+straight `--` segments and only the inserted horizon arcs are curved. Keep the
+boundary samples; the remaining issue is constructing the source root q
+callback and carrying its time/width state, not recursive q splitting.
 
 **M11 source-rounded globe projection / closed-endpoint trial
 (2026-11-06, reverted).** Applying MetaPost-style 16.16 rounding to projection
@@ -1985,5 +1991,5 @@ units of source. The combined candidate nevertheless produced trees
 `15/13`, `57/39`, and `31/7` nodes (source/Typst) and slightly regressed M11
 600 ppi whole/globe RMSE to `0.114807/0.189313` from `0.114800/0.189287`; knot
 RMSE was unchanged. Revert both production changes. Continue from recursive
-q-control drift: improved root knot placement and endpoint arc alone do not
-preserve source branch decisions.
+root-template generation: improved root knot placement and endpoint arc alone
+do not preserve source branch decisions.

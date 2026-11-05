@@ -5042,5 +5042,20 @@ gave recursive trees `15/13`, `57/39`, and `31/7` nodes (source/Typst), and
 M11 600 ppi full/globe RMSE regressed slightly to `0.114807/0.189313` from
 `0.114800/0.189287`; knot RMSE stayed `0.078535`. The source-rounding and
 endpoint changes were removed. The remaining actionable issue is the
-cumulative q-control drift through recursive splits, rather than root knot
-position alone.
+production root q template and its source-time/arc/width mapping, rather than
+recursive q splitting itself.
+
+**M11 direct horizon-cubic arc candidate (2026-11-06, reverted).** After the
+arc-audit tolerance correction, a production-trace trial replaced sampled
+eight-chord lengths for partial fullcircle intervals with
+`_mp-fixed-cubic-arc` on the corresponding sliced cubic. The pinned
+`drawLandMass` implementation confirms geographic coast edges are joined by
+straight `--` segments; the curved path pieces are the inserted fullcircle
+horizon arcs. The candidate reduced the maximum root q.x versus Typst
+arc-at-time residuals on masses 1/2/4 from `0.00261/0.00373/0.00115 mm` to
+`0.00248/0.00262/0.00106 mm`, but its production recursion trees fell to
+`13/35/7` Typst nodes against source `15/57/31` (the retained baseline is
+`13/39/31`). The source-fixed arc estimator alone therefore does not reproduce
+the root q callback or preserve branch decisions. Revert it without a raster
+trial; continue tracing how horizon path-time and width callback knots feed
+the initial root q template and closed seam.
