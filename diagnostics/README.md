@@ -4115,6 +4115,21 @@ endpoint crossings. Do not change the global intersection tolerance: the
 q-control inputs still differ by small fixed-point amounts before the solver
 sees them.
 
+**Mass-1 child-q continuity audit (2026-11-05).** Re-running
+`audit_m11_coast_q_children.py` on the same source trace checks all seven
+recursive q cuts and finds zero fixed-unit endpoint error with exact child
+knot sequences on all seven. The mismatch is therefore not a discontinuity
+inside the traced source recursion. `compare_m11_coast_brush.py` localizes the
+first production divergence at depth 5: the source q cubic begins at
+`23662932/9794`, while Typst begins at `23666596/9793` (a difference of
+`3664/1` fixed units). The preceding depth-4 cut already has those respective
+starts, so correcting only the terminal child split cannot remove the
+upstream q-control drift. The next diagnostic should pair the initial
+source/Typst q curves by their source path-time and arc mapping, then locate
+where that drift first enters the ancestry. Keep the terminal-seam branch
+decision as the visible symptom, but do not treat source child propagation as
+the root cause without that earlier mapping audit.
+
 A focused terminal-time candidate then mapped the final callback directly to
 the closed path endpoint, so its q.x included the final cyclic arc instead of
 stopping at the last sampled vertex. This left mass 1/2 unchanged at
