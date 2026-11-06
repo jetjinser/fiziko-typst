@@ -55,11 +55,24 @@ The wood field has its own source parameters, pinned in `fiziko.mp` beside
 | `woodBlockYRdensity := 1/24` | 0.041667 field units | `_source-wood-y-density` |
 | `woodKnotAngle := 1/3pi` | 60° | `_source-wood-knot-angle` after radians-to-degrees conversion |
 | `woodKnotRadius := 1/8cm` | 1.25 mm | `_source-wood-knot-radius` |
-| `woodKnotDensity := 2cm` | 20 mm | `_source-wood-knot-density`; caps accepted knot count by half the block area divided by this spacing |
+| `woodKnotDensity := 2cm` | 20 mm | `_source-wood-knot-density`; minimum accepted knot spacing |
 
 The `woodBlockRes` default is not universal per figure: M9 sets it to 1 mm,
 while S105 uses the source default. Keep that driver override distinct from
 the field's other constants.
+
+The source's second knot-loop stop condition is an explicit `i` ceiling,
+separate from `woodKnotDensity`'s spacing test. A trace of M9 and S105 reports
+source ceilings around `3646`, `940`, and `865` for their respective wood
+blocks/surface. Every traced fixture exits first at `j = 10` rejected
+candidates. `_woodblock-field` now converts the source index expression into
+millimetre inputs and uses `ceil(index-limit) + 1`, matching the source's
+index starting at `-1`. This raises its caps for those extents from `46/12/11`
+to `3647/942/866`; long, narrow inputs no longer hit an early Typst-only stop.
+Same-run 600 ppi M9/S105 comparisons confirm pixel-identical output and
+identical regional RMSE. Typst compile times were 181.7→180.6 s for M9 and
+5.23→5.38 s for S105. `diagnostics/README.md` documents how to reproduce the
+source trace.
 
 The source also has behavioral thresholds that are easy to mistake for
 physical dimensions. In the pinned `fiziko.mp`, `thinBrushGenerate` checks

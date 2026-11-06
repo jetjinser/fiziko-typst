@@ -3757,8 +3757,12 @@
   // The source default is 1/3 mm (figure drivers may override it); draw one
   // vertical offset per woodBlockRes column, not once per whole millimetre.
   let columns = int(calc.round(w / source-res)) + 1
-  let max-knots = calc.max(1, int(calc.ceil(
-    w * h / (2 * _source-wood-knot-density))))
+  // MetaPost exits after the accepted-knot index reaches
+  // 1/2*((w/cm)*(h*cm))/(woodKnotDensity/cm). With the pinned 2cm density,
+  // that limit simplifies to w_bp*h_bp/4. Convert mm inputs back to bp; the
+  // source starts its index at -1, so the accepted-knot cap is ceil(limit)+1.
+  let source-index-limit = w * h / (4 * _mp-unit * _mp-unit)
+  let max-knots = calc.max(1, int(calc.ceil(source-index-limit)) + 1)
   let candidate-cap = calc.max(256, (max-knots + 10) * 30)
   let stream = _metapost-rng-sequence(seed,
     rng-offset + candidate-cap + columns + 2048)

@@ -761,6 +761,29 @@ to the candidate assignment and leaves the existing `WKCAND` sequence intact.
 `WKRANDFIX` encodes the same bound and product as exact 16.16 integers (two
 base-256 digits per value) for arithmetic replay.
 
+To compare the source knot-loop rejection stop with its separate index ceiling,
+use `instrument_wood_knot_cap.py`. It emits `WDCAP width-mm length-mm i j
+ceiling` after each candidate. For the pinned M9/S105 drivers, the last row
+for each block has `j = 10`; the large source ceiling is not reached. The
+Typst cap now follows the source index expression (`ceil(limit) + 1` accepted
+knots) and is nonbinding for these source fixtures.
+
+```sh
+nix develop path:./nix --command bash -c '
+  mkdir -p /tmp/m9-wood-cap
+  python3 diagnostics/instrument_wood_knot_cap.py \
+    "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/m9-wood-cap/fiziko.mp
+  cp comparisons/reference/main.mp /tmp/m9-wood-cap/main.mp
+  printf "%s\n" "selected := 9; input main.mp;" > /tmp/m9-wood-cap/trace.mp
+  cd /tmp/m9-wood-cap
+  mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp
+  rg "WDCAP" trace.log
+'
+```
+
+For S105, use `comparisons/reference/supplemental.mp` and
+`selected := 105; input supplemental.mp;` in a separate temporary directory.
+
 `m9_wood_knot_panel_trace.typ` exports accepted Typst knot positions and field
 random counts for all four M9 panel offsets (`0`, `1456`, `2823`, `4120`):
 
