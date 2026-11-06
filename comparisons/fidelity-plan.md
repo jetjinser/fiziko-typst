@@ -2099,3 +2099,15 @@ the source's second cut parameter (`1.345275879`), while thin recursion still
 differs by two nodes (7 vs 5). Keep source q/arc injection diagnostic-only;
 next compare the source's actual `pathSubdivide` subcurve controls and arc
 accumulation/rounding before changing production sampling.
+
+**S104 traced `pathSubdivide` controls (2026-11-06).** Added source-side
+`S104-HATCHPOST/PRE` records. On row `-15.34870`, the source controls fed to
+`_mp-fixed-cubic-arc-raw` reproduce all four source arc increments exactly:
+`[1379156,1379154,1379152,1379154]`. Rebuilding each Typst subcurve from its
+start and independently anchoring both endpoints to the original curve lowers
+the maximum arc error from 18 to one 16.16 unit. With the exact source q-root
+fixture, this candidate yields 21 outer/7 thin nodes; exact source arcs yield
+the same tree, against source 21/5. Thus the residual one-unit arc error does
+not explain the two extra thin nodes. Keep this diagnostic-only until
+`mp_split_cubic` coordinate rounding is reproduced from its generated controls
+and the paired S104 render is checked.

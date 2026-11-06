@@ -59,10 +59,21 @@
       let t1 = fixed-width-q-subdivision-times.at(i + 1)
       let whole = segment.at(6).map(value => value.map(axis =>
         axis / 65536 * _mp-unit))
-      let left = _mp-cubic-split(whole, t1).left
-      let piece = if t0 == 0 { left } else {
-        _mp-cubic-split(left, t0 / t1).right
+      let right = if t0 == 0 { whole } else {
+        _mp-cubic-split(whole, t0).right
       }
+      let local-t = if t0 == 1 { 1 } else { (t1 - t0) / (1 - t0) }
+      let split-piece = if local-t == 1 { right } else {
+        _mp-cubic-split(right, local-t).left
+      }
+      // MetaPost's chopPath independently splits at both source times. The
+      // endpoint at each knot is point(t) on the original path, not the
+      // accumulated endpoint from a previous split.
+      let start = _mp-fixed-cubic-at(segment.at(6), t0).map(value =>
+        value / 65536 * _mp-unit)
+      let end = _mp-fixed-cubic-at(segment.at(6), t1).map(value =>
+        value / 65536 * _mp-unit)
+      let piece = (start, split-piece.at(1), split-piece.at(2), end)
       let arc = _mp-fixed-cubic-arc-raw(piece.map(point =>
         point.map(axis => axis / _mp-unit)))
       fixed-subcurve-arc-positions.push(
@@ -70,10 +81,9 @@
     }
   }
   let traced-source-arc-positions = if use-source-fixed-scanlines and segment.at(2) == 103 {
-    (0, 1379156, 2758310, 4137462, 5516616).map(value =>
-      value / 65536 * _mp-unit)
+    fixed-subcurve-arc-positions
   } else { fixed-source-arc-positions }
-  let fixed-line-length = fixed-source-arc-positions.last()
+  let fixed-line-length = traced-source-arc-positions.last()
   let points = subdivision-times.map(t => _mp-fixed-cubic-at(
     segment.at(6), t).map(value => value / 65536 * _mp-unit))
   let frames = _frame(points, false)
@@ -284,7 +294,8 @@
       _source-dash-length, random-stream: stream, rng-offset: cursor,
       dash-extra: 0.01 * _mp-unit, dash-cap: 1,
       with-rng: true, with-stats: true, trace-nodes: true,
-      source-rounding: true, source-q-curves-fixed: source-q-curves-fixed)
+      source-rounding: true, source-q-curves-fixed: source-q-curves-fixed,
+      source-arc-positions: traced-source-arc-positions)
   }
   let typst-width-fixed = widths.map(width =>
     int(calc.round(width / _mp-unit * 65536)))

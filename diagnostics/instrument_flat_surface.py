@@ -555,6 +555,10 @@ def main() -> None:
         '                    for traceHatchPoint := 0 step 1 until length(aHatch):\n'
         '                        traceHatchPointRecord(traceHatchPoint, point traceHatchPoint of aHatch);\n'
                         '                        traceHatchBpRecord(traceHatchPoint, point traceHatchPoint of aHatch);\n'
+        '                        if traceHatchPoint < length(aHatch):\n'
+        '                            traceHatchControlRecord("S104-HATCHPOST", traceHatchPoint, postcontrol traceHatchPoint of aHatch);\n'
+        '                            traceHatchControlRecord("S104-HATCHPRE", traceHatchPoint, precontrol (traceHatchPoint + 1) of aHatch);\n'
+        '                        fi;\n'
         '                        traceHatchArcRecord(traceHatchPoint, arclength(subpath(0,traceHatchPoint) of aHatch));\n'
         '                    endfor;\n'
         '                fi;',
@@ -660,6 +664,19 @@ vardef traceHatchBpRecord (expr index, z) =
     yh := floor((ypart z - yw) * 256);
     yl := round(((ypart z - yw) * 256 - yh) * 256);
     message "S104-HATCHBP " & decimal(traceHatchRow) & " " & decimal(index) & " "
+        & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
+        & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
+enddef;
+vardef traceHatchControlRecord (expr tag, index, z) =
+    save xw, xh, xl, yw, yh, yl;
+    numeric xw, xh, xl, yw, yh, yl;
+    xw := floor(xpart z);
+    xh := floor((xpart z - xw) * 256);
+    xl := round(((xpart z - xw) * 256 - xh) * 256);
+    yw := floor(ypart z);
+    yh := floor((ypart z - yw) * 256);
+    yl := round(((ypart z - yw) * 256 - yh) * 256);
+    message tag & " " & decimal(traceHatchRow) & " " & decimal(index) & " "
         & decimal(xw) & " " & decimal(xh) & " " & decimal(xl) & " "
         & decimal(yw) & " " & decimal(yh) & " " & decimal(yl);
 enddef;

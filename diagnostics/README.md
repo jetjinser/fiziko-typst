@@ -3496,7 +3496,7 @@ printf 'selected := 104; input supplemental.mp;\n' \
 (cd /tmp/s104-source-trace && \
   mpost -interaction=nonstopmode -halt-on-error -jobname=trace trace.mp)
 rg 'FSROW' /tmp/s104-source-trace/trace.log
-rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW|HATCHPT|HATCHBP|HATCHARC)' /tmp/s104-source-trace/trace.log
+rg 'S104-(OUTER|OFIX|OCTRL|OXCTRL|ORAY|RAW|THIN|TNODE|TDASH|HIT|WFIX|TKNOT|TCTRL|TXCTRL|TENTRY|TRAY|FIRST(-FIX)?|SUBDRAW|RNG-ABS-ROW|HATCHPT|HATCHBP|HATCHPOST|HATCHPRE|HATCHARC)' /tmp/s104-source-trace/trace.log
 typst eval 'query(<s104-hatch-rows>).first().value' \
   --in diagnostics/flat_surface_hatch_trace.typ --root .
 ```
@@ -5130,3 +5130,22 @@ Injecting the exact source q cubics and arc knots into the diagnostic reproduces
 thin recursion remains 7 nodes versus 5 source nodes. These source fixtures
 remain diagnostic-only. Continue by comparing the actual `pathSubdivide`
 subcurve controls and arc accumulation before changing production sampling.
+
+### S104 traced `pathSubdivide` controls (2026-11-06)
+
+The source instrumenter now records each subdivision segment's
+`postcontrol`/`precontrol` as `S104-HATCHPOST/PRE`. On row `-15.34870`, applying
+`_mp-fixed-cubic-arc-raw` to those exact source controls reproduces all four
+source arc increments exactly: `[1379156,1379154,1379152,1379154]`. This
+confirms the arc estimator is adequate here and localizes the residual to
+reconstructing MetaPost's `subpath` cubic controls.
+
+Splitting the Typst root cubic from each interval's start, then independently
+anchoring both endpoints to the original curve, gives
+`[1379156,1379154,1379153,1379154]`, at most one fixed unit from source; the
+prior 18-unit error came from using an accumulated split endpoint. With the
+exact source q-root fixture, this candidate and the exact source arc table both
+produce 21 outer and 7 thin nodes (source: 21/5), so the remaining thin-tree
+mismatch is not explained by that one-unit arc residual. Do not promote yet:
+reproduce `mp_split_cubic`'s coordinate rounding and compare generated interior
+controls against these source records, then run the paired S104 raster gate.
