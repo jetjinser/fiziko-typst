@@ -5383,3 +5383,32 @@ nix develop path:./nix --command python \
 nix develop path:./nix --command python comparisons/run.py \
   --case S104 --mode nominal --output build/s104-cubic-arc
 ```
+
+### S104 source frame and cubic-arc combination (2026-11-06)
+
+`flat-surface` now accepts `source-frame-height:` in millimetres for
+source-rounded hatches. MetaPost's S104 fixture maps `P(x,y)` to
+`(x*mm,(figh-y)*mm)` before rotating; passing `44` reproduces that y-up frame
+and the quantized source `mm` conversion. The source-frame transform alone had
+previously been rejected while q abscissae still used sampled chords. Combining
+it with cubic subcurve arc positions changes that result: all 142 row call
+totals, subdivision requests, generated segment counts, and absolute RNG
+offsets match (`1516/1516`).
+
+The full recursive audit now pairs 1,606/1,696 source nodes, with 1,490 exact
+width-control nodes and 1,467 exact q-arc control nodes; mean/max q-arc error
+is `9.228/870` units. On the first divergent row `-2.79129`, all 37 recursive
+nodes pair and every q width and arc control matches exactly; paired path
+endpoints differ by at most `0.000115 mm`.
+
+The source hash matches the baseline render. At 600 ppi, full/hatch RMSE
+changes from `0.205603720/0.071811352` to `0.205604024/0.071813065`, while
+stipple remains `0.283972375`. Retain the opt-in frame argument because it
+reproduces the source coordinate transform and substantially improves the
+recursive q geometry; the small raster regression and remaining unmatched
+nodes stay visible in the comparison report. The S104 plate fixture passes
+`source-frame-height: 44` explicitly.
+
+Leaving `source-frame-height` unset preserves the prior 600 ppi S104 image
+hash and its `0.205603768/0.071811623/0.283972375` full/hatch/stipple RMSE,
+so the source-frame option is opt-in and existing calls keep their rendering.

@@ -8,9 +8,11 @@
 #let use-source-fixed-scanlines = true
 #let normal = (0, 0, -1)
 #let light = (-0.353553, 0.382683, 0.853553)
+#let source-frame-height = 44
 #let segments = _scanline-segments(
   panel, angle, 3 * _source-max-shading, fit: true,
-  source-fixed: use-source-fixed-scanlines)
+  source-fixed: use-source-fixed-scanlines,
+  source-frame-height: source-frame-height)
 #let projections = panel.map(p => p.at(0) * _cos(angle) + p.at(1) * _sin(angle))
 #let total-width = if use-source-fixed-scanlines {
   segments.first().at(5)
@@ -19,7 +21,7 @@
 #let cursor = 0
 #let fixed-width-q-cursor = 0
 #let rows = ()
-#let draw-segments = segments.rev()
+#let draw-segments = segments
 #let nn = calc.sqrt(normal.at(0) * normal.at(0) + normal.at(1) * normal.at(1) + normal.at(2) * normal.at(2))
 #let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
 #let shade = calc.pow(1 - calc.max(0.0,

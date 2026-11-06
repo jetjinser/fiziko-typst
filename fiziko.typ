@@ -3122,7 +3122,7 @@
 
 // Intersect evenly spaced scanlines with a closed polygon. Each line returns
 // one or more inside intervals, including concave polygons and disjoint cuts.
-#let _source-scanline-segments(poly, angle, spacing) = {
+#let _source-scanline-segments(poly, angle, spacing, source-frame-height: none) = {
   // MetaPost rotates the polygon and intersects horizontal fixed-point rays.
   // Convert Typst millimetres with plain.mp's quantized mm scalar, then keep
   // the projection, row grid, edge intersections and inverse rotation in
@@ -3136,28 +3136,37 @@
     mul(point.at(0), cosine) - mul(point.at(1), sine * direction),
     mul(point.at(0), sine * direction) + mul(point.at(1), cosine),
   )
+  let source-mm-fixed(value) = _mp-fixed-round-ratio(
+    int(calc.round(value * one)) * source-bp-per-mm, one)
+  let source-frame-fixed = if source-frame-height == none { none }
+    else { source-mm-fixed(source-frame-height) }
   let source-poly = poly.map(point => (
-    int(calc.round(point.at(0) * source-bp-per-mm)),
-    int(calc.round(point.at(1) * source-bp-per-mm)),
+    source-mm-fixed(point.at(0)),
+    source-mm-fixed(if source-frame-height == none { point.at(1) }
+      else { source-frame-height - point.at(1) }),
   ))
-  let rotated = source-poly.map(point => rotate(point, -1))
+  let rotated = source-poly.map(point => rotate(point,
+    if source-frame-height == none { -1 } else { 1 }))
   let ymin = calc.min(..rotated.map(point => point.at(1)))
   let ymax = calc.max(..rotated.map(point => point.at(1)))
   let spacing-fixed = int(calc.round(spacing * source-bp-per-mm))
   if spacing-fixed <= 0 or ymax <= ymin { return () }
   let count = calc.max(1, int(calc.round((ymax - ymin) / spacing-fixed)))
   let row-step = _mp-fixed-round-ratio(ymax - ymin, count)
-  // Source llcorner/lrcorner equal the transformed vertex extrema on the
-  // traced S104 row. The Typst ray frame is one 16.16 unit left of those
-  // source bounds across all 142 rows; keep this measured correction named
-  // separately until the frame conversion itself is derived.
-  let source-ray-grid-correction = 1
+  // The page-frame fallback is one 16.16 unit left of the source ray bounds;
+  // explicit source-frame coordinates need no correction.
+  let source-ray-grid-correction = if source-frame-height == none { 1 } else { 0 }
   let xmin = calc.min(..rotated.map(point => point.at(0))) + source-ray-grid-correction
   let xmax = calc.max(..rotated.map(point => point.at(0))) + source-ray-grid-correction
   let edge-curves = range(poly.len()).map(i => _mp-fixed-line-cubic(
     rotated.at(i), rotated.at(_mod(i + 1, poly.len()))))
+  let page-fixed-point(local) = {
+    let point = rotate(local, if source-frame-height == none { 1 } else { -1 })
+    if source-frame-height == none { point }
+    else { (point.at(0), source-frame-fixed - point.at(1)) }
+  }
   let page-point(local) = {
-    let point = rotate(local, 1)
+    let point = page-fixed-point(local)
     (point.at(0) / one * _mp-unit, point.at(1) / one * _mp-unit)
   }
   let segments = ()
@@ -3165,7 +3174,9 @@
     // The source advances rows from the low side of its y-up rotated box.
     // In the page's y-down frame that is the high side, so anchor the same
     // fixed step grid there instead of deriving the first line from ymin.
-    let height = ymax - (count - row) * row-step
+    let height = if source-frame-height == none {
+      ymax - (count - row) * row-step
+    } else { ymin + row * row-step }
     let ray = _mp-fixed-line-cubic((xmin, height), (xmax, height))
     let reverse-ray = ray.rev()
     let forward-hit = intersection-times(ray, edge-curves)
@@ -3181,7 +3192,7 @@
         // rotated fixed controls so subdivision sees the same `--` rounding
         // instead of treating the final endpoints as an ideal straight line.
         let clipped-cubic = _mp-fixed-line-cubic(
-          (u0, height), (u1, height)).map(point => rotate(point, 1))
+          (u0, height), (u1, height)).map(page-fixed-point)
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
           (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit,
           clipped-cubic, (u0, height), (u1, height), ray, rotated, source-poly))
@@ -3191,9 +3202,13 @@
   segments
 }
 
-#let _scanline-segments(poly, angle, spacing, fit: false, source-fixed: false) = {
+#let _scanline-segments(poly, angle, spacing, fit: false, source-fixed: false,
+                        source-frame-height: none) = {
   if poly.len() < 3 or spacing <= 0 { return () }
-  if source-fixed { return _source-scanline-segments(poly, angle, spacing) }
+  if source-fixed {
+    return _source-scanline-segments(poly, angle, spacing,
+      source-frame-height: source-frame-height)
+  }
   let d = (_cos(angle), _sin(angle))
   let n = (-d.at(1), d.at(0))
   let projections = poly.map(p => _dot(p, n))
@@ -3321,10 +3336,13 @@
 }
 
 /// A shaded plane, with either parallel hatches or deterministic stipples.
+/// `source-frame-height` opts source-rounded hatches into MetaPost's y-up
+/// frame transform; pass the original figure height in millimetres.
 #let flat-surface(poly, normal, angle: 30, style: "hatch", spacing: none,
                   dot-size: 1.5 * _source-min-stroke, dot-step: 0.75 * _source-min-stroke, seed: 0,
                   light: (-0.353553, 0.382683, 0.853553),
-                  rng: "keyed", rng-offset: 0, with-rng: false) = {
+                  rng: "keyed", rng-offset: 0, with-rng: false,
+                  source-frame-height: none) = {
   let nn = calc.sqrt(normal.at(0) * normal.at(0) + normal.at(1) * normal.at(1) + normal.at(2) * normal.at(2))
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
   let lam = calc.max(0.0, (normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)) / (nn * ln))
@@ -3334,9 +3352,14 @@
   } else { spacing }
   let source-fixed-scanlines = rng == "metapost" and style == "hatch"
   let segs = _scanline-segments(poly, angle, line-spacing, fit: true,
-    source-fixed: source-fixed-scanlines)
+    source-fixed: source-fixed-scanlines,
+    source-frame-height: source-frame-height)
   assert(rng == "keyed" or rng == "metapost",
     message: "rng must be \"keyed\" or \"metapost\"")
+  assert(source-frame-height == none or (rng == "metapost" and style == "hatch"),
+    message: "source-frame-height requires rng: \"metapost\" and hatch style")
+  assert(source-frame-height == none or source-frame-height > 0,
+    message: "source-frame-height must be positive")
   assert(rng == "keyed" or style != "stipples",
     message: "MetaPost stream mode is currently supported for hatch style only")
   let stream = if rng == "metapost" {
@@ -3345,7 +3368,8 @@
   let cursor = rng-offset
   // MetaPost scans its y-up bounding box from low to high. After a page's
   // vertical axis is flipped, that is the reverse of Typst's scanline order.
-  let draw-segs = if rng == "metapost" and style == "hatch" { segs.rev() } else { segs }
+  let draw-segs = if (rng == "metapost" and style == "hatch"
+      and source-frame-height == none) { segs.rev() } else { segs }
   let along = (_cos(angle), _sin(angle))
   let along-projections = poly.map(p => _dot(p, along))
   let total-width = if source-fixed-scanlines and segs.len() > 0 {

@@ -2242,3 +2242,17 @@ The focused control audit narrows that work upstream of splitting: on row
 `(1,20)`, `(0,20)`, `(0,20)`. The next investigation is the source clipping and
 inverse-rotation conversion; changing only the de Casteljau slice order cannot
 remove an endpoint difference that exists at path time zero.
+
+**S104 source-frame plus cubic arcs (2026-11-06).** `flat-surface` now exposes
+`source-frame-height:` so source-rounded hatches can apply the original
+`P(x,y)=(x,(figh-y))·mm` transform before rotation. The previous frame-only
+trial used chord q abscissae and changed 34 row call totals; with the cubic
+subcurve arc model enabled, all row calls, subdivisions, segment counts and
+absolute random offsets again match the source. The full tree now pairs
+1,606/1,696 nodes, with 1,490 exact width-control nodes and 1,467 exact q-arc
+control nodes; mean/max q-arc residual is 9.228/870 units. Row `-2.79129`
+improves to 37/37 paired nodes with exact q width and arc controls. Same-source
+600 ppi full/hatch RMSE regresses slightly, `0.205603720/0.071811352` to
+`0.205604024/0.071813065`; stipple stays `0.283972375`. Keep the explicit
+frame option for source-coordinate fidelity, and continue reducing the
+remaining tree mismatch and small raster trade-off.
