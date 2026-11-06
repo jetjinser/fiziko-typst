@@ -5412,3 +5412,31 @@ nodes stay visible in the comparison report. The S104 plate fixture passes
 Leaving `source-frame-height` unset preserves the prior 600 ppi S104 image
 hash and its `0.205603768/0.071811623/0.283972375` full/hatch/stipple RMSE,
 so the source-frame option is opt-in and existing calls keep their rendering.
+
+### S104 fixed scanline edge fraction (2026-11-06)
+
+The width callback's `distFromEdge` is calculated from MetaPost's fixed-point
+scanline coordinate `(i - ylow) / (yup - ylow)`. Using the integer scanline
+index divided by the row count can differ by one 16.16 unit after the fitted
+step is rounded. On source row `29.49918` (trace row 90), the source ratio is
+`0.6293792724609375`; the old `90/143` approximation was `0.629370629370629`.
+
+The mismatch propagated through the callback: the source's `sin(distFromEdge *
+pi)`, envelope, square root, fade, and final width are respectively
+`60197, 28793, 43439, 37233, 12031` in 16.16. The revised Typst trace matches
+those values and the five q-width knots exactly (`27857, 12031, 9036, 12031,
+27857`).
+
+The fixed-point coordinate ratio is now carried with each source scanline and
+used by `flat-surface` and the hatch trace. A same-source 600 ppi S104 render
+improves full/hatch RMSE from `0.205604024/0.071813065` to
+`0.205601244/0.071797407`; stipple RMSE remains `0.283972375`.
+
+The regenerated fixed-q trace closes that audit: 1,667/1,696 source nodes pair
+by endpoints and q controls; 1,595 nodes have exact width controls and 1,604
+have exact q-arc controls. Mean/max q-arc residual is `0.031/3` fixed units.
+On row `29.49918`, pairing rises from 28/77 to 75/77; every paired q arc is
+exact, with two unmatched source leaves (1533 and 1534) and remaining width
+control residuals no greater than 3 units. All 142 rows still match source
+subdivision requests, generated path-segment counts, brush calls, and RNG
+offsets (`1516/1516`).

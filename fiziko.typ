@@ -3177,6 +3177,11 @@
     let height = if source-frame-height == none {
       ymax - (count - row) * row-step
     } else { ymin + row * row-step }
+    // `distFromEdge` is computed from the fixed-point scanline coordinate in
+    // MetaPost, not from the integer row/count ratio. The two can differ by a
+    // single 16.16 unit after the fitted row step has been rounded.
+    let source-row-fraction = _mp-fixed-round-ratio(
+      (height - ymin) * one, ymax - ymin)
     let ray = _mp-fixed-line-cubic((xmin, height), (xmax, height))
     let reverse-ray = ray.rev()
     let forward-hit = intersection-times(ray, edge-curves)
@@ -3195,7 +3200,8 @@
           (u0, height), (u1, height)).map(page-fixed-point)
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
           (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit,
-          clipped-cubic, (u0, height), (u1, height), ray, rotated, source-poly))
+          clipped-cubic, (u0, height), (u1, height), ray, rotated, source-poly,
+          source-row-fraction))
       }
     }
   }
@@ -3390,7 +3396,9 @@
     let subdivision-times = if rng == "metapost" {
       _mp-path-subdivision-times(requested-subdivisions)
     } else { range(requested-subdivisions + 1).map(i => i / requested-subdivisions) }
-    let row-fraction = s.at(2) / calc.max(1, s.at(3))
+    let row-fraction = if source-fixed-scanlines {
+      s.at(12) / 65536
+    } else { s.at(2) / calc.max(1, s.at(3)) }
     let source-fixed = source-fixed-scanlines
     let pts = subdivision-times.map(t => if source-fixed {
       _mp-fixed-cubic-at(s.at(6), t).map(value => value / 65536 * _mp-unit)

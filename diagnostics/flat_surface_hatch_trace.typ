@@ -32,7 +32,9 @@
   let requested-subdivisions = 3 + int(calc.floor(stream.at(cursor) * 2 + 0.5))
   cursor += 1
   let subdivision-times = _mp-path-subdivision-times(requested-subdivisions)
-  let row-fraction = segment.at(2) / calc.max(1, segment.at(3))
+  let row-fraction = if use-source-fixed-scanlines {
+    segment.at(12) / 65536
+  } else { segment.at(2) / calc.max(1, segment.at(3)) }
   let fixed-width-q-subdivision-start = fixed-width-q-cursor
   let fixed-width-q-requested-subdivisions = 3 + int(calc.floor(
     stream.at(fixed-width-q-cursor) * 2 + 0.5))
