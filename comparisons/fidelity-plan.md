@@ -25,6 +25,30 @@ Their `calibrated` values currently equal `nominal`; they are not fit to the
 source plates. Existing M2 calibration changes its width law, so its calibrated
 score must not be presented as equal-parameter fidelity.
 
+## Source constants and semantics
+
+Treat source literals and engine behavior as different evidence. The pinned
+`fiziko.mp` calls `defineMinStrokeWidth(1/5pt)` and derives its related brush
+defaults from that value; these are source specifications, not image-fit
+parameters:
+
+| Pinned source expression | Derived value | Typst mapping |
+| --- | ---: | --- |
+| `minStrokeWidth := 1/5pt` | 0.2 pt | `_source-min-stroke` |
+| `maxShadingStrokeWidth := 3/2minStrokeWidth` | 0.3 pt | `_source-max-shading` |
+| `minDashStrokeWidth := 1/3minStrokeWidth` | 0.0667 pt | `_ink-loops` dash floor |
+| `minDashStrokeLength := 6minStrokeWidth` | 1.2 pt | `_source-dash-length` |
+| `shadingDensity := 3maxShadingStrokeWidth` | 0.9 pt | `_source-spacing` |
+
+These values are visible in the [Typst constants](../fiziko.typ#L30). Other
+numbers belong to the MetaPost runtime: fixed-point rounding, path-time
+evaluation, and the traversal/tie rules in `intersectiontimes` can change a
+result even when the port uses identical formulas. The [MetaPost manual's
+intersection discussion](https://www.tug.org/docs/metapost/mpman.pdf#page=32)
+describes its multiple-intersection preference rules. Port such behavior from
+the pinned engine or prove it against traces; do not tune a literal to hide a
+runtime mismatch.
+
 ## Added plate results
 
 Full-frame ink coverage is reported as source → Typst. Component results are
