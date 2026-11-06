@@ -951,8 +951,15 @@
     let source-time = bounds.at(0) + fraction * (bounds.at(1) - bounds.at(0))
     let cut = source-path-at-time(path, source-time)
     let arc = source-path-arc(path, cut)
-    let valid = if param-times == none { arc > margin and total - arc > margin }
-      else { source-cut-valid(path, cut, margin) }
+    // `thinBrushGenerate` guards its cut with `t > 0.01` in path time,
+    // not with physical arc length. The q-template branch has already mapped
+    // the intersection time back to this path, so apply the same local-time
+    // test here as in the sampled-width branch below.
+    let valid = if param-times == none {
+      let local-cut = source-path-time(path, cut)
+      let local-end = source-path-time(path, path.last())
+      local-cut > margin and local-cut < local-end - margin
+    } else { source-cut-valid(path, cut, margin) }
     if not valid {
       if not report-failure { return none }
       return ((), (), 0.0, 0.0, 0.0, total, false, none, none,

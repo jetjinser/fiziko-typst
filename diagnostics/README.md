@@ -5166,3 +5166,19 @@ scanline-clipping cubic remains one unit off at its final knots.
 
 The matching-source-hash 600 ppi comparison results and their M11 knot/S105
 tradeoffs are recorded in `comparisons/fidelity-plan.md`.
+
+### S104 q-template thin-cut endpoint guard (2026-11-06)
+
+The pinned `thinBrushGenerate` only recurses when the cut time satisfies
+`t > 0.01` and `t < length(p) - 0.01` ([source lines 461–475](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L461-L475)).
+`source-q-split-path` used physical arc distance for this guard when q curves
+were supplied. It now maps the q intersection back to the current path and
+checks local path time, matching the sampled-width branch and MetaPost source.
+
+On row `-15.34870`, the old guard accepted a near-endpoint cut at
+`t=0.0078125`; the corrected exact-root-q diagnostic has 21 outer/5 thin nodes,
+matching source (previously 21/7), and 7 row RNG draws/3 dashes, also matching
+source. The q approximation is still wrong on many other rows: 123/142 row
+draw counts match, with L1 difference 252 although total draws remain 1516.
+The paired 600 ppi S104 hatch RMSE regresses `0.071835 -> 0.077426`; retain the
+source predicate and continue from the per-row q-template/call mismatches.

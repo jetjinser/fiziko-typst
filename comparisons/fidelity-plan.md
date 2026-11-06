@@ -2133,3 +2133,23 @@ improves several full-frame/region scores, while the M11 knot and S105
 full/block regressions remain explicit follow-up targets. M9 ink coverage
 moves slightly farther from source, so retain that tradeoff in future wood
 work rather than claiming a uniform raster improvement.
+
+**S104 thin-cut endpoint guard (2026-11-06).** The q-template branch of
+`source-q-split-path` previously validated a `thinBrushGenerate` cut by its
+physical arc distance from the endpoint. The pinned source instead accepts a
+cut only when its path parameter satisfies `t > 1/100` and
+`t < length(p) - 1/100` ([source](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L461-L475)).
+The implementation now checks the mapped local path time. On S104 row
+`-15.34870`, this rejects the `t=0.0078125` near-endpoint cut; the exact-root-q
+diagnostic tree changes from 21 outer/7 thin nodes to 21/5, matching source,
+and the row consumes 7 RNG draws with 3 dashes, matching the source row.
+
+The change exposes other unresolved q-template errors: across all 142 S104
+rows, 123 per-row draw counts match (L1 difference 252), although total draws
+remain 1516/1516. Same-source-hash 600 ppi comparisons show S104 full/hatch RMSE
+`0.205608/0.071835 -> 0.206637/0.077426`; stipple is unchanged. M11 is pixel
+unchanged, M9 full RMSE shifts `0.211427 -> 0.211456`, and S105 full RMSE shifts
+`0.101695 -> 0.101695` (increase `0.000000653`). Keep the source path-time
+predicate for semantic fidelity, record the S104 raster trade-off, and continue
+from the per-row q/call mismatches rather than restoring the incorrect
+arc-distance guard.
