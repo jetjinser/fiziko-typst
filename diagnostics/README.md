@@ -5214,3 +5214,15 @@ same-source-hash 600 ppi S104 render improves full/hatch RMSE from
 `0.206637/0.077426` to `0.205607/0.071828`; stipple RMSE is unchanged at
 `0.283972`. Continue from the remaining q/path geometry mismatches rather than
 the already aligned random-call schedule.
+
+The hatch point/arc audit now intersects `S104-HATCHBP` indices with
+`S104-HATCHARC` indices. The instrumenter also writes original clipped-cubic
+controls at point indexes 100–103, which do not have matching arc records; the
+previous audit incorrectly rejected those otherwise complete traces. On the
+fresh `-15.34870` source row, same-time point error is `0.000110/0.000114 mm`
+mean/max. Source arc increments differ from endpoint chords by `+1/-1/-2/-1`
+16.16 bp units. Reconstructed clipped-cubic subcurve arcs are
+`[1379156,1379154,1379153,1379154]`, one unit too long on the third interval
+and one unit high cumulatively; source records are
+`[1379156,1379154,1379152,1379154]`. This pins the remaining root q.x error to
+subcurve reconstruction/rounding at a one-unit scale, before recursive cuts.

@@ -38,9 +38,12 @@ def source_records(path, row):
                 continue
             arcs[int(index)] = fixed_chunks(
                 int(whole), int(high), int(low))
-    if len(points) < 2 or len(arcs) != len(points):
+    # HATCHBP also records the four original clipped-cubic controls as
+    # indexes 100–103. HATCHARC only accompanies the subdivided path knots;
+    # compare the indexed intersection instead of requiring equal totals.
+    indexes = sorted(set(points) & set(arcs))
+    if len(indexes) < 2 or set(arcs) != set(indexes):
         raise ValueError("source trace needs matching HATCHBP and HATCHARC records")
-    indexes = sorted(points)
     if indexes != list(range(len(indexes))):
         raise ValueError("source hatch point indexes must be contiguous from zero")
     return [points[i] for i in indexes], [arcs[i] for i in indexes]
