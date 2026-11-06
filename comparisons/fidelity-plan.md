@@ -2006,3 +2006,16 @@ and `31/31` source/Typst nodes, and 600 ppi M11 whole/globe/knot RMSE stays
 terminal q.x-to-closed-arc mapping improves root controls to within
 `484/693/214` fixed units but drops the M11 landmass-4 Typst tree from 31 to 7;
 keep that change reverted and continue tracing the initial q arc/time map.
+
+**S104 source-global coordinate probe (2026-11-06, rejected).** Re-expressing
+the fixture in the source's y-up page frame did not improve the scanline input.
+On row `-15.34870`, the four rotated clipped-cubic controls all gained the
+same fixed translation relative to the source: `(-29,+51)` 16.16 units;
+the retained page-local frame differs by at most one unit. The ray height in
+the global-frame probe was also 58 units below the source value. This isolates
+the discrepancy to frame-dependent quantization before scanline clipping,
+rather than to the source callback or arc-knot construction. Keep the
+page-local frame and source y-up row order; do not route the full S104 renderer
+through global page coordinates. The source/Typst width knots on this row
+remain exact, and the next useful comparison is the first recursive cut after
+the already-paired scanline cubic.
