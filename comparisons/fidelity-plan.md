@@ -2042,6 +2042,17 @@ The M11 and `knot.typ` compiles succeed; this rule leaves M11 geometry
 unchanged because its three times were already those integers. It ports a
 source rule without introducing a raster-fit adjustment.
 
+**Source knot layer-list fallback (2026-11-06).** The pinned
+`knotFromStrands` assigns supplied `intLayers` values to the sorted path
+segments, then places any remaining segments on layer 0. `strand-knot` used to
+cycle a shorter per-strand rank array; it now returns 0 beyond the supplied
+entries, including for an empty rank array. Direct `typst eval` gives
+`(-1, 1, -1, 1, 0, 0, 0)` for a four-entry sequence queried at indices 0–6.
+The M11 fixture has three crossings and four supplied ranks, so this correction
+does not change that render; `knot.typ` uses scalar ranks. Both the M11 plate
+and `knot.typ` compile after the change. This removes a source-semantic gap for
+strands with more intervals than configured layer ranks.
+
 **S104 source-global coordinate probe (2026-11-06, rejected).** Re-expressing
 the fixture in the source's y-up page frame did not improve the scanline input.
 On row `-15.34870`, the four rotated clipped-cubic controls all gained the

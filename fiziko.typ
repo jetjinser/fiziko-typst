@@ -5192,6 +5192,12 @@
   sorted
 }
 
+#let _source-layer-value(value, index) = {
+  if type(value) != array { return value }
+  if index >= value.len() { return 0 }
+  value.at(index)
+}
+
 #let _strand-fragments(points, lengths, events) = {
   let sorted = _sort-crossings(events)
   let total = lengths.at(lengths.len() - 1)
@@ -5351,8 +5357,10 @@
 /// `strands` is a tuple of open polylines. By default, crossings between each
 /// strand pair alternate over/under in traversal order. `layers` accepts either
 /// one numeric global rank per strand or a per-strand sequence of ranks for
-/// successive crossings. `widths` may be one value for all strands or a tuple
-/// with one value per strand; values are stroke widths for `style: "stroke"`
+/// successive crossings; ranks beyond that sequence default to layer zero,
+/// matching the source's `intLayers` fallback. `widths` may be one value for
+/// all strands or a tuple with one value per strand; values are stroke widths
+/// for `style: "stroke"`
 /// and tube radii for `style: "tube"`. `gap` adds clearance beyond the visible
 /// width or diameter at an over-under crossing. In tube style, the hidden
 /// interval expands by the crossing angle to match the projection of the
@@ -5445,12 +5453,8 @@
     else {
       let own = layers.at(strand-index)
       let other = layers.at(other-index)
-      let own-level = if type(own) == array and own.len() > 0 {
-        own.at(_mod(pair-count, own.len()))
-      } else { own }
-      let other-level = if type(other) == array and other.len() > 0 {
-        other.at(_mod(pair-count, other.len()))
-      } else { other }
+      let own-level = _source-layer-value(own, pair-count)
+      let other-level = _source-layer-value(other, pair-count)
       own-level >= other-level
     }
   }
@@ -5458,9 +5462,7 @@
     if layers == auto { if is-over { 1 } else { 0 } }
     else {
       let own = layers.at(strand-index)
-      if type(own) == array and own.len() > 0 {
-        own.at(_mod(crossing-index, own.len()))
-      } else { own }
+      _source-layer-value(own, crossing-index)
     }
   }
   let events = range(n).map(_ => ())
