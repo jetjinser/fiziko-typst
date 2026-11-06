@@ -5440,3 +5440,47 @@ exact, with two unmatched source leaves (1533 and 1534) and remaining width
 control residuals no greater than 3 units. All 142 rows still match source
 subdivision requests, generated path-segment counts, brush calls, and RNG
 offsets (`1516/1516`).
+
+### S104 integer fixed-point subpath interpolation (2026-11-06)
+
+The pinned source's `thinBrushGenerate` splits the width template with
+`subpath (0,t)` and `subpath (t,length(q))`; the recursive q controls therefore
+expose MetaPost's de Casteljau arithmetic directly. On row `-13.55478`, the
+source midpoint split of q controls `[11968,12331,12694,13057]` produces left
+controls `[11968,12150,12332,12514]`. The prior float-mediated interpolation
+produced `[11968,12149,12330,12511]`: its negative half-unit products crossed
+the bp conversion with one-unit truncation.
+
+`_mp-fixed-mix` now converts operands and the parameter to 16.16 integers,
+multiplies with the source's signed nearest rounding, and converts back only
+after each interpolation. This fixes all nine q nodes on that row. Across the
+full trace, endpoint pairing rises from 1,667 to 1,684 of 1,696 source nodes;
+all 1,684 paired nodes now have exact q-arc controls, and 1,676 have exact
+width controls. Twelve source nodes remain unmatched, mostly adjacent leaves
+whose endpoints differ by 0.0078–0.0132 mm. The 142-row call, subdivision,
+segment-count, and RNG-offset checks remain exact (`1516/1516`).
+
+At 600 ppi, same-source S104 full/hatch RMSE improves from
+`0.205601244/0.071797407` to `0.205597564/0.071776673`; stipple remains
+`0.283972375`. The source pixel hash is unchanged. The fixed-point interpolation
+is retained; continue with the remaining endpoint-pairing gaps and unrelated
+wood, pipe, and M11 geometry targets.
+
+Reproduce the trace and paired render with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<s104-hatch-rows>).first().value' \
+  --in diagnostics/flat_surface_hatch_trace.typ --root . \
+  > /tmp/s104-fixed-interpolation-trace.json
+nix develop path:./nix --command python \
+  diagnostics/compare_s104_row_calls.py \
+  /tmp/s104-row-arc/trace.log /tmp/s104-fixed-interpolation-trace.json \
+  --fixed-width-q
+nix develop path:./nix --command python \
+  diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-row-arc/trace.log /tmp/s104-fixed-interpolation-trace.json \
+  --node-field fixed-width-q-nodes
+nix develop path:./nix --command python comparisons/run.py \
+  --case S104 --mode nominal --output build/s104-fixed-interpolation
+```

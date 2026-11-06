@@ -56,13 +56,23 @@
 // different scaled units.
 #let _mp-rounded(x) = calc.round(x / _mp-unit * 65536) / 65536 * _mp-unit
 #let _mp-scalar-rounded(x) = calc.round(x * 65536) / 65536
+#let _mp-fixed-round-ratio(a, b) = {
+  assert(b != 0, message: "fixed-point ratio denominator cannot be zero")
+  let sign = if (a < 0) != (b < 0) { -1 } else { 1 }
+  sign * calc.floor((calc.abs(a) + calc.abs(b) / 2) / calc.abs(b))
+}
 #let _mp-fixed-mix(a, b, t) = {
-  let q = _mp-scalar-rounded(t)
+  let one = 65536
+  let q = int(calc.round(t * one))
+  let a-fixed = int(calc.round(a / _mp-unit * one))
+  let b-fixed = int(calc.round(b / _mp-unit * one))
   // MetaPost's set_number_from_of_the_way evaluates B - (B - C) * t.
   // Reordering this as A + (C - A) * t is algebraically equivalent but can
-  // differ by one 16.16 unit at each de Casteljau interpolation.
-  let delta = _mp-rounded(a - b)
-  _mp-rounded(a - _mp-rounded(delta * q))
+  // differ by one 16.16 unit at each de Casteljau interpolation. Keep the
+  // product in integer fixed-point arithmetic: a float round-trip can move
+  // negative half-unit products toward zero instead of MetaPost's rounding.
+  let delta = a-fixed - b-fixed
+  (a-fixed - _mp-fixed-round-ratio(delta * q, one)) * _mp-unit / one
 }
 #let _mp-fixed-mix-point(a, b, t) = (
   _mp-fixed-mix(a.at(0), b.at(0), t),
@@ -72,11 +82,6 @@
   if x < 0 { -calc.floor(-x / 2) } else { calc.floor(x / 2) }
 }
 #let _mp-fraction-one = 268435456
-#let _mp-fixed-round-ratio(a, b) = {
-  assert(b != 0, message: "fixed-point ratio denominator cannot be zero")
-  let sign = if (a < 0) != (b < 0) { -1 } else { 1 }
-  sign * calc.floor((calc.abs(a) + calc.abs(b) / 2) / calc.abs(b))
-}
 #let _mp-fixed-pyth-add(x, y) = {
   let a = calc.abs(x)
   let b = calc.abs(y)
