@@ -5429,6 +5429,11 @@
     strand-index, (
       distance-at-time(strand-index, source-time-range.at(0)),
       distance-at-time(strand-index, source-time-range.at(1))))
+  let crossing-time(time) = if source-cubic-step > 0 {
+    // knotFromStrands stores crossings as round(time * 10) / 10 before it
+    // sorts them and cuts the strand into layer segments.
+    calc.round(time * 10) / 10
+  } else { time }
   let crossing-half-gap(width, crossing-sine: 1.0) = if style == "tube" {
     width / calc.max(0.1, crossing-sine) + gap / 2
   } else { (width + gap) / 2 }
@@ -5481,8 +5486,8 @@
             if ta >= -1e-6 and ta < 1 - 1e-6 and tb >= -1e-6 and tb < 1 - 1e-6 {
               let sa = lengths.at(i).at(ai) + ta * _dist(a.at(ai), a.at(ai + 1))
               let sb = lengths.at(j).at(bi) + tb * _dist(b.at(bi), b.at(bi + 1))
-              let ta-time = path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta
-              let tb-time = path-times.at(j).at(bi) * (1 - tb) + path-times.at(j).at(bi + 1) * tb
+              let ta-time = crossing-time(path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta)
+              let tb-time = crossing-time(path-times.at(j).at(bi) * (1 - tb) + path-times.at(j).at(bi + 1) * tb)
               let enda = lengths.at(i).at(lengths.at(i).len() - 1)
               let endb = lengths.at(j).at(lengths.at(j).len() - 1)
               if sa <= 1e-5 or sa >= enda - 1e-5 or sb <= 1e-5 or sb >= endb - 1e-5 {
@@ -5532,8 +5537,8 @@
             if ta >= -1e-6 and ta < 1 - 1e-6 and tb >= -1e-6 and tb < 1 - 1e-6 {
               let sa = lengths.at(i).at(ai) + ta * _dist(path.at(ai), path.at(ai + 1))
               let sb = lengths.at(i).at(bi) + tb * _dist(path.at(bi), path.at(bi + 1))
-              let ta-time = path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta
-              let tb-time = path-times.at(i).at(bi) * (1 - tb) + path-times.at(i).at(bi + 1) * tb
+              let ta-time = crossing-time(path-times.at(i).at(ai) * (1 - ta) + path-times.at(i).at(ai + 1) * ta)
+              let tb-time = crossing-time(path-times.at(i).at(bi) * (1 - tb) + path-times.at(i).at(bi + 1) * tb)
               let total = lengths.at(i).at(lengths.at(i).len() - 1)
               if sa > 1e-5 and sa < total - 1e-5 and sb > 1e-5 and sb < total - 1e-5 {
                 let crossing-sine = calc.abs(_cross(da, db)) / (_len(da) * _len(db))

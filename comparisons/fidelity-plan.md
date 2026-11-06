@@ -2031,6 +2031,17 @@ terminal q.x-to-closed-arc mapping improves root controls to within
 `484/693/214` fixed units but drops the M11 landmass-4 Typst tree from 31 to 7;
 keep that change reverted and continue tracing the initial q arc/time map.
 
+**M11 knot crossing-time quantization (2026-11-06).** The pinned
+`knotFromStrands` appends each detected crossing as
+`round(timeToAdd * 10) / 10` before sorting it and splitting layer segments.
+`strand-knot` now applies that rule when `source-cubic-step:` enables the
+source-curve path; ordinary polyline mode retains its unrounded times. On the
+M11 trace, source raw crossing times `5.99983`, `11.99998`, and `17.99983`
+round to `6`, `12`, and `18`, matching Typst's sampled intersections exactly.
+The M11 and `knot.typ` compiles succeed; this rule leaves M11 geometry
+unchanged because its three times were already those integers. It ports a
+source rule without introducing a raster-fit adjustment.
+
 **S104 source-global coordinate probe (2026-11-06, rejected).** Re-expressing
 the fixture in the source's y-up page frame did not improve the scanline input.
 On row `-15.34870`, the four rotated clipped-cubic controls all gained the
