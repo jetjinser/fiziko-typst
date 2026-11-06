@@ -84,10 +84,13 @@ Two further source controls matter to the open M11 sampling gaps. The pinned
 `findHorizonPoint` bisects a coastline crossing five times; the Typst landmass
 outline already uses that depth. `knotFromStrands` scans each strand with
 `knotStepSize := 1/8`, testing a sliding path window from `i` to `i + 1/4`
-before calling MetaPost's path intersection routine. The Typst strand renderer
-currently intersects its supplied polyline segments directly, so this source
-step is a concrete curve-sampling difference to audit when comparing cubic
-strand inputs. It is not a visual stroke-spacing parameter.
+before calling MetaPost's path intersection routine. In M11, the source scan
+duplicates crossings across overlapping windows and later deduplicates their
+rounded times; the existing paired audit finds the same times (`6`, `12`,
+`18`) and positions from Typst's 1/16 sampled polylines. This scan step is
+therefore not the cause of M11's remaining crossing mismatch. It remains a
+source behavior to check for other cubic strand inputs, not a visual
+stroke-spacing parameter.
 
 These values are visible in the [Typst constants](../fiziko.typ#L30). Other
 numbers belong to the MetaPost runtime: fixed-point rounding, path-time
