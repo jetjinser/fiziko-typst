@@ -5154,7 +5154,9 @@ controls against these source records, then run the paired S104 raster gate.
 
 MetaPost's binary arithmetic backend implements `set_number_from_of_the_way`
 as `B - (B - C) * t`; see the implementation in
-[`mpmathbinary.w`](https://github.com/TeX-Live/texlive-source/blob/trunk/texk/web2c/mplibdir/mpmathbinary.w#L532-L541).
+[`mpmathbinary.w` in TeX Live 2025](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mpmathbinary.w#L532-L541).
+The repository's Nix devshell reports MetaPost 2.11 from TeX Live 2025, so
+the comparison targets that engine branch rather than current trunk.
 `_mp-fixed-mix` now retains this operation order through 16.16 quantization.
 For S104 row `-15.34870`, the generated third `pathSubdivide` segment's four
 control points now match `S104-HATCHPOST/PRE` exactly, and its source-compatible
