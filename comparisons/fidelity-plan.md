@@ -2086,3 +2086,16 @@ page-local frame and source y-up row order; do not route the full S104 renderer
 through global page coordinates. The source/Typst width knots on this row
 remain exact, and the next useful comparison is the first recursive cut after
 the already-paired scanline cubic.
+
+**S104 exact subcurve arc probe (2026-11-06, diagnostic only).** On row
+`-15.34870`, the source records cumulative `pathSubdivide` arc knots
+`[0,1379156,2758310,4137462,5516616]` in 16.16 units. Reconstructing each
+subcurve with the current fixed-point cubic split and measuring it with the
+MetaPost-compatible cubic arc routine yields
+`[0,1379156,2758310,4137444,5516598]`: the first two interior knots match,
+then the reconstruction is 18 units short. Supplying the exact source arc
+knots to the diagnostic q-template reproduces 21 outer recursion nodes and
+the source's second cut parameter (`1.345275879`), while thin recursion still
+differs by two nodes (7 vs 5). Keep source q/arc injection diagnostic-only;
+next compare the source's actual `pathSubdivide` subcurve controls and arc
+accumulation/rounding before changing production sampling.

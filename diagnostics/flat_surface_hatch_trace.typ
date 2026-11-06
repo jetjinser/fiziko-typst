@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -49,6 +49,30 @@
       + _mp-fixed-pyth-distance(fixed-width-q-points.at(i),
         fixed-width-q-points.at(i + 1)))
   }
+  // Rebuild each pathSubdivide cubic piece and ask the source-compatible
+  // fixed arc routine for its true arc (the production path currently uses
+  // endpoint chords here). This is a diagnostic candidate, not yet enabled.
+  let fixed-subcurve-arc-positions = (0.0,)
+  if segment.at(2) == 103 {
+    for i in range(fixed-width-q-subdivision-times.len() - 1) {
+      let t0 = fixed-width-q-subdivision-times.at(i)
+      let t1 = fixed-width-q-subdivision-times.at(i + 1)
+      let whole = segment.at(6).map(value => value.map(axis =>
+        axis / 65536 * _mp-unit))
+      let left = _mp-cubic-split(whole, t1).left
+      let piece = if t0 == 0 { left } else {
+        _mp-cubic-split(left, t0 / t1).right
+      }
+      let arc = _mp-fixed-cubic-arc-raw(piece.map(point =>
+        point.map(axis => axis / _mp-unit)))
+      fixed-subcurve-arc-positions.push(
+        fixed-subcurve-arc-positions.last() + arc / 65536 * _mp-unit)
+    }
+  }
+  let traced-source-arc-positions = if use-source-fixed-scanlines and segment.at(2) == 103 {
+    (0, 1379156, 2758310, 4137462, 5516616).map(value =>
+      value / 65536 * _mp-unit)
+  } else { fixed-source-arc-positions }
   let fixed-line-length = fixed-source-arc-positions.last()
   let points = subdivision-times.map(t => _mp-fixed-cubic-at(
     segment.at(6), t).map(value => value / 65536 * _mp-unit))
@@ -112,7 +136,37 @@
   } else { none }
   // Exact 16.16 source q cubics captured from S104 row-93 outer node 278.
   // The four q segments map to this row's four sampled line segments.
-  let source-q-curves-fixed = if segment.at(2) == 98 {
+  let source-q-curves-fixed = if use-source-fixed-scanlines and segment.at(2) == 103 {
+    // Source S104 y=-15.34870, exact root outer q template (serial 40).
+    // This isolates recursive cuts after the first parent split from q-root
+    // construction; the fixture is diagnostic-only.
+    (
+      (
+        (0, 27857),
+        (459719, 23468),
+        (919437, 19079),
+        (1379156, 14690),
+      ),
+      (
+        (1379156, 14690),
+        (1838874, 13859),
+        (2298592, 13029),
+        (2758310, 12198),
+      ),
+      (
+        (2758310, 12198),
+        (3218027, 13029),
+        (3677745, 13859),
+        (4137462, 14690),
+      ),
+      (
+        (4137462, 14690),
+        (4597180, 19079),
+        (5056898, 23468),
+        (5516616, 27857),
+      ),
+    )
+  } else if segment.at(2) == 98 {
     // Source S104 y=-10.86390, complete outer q template (serial 183).
     // This oracle isolates row-98 recursion from production q construction.
     (
@@ -247,7 +301,7 @@
     dash-extra: 0.01 * _mp-unit, dash-cap: 1,
     with-rng: true, with-stats: true, trace-nodes: true,
     source-rounding: true, source-width-fixed: fixed-width-fixed,
-    source-arc-positions: fixed-source-arc-positions)
+    source-arc-positions: traced-source-arc-positions)
   rows.push((
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
@@ -260,6 +314,7 @@
     sample-times: fractions, sample-widths: widths,
     fixed-width-q-times: fixed-width-q-subdivision-times,
     fixed-width-q-points: fixed-width-q-points,
+    fixed-subcurve-arc-positions: fixed-subcurve-arc-positions,
     fixed-width-q-widths: fixed-width-q-subdivision-times.map(t =>
       int(calc.round(fixed-width(t) / _mp-unit * 65536))),
     source-input-width-fixed: if source-input-width == none { none } else {

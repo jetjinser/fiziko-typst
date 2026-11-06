@@ -5113,3 +5113,20 @@ arc-at-time residuals on masses 1/2/4 from `0.00261/0.00373/0.00115 mm` to
 the root q callback or preserve branch decisions. Revert it without a raster
 trial; continue tracing how horizon path-time and width callback knots feed
 the initial root q template and closed seam.
+
+### S104 exact subcurve arc probe (2026-11-06)
+
+For row `-15.34870`, the pinned source trace's `S104-HATCHARC` records give
+cumulative `pathSubdivide` arc knots `[0,1379156,2758310,4137462,5516616]` in
+16.16 units. A diagnostic reconstructs each subcurve with `_mp-cubic-split`
+and measures it with `_mp-fixed-cubic-arc-raw`; the result is
+`[0,1379156,2758310,4137444,5516598]`. The first two interior knots match,
+then the reconstruction is 18 units short. This is evidence that source arc
+knots carry meaningful recursive geometry, but the present split reconstruction
+still differs from MetaPost's subdivision/rounding path.
+
+Injecting the exact source q cubics and arc knots into the diagnostic reproduces
+21 outer recursion nodes and the source's second cut parameter (`1.345275879`);
+thin recursion remains 7 nodes versus 5 source nodes. These source fixtures
+remain diagnostic-only. Continue by comparing the actual `pathSubdivide`
+subcurve controls and arc accumulation before changing production sampling.
