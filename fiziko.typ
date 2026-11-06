@@ -224,9 +224,9 @@
   let f = _mp-fixed-mix-point(d, e, t)
   (left: (points.at(0), a, d, f), right: (f, e, c, points.at(3)))
 }
-#let _mp-fixed-cubic-subcurve-arcs(points, times) = {
+#let _mp-fixed-cubic-subcurves(points, times) = {
   let whole = points.map(point => point.map(value => value / 65536 * _mp-unit))
-  let positions = (0.0,)
+  let pieces = ()
   for i in range(times.len() - 1) {
     let t0 = times.at(i)
     let t1 = times.at(i + 1)
@@ -239,7 +239,13 @@
     // offsetPathTemplate measures each such subpath's cubic arclength.
     let start = _mp-fixed-cubic-at(points, t0).map(value => value / 65536 * _mp-unit)
     let end = _mp-fixed-cubic-at(points, t1).map(value => value / 65536 * _mp-unit)
-    let piece = (start, sliced.at(1), sliced.at(2), end)
+    pieces.push((start, sliced.at(1), sliced.at(2), end))
+  }
+  pieces
+}
+#let _mp-fixed-cubic-subcurve-arcs(points, times) = {
+  let positions = (0.0,)
+  for piece in _mp-fixed-cubic-subcurves(points, times) {
     let arc = _mp-fixed-cubic-arc-raw(piece.map(point =>
       point.map(axis => axis / _mp-unit)))
     positions.push(positions.last() + arc / 65536 * _mp-unit)

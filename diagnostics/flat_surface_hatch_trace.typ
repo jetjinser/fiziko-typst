@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-subcurve-arcs, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-subcurves, _mp-fixed-cubic-subcurve-arcs, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -304,6 +304,10 @@
     fixed-width-q-times: fixed-width-q-subdivision-times,
     fixed-width-q-points: fixed-width-q-points,
     fixed-subcurve-arc-positions: fixed-subcurve-arc-positions,
+    fixed-subcurve-controls-fixed: _mp-fixed-cubic-subcurves(
+      segment.at(6), fixed-width-q-subdivision-times).map(piece =>
+        piece.map(point => point.map(axis =>
+          int(calc.round(axis / _mp-unit * 65536))))),
     fixed-width-q-widths: fixed-width-q-subdivision-times.map(t =>
       int(calc.round(fixed-width(t) / _mp-unit * 65536))),
     source-input-width-fixed: if source-input-width == none { none } else {

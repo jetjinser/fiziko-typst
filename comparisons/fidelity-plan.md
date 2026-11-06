@@ -2234,3 +2234,11 @@ crossing choice. At 600 ppi full/hatch RMSE changes slightly worse
 `0.283972375`. Retain this source-derived arc model for its substantial q
 control alignment gain, while keeping exact MetaPost subpath control
 reconstruction as open work.
+
+The focused control audit narrows that work upstream of splitting: on row
+`-2.79129`, the source's first hatch point after the page-axis flip is
+`(3964580,6096223)` and the Typst cubic starts at `(3964581,6096243)` in
+16.16 bp units. The five sampled-point deltas are `(1,20)`, `(1,20)`,
+`(1,20)`, `(0,20)`, `(0,20)`. The next investigation is the source clipping and
+inverse-rotation conversion; changing only the de Casteljau slice order cannot
+remove an endpoint difference that exists at path time zero.

@@ -5340,6 +5340,16 @@ change the left hit is still closer by one unit. Thus the identified branch
 flip remains unresolved, and the cubic reconstruction is not yet an exact
 replacement for MetaPost's `subpath` controls.
 
+The control audit now compares reconstructed subcurves directly with source
+`S104-HATCHPOST/PRE` records. On the same row, the first source hatch point
+after the page-axis flip is `(3964580,6096223)`; Typst's fixed cubic starts at
+`(3964581,6096243)`. The source/Typst deltas at the five subdivision points
+are `(1,20)`, `(1,20)`, `(1,20)`, `(0,20)`, `(0,20)` 16.16 units. Since the
+first endpoint is already different before any subpath split, the remaining
+arc residual cannot be fixed by changing only cubic-slice order. The next
+source comparison should isolate the clipping and inverse-rotation coordinate
+conversion that produces these endpoint offsets.
+
 Across the 142-row S104 trace, brush call totals, subdivision requests,
 generated path-segment counts, and absolute RNG offsets remain exact
 (`1516/1516`, `142/142` for each row-level check). The q-node audit improves
