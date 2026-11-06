@@ -5197,3 +5197,14 @@ Typst totals remain `1516/1516`, with `123/142` exact row counts and L1 error
 252. It therefore records a confirmed rule without claiming a render or
 fixture improvement; the unresolved differences still come from q/path
 geometry and cut mapping.
+
+The first call-count divergence is row `-2.79129`. The source and Typst pair
+thin node 272 with exact width controls and one-unit q-arc control error. At
+its next cut, source `cutPathTime` returns local `t=1.98688` and passes that
+same `t` to both `subpath(... ) of p` and `subpath(... ) of q`. The current
+trace instead maps q time `1.98688` through `qmap` to source time `1.25515`,
+which lands near the end of the sampled path and is rejected by the endpoint
+guard. The source then visits nodes 273–276, which the current tree does not
+pair. This localizes the first mismatch to how the port maps q-subpath time
+onto its sampled p path; preserve the source's paired p/q parameter domain
+before changing crossing arithmetic or thresholds.

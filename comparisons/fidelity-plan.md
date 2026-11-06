@@ -2160,3 +2160,11 @@ crossing. This is source-confirmed but changes no recursive or dash counts on
 the current 142-row fixture (`123/142` exact rows; L1 `252`; totals
 `1516/1516`), so it is not counted as a measured fidelity gain. Continue
 tracing q/path mapping at the first divergent node.
+
+The first call-count divergence is row `-2.79129`: source and Typst pair thin
+node 272 with exact width controls and one-unit q-arc control error, but source
+uses `cutPathTime`'s local `t=1.98688` on both `p` and `q`. Typst maps that q
+time through `qmap` to `1.25515`, rejects the near-endpoint cut, and consequently
+does not pair source nodes 273–276. Next reproduce the source's paired p/q
+subpath parameter domain on the sampled path before changing intersection
+arithmetic.
