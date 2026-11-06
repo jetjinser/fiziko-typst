@@ -5219,13 +5219,13 @@ The hatch point/arc audit now intersects `S104-HATCHBP` indices with
 `S104-HATCHARC` indices. The instrumenter also writes original clipped-cubic
 controls at point indexes 100–103, which do not have matching arc records; the
 previous audit incorrectly rejected those otherwise complete traces. On the
-fresh `-15.34870` source row, same-time point error is `0.000110/0.000114 mm`
-mean/max. Source arc increments differ from endpoint chords by `+1/-1/-2/-1`
-16.16 bp units. Reconstructed clipped-cubic subcurve arcs are
-`[1379156,1379154,1379153,1379154]`, one unit too long on the third interval
-and one unit high cumulatively; source records are
-`[1379156,1379154,1379152,1379154]`. This pins the remaining root q.x error to
-subcurve reconstruction/rounding at a one-unit scale, before recursive cuts.
+Before the bbox correction, the fresh `-15.34870` source row had same-time
+point error `0.000110/0.000114 mm` mean/max. Source arc increments differ from
+endpoint chords by `+1/-1/-2/-1` 16.16 bp units. Reconstructed clipped-cubic
+subcurve arcs were `[1379156,1379154,1379153,1379154]`, one unit too long on
+the third interval and one unit high cumulatively; source records are
+`[1379156,1379154,1379152,1379154]`. These measurements locate the old error
+before recursive cuts; the current bbox-corrected node audit follows below.
 
 ### S104 rotated scanline endpoint frame check (2026-11-06)
 
@@ -5276,5 +5276,7 @@ same-source S104 full/hatch RMSE improves from `0.205607/0.071828` to
 totals, subdivision requests, path-segment counts, and absolute offsets remain
 exact (`1516/1516`); forward/reverse hit-time pairs improve from 139/142 to
 141/142, with the remaining one-unit time mismatch at row `7.97220`. The
-remaining q-tree mismatches are substantial, so this is a localized geometry
-improvement rather than full recursion parity.
+For row `-15.34870`, the corrected production trace now pairs all 5 source
+recursive nodes with exact width and q-arc controls; maximum paired endpoint
+error is `0.000204 mm`. The remaining q-tree mismatches are substantial, so
+this is a localized geometry improvement rather than full recursion parity.
