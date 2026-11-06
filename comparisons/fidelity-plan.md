@@ -39,6 +39,11 @@ parameters:
 | `minDashStrokeWidth := 1/3minStrokeWidth` | 0.0667 pt | `_ink-loops` dash floor |
 | `minDashStrokeLength := 6minStrokeWidth` | 1.2 pt | `_source-dash-length` |
 | `shadingDensity := 3maxShadingStrokeWidth` | 0.9 pt | `_source-spacing` |
+| `dashStrokeWidthStep := (minStrokeWidth - minDashStrokeWidth)/16` | 0.00833 pt | `_source-dash-width-step` in the stipple brush width recursion |
+| `stippleSize := 3/2minStrokeWidth` | 0.3 pt | `_source-stipple-size`; default ring and surface stipple pen |
+| `minStippleStep := 1/2stippleSize` | 0.15 pt | `_source-min-stipple-step`; default surface stipple dot step |
+| `stippleShadingDensity := 3minStippleStep` | 0.45 pt | `_source-stipple-spacing`; default ring pitch and stipple scanline spacing |
+| `minStippleStrokeWidth := 1/20stippleSize` | 0.015 pt | `_source-min-stipple-width`; scaled with custom dot size for leaf pruning |
 
 These values are visible in the [Typst constants](../fiziko.typ#L30). Other
 numbers belong to the MetaPost runtime: fixed-point rounding, path-time

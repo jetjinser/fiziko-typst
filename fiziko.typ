@@ -34,6 +34,13 @@
 #let _source-max-shading = 1.5 * _source-min-stroke
 #let _source-spacing = 3 * _source-max-shading
 #let _source-dash-length = 6 * _source-min-stroke
+#let _source-dash-width-step = (_source-min-stroke - _source-min-stroke / 3) / 16
+#let _source-stipple-size = 1.5 * _source-min-stroke
+#let _source-min-stipple-step = 0.5 * _source-stipple-size
+#let _source-stipple-spacing = 3 * _source-min-stipple-step
+#let _source-stipple-spacing-ratio = 1.5
+#let _source-min-stipple-width = _source-stipple-size / 20
+#let _source-min-stipple-width-ratio = 1 / 20
 // MetaPost stores both dimensional (bp) and dimensionless values as 16.16.
 // Use distinct quantizers because lengths in mm and scalar ratios have
 // different scaled units.
@@ -1818,8 +1825,8 @@
     ws.at(seg) * (1 - f) + ws.at(seg + 1) * f
   }
 
-  let min-leaf = dot-size / 20
-  let width-step = (_source-min-stroke - _source-min-stroke / 3) / 16
+  let min-leaf = dot-size * _source-min-stipple-width-ratio
+  let width-step = _source-dash-width-step
   let tolerance = 0.01 * pt
   let min-leaf-length = dot-size / 2
   // A stack preserves the source's depth-first, left-before-right leaf order.
@@ -1942,7 +1949,7 @@
       marks.push(stroke-stipple(pts,
         t => {
           let lane-width = _val(w, t) / 3
-          if lane-width >= dot-size / 20 { lane-width } else { 0.0 }
+          if lane-width >= dot-size * _source-min-stipple-width-ratio { lane-width } else { 0.0 }
         },
         offset: t => _val(offset, t) + side * track-spacing / 3,
         closed: true, per: per, dot-size: lane-dot-size, step: lane-dot-size,
@@ -2097,7 +2104,7 @@
 /// patterns; the default is calibrated against its S101 specimen.
 /// The ordinary `sphere-stipple` remains a jittered two-dimensional field.
 #let sphere-stipple-rings(d, light: (-0.353553, 0.382683, 0.853553),
-                          samples: 128, dot-size: 1.5 * _source-min-stroke,
+                          samples: 128, dot-size: _source-stipple-size,
                           dot-range: (0.9, 1.2), gamma: 1.0, seed: 0, center: (0, 0),
                           density: 0.55,
                           shadow-regions: (), shadow-planes: (), shadow-polygons: (),
@@ -2105,7 +2112,7 @@
   let R = d / 2
   // sphere.s uses a denser radial pitch than sphere.c: its stipple shading
   // density is three half-dot steps (1.5 × stippleSize), not 3 × max-w.
-  let spacing = 1.5 * dot-size
+  let spacing = dot-size * _source-stipple-spacing-ratio
   let ring-count = calc.max(1, int(calc.pow(2,
     calc.ceil(calc.log(R / spacing, base: 2)))))
   let ln = calc.sqrt(light.at(0) * light.at(0) + light.at(1) * light.at(1) + light.at(2) * light.at(2))
@@ -2146,7 +2153,7 @@
                    else { calc.pow(1 - lam, gamma) }
         let lane-width = ring-max * dark / 3
         // thinBrushGenerate.stipples omits lanes below 1/20 of the dot pen.
-        if lane-width >= dot-size / 20 { lane-width } else { 0.0 }
+        if lane-width >= dot-size * _source-min-stipple-width-ratio { lane-width } else { 0.0 }
       })
       let dots = _stipple-loops(fr, ws, true, lane-dot-size, lane-dot-size,
         seed + size-key, normal-jitter: 0, ink-space: true,
@@ -2871,7 +2878,7 @@
     message: "source-cubic-step must be 0 or a positive multiple of 4")
   assert(rng != "metapost" or hatch == "l",
     message: "rng: \"metapost\" is currently supported for longitudinal tube hatches")
-  let hatch-spacing = if hatch == "s" { calc.min(spacing, 1.5 * dot-size) } else { spacing }
+  let hatch-spacing = if hatch == "s" { calc.min(spacing, dot-size * _source-stipple-spacing-ratio) } else { spacing }
   let L = _tube-layout(pts, radius, hatch: hatch, spacing: hatch-spacing,
                        coverage: coverage, closed: closed, per: per,
                        w: w, min-w: min-w, max-w: max-w, light: light,
@@ -3029,7 +3036,7 @@
           not closed or calc.abs(track-offset(t)) + lane-dot-size / 2 <= (L.rfun)(t)
         }
         els.push(stroke-stipple(src,
-          t => if in-closed-tube(t) and (it.w)(t) / 3 >= dot-size / 20 { (it.w)(t) / 3 } else { 0.0 },
+        t => if in-closed-tube(t) and (it.w)(t) / 3 >= dot-size * _source-min-stipple-width-ratio { (it.w)(t) / 3 } else { 0.0 },
           offset: track-offset,
           closed: closed, per: per,
           dot-size: lane-dot-size, step: dot-step * size-scale, seed: seed + key,
@@ -3252,7 +3259,7 @@
   let lam = calc.max(0.0, (normal.at(0) * light.at(0) + normal.at(1) * light.at(1) + normal.at(2) * light.at(2)) / (nn * ln))
   let shade = calc.pow(1 - lam, 1.0)
   let line-spacing = if spacing == none {
-    if style == "stipples" { 1.5 * dot-size } else { 3 * _source-max-shading }
+    if style == "stipples" { dot-size * _source-stipple-spacing-ratio } else { 3 * _source-max-shading }
   } else { spacing }
   let source-fixed-scanlines = rng == "metapost" and style == "hatch"
   let segs = _scanline-segments(poly, angle, line-spacing, fit: true,
@@ -3317,7 +3324,7 @@
       items.push(stroke-stipple-brush(pts,
         t => width(t, 5 / 6, dot-size / _source-min-stroke),
         closed: false, per: 0, dot-size: dot-size,
-        track-spacing: 1.5 * dot-size, dot-range: (0.9, 1.2),
+        track-spacing: dot-size * _source-stipple-spacing-ratio, dot-range: (0.9, 1.2),
         density: 0.72 * (0.75 * _source-min-stroke / dot-step),
         seed: seed + s.at(2)))
     } else {
