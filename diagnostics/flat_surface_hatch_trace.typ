@@ -317,6 +317,8 @@
     row: segment.at(2), length: line-length,
     start: segment.at(0), end: segment.at(1),
     scanline-cubic-fixed: segment.at(6),
+    rotated-scanline-start-fixed: segment.at(7),
+    rotated-scanline-end-fixed: segment.at(8),
     intersection-hits: if segment.len() > 4 { segment.at(4) } else { () },
     requested-subdivisions: requested-subdivisions,
     subdivisions: subdivision-times.len() - 1,

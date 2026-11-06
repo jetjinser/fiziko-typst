@@ -3144,7 +3144,7 @@
           (u0, height), (u1, height)).map(point => rotate(point, 1))
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
           (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit,
-          clipped-cubic))
+          clipped-cubic, (u0, height), (u1, height)))
       }
     }
   }

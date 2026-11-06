@@ -5226,3 +5226,22 @@ mean/max. Source arc increments differ from endpoint chords by `+1/-1/-2/-1`
 and one unit high cumulatively; source records are
 `[1379156,1379154,1379152,1379154]`. This pins the remaining root q.x error to
 subcurve reconstruction/rounding at a one-unit scale, before recursive cuts.
+
+### S104 rotated scanline endpoint frame check (2026-11-06)
+
+The row trace now retains the scanline's two clipped endpoints in the rotated
+16.16 bp frame, before they are rotated back to page coordinates. For source
+row `-15.34870`, the Typst endpoints are `(1504037,8084738)` and
+`(7020644,8084738)`. The source `S104-CLIP-HIT` endpoints, transformed into
+that same rotated frame, are `(1504038,8084738)` and `(7020645,8084738)`: both
+are exactly one fixed unit to the right. The source and Typst `intersectiontimes`
+parameters match, so this residual is introduced after hit-time selection.
+
+The source-frame conversion uses the trace's quantized 30-degree sine/cosine
+and the fixed `185771` bp/mm conversion already used by
+`_source-scanline-segments`. Translating both endpoints by one unit leaves the
+line's length unchanged, so this observation does not explain the one-unit
+cumulative subcurve arc residual above. It isolates an endpoint-frame offset;
+the separate `subpath` control/rounding path remains the candidate for the arc
+residual. The added endpoint fields are diagnostic only and do not alter
+rendering or recursion.
