@@ -4720,11 +4720,30 @@ paired all `35/35` nodes on row `-1.89433` (max q-arc residual `27` units).
 However, the same experiment damaged row `-10.86390` from `21/21` paired nodes
 and max q-arc residual `1` to `3/21` and `595`; full-trace pairing fell from
 `1525/1696` to `1520/1696`, and mean residual rose from `13.072` to `20.166`
-units. The experiment was reverted. The discrepancy is localized to how
-source `arclength(subpath(0,i) of p)` maps subdivision knots onto the offset
-template; the interval integration used in this trial is not yet an accurate
-all-row port. Do not promote it without matching source knot lengths directly
-and preserving the rows that currently match.
+units. The experiment was reverted. A fresh source probe now records the exact
+`offsetPathTemplate` arc/width knots (`S104-TEMPLATE-KNOT`) and the rotated
+clipped cubic controls in 16.16 bp. On row `-15.34870`, source widths are
+`[27857,14690,12198,14690,27857]`, exactly matching Typst. Source arc knots
+are `[0,1379156,2758310,4137462,5516616]`; the chord-based Typst template
+differs by `[0,-1,-1,+1,+1]`. The clipped cubic controls themselves differ by
+at most one 16.16 coordinate unit after the page-axis flip. Thus the callback
+width is not the cause; the remaining one-unit control/point rounding affects
+the cumulative arc knots at the strict threshold. The rejected interval-arc
+trial underestimates the later knots by up to 18 units here, so its repeated
+fixed-point subcurve splits are not equivalent to MetaPost's `subpath` path.
+Do not promote it without preserving the rows that currently match.
+
+Generate the exact source knot/control trace with:
+
+```sh
+nix develop path:./nix --command python diagnostics/instrument_flat_surface.py \
+  "$FIZIKO_UPSTREAM_PATH/fiziko.mp" /tmp/s104/fiziko.mp \
+  "-15.34870,-10.86390,-11.76086,-1.89433"
+```
+
+The generated `fiziko.mp` emits `S104-TEMPLATE-KNOT` and uses `S104-HATCHBP`
+indices `100`–`103` for the four rotated clipped-cubic controls. The Typst
+trace includes `scanline-cubic-fixed` for the corresponding 16.16 controls.
 
 For row 28.60222, the current root q x-control residual falls from mean/max
 `93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched

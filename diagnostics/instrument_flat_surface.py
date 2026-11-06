@@ -92,6 +92,18 @@ def main() -> None:
         + width_probe,
     )
 
+    template_knot = "    returnPath := (arclength(subpath (0, i) of p), offsetFunction);"
+    if source.count(template_knot) != 1:
+        raise ValueError("expected one offsetPathTemplate knot hook")
+    source = source.replace(template_knot, template_knot + '''
+    if traceFlatHatch:
+        message "S104-TEMPLATE-KNOT " & decimal(traceHatchRow) & " "
+            & decimal(i) & " "
+            & ''' + fixed_chunks("xpart(point 0 of returnPath)") + ''' & " "
+            & ''' + fixed_chunks("ypart(point 0 of returnPath)") + ''' & " "
+            & ''' + fixed_chunks("offsetPathLength") + ''';
+    fi;''')
+
     # Trace the recursive width-template decisions made by the hatch brush.
     # The flag brackets only the S104 hatch draw, so unrelated plates remain
     # silent even though brushGenerate is used throughout the source.
@@ -494,6 +506,11 @@ def main() -> None:
         raise ValueError(f"expected one flatSurface hatch rotation, found {source.count(rotate_anchor)}")
     source = source.replace(rotate_anchor, rotate_anchor + '''
                 if traceFlatClip:
+                    traceHatchRow := i;
+                    traceHatchBpRecord(100, point 0 of aHatch);
+                    traceHatchBpRecord(101, postcontrol 0 of aHatch);
+                    traceHatchBpRecord(102, precontrol 1 of aHatch);
+                    traceHatchBpRecord(103, point 1 of aHatch);
                     traceClipPoint("S104-CLIP-ROT", i, 0, point 0 of aHatch);
                     traceClipPoint("S104-CLIP-ROT", i, 1, point 1 of aHatch);
                 fi;''')
