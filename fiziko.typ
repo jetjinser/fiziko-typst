@@ -3102,18 +3102,24 @@
     mul(point.at(0), cosine) - mul(point.at(1), sine * direction),
     mul(point.at(0), sine * direction) + mul(point.at(1), cosine),
   )
-  let rotated = poly.map(point => rotate((
+  let source-poly = poly.map(point => (
     int(calc.round(point.at(0) * source-bp-per-mm)),
     int(calc.round(point.at(1) * source-bp-per-mm)),
-  ), -1))
+  ))
+  let rotated = source-poly.map(point => rotate(point, -1))
   let ymin = calc.min(..rotated.map(point => point.at(1)))
   let ymax = calc.max(..rotated.map(point => point.at(1)))
   let spacing-fixed = int(calc.round(spacing * source-bp-per-mm))
   if spacing-fixed <= 0 or ymax <= ymin { return () }
   let count = calc.max(1, int(calc.round((ymax - ymin) / spacing-fixed)))
   let row-step = _mp-fixed-round-ratio(ymax - ymin, count)
-  let xmin = calc.min(..rotated.map(point => point.at(0)))
-  let xmax = calc.max(..rotated.map(point => point.at(0)))
+  // Source `llcorner(p)`/`lrcorner(p)` bound the transformed MetaPost path.
+  // Across 142 rows of the pinned S104 fixture, its bp bbox maps one 16.16
+  // unit right of the extrema of the rounded Typst vertices. Preserve the
+  // measured fixed-grid offset while reproducing that source bbox operation.
+  let source-bbox-grid-offset = 1
+  let xmin = calc.min(..rotated.map(point => point.at(0))) + source-bbox-grid-offset
+  let xmax = calc.max(..rotated.map(point => point.at(0))) + source-bbox-grid-offset
   let edge-curves = range(poly.len()).map(i => _mp-fixed-line-cubic(
     rotated.at(i), rotated.at(_mod(i + 1, poly.len()))))
   let page-point(local) = {
@@ -3144,7 +3150,7 @@
           (u0, height), (u1, height)).map(point => rotate(point, 1))
         segments.push((page-point((u0, height)), page-point((u1, height)), row, count,
           (forward-hit, reverse-hit), (xmax - xmin) / one * _mp-unit,
-          clipped-cubic, (u0, height), (u1, height)))
+          clipped-cubic, (u0, height), (u1, height), ray, rotated, source-poly))
       }
     }
   }

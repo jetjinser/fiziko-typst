@@ -5231,17 +5231,50 @@ subcurve reconstruction/rounding at a one-unit scale, before recursive cuts.
 
 The row trace now retains the scanline's two clipped endpoints in the rotated
 16.16 bp frame, before they are rotated back to page coordinates. For source
-row `-15.34870`, the Typst endpoints are `(1504037,8084738)` and
+row `-15.34870`, before the bbox correction the Typst endpoints were
+`(1504037,8084738)` and
 `(7020644,8084738)`. The source `S104-CLIP-HIT` endpoints, transformed into
 that same rotated frame, are `(1504038,8084738)` and `(7020645,8084738)`: both
-are exactly one fixed unit to the right. The source and Typst `intersectiontimes`
-parameters match, so this residual is introduced after hit-time selection.
+were exactly one fixed unit to the right. On this row, source and Typst
+`intersectiontimes` parameters match, so the residual was introduced after
+hit-time selection.
 
 The source-frame conversion uses the trace's quantized 30-degree sine/cosine
 and the fixed `185771` bp/mm conversion already used by
-`_source-scanline-segments`. Translating both endpoints by one unit leaves the
-line's length unchanged, so this observation does not explain the one-unit
-cumulative subcurve arc residual above. It isolates an endpoint-frame offset;
-the separate `subpath` control/rounding path remains the candidate for the arc
-residual. The added endpoint fields are diagnostic only and do not alter
-rendering or recursion.
+`_source-scanline-segments`. A fresh 142-row source trace shows that both raw
+source ray x bounds map one fixed unit right of the rounded Typst vertex
+extrema. Applying that measured bbox offset makes both clipped endpoints
+exactly match the source in the rotated frame on all 142 rows. The line's total
+length is unchanged, but the one-third/two-thirds controls and their inverse
+rotation still quantize independently.
+
+### S104 source cubic split-order audit (2026-11-06)
+
+The pinned TeX Live 2025 `mp_split_cubic` implementation computes the six
+de Casteljau interpolants in order: three first-level points, two second-level
+points, then the split point ([`mp.w`](https://github.com/TeX-Live/texlive-source/blob/branch2025/texk/web2c/mplibdir/mp.w#L12871-L12894)).
+The production `_mp-cubic-split` follows that same dependency order, while
+`_mp-fixed-mix` also reproduces MetaPost's `B - (B - C) * t` operation order.
+This makes recursive split topology an unlikely cause of the current one-unit
+residual for the exact source `t`.
+
+The original clipped scanline cubic on row `-15.34870` has source x controls
+`[5344908,6937419,8529931,10122443]` in 16.16 units. Before the bbox offset,
+the Typst trace gives `[5344907,6937419,8529930,10122442]`; after it, the
+controls are `[5344908,6937420,8529931,10122443]`. The endpoints and the
+second interior control now agree; the remaining one-unit first-control
+difference comes from independently rounded thirds before inverse rotation.
+Across all 142 rows, source/Typst x-control absolute error falls from 841 to
+246 units, exact control rows rise from 18 to 50, and 127/142 rows are now
+within one unit.
+
+The bbox offset is retained in `_source-scanline-segments`. It raises q-node
+pairs from 1563 to 1564, exact width-control nodes from 1435 to 1448, and lowers
+mean/max q-arc residual from `12.765/930` to `11.246/869` units. The 600 ppi
+same-source S104 full/hatch RMSE improves from `0.205607/0.071828` to
+`0.205604/0.071811`; stipple is unchanged at `0.283972`. All 142 row RNG call
+totals, subdivision requests, path-segment counts, and absolute offsets remain
+exact (`1516/1516`); forward/reverse hit-time pairs improve from 139/142 to
+141/142, with the remaining one-unit time mismatch at row `7.97220`. The
+remaining q-tree mismatches are substantial, so this is a localized geometry
+improvement rather than full recursion parity.

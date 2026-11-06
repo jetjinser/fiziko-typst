@@ -2153,3 +2153,20 @@ offsets match (`1516/1516`, call-count L1 zero). The full q-node audit pairs
 same-source S104 full/hatch RMSE improves `0.206637/0.077426 →
 0.205607/0.071828`; stipple is unchanged (`0.283972`). Continue tracing the
 remaining q/path geometry mismatches.
+
+**S104 source bbox fixed-grid correction (2026-11-06).** A fresh pinned-source
+trace records the raw hatch ray bounds and clipped endpoints for all 142 rows.
+After converting the source bounds to the Typst rotated frame, both x bounds
+are one 16.16 unit to the right of the extrema of the rounded Typst vertices;
+adding this measured `source-bbox-grid-offset` makes all 142 rotated clipped
+endpoint pairs exact. Source/Typst x-control absolute error falls from 841 to
+246 units across the 142 original clipped cubics; exact rows rise from 18 to
+50 and 127 rows are within one unit. The full q audit improves from 1563 to
+1564 paired nodes, exact width controls from 1435 to 1448, and q-arc residual
+mean/max from `12.765/930` to `11.246/869`. At 600 ppi the same-source S104
+full/hatch RMSE improves `0.205607/0.071828 → 0.205604/0.071811`; stipple
+remains `0.283972`. All row calls, subdivision requests, path segment counts,
+and absolute RNG offsets remain exact (`1516/1516`). Forward/reverse hit-time
+pairs improve from 139/142 to 141/142; the sole remaining one-unit time
+mismatch is at row `7.97220`. The correction closes the measured clipped
+endpoint frame offset but does not close the remaining recursive q-tree gaps.
