@@ -5484,3 +5484,35 @@ nix develop path:./nix --command python \
 nix develop path:./nix --command python comparisons/run.py \
   --case S104 --mode nominal --output build/s104-fixed-interpolation
 ```
+
+### M11 production coast-tree cross-check (2026-11-06)
+
+A fresh `m11_coast_brush_trace.typ` evaluation was compared against the pinned
+source trace in `/tmp/m11-patharc-audit/trace.log`. Production thin-node counts
+on visible masses 1/2/4 are source/Typst `15/13`, `57/39`, and `31/31`;
+parent-aware decisions agree on `12/13`, `24/31`, and `31/31` paired nodes.
+The corresponding random-call counts remain exact on all six visible masses:
+`12/30/6/2/2/2` (54 total). This current tree is unchanged from the saved
+pre-S104-interpolation trace `/tmp/m11-current-arc-audit/typst-width-only.json`.
+The integer de Casteljau correction therefore closes S104's fixed-point q
+controls but does not improve M11's production coast tree; its mismatch starts
+in construction and parameterization of the root q template. Keep the
+interpolation correction for its measured S104 improvement and focus M11 work
+on root q knots/time mapping and the cyclic seam.
+
+The current trace and source-tree pairing can be reproduced with:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<m11-coast-brush-trace>).first().value' \
+  --in diagnostics/m11_coast_brush_trace.typ --root . \
+  > /tmp/m11-after-fixed-interpolation.json
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_coast_brush.py \
+  /tmp/m11-patharc-audit/trace.log \
+  /tmp/m11-after-fixed-interpolation.json 2
+nix develop path:./nix --command python \
+  diagnostics/compare_m11_coast_brush.py \
+  /tmp/m11-patharc-audit/trace.log \
+  /tmp/m11-after-fixed-interpolation.json 1
+```
