@@ -178,7 +178,9 @@
   let raw = raw-intersections(ray, curves)
   let direct = raw.at(0)
   let reverse = raw.at(1)
-  if direct.at(0) < reverse.at(0) { direct }
-  else if direct.at(0) < 0 { reverse }
+  // MetaPost's firstIntersectionTimes gives the reverse search priority when
+  // the forward search misses, even though -1 sorts before every hit time.
+  if direct.at(0) < 0 { reverse }
+  else if direct.at(0) < reverse.at(0) { direct }
   else { (reverse.at(0), curves.len() - reverse.at(1)) }
 }

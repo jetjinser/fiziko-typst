@@ -46,6 +46,19 @@ def main():
             raise SystemExit(f"S104 {ray} raw pairs differ: {actual} != {expected}")
     print("S104 node 172 raw pairs: 4/4 match within one 16.16 unit")
 
+    endpoint = data["s104-endpoint"]
+    expected_endpoint_raw = ((-1.0, -1.0), (0.0, 0.5))
+    if not all(close_pair(got, want) for got, want in
+               zip(endpoint["raw"], expected_endpoint_raw)):
+        raise SystemExit(
+            f"S104 node 141 endpoint raw pairs differ: "
+            f"{endpoint['raw']} != {expected_endpoint_raw}")
+    if not close_pair(endpoint["selected"], (0.0, 0.5)):
+        raise SystemExit(
+            f"S104 node 141 endpoint selection differs: "
+            f"{endpoint['selected']} != (0.0, 0.5)")
+    print("S104 node 141 reverse fallback: raw pairs and selected endpoint match")
+
     source = {}
     for line in Path(sys.argv[1]).read_text().splitlines():
         fields = line.split()

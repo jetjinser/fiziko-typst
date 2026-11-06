@@ -3654,6 +3654,22 @@ nix develop path:./nix --command python3 \
   /tmp/m11-endpoint-probe/probe.log
 ```
 
+The same fixture also checks the S104 row `-7.27608`, node 141 endpoint case.
+Its forward search is `(-1,-1)` and the reversed q path returns `(0,0.5)`;
+MetaPost's wrapper applies the direct-miss fallback before comparing hit times.
+The Typst wrapper previously compared `-1 < 0` first and returned the miss.
+The corrected precedence now selects `(0,0.5)`. Replaying the fixed-width
+production trace against the source pairs all 1,696/1,696 recursive q nodes;
+all q-arc controls are exact and 1,688 width-control sets are exact (the
+remaining residual is at most one 16.16 unit). All 142 row call totals,
+subdivision requests, path-segment counts and absolute RNG offsets remain
+matched. A same-source 600 ppi S104 render changes full/hatch/stipple RMSE by
+only about `+0.000000006/+0.000000033/0`.
+As cross-plate guards, current and pre-change M11 and M6 600 ppi renders have
+identical Typst and source pixel hashes. M4 is inconclusive in this sandbox:
+Typst exits `-9` at both 600 ppi and a 150 ppi preview, and the same failure
+reproduces from a clean copy of the pre-change commit.
+
 An opt-in trial reconstructed width cubics from sampled frames and routed the
 row-93 `split-path` probe through this solver. Its tree had 16 decisions and 3
 dash leaves, compared with 24 decisions in the current Typst row probe and 40

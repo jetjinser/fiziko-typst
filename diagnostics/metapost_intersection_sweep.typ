@@ -78,7 +78,23 @@
   selected: intersection-times(coast-ray, (coast-q,)),
 )
 
+// S104 row -7.27608, node 141: MetaPost's forward path misses, while the
+// reversed q path reports a near-endpoint hit at ray time 0, q time 0.5.
+#let endpoint-q = (
+  (1864409, 11968), (2070251, 11609),
+  (2276094, 11251), (2481936, 10892),
+)
+#let endpoint-ray = (
+  (2173173, 11425), (2070252, 11425),
+  (1967330, 11425), (1864409, 11425),
+)
+#let endpoint-result = (
+  raw: raw-intersections(endpoint-ray, (endpoint-q,)),
+  selected: intersection-times(endpoint-ray, (endpoint-q,)),
+)
+
 #metadata((m11: results, s104: (
   ray1: (raw: raw-intersections(ray1, curves), selected: intersection-times(ray1, curves)),
   ray2: (raw: raw-intersections(ray2, curves), selected: intersection-times(ray2, curves)),
-), m11-coast-start-width: coast-start-width-result)) <metapost-intersection-sweep>
+), m11-coast-start-width: coast-start-width-result,
+  s104-endpoint: endpoint-result)) <metapost-intersection-sweep>
