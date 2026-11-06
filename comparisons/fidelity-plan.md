@@ -71,7 +71,20 @@ time guards in [`_ink-loops`](../fiziko.typ#L989) and its depth limit at
 [`depth < 15`](../fiziko.typ#L1261). These literals are now confirmed source
 parameters; they do not by themselves explain the remaining M11 tree and call
 count differences, which depend on carrying the matching q/path callbacks
-through each cut.
+through each cut. The Typst source-width guard, path-time guard, thin-brush
+depth, and tube width epsilon are named constants now; tube lane-count
+thresholds subtract the source's `1/1000 bp` epsilon before rounding to a
+power of two. The wood-knot separation check also uses the source-derived
+20 mm value instead of a duplicated literal.
+
+Two further source controls matter to the open M11 sampling gaps. The pinned
+`findHorizonPoint` bisects a coastline crossing five times; the Typst landmass
+outline already uses that depth. `knotFromStrands` scans each strand with
+`knotStepSize := 1/8`, testing a sliding path window from `i` to `i + 1/4`
+before calling MetaPost's path intersection routine. The Typst strand renderer
+currently intersects its supplied polyline segments directly, so this source
+step is a concrete curve-sampling difference to audit when comparing cubic
+strand inputs. It is not a visual stroke-spacing parameter.
 
 These values are visible in the [Typst constants](../fiziko.typ#L30). Other
 numbers belong to the MetaPost runtime: fixed-point rounding, path-time

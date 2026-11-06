@@ -31,6 +31,11 @@
 #let min-width = 0.3 * pt    // thinnest printable line (mm); below this we dash
 #let dash-min-length = 6 * min-width // MetaPost thinBrushPattern minimum (mm)
 #let _source-min-stroke = 0.2 * pt
+#let _source-brush-width-guard = _mp-unit / 100
+#let _source-brush-time-guard = 1 / 100
+#let _source-thin-brush-depth = 15
+#let _source-tube-width-guard = _mp-unit / 1000
+#let _source-horizon-crossing-depth = 5
 #let _source-max-shading = 1.5 * _source-min-stroke
 #let _source-spacing = 3 * _source-max-shading
 #let _source-dash-length = 6 * _source-min-stroke
@@ -986,7 +991,8 @@
         qtime: qtime, source-time: source-time, cut: cut, arc: arc,
         total: total, midpoint: midpoint, target: height))
   }
-  let split-path(path, target, margin: 0.01, qcurves: none, qmap: none,
+  let split-path(path, target, margin: _source-brush-time-guard,
+                 qcurves: none, qmap: none,
                  report-failure: false) = {
     if qcurves != none {
       return source-q-split-path(path, target, margin, qcurves, qmap,
@@ -1222,7 +1228,7 @@
       // width bound clears minWidth by 1/100 bp. Keep that source guard
       // separate from the dash floor used to choose the target width.
       let thin-eligible = if source-rounding and qcurves != none {
-        let guard = _mp-rounded(base + 0.01 * _mp-unit)
+        let guard = _mp-rounded(base + _source-brush-width-guard)
         hi > guard
       } else { hi > dash-floor }
       let thin-step = if not source-rounding { step } else {
@@ -1235,7 +1241,7 @@
       } else {
         calc.floor(_mp-scalar-rounded(_mp-rounded(midpoint - base) / thin-step))
       }
-      let target = if lo > base - 0.01 * _mp-unit {
+      let target = if lo > base - _source-brush-width-guard {
         let width = base + level * thin-step
         if not source-rounding { width } else { _mp-rounded(width) }
       } else { base }
@@ -1258,7 +1264,8 @@
         let step-fixed = int(calc.round(thin-step / _mp-unit * 65536))
         hi-fixed - lo-fixed >= step-fixed
       } else { hi - lo >= step }
-      let recurse = thin-eligible and width-span-ok and depth < 15 and split != none
+      let recurse = thin-eligible and width-span-ok
+        and depth < _source-thin-brush-depth and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
           width-start: width-index(path.first()),
@@ -1772,7 +1779,7 @@
     _val(w, ts.at(i))
   })
   let ink = _ink-loops(fr, ws, closed, min-w, period,
-    seed: seed, dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+    seed: seed, dash-extra: _source-brush-width-guard, dash-cap: 1,
     random-stream: _random-stream, rng-offset: _rng-offset,
     with-rng: _with-rng, with-stats: _with-stats,
     trace-nodes: _trace-nodes, source-rounding: _source-rounding,
@@ -2072,7 +2079,7 @@
     let ws = if k == ring-count { widths.map(w => w / 2) } else { widths }
     let (ring-loops, consumed) = _ink-loops(
       fr, ws, true, min-w, period, seed: seed + rng-cursor,
-      dash-extra: 0.01 * _mp-unit,
+      dash-extra: _source-brush-width-guard,
       dash-cap: 1, with-rng: true,
     )
     loops += ring-loops
@@ -2442,7 +2449,7 @@
       fr, widths, full, min-w, period,
       seed: if rng == "metapost" { seed } else { seed + rng-cursor },
       random-stream: random-stream, rng-offset: rng-cursor,
-      dash-extra: 0.01 * _mp-unit,
+      dash-extra: _source-brush-width-guard,
       dash-cap: 1,
       with-rng: true, with-stats: with-trace,
       param-times: param-times,
@@ -2633,10 +2640,12 @@
     divisions
   } else { 1 }
   let local-divisions(t) = {
-    let r = rfun(t)
-    if r > 0 and spacing > 0 {
+    // tubeGenerate subtracts 1/1000 bp from the upper diameter before
+    // converting it to a power-of-two hatch count.
+    let diameter = 2 * rfun(t) - _source-tube-width-guard
+    if diameter > 0 and spacing > 0 {
       calc.max(1, int(calc.pow(2,
-        calc.ceil(calc.log(2 * r / spacing, base: 2)))))
+        calc.ceil(calc.log(diameter / spacing, base: 2)))))
     } else { 1 }
   }
   // tubeGenerate recursively cuts at every diameter threshold where its
@@ -2989,7 +2998,7 @@
             let result = _ink-loops(piece.frames, piece.widths, piece.closed,
               min-w, period, random-stream: random-stream,
               rng-offset: rng-cursor, with-rng: true,
-              dash-extra: 0.01 * _mp-unit, dash-cap: 1,
+              dash-extra: _source-brush-width-guard, dash-cap: 1,
               source-rounding: true)
             els.push(place(top + left, _fill(result.at(0), black)))
             rng-cursor += result.at(1)
@@ -3014,7 +3023,7 @@
             if piece.section-index != section-index { continue }
             let loops = _ink-loops(piece.frames, piece.widths, piece.closed,
               min-w, period, seed: seed + piece.seed-offset,
-              dash-extra: 0.01 * _mp-unit,
+              dash-extra: _source-brush-width-guard,
               dash-cap: 1)
             els.push(place(top + left, _fill(loops, black)))
           }
@@ -3772,7 +3781,7 @@
       + _mp-rounded((w + knot-radius) * raw-stream.at(rng-offset + cursor)))
     let y = _mp-rounded(-knot-radius / 2
       + _mp-rounded((h + knot-radius) * raw-stream.at(rng-offset + cursor + 1)))
-    if knots.all(k => _dist(k, (x, y)) >= 20) {
+    if knots.all(k => _dist(k, (x, y)) >= _source-wood-knot-density) {
       knots.push((x, y))
       // Each accepted source knot draws five nested brush rings. The pinned
       // MetaPost brush consumes 28 random values for those rings before the
@@ -4700,7 +4709,7 @@
   // from the final input vertex back to the first before horizon clipping.
   let path-coords = coords
   let runs = _globe-visible-paths(path-coords, rotation, radius, center,
-    crossing-steps: 5)
+    crossing-steps: _source-horizon-crossing-depth)
   if runs.len() == 0 { return none }
   let start-visible = (globe-project(
     path-coords.first().at(0), path-coords.first().at(1),
