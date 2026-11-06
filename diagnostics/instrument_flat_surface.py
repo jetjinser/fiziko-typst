@@ -460,6 +460,8 @@ def main() -> None:
                     traceClipPoint("S104-CLIP-POLY-POST", i, traceClipIndex, postcontrol traceClipIndex of p);
                     traceClipPoint("S104-CLIP-POLY-PRE", i, traceClipIndex, precontrol (traceClipIndex+1) of p);
                 endfor;
+                traceClipPoint("S104-CLIP-BBOX", i, 0, llcorner(p));
+                traceClipPoint("S104-CLIP-BBOX", i, 1, lrcorner(p));
                 traceClipPoint("S104-CLIP-RAW", i, 0, point 0 of aHatch);
                 traceClipPoint("S104-CLIP-RAW", i, 1, point 1 of aHatch);
                 traceClipPoint("S104-CLIP-RAY-POST", i, 0, postcontrol 0 of aHatch);

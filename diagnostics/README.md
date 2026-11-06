@@ -5239,11 +5239,19 @@ were exactly one fixed unit to the right. On this row, source and Typst
 `intersectiontimes` parameters match, so the residual was introduced after
 hit-time selection.
 
+A follow-up source trace records `llcorner(p)` and `lrcorner(p)` as
+`S104-CLIP-BBOX`. For row `-15.34870`, their x coordinates are `2011926` and
+`11888891` in 16.16 bp; these equal the minimum and maximum x coordinates of
+the five traced source vertices exactly. The one-unit residual therefore does
+not come from a curved-path bbox extremum. The production correction remains
+empirically exact across the fixture, while its origin in the Typst-to-source
+ray-frame conversion is still unresolved.
+
 The source-frame conversion uses the trace's quantized 30-degree sine/cosine
 and the fixed `185771` bp/mm conversion already used by
 `_source-scanline-segments`. A fresh 142-row source trace shows that both raw
 source ray x bounds map one fixed unit right of the rounded Typst vertex
-extrema. Applying that measured bbox offset makes both clipped endpoints
+extrema. Applying that measured ray-grid correction makes both clipped endpoints
 exactly match the source in the rotated frame on all 142 rows. The line's total
 length is unchanged, but the one-third/two-thirds controls and their inverse
 rotation still quantize independently.

@@ -3113,13 +3113,13 @@
   if spacing-fixed <= 0 or ymax <= ymin { return () }
   let count = calc.max(1, int(calc.round((ymax - ymin) / spacing-fixed)))
   let row-step = _mp-fixed-round-ratio(ymax - ymin, count)
-  // Source `llcorner(p)`/`lrcorner(p)` bound the transformed MetaPost path.
-  // Across 142 rows of the pinned S104 fixture, its bp bbox maps one 16.16
-  // unit right of the extrema of the rounded Typst vertices. Preserve the
-  // measured fixed-grid offset while reproducing that source bbox operation.
-  let source-bbox-grid-offset = 1
-  let xmin = calc.min(..rotated.map(point => point.at(0))) + source-bbox-grid-offset
-  let xmax = calc.max(..rotated.map(point => point.at(0))) + source-bbox-grid-offset
+  // Source llcorner/lrcorner equal the transformed vertex extrema on the
+  // traced S104 row. The Typst ray frame is one 16.16 unit left of those
+  // source bounds across all 142 rows; keep this measured correction named
+  // separately until the frame conversion itself is derived.
+  let source-ray-grid-correction = 1
+  let xmin = calc.min(..rotated.map(point => point.at(0))) + source-ray-grid-correction
+  let xmax = calc.max(..rotated.map(point => point.at(0))) + source-ray-grid-correction
   let edge-curves = range(poly.len()).map(i => _mp-fixed-line-cubic(
     rotated.at(i), rotated.at(_mod(i + 1, poly.len()))))
   let page-point(local) = {
