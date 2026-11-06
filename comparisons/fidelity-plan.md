@@ -1177,6 +1177,15 @@ injection remains reverted because its full-page image gate regressed.
   the level-9/10 disagreement is sensitive to local cell-range values.
   Compare the source and Typst cell-corner samples before considering a local
   correction; the global level bias remains reverted.
+  A fresh 2026-11-06 evaluation of the checked-in q replay supersedes its older
+  pairing counts: the 21 source/Typst root segments have 1/84 exact arc
+  controls and 10/84 exact width controls (mean/max error 689.5/2819 and
+  4.83/17 fixed units); the recursive comparison has 48 paired nodes, 45
+  within 0.1 mm, and 45/48 matching decisions. Remaining range divergences are
+  source calls 10, 20, and 62. Adding the contour level to each fixed-point
+  corner before `max-min` leaves the q-tree and all three divergences
+  unchanged, since the shared level cancels exactly; that no-op was reverted.
+  Continue with field-corner generation and root q arc/time construction.
   `CLVFIX` now captures exact 16.16 source values for the first 72 lattice
   samples. The corrected comparison now removes Typst's 24x contour scale and
   compares both fields with their shared column jitter intact; current same-run

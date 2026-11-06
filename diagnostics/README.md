@@ -546,6 +546,25 @@ cut is `0.01843`. These values make callback q-width construction and source
 fixed-point ordering the narrow target; they do not justify changing the
 global recursion thresholds.
 
+**M9 q-replay refresh (2026-11-06).** Re-evaluating the checked-in
+`m9_contour_walk_trace.typ` against the pinned-source `WBOQ`/`WBQCTRL` trace
+gives 21 source/Typst root segments. Only 1/84 arc controls and 10/84 width
+controls are exact; mean/max absolute errors are 689.5/2819 fixed units in
+arc x and 4.83/17 units in width y. Parent-aware q-tree pairing now reports
+48 paired nodes, 45 within 0.1 mm, and 45/48 matching recurse/stop decisions.
+The remaining width-range divergences pair to source calls 10, 20, and 62:
+`[9248,10335]/[9249,10337]`, `[8704,9250]/[8705,9248]`, and
+`[10880,11717]/[10880,11724]` (source/Typst, 16.16 units). This refresh
+supersedes the earlier 46-node/43-decision q-replay figures above.
+
+A diagnostic candidate added the contour level to each quantized cell corner
+before taking its range, following `cLine`'s `c1 := xy[i][j] + lvl` order.
+The q-tree and all three width-range divergences were identical to baseline:
+the common fixed-point level addition cancels exactly in `max-min`. The
+candidate was reverted. The actionable residual remains in source field
+corner values and the root q time/arc construction, not in applying the level
+inside the width range.
+
 That diagnostic result did not make the full production renderer better. A
 candidate brushed each complete contour with the forward-arc q template, then
 clipped its ink to the M9 rectangular board. On same-checkout 600 ppi renders,
