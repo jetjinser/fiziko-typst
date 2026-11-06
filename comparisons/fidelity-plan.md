@@ -1158,6 +1158,11 @@ injection remains reverted because its full-page image gate regressed.
   source edge corners are `10204/65536` and `10758/65536`, while Typst's
   24x-scaled samples convert to `0.1557307` and `0.1641486`. The source level
   is `-10675/65536`; Typst's level converts to `0.1629227866`. The source
+  `upto` loop's strict sign check skips its first two indices; negating the
+  first emitted `isoLines` level gives `max/rho - 1 - uniformdeviate(1/8)`,
+  which is the same sign and jitter direction as Typst's `hi - 1 - U/8`.
+  The remaining level input difference is therefore in the sampled maximum,
+  not a reversed level or jitter convention. The source
   jitter is `226/65536`, and the Typst RNG value at offset 204
   (`0.6616821289`) rounds to that same value through `uniformdeviate(1/192)`,
   so the random-call position matches. This explains the approximately
