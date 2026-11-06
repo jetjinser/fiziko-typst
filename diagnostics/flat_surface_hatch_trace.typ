@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-cubic-subcurve-arcs, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch
@@ -49,45 +49,18 @@
       + _mp-fixed-pyth-distance(fixed-width-q-points.at(i),
         fixed-width-q-points.at(i + 1)))
   }
-  // Rebuild each pathSubdivide cubic piece and ask the source-compatible
-  // fixed arc routine for its true arc (the production path currently uses
-  // endpoint chords here). This is a diagnostic candidate, not yet enabled.
-  let fixed-subcurve-arc-positions = (0.0,)
-  if segment.at(2) == 103 {
-    for i in range(fixed-width-q-subdivision-times.len() - 1) {
-      let t0 = fixed-width-q-subdivision-times.at(i)
-      let t1 = fixed-width-q-subdivision-times.at(i + 1)
-      let whole = segment.at(6).map(value => value.map(axis =>
-        axis / 65536 * _mp-unit))
-      let right = if t0 == 0 { whole } else {
-        _mp-cubic-split(whole, t0).right
-      }
-      let local-t = if t0 == 1 { 1 } else { (t1 - t0) / (1 - t0) }
-      let split-piece = if local-t == 1 { right } else {
-        _mp-cubic-split(right, local-t).left
-      }
-      // MetaPost's chopPath independently splits at both source times. The
-      // endpoint at each knot is point(t) on the original path, not the
-      // accumulated endpoint from a previous split.
-      let start = _mp-fixed-cubic-at(segment.at(6), t0).map(value =>
-        value / 65536 * _mp-unit)
-      let end = _mp-fixed-cubic-at(segment.at(6), t1).map(value =>
-        value / 65536 * _mp-unit)
-      let piece = (start, split-piece.at(1), split-piece.at(2), end)
-      let arc = _mp-fixed-cubic-arc-raw(piece.map(point =>
-        point.map(axis => axis / _mp-unit)))
-      fixed-subcurve-arc-positions.push(
-        fixed-subcurve-arc-positions.last() + arc / 65536 * _mp-unit)
-    }
-  }
-  let traced-source-arc-positions = if use-source-fixed-scanlines and segment.at(2) == 103 {
+  // Rebuild each pathSubdivide segment and measure its fixed-point cubic arc.
+  let fixed-subcurve-arc-positions = _mp-fixed-cubic-subcurve-arcs(
+    segment.at(6), fixed-width-q-subdivision-times)
+  let traced-source-arc-positions = if use-source-fixed-scanlines {
     fixed-subcurve-arc-positions
   } else { fixed-source-arc-positions }
   let fixed-line-length = traced-source-arc-positions.last()
   let points = subdivision-times.map(t => _mp-fixed-cubic-at(
     segment.at(6), t).map(value => value / 65536 * _mp-unit))
   let frames = _frame(points, false)
-  let line-length = _dist(segment.at(0), segment.at(1))
+  let line-length = if use-source-fixed-scanlines { fixed-line-length }
+    else { _dist(segment.at(0), segment.at(1)) }
   let width(t) = {
     let envelope = calc.sin(180deg * t) * line-length / total-width * calc.sin(180deg * row-fraction)
     2 * _source-min-stroke * (1 / 15 + shade) * (1 - 6 / 7 * calc.sqrt(calc.max(0.0, envelope)))

@@ -2219,3 +2219,18 @@ and absolute RNG offsets remain exact (`1516/1516`). Forward/reverse hit-time
 pairs improve from 139/142 to 141/142; the sole remaining one-unit time
 mismatch is at row `7.97220`. The correction closes the measured clipped
 endpoint frame offset but does not close the remaining recursive q-tree gaps.
+
+**S104 cubic q-abscissae (2026-11-06).** Source `offsetPathTemplate` sets q
+knots from `arclength(subpath(0,i) of p)`. Source-fixed Typst hatches now
+reconstruct and measure each subdivided cubic interval rather than summing
+sample endpoint chords. Across 142 rows, exact q-arc control nodes improve
+from 415 to 1,067; paired nodes improve from 1,564 to 1,574 of 1,696, and
+mean/max q-arc residual improves from 11.246/869 to 10.470/868 16.16 units.
+All row RNG calls, subdivision requests, path segment counts, and absolute
+draw offsets remain exact. The reconstruction still misses some source
+`subpath` controls by a few units and does not fix row `-2.79129`'s one-unit
+crossing choice. At 600 ppi full/hatch RMSE changes slightly worse
+(`0.205603720/0.071811352` to `0.205603768/0.071811623`); stipple remains
+`0.283972375`. Retain this source-derived arc model for its substantial q
+control alignment gain, while keeping exact MetaPost subpath control
+reconstruction as open work.

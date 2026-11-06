@@ -5322,3 +5322,54 @@ For row `-15.34870`, the corrected production trace now pairs all 5 source
 recursive nodes with exact width and q-arc controls; maximum paired endpoint
 error is `0.000204 mm`. The remaining q-tree mismatches are substantial, so
 this is a localized geometry improvement rather than full recursion parity.
+
+### S104 cubic subpath arc positions (2026-11-06)
+
+The pinned `offsetPathTemplate` places each q knot at
+`arclength(subpath(0, i) of p)`. The Typst source-fixed hatch path previously
+approximated those positions by summing endpoint chords between its
+`pathSubdivide` samples. `_mp-fixed-cubic-subcurve-arcs` now reconstructs each
+sample interval as a fixed-point cubic and measures its cubic arc before
+accumulating q-knot positions and the hatch length passed to the width
+callback.
+
+On row `-2.79129`, the source selects the right crossing because its distances
+from the midpoint are `1,366,783` and `1,366,784` units on the 16.16 bp grid.
+The baseline Typst hit x values produce a tie (`1,366,783` each); after this
+change the left hit is still closer by one unit. Thus the identified branch
+flip remains unresolved, and the cubic reconstruction is not yet an exact
+replacement for MetaPost's `subpath` controls.
+
+Across the 142-row S104 trace, brush call totals, subdivision requests,
+generated path-segment counts, and absolute RNG offsets remain exact
+(`1516/1516`, `142/142` for each row-level check). The q-node audit improves
+from `1564` to `1574` endpoint pairs out of 1,696 source nodes; exact q-arc
+control nodes rise from `415` to `1,067`, and mean/max absolute q-arc residual
+falls from `11.246/869` to `10.470/868` units. Exact width-control nodes rise
+from `1,448` to `1,462`.
+
+A same-source, same-toolchain 600 ppi S104 render shows a very small raster
+trade-off: full/hatch RMSE changes from `0.205603720/0.071811352` to
+`0.205603768/0.071811623`; stipple RMSE is unchanged at `0.283972375`. The
+source-derived cubic arc positions are retained for their substantially closer
+q-control geometry, with the remaining one-unit branch decision explicitly
+left open for follow-up.
+
+Reproduce the Typst trace and compare it with a fresh instrumented MetaPost
+trace using:
+
+```sh
+nix develop path:./nix --command typst eval \
+  'query(<s104-hatch-rows>).first().value' \
+  --in diagnostics/flat_surface_hatch_trace.typ --root . \
+  > /tmp/s104-hatch-rows.json
+nix develop path:./nix --command python \
+  diagnostics/compare_s104_row_calls.py \
+  /tmp/s104-row-arc/trace.log /tmp/s104-hatch-rows.json --fixed-width-q
+nix develop path:./nix --command python \
+  diagnostics/audit_s104_q_alignment.py \
+  /tmp/s104-row-arc/trace.log /tmp/s104-hatch-rows.json \
+  --node-field fixed-width-q-nodes
+nix develop path:./nix --command python comparisons/run.py \
+  --case S104 --mode nominal --output build/s104-cubic-arc
+```

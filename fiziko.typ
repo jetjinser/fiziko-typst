@@ -224,6 +224,28 @@
   let f = _mp-fixed-mix-point(d, e, t)
   (left: (points.at(0), a, d, f), right: (f, e, c, points.at(3)))
 }
+#let _mp-fixed-cubic-subcurve-arcs(points, times) = {
+  let whole = points.map(point => point.map(value => value / 65536 * _mp-unit))
+  let positions = (0.0,)
+  for i in range(times.len() - 1) {
+    let t0 = times.at(i)
+    let t1 = times.at(i + 1)
+    let right = if t0 == 0 { whole } else { _mp-cubic-split(whole, t0).right }
+    let local-t = if t0 == 1 { 1 } else { (t1 - t0) / (1 - t0) }
+    let sliced = if local-t == 1 { right } else {
+      _mp-cubic-split(right, local-t).left
+    }
+    // Approximate the independently chopped pathSubdivide segment; source
+    // offsetPathTemplate measures each such subpath's cubic arclength.
+    let start = _mp-fixed-cubic-at(points, t0).map(value => value / 65536 * _mp-unit)
+    let end = _mp-fixed-cubic-at(points, t1).map(value => value / 65536 * _mp-unit)
+    let piece = (start, sliced.at(1), sliced.at(2), end)
+    let arc = _mp-fixed-cubic-arc-raw(piece.map(point =>
+      point.map(axis => axis / _mp-unit)))
+    positions.push(positions.last() + arc / 65536 * _mp-unit)
+  }
+  positions
+}
 #let _mp-cubic-path-split(segments, t) = {
   let whole = calc.floor(t)
   let fraction = t - whole
@@ -3344,12 +3366,7 @@
       _mp-fixed-cubic-at(s.at(6), t).map(value => value / 65536 * _mp-unit)
     } else { _add(s.at(0), _mul(_sub(s.at(1), s.at(0)), t)) })
     let source-arc-positions = if source-fixed {
-      let positions = (0.0,)
-      for i in range(pts.len() - 1) {
-        positions.push(positions.last() + _mp-fixed-pyth-distance(
-          pts.at(i), pts.at(i + 1)))
-      }
-      positions
+      _mp-fixed-cubic-subcurve-arcs(s.at(6), subdivision-times)
     } else { none }
     let line-length = if source-fixed { source-arc-positions.last() }
       else { _dist(s.at(0), s.at(1)) }
