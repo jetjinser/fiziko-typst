@@ -3660,13 +3660,30 @@ MetaPost's wrapper applies the direct-miss fallback before comparing hit times.
 The Typst wrapper previously compared `-1 < 0` first and returned the miss.
 The corrected precedence now selects `(0,0.5)`. Replaying the fixed-width
 production trace against the source pairs all 1,696/1,696 recursive q nodes;
-all q-arc controls are exact and 1,688 width-control sets are exact (the
-remaining residual is at most one 16.16 unit). All 142 row call totals,
-subdivision requests, path-segment counts and absolute RNG offsets remain
-matched. A same-source 600 ppi S104 render changes full/hatch/stipple RMSE by
-only about `+0.000000006/+0.000000033/0`.
-As cross-plate guards, current and pre-change M11 and M6 600 ppi renders have
-identical Typst and source pixel hashes. M4 is inconclusive in this sandbox:
+all q-arc and width controls are now exact. The last eight one-unit width
+residuals came from evaluating the source callback's `sin(fraction*pi)` through
+Typst's degree helper. MetaPost passes radians; quantizing `pi` to `205887`
+(16.16) and rounding the radian sine reproduces the source callback exactly.
+For row `26.80830`, the source's `sin(distFromEdge*pi)` is `61773`, while the
+degree-based port returned `61772`; at callback time `0.5999908447` this
+changed the final width from `8744` to `8745`. The radian path restores the
+source width. All 142 row call totals, subdivision requests, path-segment
+counts and absolute RNG offsets remain matched (`1516/1516`). The same-source
+600 ppi render is pixel-identical to the prior image; full/hatch/stipple RMSE
+remains `0.205597570/0.071776706/0.283972375`.
+
+The callback regression fixture records this source sample independently of
+the full trace and expects parameter `39321` and width `8744` in 16.16 units.
+Run it with:
+
+```sh
+nix develop path:./nix --command python3 \
+  diagnostics/check_s104_width_fixture.py
+```
+
+The preceding shared intersection-wrapper change was also checked against
+M11 and M6: both 600 ppi Typst and source pixel hashes were identical before
+and after it. M4 is inconclusive in this sandbox:
 Typst exits `-9` at both 600 ppi and a 150 ppi preview, and the same failure
 reproduces from a clean copy of the pre-change commit.
 

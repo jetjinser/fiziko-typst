@@ -3267,10 +3267,14 @@
 #let _flat-surface-source-width(t, line-length, total-width, row-fraction,
                                 shade, scale) = {
   let q = _mp-scalar-rounded
+  let pi-fixed = q(calc.pi)
+  // MetaPost evaluates sin(fraction * pi) in radians. Going through the
+  // degree-based public helper changes some fixed-point samples by one unit.
+  let source-sin(fraction) = q(calc.sin(q(q(fraction) * pi-fixed) * 1rad))
   let ratio = q(line-length / total-width)
   let row-position = q(row-fraction)
-  let s1 = q(_sin(q(q(t) * 180)))
-  let s2 = q(_sin(q(row-position * 180)))
+  let s1 = source-sin(t)
+  let s2 = source-sin(row-position)
   let envelope = q(q(s1 * ratio) * s2)
   let root = q(calc.sqrt(calc.max(0.0, envelope)))
   // Match MetaPost's source expression `6/7sqrt(root)`: it multiplies by
