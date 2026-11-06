@@ -5182,3 +5182,18 @@ source. The q approximation is still wrong on many other rows: 123/142 row
 draw counts match, with L1 difference 252 although total draws remain 1516.
 The paired 600 ppi S104 hatch RMSE regresses `0.071835 -> 0.077426`; retain the
 source predicate and continue from the per-row q-template/call mismatches.
+
+### S104 thin-brush width-entry guard (2026-11-06)
+
+The pinned MetaPost `thinBrushGenerate` enters its width-cut branch only when
+the upper width bound satisfies `w0 > minWidth + 1/100`. In this routine
+`minWidth` is `minDashStrokeWidth`, or one third of `minStrokeWidth`; this is a
+separate guard from the `minWidth` dash floor used to choose the cut target.
+The source-rounded q-template branch now quantizes and applies this 0.01 bp
+entry guard before searching for a cut, while the floating-point path keeps its
+existing threshold. On the 142-row S104 fixture, this source-semantic
+correction changes no row's recursive call count or dash count: source and
+Typst totals remain `1516/1516`, with `123/142` exact row counts and L1 error
+252. It therefore records a confirmed rule without claiming a render or
+fixture improvement; the unresolved differences still come from q/path
+geometry and cut mapping.

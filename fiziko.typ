@@ -1216,6 +1216,13 @@
       let base = if not source-rounding { minw / 3 } else {
         _mp-rounded(source-min / 3)
       }
+      // thinBrushGenerate enters its width-cut branch only when the upper
+      // width bound clears minWidth by 1/100 bp. Keep that source guard
+      // separate from the dash floor used to choose the target width.
+      let thin-eligible = if source-rounding and qcurves != none {
+        let guard = _mp-rounded(base + 0.01 * _mp-unit)
+        hi > guard
+      } else { hi > dash-floor }
       let thin-step = if not source-rounding { step } else {
         _mp-rounded(_mp-rounded(source-min - base) / 16)
       }
@@ -1230,8 +1237,10 @@
         let width = base + level * thin-step
         if not source-rounding { width } else { _mp-rounded(width) }
       } else { base }
-      let candidate = split-path(path, target, qcurves: qcurves, qmap: qmap,
-        report-failure: trace-nodes)
+      let candidate = if thin-eligible {
+        split-path(path, target, qcurves: qcurves, qmap: qmap,
+          report-failure: trace-nodes)
+      } else { none }
       let split = if candidate != none and (candidate.at(2) > minlen or candidate.at(3) > minlen) {
         (candidate.at(0), candidate.at(1),
           if qcurves == none { none } else { candidate.at(9) },
@@ -1247,12 +1256,13 @@
         let step-fixed = int(calc.round(thin-step / _mp-unit * 65536))
         hi-fixed - lo-fixed >= step-fixed
       } else { hi - lo >= step }
-      let recurse = hi > dash-floor and width-span-ok and depth < 15 and split != none
+      let recurse = thin-eligible and width-span-ok and depth < 15 and split != none
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
           width-start: width-index(path.first()),
           width-end: width-index(path.last()),
           target: target, width-base: base, width-step: thin-step, length: total,
+          eligible: thin-eligible,
           width-span-ok: width-span-ok,
           width-span-fixed: if qcurves == none { none } else {
             (int(calc.round(hi / _mp-unit * 65536))
@@ -1281,7 +1291,7 @@
       if recurse {
         pending.push((split.at(1), split.at(3), split.at(5), depth + 1))
         pending.push((split.at(0), split.at(2), split.at(4), depth + 1))
-      } else if hi > dash-floor {
+      } else if thin-eligible {
         leaves.push((path, calc.min(minw, target), qcurves, qmap))
       }
     }

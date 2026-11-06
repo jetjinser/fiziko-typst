@@ -2153,3 +2153,10 @@ unchanged, M9 full RMSE shifts `0.211427 -> 0.211456`, and S105 full RMSE shifts
 predicate for semantic fidelity, record the S104 raster trade-off, and continue
 from the per-row q/call mismatches rather than restoring the incorrect
 arc-distance guard.
+
+The q-template thin-brush branch also now applies MetaPost's separate entry
+condition `w0 > minDashStrokeWidth + 0.01 bp` before searching for a width
+crossing. This is source-confirmed but changes no recursive or dash counts on
+the current 142-row fixture (`123/142` exact rows; L1 `252`; totals
+`1516/1516`), so it is not counted as a measured fidelity gain. Continue
+tracing q/path mapping at the first divergent node.
