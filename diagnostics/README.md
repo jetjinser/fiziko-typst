@@ -5516,3 +5516,22 @@ nix develop path:./nix --command python \
   /tmp/m11-patharc-audit/trace.log \
   /tmp/m11-after-fixed-interpolation.json 1
 ```
+
+### M11 fixed-point coast-width trial (2026-11-06, reverted)
+
+Instrumenting the pinned MetaPost source exposed its light vector, the three
+separately rounded normal/light products, the summed dot product, and the
+fixed-point minimum stroke width. Replaying the source's 16.16 operations
+reproduces every logged source callback width exactly. Applying the same
+rounding stages to the Typst projected normal raises exact root-width matches
+from `78/139` to `132/139` on M1, `81/170` to `159/170` on M2, and `39/52` to
+`49/52` on M4; all remaining sampled differences are at most one fixed unit.
+
+This production candidate was reverted. Its recursive node totals remained
+`15/13`, `57/39`, and `31/31` (source/Typst) for M1/M2/M4, while same-toolchain
+600 ppi raster RMSE regressed from `0.114774678/0.189183015` to
+`0.114836641/0.189433105` for the full page/globe crop. The source arithmetic
+is now understood, but reproducing its width quantization over the current
+Typst projection does not improve the requested drawing fidelity. Use the
+source operation trace as a constraint for a future root-template correction,
+not as a retained callback change.
