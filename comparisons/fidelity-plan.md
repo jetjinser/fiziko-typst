@@ -2256,3 +2256,14 @@ improves to 37/37 paired nodes with exact q width and arc controls. Same-source
 `0.205604024/0.071813065`; stipple stays `0.283972375`. Keep the explicit
 frame option for source-coordinate fidelity, and continue reducing the
 remaining tree mismatch and small raster trade-off.
+
+**S104 exact arc-fraction callback probe (2026-11-06, no-op).** Replacing the
+sampled-frame chord fractions used to construct root q-width knots with
+`source-arc-positions[i] / total-arc` leaves the complete 142-row diagnostic
+trace byte-for-byte unchanged. This is expected: the source clips each hatch
+as a straight `--` segment before `pathSubdivide`, so its normalized path-time
+and normalized arclength agree at every template knot. The 1,684/1,696 paired
+q nodes, exact q arcs (1,684), exact width controls (1,676), and all 1,516 row
+call/subdivision/RNG-offset checks remain unchanged. The production trial was
+removed; continue on the unmatched recursive cut decisions and path-frame
+rounding rather than revisiting width-knot arc normalization.

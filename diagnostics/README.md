@@ -5535,3 +5535,18 @@ is now understood, but reproducing its width quantization over the current
 Typst projection does not improve the requested drawing fidelity. Use the
 source operation trace as a constraint for a future root-template correction,
 not as a retained callback change.
+
+### S104 normalized arc-width knot trial (2026-11-06, no-op)
+
+I tested computing each source q-width knot from the exact cumulative
+`source-arc-positions` divided by the full hatch length, following
+`offsetPathTemplate`'s `arclength(subpath (0,i) of p) / arclength(p)` callback
+parameter. The resulting 142-row Typst trace is byte-for-byte identical to
+the retained trace (`63a01b8341d0fe2f815a773106dd1d69313bbc290aea1a9986318860cd65e454`);
+q-node pairing remains `1684/1696`, exact q arcs `1684`, exact width controls
+`1676`, and calls/subdivision requests/RNG offsets all remain exact `1516/1516`.
+This is expected after inspecting the source: `flatSurface` constructs each
+`aHatch` as a straight clipped line before `pathSubdivide`, so cumulative arc
+fraction and path-time fraction coincide at every q knot. There is no production
+change to keep. The unmatched recursive nodes must be pursued through cut-hit
+selection or path-frame rounding instead.
