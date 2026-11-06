@@ -61,6 +61,29 @@ The `woodBlockRes` default is not universal per figure: M9 sets it to 1 mm,
 while S105 uses the source default. Keep that driver override distinct from
 the field's other constants.
 
+The source's `wField` also contains numerical coefficients that are easy to
+miss when collecting only named assignments. They are already carried by the
+Typst field expression in [`_woodblock-field`](../fiziko.typ#L3814); they are
+listed here as source-to-port checks, not as independently tunable image-fit
+parameters:
+
+| Pinned `wField` expression | Effect in the field | Typst mapping |
+| --- | --- | --- |
+| `bd := 1/2(woodKnotRadius/woodBlockRes)*woodBlockDetail` | Knot-core scale in field-grid units | `bd` in `_woodblock-field` |
+| `r >= 2bd`, `1/2r-bd < 8` | Outer knot-field branch and radial cutoff | `r >= 2 * bd`, `0.5 * r - bd < 8` |
+| `sqrt(q)/(3**q)` where `q = 1/2r-bd` | Radial knot influence and decay | `sqrt(q) / pow(3, q)` |
+| `sin(woodKnotAngle)*(1/2sin(-a)) + 1` and `1/3 + 2/3abs(cos(a))` | Direction-dependent knot shape | Matching angular factors in `wave` |
+| `-10sqrt(1-(r/2bd)**4)` | Interior knot-core depression | `-10 * sqrt(1 - (r/(2*bd))^4)` |
+| `1/64cos(2pi*1/30r)` | Small radial ripple around each knot | `cos(2*pi/30*r)/64` |
+| `-(i*woodBlockYRdensity)/5` | Linear year-ring drift | `-i * rho / 5` |
+| `1/32sin(pi*i/csx + 4pi*j/csy)` | Global two-axis field ripple | Matching sine phase divided by `32` |
+| `uniformdeviate(1/8woodBlockYRdensity)` | One shared vertical field offset per column | `rho / 8 * randoms.at(...)` |
+
+These coefficients give concrete examples of source values beyond named
+parameters. The current Typst equation mirrors them, so they are not a parity
+gap by themselves. A visual change should be based on a traced mismatch in the
+computed field, contour, or brush behavior, rather than renaming a literal.
+
 The source's second knot-loop stop condition is an explicit `i` ceiling,
 separate from `woodKnotDensity`'s spacing test. A trace of M9 and S105 reports
 source ceilings around `3646`, `940`, and `865` for their respective wood
