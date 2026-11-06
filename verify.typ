@@ -94,9 +94,9 @@
 #let w-step = if w-steps.len() > 0 { calc.max(..w-steps) } else { 0.0 }
 
 // -- 11. globe, knot gaps, and geometric optics ----------------------------
-#let globe-centre = globe-project(37, -12, rotation: (37, -12))
+#let globe-centre = globe-project(217, -12, rotation: (37, -12))
 #let globe-horizon = globe-project(90, 0)
-#let globe-antipode = globe-project(180, 0)
+#let globe-backside = globe-project(0, 0)
 #let strand-pieces = _strand-fragments(((0, 0), (10, 0)), (0, 10), ((5, 1),))
 #let optics-boundary = circle-pts(10, 720)
 #let refracted-ray = trace-refraction(((-15, 4), (-12, 4)), optics-boundary,
@@ -201,10 +201,11 @@
     calc.sqrt(calc.pow(globe-horizon.x, 2) + calc.pow(globe-horizon.y, 2)) - 1,
   ),
   globe_horizon_hidden: not globe-horizon.visible,
-  globe_antipode_hidden: not globe-antipode.visible,
+  globe_backside_hidden: not globe-backside.visible,
   strand_gap_err: {
-    calc.abs((strand-pieces.at(1).at(0).at(0)
-      - strand-pieces.at(0).at(strand-pieces.at(0).len() - 1).at(0)) - 2)
+    calc.abs((strand-pieces.at(1).at("path").at(0).at(0)
+      - strand-pieces.at(0).at("path").at(
+        strand-pieces.at(0).at("path").len() - 1).at(0)) - 2)
   },
   refraction_trace_points: refracted-ray.len(),
   refraction_snell_err: snell-error,
@@ -229,8 +230,12 @@
 #assert(wloops.len() > 0)
 #assert(_dist((globe-centre.x, globe-centre.y), (0, 0)) < 1e-12 and globe-centre.visible)
 #assert(calc.abs(_dist((globe-horizon.x, globe-horizon.y), (0, 0)) - 1) < 1e-12)
-#assert(not globe-horizon.visible and not globe-antipode.visible)
-#assert(strand-pieces.len() == 2 and calc.abs((strand-pieces.at(1).at(0).at(0) - strand-pieces.at(0).at(strand-pieces.at(0).len() - 1).at(0)) - 2) < 1e-12)
+#assert(not globe-horizon.visible and not globe-backside.visible)
+#assert(globe-project(180, 0).visible)
+#assert(strand-pieces.len() == 2 and calc.abs(
+  (strand-pieces.at(1).at("path").at(0).at(0)
+    - strand-pieces.at(0).at("path").at(
+      strand-pieces.at(0).at("path").len() - 1).at(0)) - 2) < 1e-12)
 #assert(refracted-ray.len() == 5 and snell-error < 1e-8)
 #assert(tir-direction.at(1) < 0)
 

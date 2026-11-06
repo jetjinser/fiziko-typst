@@ -45,7 +45,9 @@ not measure fidelity to upstream MetaPost output.
 `figure-11-page-5` retains the full A4 page at 130 ppi (1075 × 1520 px),
 including document pagination and the globe, eye, knot and refraction figure.
 The [2026-11-02 review](reviews/2026-11-02-page-5/README.md) explains the first
-baseline refresh and retains the historical comparison evidence.
+baseline refresh and retains the historical comparison evidence. The
+[2026-11-07 review](reviews/2026-11-07-source-fidelity/README.md) records four
+later source-fidelity baseline updates.
 
 ## Reviewing an intentional change
 

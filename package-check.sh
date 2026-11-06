@@ -9,7 +9,7 @@ cd "$ROOT"
 VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("typst.toml", "rb"))["package"]["version"])')
 PACKAGE="$ROOT/build/package-check/packages/local/fiziko/$VERSION"
 mkdir -p "$PACKAGE" "$ROOT/build/package-check"
-cp typst.toml fiziko.typ contour.typ solve.typ README.md LICENSE "$PACKAGE/"
+cp typst.toml fiziko.typ contour.typ solve.typ intersection.typ README.md LICENSE "$PACKAGE/"
 
 typst compile \
   --ignore-system-fonts \

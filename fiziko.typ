@@ -4680,8 +4680,9 @@
 // globe projection (longitude/latitude in degrees)
 // ---------------------------------------------------------------------------
 
-/// Orthographic globe projection; returns (x, y, visible) in unit-radius
-/// coordinates. `rotation` is the central longitude and latitude.
+/// Source-oriented orthographic globe projection; returns (x, y, visible) in
+/// unit-radius coordinates. In the source longitude convention, the visible
+/// center is 180° from `rotation`'s longitude at its latitude.
 #let globe-project(lon, lat, rotation: (0, 0)) = {
   let u = lon - rotation.at(0)
   let lat0 = rotation.at(1)
