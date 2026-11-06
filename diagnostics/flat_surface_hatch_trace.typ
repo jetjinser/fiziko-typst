@@ -1,5 +1,5 @@
 // Row-level source-brush trace for the S104 hatch panel.
-#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-rounded, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
+#import "../fiziko.typ": _add, _cos, _dist, _flat-surface-source-width, _frame, _ink-loops, _metapost-rng-sequence, _mp-cubic-split, _mp-fixed-cubic-at, _mp-fixed-cubic-arc-raw, _mp-fixed-pyth-distance, _mp-path-subdivision-times, _mp-scalar-rounded, _mul, _path-fractions, _scanline-segments, _sin, _source-dash-length, _source-max-shading, _source-min-stroke, _mp-unit, _sub
 
 #let panel = ((8, 8), (56, 13), (50, 36), (5, 31))
 // Source P() flips the page's vertical axis. Its +30° MetaPost hatch

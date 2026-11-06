@@ -2111,3 +2111,25 @@ the same tree, against source 21/5. Thus the residual one-unit arc error does
 not explain the two extra thin nodes. Keep this diagnostic-only until
 `mp_split_cubic` coordinate rounding is reproduced from its generated controls
 and the paired S104 render is checked.
+
+**MetaPost fixed-point interpolation order (2026-11-06).** `_mp-fixed-mix`
+now follows MetaPost's `set_number_from_of_the_way` operation order:
+`B - (B - C) * t`, with 16.16 rounding after each operation. The old
+`A + (C - A) * t` expression is algebraically equivalent but rounds differently.
+On S104 row `-15.34870`, the source-side `HATCHPOST/PRE` records now match the
+reconstructed third subdivision's four control points exactly; all four
+`_mp-fixed-cubic-arc-raw` increments then match source exactly. This confirms
+the source arithmetic from both the implementation and recorded geometry.
+
+The paired 600 ppi comparisons used matching source pixel hashes before and
+after this edit. M1 and M4 remain pixel-identical. RMSE changes are M9
+`0.211524 -> 0.211427`; M11 full/globe/knot
+`0.114785/0.189287/0.078405 -> 0.114775/0.189183/0.078535`; S104
+full/hatch/stipple `0.206409/0.071860/0.285145 ->
+0.205608/0.071835/0.283972`; and S105 full/block/surface
+`0.101560/0.127200/0.076479 -> 0.101695/0.127932/0.075811`. Keep the
+source arithmetic correction: it gives exact source subdivision controls and
+improves several full-frame/region scores, while the M11 knot and S105
+full/block regressions remain explicit follow-up targets. M9 ink coverage
+moves slightly farther from source, so retain that tradeoff in future wood
+work rather than claiming a uniform raster improvement.

@@ -5149,3 +5149,18 @@ produce 21 outer and 7 thin nodes (source: 21/5), so the remaining thin-tree
 mismatch is not explained by that one-unit arc residual. Do not promote yet:
 reproduce `mp_split_cubic`'s coordinate rounding and compare generated interior
 controls against these source records, then run the paired S104 raster gate.
+
+### MetaPost fixed-mix operation order (2026-11-06)
+
+MetaPost's binary arithmetic backend implements `set_number_from_of_the_way`
+as `B - (B - C) * t`; see the implementation in
+[`mpmathbinary.w`](https://github.com/TeX-Live/texlive-source/blob/trunk/texk/web2c/mplibdir/mpmathbinary.w#L532-L541).
+`_mp-fixed-mix` now retains this operation order through 16.16 quantization.
+For S104 row `-15.34870`, the generated third `pathSubdivide` segment's four
+control points now match `S104-HATCHPOST/PRE` exactly, and its source-compatible
+cubic arc increments match all four `S104-HATCHARC` intervals. This closes the
+previous one-unit residual for the exact source root cubic; the current
+scanline-clipping cubic remains one unit off at its final knots.
+
+The matching-source-hash 600 ppi comparison results and their M11 knot/S105
+tradeoffs are recorded in `comparisons/fidelity-plan.md`.

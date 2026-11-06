@@ -54,7 +54,11 @@
 #let _mp-scalar-rounded(x) = calc.round(x * 65536) / 65536
 #let _mp-fixed-mix(a, b, t) = {
   let q = _mp-scalar-rounded(t)
-  _mp-rounded(a + _mp-rounded((b - a) * q))
+  // MetaPost's set_number_from_of_the_way evaluates B - (B - C) * t.
+  // Reordering this as A + (C - A) * t is algebraically equivalent but can
+  // differ by one 16.16 unit at each de Casteljau interpolation.
+  let delta = _mp-rounded(a - b)
+  _mp-rounded(a - _mp-rounded(delta * q))
 }
 #let _mp-fixed-mix-point(a, b, t) = (
   _mp-fixed-mix(a.at(0), b.at(0), t),
