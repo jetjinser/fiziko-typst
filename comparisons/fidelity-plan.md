@@ -2134,37 +2134,22 @@ full/block regressions remain explicit follow-up targets. M9 ink coverage
 moves slightly farther from source, so retain that tradeoff in future wood
 work rather than claiming a uniform raster improvement.
 
-**S104 thin-cut endpoint guard (2026-11-06).** The q-template branch of
-`source-q-split-path` previously validated a `thinBrushGenerate` cut by its
-physical arc distance from the endpoint. The pinned source instead accepts a
-cut only when its path parameter satisfies `t > 1/100` and
-`t < length(p) - 1/100` ([source](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L461-L475)).
-The implementation now checks the mapped local path time. On S104 row
-`-15.34870`, this rejects the `t=0.0078125` near-endpoint cut; the exact-root-q
-diagnostic tree changes from 21 outer/7 thin nodes to 21/5, matching source,
-and the row consumes 7 RNG draws with 3 dashes, matching the source row.
+**S104 thin-cut endpoint and width-entry guards (2026-11-06).** The pinned
+`thinBrushGenerate` requires a cut parameter `t > 1/100` and
+`t < length(p) - 1/100`, and enters its cut branch only when
+`w0 > minDashStrokeWidth + 0.01 bp`. The q-template branch now applies the
+endpoint predicate in the local q parameter domain, `t > 0.01` and
+`t < qcurves.len() - 0.01`, because MetaPost passes `cutPathTime`'s returned
+local `t` to both `p` and `q`. The prior mapped-time check compared against the
+normalized sampled-path domain and rejected valid cuts.
 
-The change exposes other unresolved q-template errors: across all 142 S104
-rows, 123 per-row draw counts match (L1 difference 252), although total draws
-remain 1516/1516. Same-source-hash 600 ppi comparisons show S104 full/hatch RMSE
-`0.205608/0.071835 -> 0.206637/0.077426`; stipple is unchanged. M11 is pixel
-unchanged, M9 full RMSE shifts `0.211427 -> 0.211456`, and S105 full RMSE shifts
-`0.101695 -> 0.101695` (increase `0.000000653`). Keep the source path-time
-predicate for semantic fidelity, record the S104 raster trade-off, and continue
-from the per-row q/call mismatches rather than restoring the incorrect
-arc-distance guard.
-
-The q-template thin-brush branch also now applies MetaPost's separate entry
-condition `w0 > minDashStrokeWidth + 0.01 bp` before searching for a width
-crossing. This is source-confirmed but changes no recursive or dash counts on
-the current 142-row fixture (`123/142` exact rows; L1 `252`; totals
-`1516/1516`), so it is not counted as a measured fidelity gain. Continue
-tracing q/path mapping at the first divergent node.
-
-The first call-count divergence is row `-2.79129`: source and Typst pair thin
-node 272 with exact width controls and one-unit q-arc control error, but source
-uses `cutPathTime`'s local `t=1.98688` on both `p` and `q`. Typst maps that q
-time through `qmap` to `1.25515`, rejects the near-endpoint cut, and consequently
-does not pair source nodes 273–276. Next reproduce the source's paired p/q
-subpath parameter domain on the sampled path before changing intersection
-arithmetic.
+The first row-call divergence was `-2.79129`: source and Typst pair thin node
+272 with exact width controls and at most one fixed-unit q-arc error, but the
+prior implementation mapped source `t=1.98688` through `qmap` to `1.25515`
+before applying the endpoint guard. With the local q-domain predicate, all 142
+row call totals, subdivision requests, path-segment counts, and absolute RNG
+offsets match (`1516/1516`, call-count L1 zero). The full q-node audit pairs
+1563/1696 source nodes, leaving recursive geometry differences. At 600 ppi the
+same-source S104 full/hatch RMSE improves `0.206637/0.077426 →
+0.205607/0.071828`; stipple is unchanged (`0.283972`). Continue tracing the
+remaining q/path geometry mismatches.

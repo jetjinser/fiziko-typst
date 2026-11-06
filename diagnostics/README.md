@@ -5172,16 +5172,18 @@ tradeoffs are recorded in `comparisons/fidelity-plan.md`.
 The pinned `thinBrushGenerate` only recurses when the cut time satisfies
 `t > 0.01` and `t < length(p) - 0.01` ([source lines 461–475](https://github.com/jemmybutton/fiziko/blob/54a63dba8e6700a5e70d3508838edebcbf0f45fe/fiziko.mp#L461-L475)).
 `source-q-split-path` used physical arc distance for this guard when q curves
-were supplied. It now maps the q intersection back to the current path and
-checks local path time, matching the sampled-width branch and MetaPost source.
+were supplied. The first correction mapped the q intersection to the sampled
+path and checked its local time. That matched one isolated case, but later
+tracing showed this compares different parameter scales; the current behavior
+is described below.
 
 On row `-15.34870`, the old guard accepted a near-endpoint cut at
 `t=0.0078125`; the corrected exact-root-q diagnostic has 21 outer/5 thin nodes,
 matching source (previously 21/7), and 7 row RNG draws/3 dashes, also matching
-source. The q approximation is still wrong on many other rows: 123/142 row
-draw counts match, with L1 difference 252 although total draws remain 1516.
-The paired 600 ppi S104 hatch RMSE regresses `0.071835 -> 0.077426`; retain the
-source predicate and continue from the per-row q-template/call mismatches.
+source. This was an isolated exact-root-q fixture result and did not establish
+production row alignment. The intermediate mapped-time implementation had
+123/142 matching row draw counts and regressed hatch RMSE; the corrected q
+parameter-domain behavior and current comparison are recorded below.
 
 ### S104 thin-brush width-entry guard (2026-11-06)
 
@@ -5189,22 +5191,26 @@ The pinned MetaPost `thinBrushGenerate` enters its width-cut branch only when
 the upper width bound satisfies `w0 > minWidth + 1/100`. In this routine
 `minWidth` is `minDashStrokeWidth`, or one third of `minStrokeWidth`; this is a
 separate guard from the `minWidth` dash floor used to choose the cut target.
-The source-rounded q-template branch now quantizes and applies this 0.01 bp
-entry guard before searching for a cut, while the floating-point path keeps its
-existing threshold. On the 142-row S104 fixture, this source-semantic
-correction changes no row's recursive call count or dash count: source and
-Typst totals remain `1516/1516`, with `123/142` exact row counts and L1 error
-252. It therefore records a confirmed rule without claiming a render or
-fixture improvement; the unresolved differences still come from q/path
-geometry and cut mapping.
+The source-rounded q-template branch quantizes and applies this 0.01 bp entry
+guard before searching for a cut. This width-entry rule alone changes no row
+call or dash count in the 142-row fixture.
 
-The first call-count divergence is row `-2.79129`. The source and Typst pair
-thin node 272 with exact width controls and one-unit q-arc control error. At
-its next cut, source `cutPathTime` returns local `t=1.98688` and passes that
-same `t` to both `subpath(... ) of p` and `subpath(... ) of q`. The current
-trace instead maps q time `1.98688` through `qmap` to source time `1.25515`,
-which lands near the end of the sampled path and is rejected by the endpoint
-guard. The source then visits nodes 273–276, which the current tree does not
-pair. This localizes the first mismatch to how the port maps q-subpath time
-onto its sampled p path; preserve the source's paired p/q parameter domain
-before changing crossing arithmetic or thresholds.
+The first row-call divergence was `-2.79129`. Source and Typst pair thin node
+272 with exact width controls and at most one fixed-unit q-arc error. Source
+`cutPathTime` returns local `t=1.98688` and passes that same parameter to
+`subpath` on both `p` and `q`. The earlier port mapped q time `1.98688` through
+`qmap` to source time `1.25515`, then checked the endpoint guard in the
+normalized sampled-path domain. This mixed parameter scales and rejected a
+valid source cut. The q-template branch now checks `t > 0.01` and
+`t < qcurves.len() - 0.01` in the local q parameter domain while retaining
+`qmap` to locate the sampled centerline point. This matches the paired p/q
+operation and resolves that row's subtree.
+
+The fixed-width q trace now matches all 142 row call totals, subdivision
+requests, generated path-segment counts, and absolute RNG offsets; call-count
+L1 is zero (`1516/1516`). The full q-node audit pairs 1563 of 1696 source
+nodes, so many rows still diverge geometrically after their first cuts. A
+same-source-hash 600 ppi S104 render improves full/hatch RMSE from
+`0.206637/0.077426` to `0.205607/0.071828`; stipple RMSE is unchanged at
+`0.283972`. Continue from the remaining q/path geometry mismatches rather than
+the already aligned random-call schedule.

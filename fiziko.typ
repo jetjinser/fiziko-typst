@@ -951,11 +951,13 @@
     let source-time = bounds.at(0) + fraction * (bounds.at(1) - bounds.at(0))
     let cut = source-path-at-time(path, source-time)
     let arc = source-path-arc(path, cut)
-    // `thinBrushGenerate` guards its cut with `t > 0.01` in path time,
-    // not with physical arc length. The q-template branch has already mapped
-    // the intersection time back to this path, so apply the same local-time
-    // test here as in the sampled-width branch below.
-    let valid = if param-times == none {
+    // `cutPathTime` returns a parameter on q, and MetaPost passes that same
+    // local parameter to `subpath` on p. Compare the endpoint guard in this
+    // shared path-segment domain; mapping it through qmap to the sampled
+    // centerline changes its scale and can reject valid source cuts.
+    let valid = if qmap != none {
+      qtime > margin and qtime < qcurves.len() - margin
+    } else if param-times == none {
       let local-cut = source-path-time(path, cut)
       let local-end = source-path-time(path, path.last())
       local-cut > margin and local-cut < local-end - margin
