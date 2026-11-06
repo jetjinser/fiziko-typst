@@ -56,7 +56,8 @@
 #let values = grid.fold((), (all, row) => all + row)
 #let groups = levels.enumerate().map(((level-index, level)) => {
   let result = marching-squares(field, 0, 0, 55, 33, levels: (level,),
-    nx: 55, ny: 33, with-count: true, source-walk: true)
+    nx: 55, ny: 33, with-count: true, source-walk: true,
+    source-fixed-scale: 24)
   result.at(0).enumerate().map(((path-index, path)) => {
     (level-index: level-index, path-index: path-index, path: path)
   })
@@ -86,6 +87,24 @@
 // Path zero is seeded by the first source cLine cell, with traversal order
 // checked against the pinned MetaPost CLPATH/CLSTEP trace.
 #let paired-path = paths.find(p => p.level-index == 0 and p.path-index == 0)
+#let contour-level = levels.at(paired-path.level-index)
+#let cell-corners-fixed = paired-path.cells.map(cell => {
+  let x = cell.at(0)
+  let y = cell.at(1)
+  let raw-corners = (
+    field(x, y + 1), field(x + 1, y + 1),
+    field(x, y), field(x + 1, y),
+  )
+  let fields = raw-corners.map(value => {
+    int(calc.round(_mp-scalar-rounded(value / 24) * 65536))
+  })
+  // MetaPost's cLine tests `xy + lvl`; source isoLines passes the negative of
+  // this positive Typst marching-squares threshold.
+  let level = int(calc.round(_mp-scalar-rounded(-contour-level / 24) * 65536))
+  (cell: cell, fields: fields, level: level,
+    corners: fields.map(value => value + level),
+    range: calc.max(..fields) - calc.min(..fields))
+})
 #let brush-path = paired-path.points.rev()
 #let width = _wood-source-width(field, 55, 33, 55, 33, brush-path,
   source-time: true)
@@ -113,7 +132,7 @@
   maximum-wfield-terms: maximum-wfield-terms,
   field-rng-count: model.rng-count,
   first-contour-random: first-contour-random,
-  levels: levels, paths: paths,
+  levels: levels, paths: paths, cell-corners-fixed: cell-corners-fixed,
   brush-rng-calls: brush-trace.at(1),
   brush-outer-leaves: brush-trace.at(2).outer,
   brush-thin-leaves: brush-trace.at(2).thin,

@@ -4223,7 +4223,8 @@
     let levels = _wood-source-levels(field, w, h, nx, ny, seed,
       contour-offset, mask: source-mask)
     marching-squares(field, 0, 0, w, h, levels: levels,
-      nx: nx, ny: ny, with-count: true, source-walk: true)
+      nx: nx, ny: ny, with-count: true, source-walk: true,
+      source-fixed-scale: if source-field { 24 } else { none })
   } else {
     (marching-squares(field, 0, 0, w, h, step: 1, nx: nx, ny: ny), 0)
   }

@@ -22,6 +22,17 @@ def main() -> None:
             message "CLSTEP " & decimal(i) & " " & decimal(j) & " "
                 & decimal(st) & " " & decimal(sqS) & " "
                 & decimal(xpart(dr)) & " " & decimal(ypart(dr));
+            message "CLSTEPFIX " & decimal(i) & " " & decimal(j) & " "
+                & decimal(floor(c1*256)) & " "
+                & decimal(round((c1*256-floor(c1*256))*256)) & " "
+                & decimal(floor(c2*256)) & " "
+                & decimal(round((c2*256-floor(c2*256))*256)) & " "
+                & decimal(floor(c3*256)) & " "
+                & decimal(round((c3*256-floor(c3*256))*256)) & " "
+                & decimal(floor(c4*256)) & " "
+                & decimal(round((c4*256-floor(c4*256))*256)) & " "
+                & decimal(floor(sqS*256)) & " "
+                & decimal(round((sqS*256-floor(sqS*256))*256));
         fi;"""
     source = replace_once(source, c_line_anchor, c_line_trace, "cLine cell")
     boundary_anchor = "    else:\n        outputPath := (i, j);"

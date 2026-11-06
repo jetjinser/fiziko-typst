@@ -5602,3 +5602,29 @@ This is expected after inspecting the source: `flatSurface` constructs each
 fraction and path-time fraction coincide at every q knot. There is no production
 change to keep. The unmatched recursive nodes must be pursued through cut-hit
 selection or path-frame rounding instead.
+
+### M9 source-fixed contour interpolation (2026-11-06)
+
+The `instrument_wood_contours.py` source hook emits `CLSTEPFIX` for the four
+`cLine` cell values and `CLLEVELFIX` for the contour level, encoded as two
+base-256 chunks per 16.16 integer (avoiding MetaPost's integer range limit).
+`compare_m9_cell_corners.py SOURCE_LOG TYPST_JSON` pairs the first contour's
+19 visited in-grid cells. In that trace, the Typst field values differ from
+MetaPost by a mean/max 0.842/5 fixed units; after adding the source level, the
+corner values differ by 2.053/4 units. This separates the small field-evaluation
+error from the contour-level operation.
+
+The production `source-field` wood path now opts into source 16.16
+interpolation at `woodBlockRes = 1/24 mm`. It rounds the level and endpoint
+fields independently, computes the edge fraction with signed integer division
+and MetaPost-style half-up rounding, then interpolates in 16.16 source-grid
+coordinates before mapping back to millimetres. The focused first-contour path
+error improves from mean/max `0.001936/0.004439 mm` to
+`0.001666/0.003523 mm`; root length error drops from `0.0152` to `0.0121 mm`.
+The paired M9/S105 600 ppi gate passes. Against the same-source baseline,
+whole-plate RMSE changes `0.2114854→0.2114645` for M9 and
+`0.1016931→0.1016918` for S105. M9 crop changes are mixed, with a maximum
+absolute shift of about `0.00022`; the q recursion tree and RNG call counts do
+not change. This is a
+measurable geometry improvement with a very small, nonuniform raster effect,
+not a closure of the larger brush-recursion mismatch.

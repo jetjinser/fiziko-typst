@@ -9,11 +9,21 @@
 // maps to local Typst coordinates (x0+j*dx, y0+h-i*dy). The two directed
 // branches are evaluated with loops so long contours do not consume Typst call
 // depth.
-#let _source-c-line(f, x0, y0, w, h, nx, ny, level) = {
+#let _source-c-line(f, x0, y0, w, h, nx, ny, level,
+                    source-fixed-scale: none) = {
   let visited = (:)
   let dx = w / nx
   let dy = h / ny
   let sign(v) = if v > 0 { 1 } else if v < 0 { -1 } else { 0 }
+  let fixed-round-div(a, b) = {
+    if b == 0 { 0 } else {
+      let sign = if (a < 0) != (b < 0) { -1 } else { 1 }
+      sign * int(calc.floor((calc.abs(a) + calc.abs(b) / 2) / calc.abs(b)))
+    }
+  }
+  let source-level-fixed = if source-fixed-scale == none { none } else {
+    int(calc.round(level / source-fixed-scale * 65536))
+  }
   let join(a, b) = {
     if a.len() == 0 { b } else if b.len() == 0 { a } else {
       let p = a.last()
@@ -26,7 +36,11 @@
   let hits(i, j) = {
     let x = x0 + j * dx
     let y = y0 + h - i * dy
-    let c = (f(x, y), f(x + dx, y), f(x, y - dy), f(x + dx, y - dy))
+    let raw = (f(x, y), f(x + dx, y), f(x, y - dy), f(x + dx, y - dy))
+    let c = if source-fixed-scale == none { raw } else {
+      raw.map(value => int(calc.round(value / source-fixed-scale * 65536))
+        - source-level-fixed)
+    }
     let edges = (
       (c.at(0), c.at(1), (x, y), (x + dx, y), (-1, 0)),
       (c.at(0), c.at(2), (x, y), (x, y - dy), (0, -1)),
@@ -35,14 +49,30 @@
     )
     let out = ()
     for e in edges {
-      let a = e.at(0) - level
-      let b = e.at(1) - level
+      let a = if source-fixed-scale == none { e.at(0) - level } else { e.at(0) }
+      let b = if source-fixed-scale == none { e.at(1) - level } else { e.at(1) }
       if sign(a) != sign(b) {
-        let t = calc.abs(-a / (b - a))
         let p = e.at(2)
         let q = e.at(3)
-        out.push(((p.at(0) + t * (q.at(0) - p.at(0)),
-          p.at(1) + t * (q.at(1) - p.at(1))), e.at(4)))
+        let point = if source-fixed-scale == none {
+          let t = calc.abs(-a / (b - a))
+          (p.at(0) + t * (q.at(0) - p.at(0)),
+            p.at(1) + t * (q.at(1) - p.at(1)))
+        } else {
+          // MetaPost interpolates in source grid coordinates, then scales the
+          // 16.16 result by the woodBlockRes-sized cell.
+          let pg = ((p.at(0) - x0) / dx, (y0 + h - p.at(1)) / dy)
+          let qg = ((q.at(0) - x0) / dx, (y0 + h - q.at(1)) / dy)
+          let t = calc.abs(fixed-round-div(-a * 65536, b - a))
+          let px = int(calc.round(pg.at(0) * 65536))
+          let py = int(calc.round(pg.at(1) * 65536))
+          let qx = int(calc.round(qg.at(0) * 65536))
+          let qy = int(calc.round(qg.at(1) * 65536))
+          let gx = px + fixed-round-div((qx - px) * t, 65536)
+          let gy = py + fixed-round-div((qy - py) * t, 65536)
+          (x0 + gx / 65536 * dx, y0 + h - gy / 65536 * dy)
+        }
+        out.push((point, e.at(4)))
       }
     }
     out
@@ -132,7 +162,8 @@
 /// selects the unmasked, source-grid cLine traversal instead of edge stitching.
 #let marching-squares(f, x0, y0, w, h, step: 1.0, nx: 40, ny: 24,
                       levels: none, level-jitter: none, mask: none,
-                      with-count: false, source-walk: false) = {
+                      with-count: false, source-walk: false,
+                      source-fixed-scale: none) = {
   let dx = w / nx
   let dy = h / ny
   let V = range(ny + 1).map(j => range(nx + 1).map(i => f(x0 + i * dx, y0 + j * dy)))
@@ -166,7 +197,8 @@
       if source-walk {
         assert(mask == none,
           message: "source-walk currently requires an unmasked grid")
-        polylines += _source-c-line(f, x0, y0, w, h, nx, ny, L)
+        polylines += _source-c-line(f, x0, y0, w, h, nx, ny, L,
+          source-fixed-scale: source-fixed-scale)
         continue
       }
       let segs = ()   // (edgeA, pointA, edgeB, pointB)
