@@ -41,6 +41,12 @@
 #let _source-stipple-spacing-ratio = 1.5
 #let _source-min-stipple-width = _source-stipple-size / 20
 #let _source-min-stipple-width-ratio = 1 / 20
+#let _source-wood-block-detail = 1 / 5
+#let _source-wood-block-res = 1 / 3
+#let _source-wood-y-density = 1 / 24
+#let _source-wood-knot-angle = 60
+#let _source-wood-knot-radius = 1.25
+#let _source-wood-knot-density = 20
 // MetaPost stores both dimensional (bp) and dimensionless values as 16.16.
 // Use distinct quantizers because lengths in mm and scalar ratios have
 // different scaled units.
@@ -3706,15 +3712,16 @@
 // Source `wField` used by woodBlock, expressed in physical millimetres.
 // `source-res` is woodBlockRes; field samples are taken on its grid while the
 // geometric contour sampler may use a coarser independent grid.
-#let _woodblock-field(w, h, seed, source-res: 1 / 3, rng-offset: 0) = {
-  let detail = 0.2
-  let knot-radius = 1.25
-  let knot-angle = 60
-  let rho = 1 / 24
-  // woodBlockRes is 1/3 mm: source draws one vertical offset for each of
-  // those columns, not once per whole millimetre.
+#let _woodblock-field(w, h, seed, source-res: _source-wood-block-res, rng-offset: 0) = {
+  let detail = _source-wood-block-detail
+  let knot-radius = _source-wood-knot-radius
+  let knot-angle = _source-wood-knot-angle
+  let rho = _source-wood-y-density
+  // The source default is 1/3 mm (figure drivers may override it); draw one
+  // vertical offset per woodBlockRes column, not once per whole millimetre.
   let columns = int(calc.round(w / source-res)) + 1
-  let max-knots = calc.max(1, int(calc.ceil(w * h / (2 * 20))))
+  let max-knots = calc.max(1, int(calc.ceil(
+    w * h / (2 * _source-wood-knot-density))))
   let candidate-cap = calc.max(256, (max-knots + 10) * 30)
   let stream = _metapost-rng-sequence(seed,
     rng-offset + candidate-cap + columns + 2048)
@@ -4067,7 +4074,7 @@
 #let wooden-thing(poly, angle: 0, spacing: 2.6, eyes: (), cell: 1.0,
                   stroke: 0.45pt + black, source-field: false, seed: 1,
                   grain-stroke: none, contour-brush: "uniform",
-                  source-res: 1 / 3, rng-offset: 0, with-rng: false) = {
+                  source-res: _source-wood-block-res, rng-offset: 0, with-rng: false) = {
   assert(contour-brush == "uniform" or contour-brush == "cell-range",
     message: "contour-brush must be uniform or cell-range")
   assert(contour-brush == "uniform" or source-field,
@@ -4187,7 +4194,7 @@
 /// `wooden-surface` resumes the seeded MetaPost stream after earlier objects.
 #let wood(x, y, w, h, angle: 0, spacing: 2.6, eyes: (),
           stroke: 0.45pt + black, cell: 1.5, source-field: false, seed: 1,
-          contour-brush: "uniform", source-res: 1 / 3) = {
+          contour-brush: "uniform", source-res: _source-wood-block-res) = {
   assert(contour-brush == "uniform" or contour-brush == "cell-range",
     message: "contour-brush must be uniform or cell-range")
   assert(contour-brush == "uniform" or source-field,

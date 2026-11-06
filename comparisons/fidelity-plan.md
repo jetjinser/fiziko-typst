@@ -45,6 +45,22 @@ parameters:
 | `stippleShadingDensity := 3minStippleStep` | 0.45 pt | `_source-stipple-spacing`; default ring pitch and stipple scanline spacing |
 | `minStippleStrokeWidth := 1/20stippleSize` | 0.015 pt | `_source-min-stipple-width`; scaled with custom dot size for leaf pruning |
 
+The wood field has its own source parameters, pinned in `fiziko.mp` beside
+`wField` and `woodBlock`. They are kept separate from image-fit inputs:
+
+| Pinned source expression | Derived value | Typst mapping |
+| --- | ---: | --- |
+| `woodBlockRes := 1/3mm` | 0.3333 mm default | `_source-wood-block-res`; M9's driver overrides it to 1 mm |
+| `woodBlockDetail := 1/5` | 0.2 | `_source-wood-block-detail` |
+| `woodBlockYRdensity := 1/24` | 0.041667 field units | `_source-wood-y-density` |
+| `woodKnotAngle := 1/3pi` | 60° | `_source-wood-knot-angle` after radians-to-degrees conversion |
+| `woodKnotRadius := 1/8cm` | 1.25 mm | `_source-wood-knot-radius` |
+| `woodKnotDensity := 2cm` | 20 mm | `_source-wood-knot-density`; caps accepted knot count by half the block area divided by this spacing |
+
+The `woodBlockRes` default is not universal per figure: M9 sets it to 1 mm,
+while S105 uses the source default. Keep that driver override distinct from
+the field's other constants.
+
 These values are visible in the [Typst constants](../fiziko.typ#L30). Other
 numbers belong to the MetaPost runtime: fixed-point rounding, path-time
 evaluation, and the traversal/tie rules in `intersectiontimes` can change a
