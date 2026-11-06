@@ -34,7 +34,6 @@
 #let _source-brush-width-guard = _mp-unit / 100
 #let _source-brush-time-guard = 1 / 100
 #let _source-thin-brush-depth = 15
-#let _source-tube-width-guard = _mp-unit / 1000
 #let _source-horizon-crossing-depth = 5
 #let _source-max-shading = 1.5 * _source-min-stroke
 #let _source-spacing = 3 * _source-max-shading
@@ -1264,8 +1263,8 @@
         let step-fixed = int(calc.round(thin-step / _mp-unit * 65536))
         hi-fixed - lo-fixed >= step-fixed
       } else { hi - lo >= step }
-      let recurse = thin-eligible and width-span-ok
-        and depth < _source-thin-brush-depth and split != none
+      let recurse = (thin-eligible and width-span-ok
+        and depth < _source-thin-brush-depth and split != none)
       if trace-nodes {
         thin-nodes.push((stage: "thin", depth: depth, width-min: lo, width-max: hi,
           width-start: width-index(path.first()),
@@ -2640,12 +2639,10 @@
     divisions
   } else { 1 }
   let local-divisions(t) = {
-    // tubeGenerate subtracts 1/1000 bp from the upper diameter before
-    // converting it to a power-of-two hatch count.
-    let diameter = 2 * rfun(t) - _source-tube-width-guard
-    if diameter > 0 and spacing > 0 {
+    let r = rfun(t)
+    if r > 0 and spacing > 0 {
       calc.max(1, int(calc.pow(2,
-        calc.ceil(calc.log(diameter / spacing, base: 2)))))
+        calc.ceil(calc.log(2 * r / spacing, base: 2)))))
     } else { 1 }
   }
   // tubeGenerate recursively cuts at every diameter threshold where its
