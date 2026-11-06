@@ -5247,6 +5247,17 @@ not come from a curved-path bbox extremum. The production correction remains
 empirically exact across the fixture, while its origin in the Typst-to-source
 ray-frame conversion is still unresolved.
 
+**Explicit S104 source-frame transform (2026-11-06, reverted).** The source
+fixture defines `P(x,y) = (x*mm, (44-y)*mm)` and rotates that y-up path. A
+candidate passed the 44 mm frame height into the Typst scanline transform,
+reproduced the traced rotated vertices exactly, and paired all 142 scanline y
+positions. It still changed the brush recursion: 92 row RNG starts and 34 row
+call totals differed from source. Same-source 600 ppi full/hatch RMSE was
+`0.205604537/0.071815953`, slightly worse than the measured-ray-correction
+render (`0.205603720/0.071811352`). The production candidate was reverted;
+the frame-aware transform is not sufficient until q-template recursion also
+matches.
+
 The source-frame conversion uses the trace's quantized 30-degree sine/cosine
 and the fixed `185771` bp/mm conversion already used by
 `_source-scanline-segments`. A fresh 142-row source trace shows that both raw
