@@ -4707,6 +4707,25 @@ nix develop path:./nix --command bash -c \
 rg '^[0-9]+ [0-9]+' diagnostics/s104-line-control-probe.log
 ```
 
+**S104 row -15.34870 source-arc parameter trial (2026-11-06, not promoted).**
+The first outer-tree discrepancy is a one-unit strict-threshold case. Source
+outer serial 43 has a q-width endpoint of `13059/65536 bp`, while the matching
+Typst slice ends at `13058/65536 bp`; source `minStrokeWidth` is exactly
+`13058/65536 bp`. The source therefore recurses (`w0 > minStrokeWidth`), while
+the Typst bounds see equality and stop. Reparameterizing the sampled width
+knots by integrating each interval of the clipped scanline cubic moved this
+row's thin start from `39.41342 mm` to `39.43913 mm`, paired all `5/5` source
+nodes, and reduced q-control residual from max `929` to `7` units. It also
+paired all `35/35` nodes on row `-1.89433` (max q-arc residual `27` units).
+However, the same experiment damaged row `-10.86390` from `21/21` paired nodes
+and max q-arc residual `1` to `3/21` and `595`; full-trace pairing fell from
+`1525/1696` to `1520/1696`, and mean residual rose from `13.072` to `20.166`
+units. The experiment was reverted. The discrepancy is localized to how
+source `arclength(subpath(0,i) of p)` maps subdivision knots onto the offset
+template; the interval integration used in this trial is not yet an accurate
+all-row port. Do not promote it without matching source knot lengths directly
+and preserving the rows that currently match.
+
 For row 28.60222, the current root q x-control residual falls from mean/max
 `93.875/189` to `1.688/4` fixed units. With the diagnostic fixture switched
 to baseline floating scanlines (`use-source-fixed-scanlines = false`), the
